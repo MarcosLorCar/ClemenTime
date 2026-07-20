@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">ClemenTime</string>
     <string name="schedule_screen_title">Schedule</string>
+    <string name="settings_screen_title">Settings</string>
 </resources>
