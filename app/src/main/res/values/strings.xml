@@ -2,4 +2,6 @@
     <string name="app_name">ClemenTime</string>
     <string name="schedule_screen_title">Schedule</string>
     <string name="settings_screen_title">Settings</string>
+    <string name="import_screen_title">Import Schedule</string>
+    <string name="import_schedule_title">Import Schedule</string>
 </resources>

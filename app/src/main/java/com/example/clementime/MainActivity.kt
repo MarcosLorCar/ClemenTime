@@ -4,8 +4,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.MaterialTheme
@@ -15,7 +15,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -28,11 +27,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.clementime.ui.components.AppDrawerContent
+import com.example.clementime.ui.navigation.ImportRoute
 import com.example.clementime.ui.navigation.ScheduleListRoute
 import com.example.clementime.ui.navigation.SettingsRoute
 import com.example.clementime.ui.screens.ScheduleScreen
 import com.example.clementime.ui.screens.ScheduleViewModel
 import com.example.clementime.ui.screens.SettingsScreen
+import com.example.clementime.ui.screens.scheduleimport.ImportScreen
+import com.example.clementime.ui.screens.scheduleimport.ImportViewModel
 import com.example.clementime.ui.theme.ClemenTimeTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -119,34 +121,25 @@ fun ClemenTimeApp(
         ) {
             composable<ScheduleListRoute> {
                 val viewModel: ScheduleViewModel = hiltViewModel()
-                val items by viewModel.scheduleItems.collectAsState()
-                val tab by viewModel.selectedTab.collectAsState()
-
                 ScheduleScreen(
-                    items = items,
-                    onAddItemClick = {
-                        viewModel.addItem(
-                            title = "Task ${System.currentTimeMillis()}",
-                            description = "Description here",
-                            startTime = System.currentTimeMillis(),
-                            endTime = System.currentTimeMillis() + 3600000
-                        )
-                    },
-                    onToggle = { viewModel.toggleCompletion(it) },
-                    onDelete = { viewModel.deleteItem(it) },
-                    selectedTab = tab,
-                    onChangeTab = viewModel::changeTab,
+                    viewModel = viewModel,
                     onMenuClick = { scope.launch { drawerState.open() } }
+                )
+            }
+
+            composable<ImportRoute> {
+                val viewModel: ImportViewModel = hiltViewModel()
+                ImportScreen(
+                    viewModel = viewModel,
+                    onMenuClick = { scope.launch { drawerState.open() } },
+                    onNavigateBack = {
+                        navController.popBackStack(ScheduleListRoute, inclusive = false)
+                    }
                 )
             }
 
             composable<SettingsRoute> {
                 SettingsScreen(
-                    syncPath = "",
-                    isCompactMode = false,
-                    onSelectSyncPath = {},
-                    onToggleCompactMode = {},
-                    onExportBackup = {  },
                     onMenuClick = { scope.launch { drawerState.open() } }
                 )
             }

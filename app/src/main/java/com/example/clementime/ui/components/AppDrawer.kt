@@ -31,7 +31,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.compose.material.icons.filled.CloudUpload
 import com.example.clementime.R
+import com.example.clementime.ui.navigation.ImportRoute
 import com.example.clementime.ui.navigation.ScheduleListRoute
 import com.example.clementime.ui.navigation.SettingsRoute
 import com.example.clementime.ui.theme.ClemenTimeTheme
@@ -59,6 +61,12 @@ fun AppDrawerContent(
             routeClass = ScheduleListRoute::class
         ),
         NavigationItem(
+            labelResId = R.string.import_screen_title,
+            icon = Icons.Filled.CloudUpload,
+            route = ImportRoute,
+            routeClass = ImportRoute::class
+        ),
+        NavigationItem(
             labelResId = R.string.settings_screen_title,
             icon = Icons.Filled.Settings,
             route = SettingsRoute,
@@ -74,21 +82,19 @@ fun AppDrawerContent(
                 .fillMaxWidth()
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
-//            horizontalArrangement = Arrangement.Center
         ) {
             IconButton(onClick = onCloseDrawer) {
                 Icon(Icons.Default.Menu, contentDescription = "Close Drawer")
             }
 
             Text(
-                text = "ClemenTime",
-                style = MaterialTheme.typography.headlineSmall,
+                text = stringResource(R.string.app_name),
+                style = MaterialTheme.typography.headlineSmallEmphasized,
                 modifier = Modifier.padding(start = 12.dp)
             )
         }
 
         HorizontalDivider()
-        Spacer(modifier = Modifier.height(8.dp))
 
         Column(
             modifier = Modifier

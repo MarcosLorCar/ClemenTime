@@ -40,6 +40,20 @@ import com.example.clementime.ui.theme.ClemenTimeTheme
 
 @Composable
 fun SettingsScreen(
+    onMenuClick: () -> Unit
+) {
+    SettingsContent(
+        syncPath = "Internal Storage",
+        isCompactMode = false,
+        onSelectSyncPath = { /* TODO */ },
+        onToggleCompactMode = { /* TODO */ },
+        onExportBackup = { /* TODO */ },
+        onMenuClick = onMenuClick
+    )
+}
+
+@Composable
+fun SettingsContent(
     syncPath: String?,
     isCompactMode: Boolean,
     onSelectSyncPath: (Uri) -> Unit,
@@ -76,7 +90,6 @@ fun SettingsScreen(
                 color = MaterialTheme.colorScheme.primary
             )
 
-            // Preference Item 1: Sync Folder Picker
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 onClick = { folderPickerLauncher.launch(null) }
@@ -105,7 +118,6 @@ fun SettingsScreen(
                 }
             }
 
-            // Preference Item 2: Database Backup
             OutlinedCard(
                 modifier = Modifier.fillMaxWidth(),
                 onClick = onExportBackup
@@ -145,7 +157,7 @@ fun SettingsScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(
@@ -168,18 +180,11 @@ fun SettingsScreen(
     }
 }
 
-@Composable
-fun ToggleSettingCard(icon: ImageVector, name: String) = Card(
-    modifier = Modifier.fillMaxWidth()
-) {
-
-}
-
 @Preview(showBackground = true)
 @Composable
 fun SettingsScreenPreview() {
     ClemenTimeTheme {
-        SettingsScreen(
+        SettingsContent(
             syncPath = "a",
             isCompactMode = false,
             onSelectSyncPath = {},

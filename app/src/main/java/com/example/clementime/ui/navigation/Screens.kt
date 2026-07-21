@@ -9,3 +9,7 @@ object ScheduleListRoute {
 @Serializable
 object SettingsRoute {
 }
+
+@Serializable
+object ImportRoute {
+}
