@@ -21,10 +21,14 @@ android {
     }
 
     buildTypes {
+        getByName("debug") {
+            applicationIdSuffix = ".debug"
+        }
         release {
             optimization {
                 enable = false
             }
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
     compileOptions {
