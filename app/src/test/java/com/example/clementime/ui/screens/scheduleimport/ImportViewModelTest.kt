@@ -164,7 +164,7 @@ class FakeScheduleDaoForImport : com.example.clementime.data.ScheduleDao {
     override suspend fun updateMatter(matter: com.example.clementime.data.Matter) {}
     override suspend fun deleteMatterById(matterId: Long) {}
     override suspend fun insertSlot(slot: com.example.clementime.data.ClassSlot): Long = 1L
-    override suspend fun insertSlots(slotsToInsert: List<com.example.clementime.data.ClassSlot>) {}
+    override suspend fun insertSlots(slots: List<com.example.clementime.data.ClassSlot>) {}
     override suspend fun updateSlot(slot: com.example.clementime.data.ClassSlot) {}
     override suspend fun deleteSlot(slot: com.example.clementime.data.ClassSlot) {}
     override suspend fun deleteSlotById(slotId: Long) {}

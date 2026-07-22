@@ -20,11 +20,7 @@ import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.Duration
 import java.time.LocalTime
-import java.util.UUID
 import javax.inject.Inject
-
-
-
 
 
 data class ClassSlotUiModel(

@@ -1,16 +1,11 @@
 package com.example.clementime.ui.components
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Schedule
@@ -30,11 +25,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavDestination
-import androidx.navigation.NavDestination.Companion.hasRoute
-import androidx.compose.material.icons.filled.CloudUpload
 import com.example.clementime.R
-import com.example.clementime.ui.navigation.ImportRoute
 import com.example.clementime.ui.navigation.MattersRoute
 import com.example.clementime.ui.navigation.ScheduleListRoute
 import com.example.clementime.ui.navigation.SettingsRoute

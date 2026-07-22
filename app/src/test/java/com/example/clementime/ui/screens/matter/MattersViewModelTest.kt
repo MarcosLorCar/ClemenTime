@@ -45,7 +45,7 @@ class MattersViewModelTestFakeDao : ScheduleDao {
 
     override suspend fun insertSlot(slot: ClassSlot): Long = 1L
 
-    override suspend fun insertSlots(slotsToInsert: List<ClassSlot>) {}
+    override suspend fun insertSlots(slots: List<ClassSlot>) {}
 
     override suspend fun updateSlot(slot: ClassSlot) {}
 

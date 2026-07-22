@@ -5,7 +5,7 @@
     <string name="import_screen_title">Import Schedule</string>
     <string name="import_schedule_title">Import Schedule</string>
     <string name="matters_screen_title">Matters</string>
-    <string name="search_matters_placeholder">Search by name or code...</string>
+    <string name="search_matters_placeholder">Search by name or code…</string>
     <string name="delete_matter_dialog_title">Delete Matter</string>
     <string name="delete_matter_dialog_message">Are you sure you want to delete \"%1$s\"? This will also remove all associated schedule slots.</string>
     <string name="delete_matter_confirm">Delete</string>
@@ -62,7 +62,7 @@
     <!-- Notes & Attachments strings -->
     <string name="notes_and_attachments_header">Notes &amp; File Attachments</string>
     <string name="subject_notes_label">Subject Notes</string>
-    <string name="subject_notes_placeholder">Add notes, syllabus links, exam dates, or reminders...</string>
+    <string name="subject_notes_placeholder">Add notes, syllabus links, exam dates, or reminders…</string>
     <string name="linked_files_label">Linked Files (%1$d)</string>
     <string name="link_file_button">Link File</string>
     

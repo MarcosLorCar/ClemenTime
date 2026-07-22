@@ -4,9 +4,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
-import com.example.clementime.data.ClassSlot
 import com.example.clementime.data.MatterWithSlots
 import com.example.clementime.data.ScheduleDao
+import com.example.clementime.data.SettingsRepository
 import com.example.clementime.ui.navigation.ScheduleListRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,11 +14,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
-import java.time.LocalTime
 import javax.inject.Inject
-
-import com.example.clementime.data.SettingsRepository
 
 data class ScheduleUiState(
     val isLoading: Boolean = true,
@@ -30,7 +26,7 @@ data class ScheduleUiState(
 @HiltViewModel
 class ScheduleViewModel @Inject constructor(
     private val scheduleDao: ScheduleDao,
-    private val settingsRepository: SettingsRepository,
+    settingsRepository: SettingsRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -67,30 +63,4 @@ class ScheduleViewModel @Inject constructor(
         _selectedTab.value = tab
     }
 
-    fun addSlot(
-        matterId: Long,
-        startTime: LocalTime,
-        endTime: LocalTime,
-        classroom: String? = null,
-        labGroupName: String? = null
-    ) {
-        viewModelScope.launch {
-            scheduleDao.insertSlot(
-                ClassSlot(
-                    matterId = matterId,
-                    dayOfWeek = _selectedTab.value.dayOfWeek,
-                    startTime = startTime,
-                    endTime = endTime,
-                    classroom = classroom,
-                    labGroupName = labGroupName,
-                )
-            )
-        }
-    }
-
-    fun deleteSlot(slot: ClassSlot) {
-        viewModelScope.launch {
-            scheduleDao.deleteSlot(slot)
-        }
-    }
 }

@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import androidx.core.net.toUri
 
 data class SettingsUiState(
     val themeMode: String = "system",
@@ -90,7 +91,7 @@ class SettingsViewModel @Inject constructor(
                 val syncUriStr = settingsRepository.syncDirectoryFlow.first()
                 var syncWritten = false
                 if (syncUriStr != null) {
-                    val treeUri = Uri.parse(syncUriStr)
+                    val treeUri = syncUriStr.toUri()
                     val docUri = DocumentsContract.buildDocumentUriUsingTree(
                         treeUri,
                         DocumentsContract.getTreeDocumentId(treeUri)

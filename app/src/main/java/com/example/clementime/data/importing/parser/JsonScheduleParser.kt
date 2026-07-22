@@ -9,7 +9,6 @@ import com.example.clementime.data.importing.model.JsonMatter
 import com.example.clementime.data.importing.model.JsonTimeSlot
 import com.example.clementime.data.importing.model.JsonYear
 import com.example.clementime.data.importing.model.ScheduleJsonSchema
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.time.DayOfWeek
 import java.time.LocalTime

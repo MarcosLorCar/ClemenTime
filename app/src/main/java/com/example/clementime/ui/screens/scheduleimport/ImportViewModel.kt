@@ -114,19 +114,6 @@ class ImportViewModel @Inject constructor(
         }
     }
 
-    fun deselectAllMatters(matters: Collection<SelectedMatter>? = null) {
-        val currentState = _uiState.value
-        if (currentState is ImportUiState.Selection) {
-            val updatedSelection = currentState.selectedMatters.toMutableSet()
-            if (matters == null) {
-                updatedSelection.clear()
-            } else {
-                updatedSelection.removeAll(matters.toSet())
-            }
-            _uiState.value = currentState.copy(selectedMatters = updatedSelection)
-        }
-    }
-
     fun confirmImport() {
         val currentState = _uiState.value
         if (currentState is ImportUiState.Selection) {

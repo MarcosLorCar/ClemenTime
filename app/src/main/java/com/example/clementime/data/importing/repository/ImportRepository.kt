@@ -3,7 +3,6 @@ package com.example.clementime.data.importing.repository
 import com.example.clementime.data.EntryType
 import com.example.clementime.data.Matter
 import com.example.clementime.data.ScheduleDao
-import com.example.clementime.data.importing.model.JsonMatter
 import com.example.clementime.data.importing.model.ScheduleJsonSchema
 import com.example.clementime.data.importing.model.SelectedMatter
 import com.example.clementime.data.importing.parser.JsonScheduleParser

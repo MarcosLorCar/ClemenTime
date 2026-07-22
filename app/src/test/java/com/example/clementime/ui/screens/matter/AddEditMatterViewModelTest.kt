@@ -48,8 +48,8 @@ class FakeScheduleDao : ScheduleDao {
 
     override suspend fun insertSlot(slot: ClassSlot): Long = 1L
 
-    override suspend fun insertSlots(slotsToInsert: List<ClassSlot>) {
-        slots.addAll(slotsToInsert)
+    override suspend fun insertSlots(slots: List<ClassSlot>) {
+        this@FakeScheduleDao.slots.addAll(slots)
     }
 
     override suspend fun updateSlot(slot: ClassSlot) {}

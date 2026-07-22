@@ -6,7 +6,7 @@
     <string name="import_screen_title">Importar Horario</string>
     <string name="import_schedule_title">Importar Horario</string>
     <string name="matters_screen_title">Asignaturas</string>
-    <string name="search_matters_placeholder">Buscar por nombre o código...</string>
+    <string name="search_matters_placeholder">Buscar por nombre o código…</string>
     <string name="delete_matter_dialog_title">Eliminar Asignatura</string>
     <string name="delete_matter_dialog_message">¿Estás seguro de que deseas eliminar \"%1$s\"? Esto también eliminará todos los horarios asociados.</string>
     <string name="delete_matter_confirm">Eliminar</string>
@@ -63,7 +63,7 @@
     <!-- Notes & Attachments strings -->
     <string name="notes_and_attachments_header">Notas y Archivos Adjuntos</string>
     <string name="subject_notes_label">Notas de la Asignatura</string>
-    <string name="subject_notes_placeholder">Añade notas, enlaces al plan de estudios, fechas de exámenes o recordatorios...</string>
+    <string name="subject_notes_placeholder">Añade notas, enlaces al plan de estudios, fechas de exámenes o recordatorios…</string>
     <string name="linked_files_label">Archivos Enlazados (%1$d)</string>
     <string name="link_file_button">Enlazar Archivo</string>
     

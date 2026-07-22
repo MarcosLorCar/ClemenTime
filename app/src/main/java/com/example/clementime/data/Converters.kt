@@ -3,8 +3,6 @@ package com.example.clementime.data
 import androidx.room.TypeConverter
 import java.time.DayOfWeek
 import java.time.LocalTime
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.decodeFromString
 
 class Converters {
     @TypeConverter
