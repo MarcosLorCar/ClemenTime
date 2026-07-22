@@ -1,5 +1,7 @@
 package com.example.clementime.ui.screens.scheduleimport
 
+import android.net.Uri
+
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -67,12 +69,17 @@ import com.example.clementime.ui.theme.ClemenTimeTheme
 
 @Composable
 fun ImportScreen(
+    uriString: String,
     onMenuClick: () -> Unit,
     onNavigateBack: () -> Unit,
     viewModel: ImportViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(uriString) {
+        viewModel.loadJsonFromUri(context, Uri.parse(uriString))
+    }
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()

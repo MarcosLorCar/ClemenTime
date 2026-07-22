@@ -12,32 +12,54 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = ClementinePrimaryDark,
+    onPrimary = ClementineOnPrimaryDark,
+    primaryContainer = ClementinePrimaryContainerDark,
+    onPrimaryContainer = ClementineOnPrimaryContainerDark,
+    secondary = ClementineSecondaryDark,
+    onSecondary = ClementineOnSecondaryDark,
+    secondaryContainer = ClementineSecondaryContainerDark,
+    onSecondaryContainer = ClementineOnSecondaryContainerDark,
+    tertiary = ClementineTertiaryDark,
+    onTertiary = ClementineOnTertiaryDark,
+    tertiaryContainer = ClementineTertiaryContainerDark,
+    onTertiaryContainer = ClementineOnTertiaryContainerDark,
+    background = ClementineBackgroundDark,
+    onBackground = ClementineOnBackgroundDark,
+    surface = ClementineSurfaceDark,
+    onSurface = ClementineOnSurfaceDark,
+    surfaceVariant = ClementineSurfaceVariantDark,
+    onSurfaceVariant = ClementineOnSurfaceVariantDark,
+    outline = ClementineOutlineDark
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    primary = ClementinePrimaryLight,
+    onPrimary = ClementineOnPrimaryLight,
+    primaryContainer = ClementinePrimaryContainerLight,
+    onPrimaryContainer = ClementineOnPrimaryContainerLight,
+    secondary = ClementineSecondaryLight,
+    onSecondary = ClementineOnSecondaryLight,
+    secondaryContainer = ClementineSecondaryContainerLight,
+    onSecondaryContainer = ClementineOnSecondaryContainerLight,
+    tertiary = ClementineTertiaryLight,
+    onTertiary = ClementineOnTertiaryLight,
+    tertiaryContainer = ClementineTertiaryContainerLight,
+    onTertiaryContainer = ClementineOnTertiaryContainerLight,
+    background = ClementineBackgroundLight,
+    onBackground = ClementineOnBackgroundLight,
+    surface = ClementineSurfaceLight,
+    onSurface = ClementineOnSurfaceLight,
+    surfaceVariant = ClementineSurfaceVariantLight,
+    onSurfaceVariant = ClementineOnSurfaceVariantLight,
+    outline = ClementineOutlineLight
 )
 
 @Composable
 fun ClemenTimeTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {

@@ -12,8 +12,9 @@ object SettingsRoute {
 }
 
 @Serializable
-object ImportRoute {
-}
+data class ImportRoute(
+    val uriString: String
+)
 
 @Serializable
 object MattersRoute

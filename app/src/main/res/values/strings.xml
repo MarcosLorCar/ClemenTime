@@ -53,8 +53,8 @@
     <string name="sync_directory_not_selected">No directory selected</string>
     <string name="choose_folder_button">Choose folder</string>
     <string name="clear_folder_button">Clear folder</string>
-    <string name="export_backup_setting_title">Export Backup</string>
-    <string name="export_backup_desc">Save database as JSON backup</string>
+    <string name="export_backup_setting_title">Export Schedule</string>
+    <string name="export_backup_desc">Save schedule and subjects to JSON file</string>
     <string name="export_button">Export</string>
     <string name="import_button">Import</string>
     <string name="import_schedule_desc">Load matters and schedules from JSON file</string>

@@ -14,12 +14,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CloudUpload
-import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.SaveAlt
@@ -46,6 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -58,7 +59,7 @@ import com.example.clementime.ui.theme.ClemenTimeTheme
 @Composable
 fun SettingsScreen(
     onMenuClick: () -> Unit,
-    onNavigateToImport: () -> Unit,
+    onNavigateToImport: (String) -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(
         checkNotNull(
             LocalViewModelStoreOwner.current
@@ -75,25 +76,17 @@ fun SettingsScreen(
         contract = ActivityResultContracts.CreateDocument("application/json")
     ) { uri: Uri? ->
         if (uri != null) {
-            viewModel.exportBackup(context, uri) { status ->
+            viewModel.exportData(context, uri) { status ->
                 exportStatus = status
             }
         }
     }
 
-    val folderPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocumentTree()
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         if (uri != null) {
-            try {
-                context.contentResolver.takePersistableUriPermission(
-                    uri,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                )
-                viewModel.setSyncDirectoryUri(uri.toString())
-            } catch (e: Exception) {
-                Toast.makeText(context, "Failed to persist directory permissions: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
-            }
+            onNavigateToImport(uri.toString())
         }
     }
 
@@ -114,21 +107,15 @@ fun SettingsScreen(
 
     SettingsContent(
         uiState = uiState,
-        onSelectSyncPath = { folderPickerLauncher.launch(null) },
-        onClearSyncPath = { viewModel.setSyncDirectoryUri(null) },
         onThemeChanged = viewModel::setThemeMode,
         onLanguageChanged = viewModel::setAppLanguage,
         onToggleScrollableTabs = viewModel::setScrollableTabs,
-        onExportBackup = {
-            if (uiState.syncDirectoryUri != null) {
-                viewModel.exportBackup(context, null) { status ->
-                    exportStatus = status
-                }
-            } else {
-                createDocLauncher.launch("clementime_backup.json")
-            }
+        onExportData = {
+            createDocLauncher.launch("clementime_export.json")
         },
-        onNavigateToImport = onNavigateToImport,
+        onImportClick = {
+            filePickerLauncher.launch("application/json")
+        },
         onMenuClick = onMenuClick
     )
 }
@@ -136,13 +123,11 @@ fun SettingsScreen(
 @Composable
 fun SettingsContent(
     uiState: SettingsUiState,
-    onSelectSyncPath: () -> Unit,
-    onClearSyncPath: () -> Unit,
     onThemeChanged: (String) -> Unit,
     onLanguageChanged: (String) -> Unit,
     onToggleScrollableTabs: (Boolean) -> Unit,
-    onExportBackup: () -> Unit,
-    onNavigateToImport: () -> Unit,
+    onExportData: () -> Unit,
+    onImportClick: () -> Unit,
     onMenuClick: () -> Unit
 ) {
     Scaffold(
@@ -168,125 +153,167 @@ fun SettingsContent(
                 color = MaterialTheme.colorScheme.primary
             )
 
-            Card(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+            // Theme Setting Card
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    // Theme Row
-                    var showThemeMenu by remember { mutableStateOf(false) }
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
                     ) {
-                        Icon(Icons.Default.Palette, contentDescription = null)
+                        Icon(
+                            imageVector = Icons.Default.Palette,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                         Spacer(modifier = Modifier.width(16.dp))
-                        Column(modifier = Modifier.weight(1f)) {
+                        Column {
                             Text(
                                 text = stringResource(R.string.theme_setting_title),
                                 style = MaterialTheme.typography.bodyLarge
                             )
-                        }
-                        Box {
                             val selectedThemeLabel = when (uiState.themeMode) {
                                 "light" -> stringResource(R.string.theme_light)
                                 "dark" -> stringResource(R.string.theme_dark)
                                 else -> stringResource(R.string.theme_system)
                             }
-                            OutlinedButton(onClick = { showThemeMenu = true }) {
-                                Text(selectedThemeLabel)
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-                            }
-                            DropdownMenu(
-                                expanded = showThemeMenu,
-                                onDismissRequest = { showThemeMenu = false }
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.theme_system)) },
-                                    onClick = {
-                                        onThemeChanged("system")
-                                        showThemeMenu = false
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.theme_light)) },
-                                    onClick = {
-                                        onThemeChanged("light")
-                                        showThemeMenu = false
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.theme_dark)) },
-                                    onClick = {
-                                        onThemeChanged("dark")
-                                        showThemeMenu = false
-                                    }
-                                )
+                            var showThemeMenu by remember { mutableStateOf(false) }
+                            Box {
+                                OutlinedButton(
+                                    onClick = { showThemeMenu = true },
+                                    modifier = Modifier.widthIn(max = 180.dp)
+                                ) {
+                                    Text(
+                                        text = selectedThemeLabel,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f, fill = false)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                                }
+                                DropdownMenu(
+                                    expanded = showThemeMenu,
+                                    onDismissRequest = { showThemeMenu = false }
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.theme_system)) },
+                                        onClick = {
+                                            onThemeChanged("system")
+                                            showThemeMenu = false
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.theme_light)) },
+                                        onClick = {
+                                            onThemeChanged("light")
+                                            showThemeMenu = false
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.theme_dark)) },
+                                        onClick = {
+                                            onThemeChanged("dark")
+                                            showThemeMenu = false
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
+                }
+            }
 
-                    HorizontalDivider()
-
-                    // Language Row
-                    var showLangMenu by remember { mutableStateOf(false) }
+            // Language Setting Card
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
                     ) {
-                        Icon(Icons.Default.Language, contentDescription = null)
+                        Icon(
+                            imageVector = Icons.Default.Language,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                         Spacer(modifier = Modifier.width(16.dp))
-                        Column(modifier = Modifier.weight(1f)) {
+                        Column {
                             Text(
                                 text = stringResource(R.string.language_setting_title),
                                 style = MaterialTheme.typography.bodyLarge
                             )
-                        }
-                        Box {
                             val selectedLangLabel = when (uiState.appLanguage) {
                                 "es" -> "Español"
                                 else -> "English"
                             }
-                            OutlinedButton(onClick = { showLangMenu = true }) {
-                                Text(selectedLangLabel)
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-                            }
-                            DropdownMenu(
-                                expanded = showLangMenu,
-                                onDismissRequest = { showLangMenu = false }
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text("English") },
-                                    onClick = {
-                                        onLanguageChanged("en")
-                                        showLangMenu = false
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Español") },
-                                    onClick = {
-                                        onLanguageChanged("es")
-                                        showLangMenu = false
-                                    }
-                                )
+                            var showLangMenu by remember { mutableStateOf(false) }
+                            Box {
+                                OutlinedButton(
+                                    onClick = { showLangMenu = true },
+                                    modifier = Modifier.widthIn(max = 180.dp)
+                                ) {
+                                    Text(
+                                        text = selectedLangLabel,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f, fill = false)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                                }
+                                DropdownMenu(
+                                    expanded = showLangMenu,
+                                    onDismissRequest = { showLangMenu = false }
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text("English") },
+                                        onClick = {
+                                            onLanguageChanged("en")
+                                            showLangMenu = false
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Español") },
+                                        onClick = {
+                                            onLanguageChanged("es")
+                                            showLangMenu = false
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
+                }
+            }
 
-                    HorizontalDivider()
-
-                    // Tab Layout Customization
+            // Tab Layout Setting Card
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
                     ) {
                         Icon(
                             imageVector = Icons.Default.ViewCompact,
-                            contentDescription = null
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
                         )
                         Spacer(modifier = Modifier.width(16.dp))
                         Column(modifier = Modifier.weight(1f)) {
@@ -319,65 +346,10 @@ fun SettingsContent(
                 color = MaterialTheme.colorScheme.primary
             )
 
-            // Sync Folder Card
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Folder,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(
-                            text = stringResource(R.string.sync_directory_setting_title),
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                    }
-
-                    val pathLabel = if (uiState.syncDirectoryUri != null) {
-                        stringResource(R.string.sync_directory_path_label, uiState.syncDirectoryUri.substringAfterLast("%3A"))
-                    } else {
-                        stringResource(R.string.sync_directory_not_selected)
-                    }
-
-                    Text(
-                        text = pathLabel,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Button(
-                            onClick = onSelectSyncPath,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text(stringResource(R.string.choose_folder_button))
-                        }
-                        if (uiState.syncDirectoryUri != null) {
-                            OutlinedButton(
-                                onClick = onClearSyncPath,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(stringResource(R.string.clear_folder_button))
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Backup Actions
+            // Export Data Card
             OutlinedCard(
                 modifier = Modifier.fillMaxWidth(),
-                onClick = onExportBackup
+                onClick = onExportData
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -402,9 +374,10 @@ fun SettingsContent(
                 }
             }
 
+            // Import Data Card
             OutlinedCard(
                 modifier = Modifier.fillMaxWidth(),
-                onClick = onNavigateToImport
+                onClick = onImportClick
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -438,13 +411,11 @@ fun SettingsScreenPreview() {
     ClemenTimeTheme {
         SettingsContent(
             uiState = SettingsUiState(),
-            onSelectSyncPath = {},
-            onClearSyncPath = {},
             onThemeChanged = {},
             onLanguageChanged = {},
             onToggleScrollableTabs = {},
-            onExportBackup = {},
-            onNavigateToImport = {},
+            onExportData = {},
+            onImportClick = {},
             onMenuClick = {}
         )
     }

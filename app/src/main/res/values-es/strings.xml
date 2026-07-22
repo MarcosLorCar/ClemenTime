@@ -43,7 +43,7 @@
     <string name="interface_header">Interfaz</string>
     <string name="language_setting_title">Idioma</string>
     <string name="theme_setting_title">Tema</string>
-    <string name="theme_system">Predeterminado del Sistema</string>
+    <string name="theme_system">Predeterminado</string>
     <string name="theme_light">Modo Claro</string>
     <string name="theme_dark">Modo Oscuro</string>
     <string name="tab_layout_setting_title">Diseño de Pestañas</string>
@@ -54,8 +54,8 @@
     <string name="sync_directory_not_selected">Sin carpeta seleccionada</string>
     <string name="choose_folder_button">Seleccionar carpeta</string>
     <string name="clear_folder_button">Limpiar carpeta</string>
-    <string name="export_backup_setting_title">Exportar Copia de Seguridad</string>
-    <string name="export_backup_desc">Guardar base de datos como copia JSON</string>
+    <string name="export_backup_setting_title">Exportar Horario</string>
+    <string name="export_backup_desc">Guardar horario y asignaturas como archivo JSON</string>
     <string name="export_button">Exportar</string>
     <string name="import_button">Importar</string>
     <string name="import_schedule_desc">Cargar asignaturas y horarios desde un archivo JSON</string>

@@ -81,12 +81,12 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun exportBackup(context: Context, customUri: Uri? = null, onResult: (ExportStatus) -> Unit) {
+    fun exportData(context: Context, customUri: Uri? = null, onResult: (ExportStatus) -> Unit) {
         viewModelScope.launch {
             onResult(ExportStatus.Exporting)
             try {
                 val matters = scheduleDao.getAllMattersWithSlots().first()
-                val jsonString = jsonScheduleParser.exportToJson("ClemenTime Backup", matters)
+                val jsonString = jsonScheduleParser.exportToJson("ClemenTime Export", matters)
                 
                 val syncUriStr = settingsRepository.syncDirectoryFlow.first()
                 var syncWritten = false
@@ -100,7 +100,7 @@ class SettingsViewModel @Inject constructor(
                         context.contentResolver,
                         docUri,
                         "application/json",
-                        "clementime_backup.json"
+                        "clementime_export.json"
                     )
                     if (targetUri != null) {
                         context.contentResolver.openOutputStream(targetUri)?.use { out ->
@@ -114,10 +114,10 @@ class SettingsViewModel @Inject constructor(
                     context.contentResolver.openOutputStream(customUri)?.use { out ->
                         out.write(jsonString.toByteArray())
                     }
-                    val msg = if (syncWritten) "Backup saved locally and to Sync Folder" else "Backup saved successfully"
+                    val msg = if (syncWritten) "Data exported locally and to Sync Folder" else "Data exported successfully"
                     onResult(ExportStatus.Success(msg))
                 } else if (syncWritten) {
-                    onResult(ExportStatus.Success("Backup exported to Sync Folder"))
+                    onResult(ExportStatus.Success("Data exported to Sync Folder"))
                 } else {
                     onResult(ExportStatus.Error("Please configure a Sync Directory or choose a manual save location."))
                 }

@@ -1,0 +1,85 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag to create (e.g. v1.0.0-alpha1)'
+        required: true
+        type: string
+      release_description:
+        description: 'Release description (optional, overrides auto-generated notes)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # Determine tags and names
+      - name: Get Versioning Info
+        id: info
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG_NAME="${{ inputs.version }}"
+          else
+            TAG_NAME="${{ github.ref_name }}"
+          fi
+          # Strip 'v' prefix if present for versionName
+          VERSION_NAME=$(echo "$TAG_NAME" | sed 's/^v//')
+          
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "version_code=${{ github.run_number }}" >> $GITHUB_OUTPUT
+
+      # Tag the commit first if manually dispatched and tag doesn't exist
+      - name: Create Git Tag (manual dispatch only)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          TAG_NAME="${{ steps.info.outputs.tag_name }}"
+          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Tag $TAG_NAME already exists."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag "$TAG_NAME"
+            git push origin "$TAG_NAME"
+          fi
+
+      - name: Build Release APK with Dynamic Versioning
+        run: |
+          ./gradlew assembleRelease \
+            -PversionName="${{ steps.info.outputs.version_name }}" \
+            -PversionCode="${{ steps.info.outputs.version_code }}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.info.outputs.tag_name }}
+          name: Release ${{ steps.info.outputs.tag_name }}
+          body: ${{ inputs.release_description }}
+          generate_release_notes: ${{ !inputs.release_description }}
+          draft: false
+          prerelease: ${{ contains(steps.info.outputs.tag_name, 'alpha') || contains(steps.info.outputs.tag_name, 'beta') }}
+          files: app/build/outputs/apk/release/app-release.apk

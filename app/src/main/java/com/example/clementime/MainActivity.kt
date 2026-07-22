@@ -32,6 +32,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.toRoute
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -45,9 +46,10 @@ import com.example.clementime.ui.navigation.ScheduleListRoute
 import com.example.clementime.ui.navigation.SettingsRoute
 import com.example.clementime.ui.screens.ScheduleScreen
 import com.example.clementime.ui.screens.SettingsScreen
+import com.example.clementime.ui.screens.scheduleimport.ImportScreen
 import com.example.clementime.ui.screens.matter.AddEditMatterScreen
 import com.example.clementime.ui.screens.matter.MattersScreen
-import com.example.clementime.ui.screens.scheduleimport.ImportScreen
+import androidx.compose.runtime.LaunchedEffect
 import com.example.clementime.ui.theme.ClemenTimeTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -66,6 +68,20 @@ class MainActivity : ComponentActivity() {
         setContent {
             val themeMode by settingsRepository.themeFlow.collectAsState(initial = "system")
             val appLanguage by settingsRepository.languageFlow.collectAsState(initial = "en")
+
+            LaunchedEffect(appLanguage) {
+                val locale = Locale.forLanguageTag(appLanguage)
+                Locale.setDefault(locale)
+                
+                val config = resources.configuration
+                config.setLocale(locale)
+                resources.updateConfiguration(config, resources.displayMetrics)
+
+                val appContext = applicationContext
+                val appConfig = appContext.resources.configuration
+                appConfig.setLocale(locale)
+                appContext.resources.updateConfiguration(appConfig, appContext.resources.displayMetrics)
+            }
 
             val darkTheme = when (themeMode) {
                 "light" -> false
@@ -183,8 +199,10 @@ fun ClemenTimeApp(
                 )
             }
 
-            composable<ImportRoute> {
+            composable<ImportRoute> { backStackEntry ->
+                val route = backStackEntry.toRoute<ImportRoute>()
                 ImportScreen(
+                    uriString = route.uriString,
                     onMenuClick = { scope.launch { drawerState.open() } },
                     onNavigateBack = {
                         navController.popBackStack<ScheduleListRoute>(inclusive = false)
@@ -195,8 +213,8 @@ fun ClemenTimeApp(
             composable<SettingsRoute> {
                 SettingsScreen(
                     onMenuClick = { scope.launch { drawerState.open() } },
-                    onNavigateToImport = {
-                        navController.navigate(ImportRoute)
+                    onNavigateToImport = { uriString ->
+                        navController.navigate(ImportRoute(uriString))
                     }
                 )
             }
