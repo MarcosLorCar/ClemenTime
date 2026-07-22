@@ -1,55 +1,55 @@
 {
   "version": 1,
   "title": "Horarios 2026/2027 - 1º Cuatrimestre",
-  "matters": [],
+  "matters": [
+    {
+      "code": "PruebasProgreso",
+      "name": "Pruebas de Progreso",
+      "color": null,
+      "theorySlots": [
+        {
+          "dayOfWeek": "MONDAY",
+          "startTime": "08:30",
+          "endTime": "10:00",
+          "classroom": "0.02+3-Charles",
+          "groupName": null,
+          "entryType": "THEORY",
+          "professor": null
+        },
+        {
+          "dayOfWeek": "FRIDAY",
+          "startTime": "08:30",
+          "endTime": "10:00",
+          "classroom": "0.02+3-Charles",
+          "groupName": null,
+          "entryType": "THEORY",
+          "professor": null
+        }
+      ],
+      "labVariants": {}
+    },
+    {
+      "code": "Conferencias",
+      "name": "Conferencias",
+      "color": null,
+      "theorySlots": [
+        {
+          "dayOfWeek": "WEDNESDAY",
+          "startTime": "11:30",
+          "endTime": "13:00",
+          "classroom": "Alan Turing",
+          "groupName": null,
+          "entryType": "THEORY",
+          "professor": null
+        }
+      ],
+      "labVariants": {}
+    }
+  ],
   "years": [
     {
       "name": "1º",
-      "matters": [
-        {
-          "code": "PruebasProgreso",
-          "name": "Pruebas de Progreso",
-          "color": null,
-          "theorySlots": [
-            {
-              "dayOfWeek": "MONDAY",
-              "startTime": "08:30",
-              "endTime": "10:00",
-              "classroom": "0.02+3-Charles",
-              "groupName": null,
-              "entryType": "THEORY",
-              "professor": null
-            },
-            {
-              "dayOfWeek": "FRIDAY",
-              "startTime": "08:30",
-              "endTime": "10:00",
-              "classroom": "0.02+3-Charles",
-              "groupName": null,
-              "entryType": "THEORY",
-              "professor": null
-            }
-          ],
-          "labVariants": {}
-        },
-        {
-          "code": "Conferencias",
-          "name": "Conferencias",
-          "color": null,
-          "theorySlots": [
-            {
-              "dayOfWeek": "WEDNESDAY",
-              "startTime": "11:30",
-              "endTime": "13:00",
-              "classroom": "Alan Turing",
-              "groupName": null,
-              "entryType": "THEORY",
-              "professor": null
-            }
-          ],
-          "labVariants": {}
-        }
-      ],
+      "matters": [],
       "groups": [
         {
           "name": "A",
