@@ -34,7 +34,7 @@ A sample schedule configuration is provided for alpha/beta testers to try out th
 To use it:
 1. Copy or download [primer_cuatrimestre.json](primer_cuatrimestre.json) to your Android device.
 2. Open **ClemenTime**, go to **Settings**, and choose to import a schedule.
-3. Select the JSON file to populate the planner with the sample test data.
+3. Select the JSON file to populate the planner with the cherry-picked data.
 
 ## License
 
