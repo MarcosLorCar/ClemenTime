@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
@@ -34,6 +35,7 @@ import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.compose.material.icons.filled.CloudUpload
 import com.example.clementime.R
 import com.example.clementime.ui.navigation.ImportRoute
+import com.example.clementime.ui.navigation.MattersRoute
 import com.example.clementime.ui.navigation.ScheduleListRoute
 import com.example.clementime.ui.navigation.SettingsRoute
 import com.example.clementime.ui.theme.ClemenTimeTheme
@@ -57,14 +59,14 @@ fun AppDrawerContent(
         NavigationItem(
             labelResId = R.string.schedule_screen_title,
             icon = Icons.Filled.Schedule,
-            route = ScheduleListRoute,
+            route = ScheduleListRoute(),
             routeClass = ScheduleListRoute::class
         ),
         NavigationItem(
-            labelResId = R.string.import_screen_title,
-            icon = Icons.Filled.CloudUpload,
-            route = ImportRoute,
-            routeClass = ImportRoute::class
+            labelResId = R.string.matters_screen_title,
+            icon = Icons.AutoMirrored.Filled.MenuBook,
+            route = MattersRoute,
+            routeClass = MattersRoute::class
         ),
         NavigationItem(
             labelResId = R.string.settings_screen_title,

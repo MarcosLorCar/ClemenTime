@@ -4,8 +4,10 @@ import com.example.clementime.data.ClassSlot
 import com.example.clementime.data.EntryType
 import com.example.clementime.data.Matter
 import com.example.clementime.data.MatterWithSlots
+import com.example.clementime.data.importing.model.JsonGroup
 import com.example.clementime.data.importing.model.JsonMatter
 import com.example.clementime.data.importing.model.JsonTimeSlot
+import com.example.clementime.data.importing.model.JsonYear
 import com.example.clementime.data.importing.model.ScheduleJsonSchema
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -20,6 +22,11 @@ class JsonScheduleParser @Inject constructor() {
         prettyPrint = true
     }
 
+    private data class YearBuckets(
+        val yearMatters: MutableList<JsonMatter> = mutableListOf(),
+        val groups: MutableMap<String, MutableList<JsonMatter>> = mutableMapOf()
+    )
+
     fun parseJson(jsonString: String): Result<ScheduleJsonSchema> {
         return runCatching {
             json.decodeFromString<ScheduleJsonSchema>(jsonString)
@@ -27,35 +34,67 @@ class JsonScheduleParser @Inject constructor() {
     }
 
     fun exportToJson(title: String, mattersWithSlots: List<MatterWithSlots>): String {
-        val jsonMatters = mattersWithSlots.map { matterWithSlots ->
+        val rootMatters = mutableListOf<JsonMatter>()
+        val yearsMap = mutableMapOf<String, YearBuckets>()
+
+        mattersWithSlots.forEach { matterWithSlots ->
             val (matter, slots) = matterWithSlots
+            val jsonMatter = matterToPayload(matter, slots)
+            val fullGroup = matter.courseGroup?.trim() ?: ""
 
-            val theorySlots = slots.filter { it.entryType != EntryType.LAB }.map { it.toJsonTimeSlot() }
-            val labSlots = slots.filter { it.entryType == EntryType.LAB }
-
-            val labVariants = if (labSlots.isNotEmpty()) {
-                labSlots.groupBy { it.labGroupName ?: "Lab" }
-                    .mapValues { entry -> entry.value.map { it.toJsonTimeSlot() } }
+            if (fullGroup.isEmpty() || fullGroup.equals("General", ignoreCase = true)) {
+                rootMatters.add(jsonMatter)
             } else {
-                emptyMap()
-            }
+                val parts = fullGroup.split("\\s+".toRegex())
+                val yearName = parts[0]
+                val buckets = yearsMap.getOrPut(yearName) { YearBuckets() }
 
-            JsonMatter(
-                code = matter.code,
-                name = matter.name,
-                color = matter.color,
-                courseGroup = matter.courseGroup,
-                theorySlots = theorySlots,
-                labVariants = labVariants
-            )
+                if (parts.size == 1) {
+                    buckets.yearMatters.add(jsonMatter)
+                } else {
+                    val groupName = parts.subList(1, parts.size).joinToString(" ")
+                    buckets.groups.getOrPut(groupName) { mutableListOf() }.add(jsonMatter)
+                }
+            }
         }
+
+        val jsonYears = yearsMap.map { (yearName, buckets) ->
+            JsonYear(
+                name = yearName,
+                matters = buckets.yearMatters,
+                groups = buckets.groups.map { (groupName, matters) ->
+                    JsonGroup(name = groupName, matters = matters)
+                }
+            )
+        }.sortedBy { it.name }
 
         val schema = ScheduleJsonSchema(
             title = title,
-            matters = jsonMatters
+            matters = rootMatters,
+            years = jsonYears
         )
 
         return json.encodeToString(schema)
+    }
+
+    private fun matterToPayload(matter: Matter, slots: List<ClassSlot>): JsonMatter {
+        val theorySlots = slots.filter { it.entryType != EntryType.LAB }.map { it.toJsonTimeSlot() }
+        val labSlots = slots.filter { it.entryType == EntryType.LAB }
+
+        val labVariants = if (labSlots.isNotEmpty()) {
+            labSlots.groupBy { it.labGroupName ?: "Lab" }
+                .mapValues { entry -> entry.value.map { it.toJsonTimeSlot() } }
+        } else {
+            emptyMap()
+        }
+
+        return JsonMatter(
+            code = matter.code,
+            name = matter.name,
+            color = matter.color,
+            theorySlots = theorySlots,
+            labVariants = labVariants
+        )
     }
 
     // Mapping Helpers

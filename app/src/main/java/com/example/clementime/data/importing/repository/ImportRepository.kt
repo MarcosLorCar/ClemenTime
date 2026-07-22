@@ -1,11 +1,11 @@
 package com.example.clementime.data.importing.repository
 
-import com.example.clementime.data.ClassSlot
 import com.example.clementime.data.EntryType
 import com.example.clementime.data.Matter
 import com.example.clementime.data.ScheduleDao
 import com.example.clementime.data.importing.model.JsonMatter
 import com.example.clementime.data.importing.model.ScheduleJsonSchema
+import com.example.clementime.data.importing.model.SelectedMatter
 import com.example.clementime.data.importing.parser.JsonScheduleParser
 import javax.inject.Inject
 
@@ -18,38 +18,33 @@ class ImportRepository @Inject constructor(
         return parser.parseJson(jsonContent)
     }
 
-    suspend fun importMatters(selectedJsonMatters: List<JsonMatter>) {
-        selectedJsonMatters.forEach { jsonMatter ->
+    suspend fun importMatters(selectedMatters: List<SelectedMatter>) {
+        selectedMatters.forEach { selected ->
+            val jsonMatter = selected.matter
             val matter = Matter(
                 code = jsonMatter.code,
                 name = jsonMatter.name,
-                color = jsonMatter.color ?: 0xFF2196F3.toInt(),
-                courseGroup = jsonMatter.courseGroup
+                color = jsonMatter.color ?: Matter.PRESET_COLORS.random(),
+                courseGroup = selected.courseGroup,
+                isActive = true
             )
 
-            val slots = mutableListOf<ClassSlot>()
-
-            // Theory slots (Always selected)
-            jsonMatter.theorySlots.forEach {
-                slots.add(with(parser) { it.toClassSlot().copy(isSelected = true) })
+            val theorySlots = jsonMatter.theorySlots.map {
+                with(parser) { it.toClassSlot() }
             }
 
-            // All Lab Variants (Imported, but isSelected = false)
-            jsonMatter.labVariants.forEach { (groupName, variantSlots) ->
-                variantSlots.forEach { slot ->
-                    slots.add(
-                        with(parser) {
-                            slot.toClassSlot().copy(
-                                labGroupName = groupName,
-                                entryType = EntryType.LAB,
-                                isSelected = false // Unselected by default!
-                            )
-                        }
-                    )
+            val labSlots = jsonMatter.labVariants.flatMap { (groupName, variantSlots) ->
+                variantSlots.map { slot ->
+                    with(parser) {
+                        slot.toClassSlot().copy(
+                            labGroupName = groupName,
+                            entryType = EntryType.LAB
+                        )
+                    }
                 }
             }
 
-            dao.insertMatterWithSlots(matter, slots)
+            dao.upsertMatterWithSlots(matter, theorySlots + labSlots)
         }
     }
 }

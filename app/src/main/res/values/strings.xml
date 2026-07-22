@@ -4,4 +4,77 @@
     <string name="settings_screen_title">Settings</string>
     <string name="import_screen_title">Import Schedule</string>
     <string name="import_schedule_title">Import Schedule</string>
+    <string name="matters_screen_title">Matters</string>
+    <string name="search_matters_placeholder">Search by name or code...</string>
+    <string name="delete_matter_dialog_title">Delete Matter</string>
+    <string name="delete_matter_dialog_message">Are you sure you want to delete \"%1$s\"? This will also remove all associated schedule slots.</string>
+    <string name="delete_matter_confirm">Delete</string>
+    <string name="cancel">Cancel</string>
+    <string name="no_matters_title">No matters added yet</string>
+    <string name="no_matters_subtitle">Import a schedule or tap + to create one.</string>
+    <string name="no_search_results">No matters match your search.</string>
+    <string name="slots_count">%1$d slot(s)</string>
+    <string name="expand_slots">Show slots</string>
+    <string name="collapse_slots">Hide slots</string>
+    <string name="active">Active</string>
+    <string name="inactive">Inactive</string>
+    <string name="select_all">Select All</string>
+    <string name="deselect_all">Deselect All</string>
+    <string name="selected_count">%1$d of %2$d selected</string>
+    <string name="section_selected_count">%1$d/%2$d selected</string>
+    <string name="select_file_button">Select Schedule JSON File</string>
+    <string name="try_again">Try Again</string>
+    <string name="import_selected_button">Import Selected (%1$d)</string>
+    <string name="edit_matter">Edit</string>
+    <string name="delete_matter">Delete</string>
+    <string name="add_matter_title">Add Matter</string>
+    <string name="edit_matter_title">Edit Matter</string>
+    <string name="nuke_all_matters_title">Nuke All Matters</string>
+    <string name="nuke_all_matters_message">Are you sure you want to delete ALL matters and all associated class slots? This action is permanent and cannot be undone.</string>
+    <string name="nuke_confirm">Nuke All</string>
+    <string name="selected_count_simple">%1$d selected</string>
+    <string name="delete_selected_dialog_title">Delete Selected</string>
+    <string name="delete_selected_dialog_message">Are you sure you want to delete the %1$d selected matters and all their class slots?</string>
+    <string name="delete_selected_confirm">Delete</string>
+
+    <!-- Settings Screen strings -->
+    <string name="data_storage_header">Data &amp; Storage</string>
+    <string name="interface_header">Interface</string>
+    <string name="language_setting_title">Language</string>
+    <string name="theme_setting_title">Theme</string>
+    <string name="theme_system">System Default</string>
+    <string name="theme_light">Light Mode</string>
+    <string name="theme_dark">Dark Mode</string>
+    <string name="tab_layout_setting_title">Tab Bar Layout</string>
+    <string name="tab_layout_letters">Letters (Fixed)</string>
+    <string name="tab_layout_weekdays">Weekday Names (Scrollable)</string>
+    <string name="sync_directory_setting_title">Sync Directory</string>
+    <string name="sync_directory_path_label">Sync Folder: %1$s</string>
+    <string name="sync_directory_not_selected">No directory selected</string>
+    <string name="choose_folder_button">Choose folder</string>
+    <string name="clear_folder_button">Clear folder</string>
+    <string name="export_backup_setting_title">Export Backup</string>
+    <string name="export_backup_desc">Save database as JSON backup</string>
+    <string name="export_button">Export</string>
+    <string name="import_button">Import</string>
+    <string name="import_schedule_desc">Load matters and schedules from JSON file</string>
+
+    <!-- Notes & Attachments strings -->
+    <string name="notes_and_attachments_header">Notes &amp; File Attachments</string>
+    <string name="subject_notes_label">Subject Notes</string>
+    <string name="subject_notes_placeholder">Add notes, syllabus links, exam dates, or reminders...</string>
+    <string name="linked_files_label">Linked Files (%1$d)</string>
+    <string name="link_file_button">Link File</string>
+    
+    <!-- Toast & Dialog strings -->
+    <string name="file_not_found_message">File not found</string>
+    <string name="attachment_failed_message">Failed to attach file: %1$s</string>
+    <string name="no_apps_for_file_message">No app available to open this file type</string>
+    <string name="language_selector_label">Select Language</string>
+    <string name="theme_selector_label">Select Theme</string>
+    <string name="export_success_local_and_sync">Backup saved locally and to Sync Folder</string>
+    <string name="export_success_local">Backup saved successfully</string>
+    <string name="export_success_sync">Backup exported to Sync Folder</string>
+    <string name="export_error_no_location">Please configure a Sync Directory or choose a manual save location.</string>
+    <string name="export_error_prefix">Export failed: %1$s</string>
 </resources>

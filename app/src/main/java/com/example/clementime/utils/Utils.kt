@@ -1,6 +1,9 @@
 package com.example.clementime.utils
 
+import com.example.clementime.data.ClassSlot
+import com.example.clementime.data.Matter
 import java.time.DayOfWeek
+import java.time.LocalTime
 import java.time.format.TextStyle
 import java.util.Locale
 
@@ -33,3 +36,13 @@ fun DayOfWeek.getNarrowLabel(locale: Locale): String {
         else -> standard
     }
 }
+
+/**
+ * Represents a horizontal row/bucket in the timeline that contains
+ * one or more overlapping class slots.
+ */
+data class TimelineCluster(
+    val startTime: LocalTime,
+    val endTime: LocalTime,
+    val items: List<Pair<Matter, ClassSlot>>
+)

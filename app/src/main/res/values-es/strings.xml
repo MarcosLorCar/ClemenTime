@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ClemenTime</string>
+    <string name="schedule_screen_title">Horario</string>
+    <string name="settings_screen_title">Ajustes</string>
+    <string name="import_screen_title">Importar Horario</string>
+    <string name="import_schedule_title">Importar Horario</string>
+    <string name="matters_screen_title">Asignaturas</string>
+    <string name="search_matters_placeholder">Buscar por nombre o código...</string>
+    <string name="delete_matter_dialog_title">Eliminar Asignatura</string>
+    <string name="delete_matter_dialog_message">¿Estás seguro de que deseas eliminar \"%1$s\"? Esto también eliminará todos los horarios asociados.</string>
+    <string name="delete_matter_confirm">Eliminar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="no_matters_title">Aún no hay asignaturas</string>
+    <string name="no_matters_subtitle">Importa un horario o toca + para crear uno.</string>
+    <string name="no_search_results">Ninguna asignatura coincide con tu búsqueda.</string>
+    <string name="slots_count">%1$d clase(s)</string>
+    <string name="expand_slots">Mostrar clases</string>
+    <string name="collapse_slots">Ocultar clases</string>
+    <string name="active">Activa</string>
+    <string name="inactive">Inactiva</string>
+    <string name="select_all">Seleccionar Todo</string>
+    <string name="deselect_all">Deseleccionar Todo</string>
+    <string name="selected_count">%1$d de %2$d seleccionadas</string>
+    <string name="section_selected_count">%1$d/%2$d seleccionadas</string>
+    <string name="select_file_button">Seleccionar Archivo JSON de Horario</string>
+    <string name="try_again">Reintentar</string>
+    <string name="import_selected_button">Importar Seleccionadas (%1$d)</string>
+    <string name="edit_matter">Editar</string>
+    <string name="delete_matter">Eliminar</string>
+    <string name="add_matter_title">Añadir Asignatura</string>
+    <string name="edit_matter_title">Editar Asignatura</string>
+    <string name="nuke_all_matters_title">Borrar Todo</string>
+    <string name="nuke_all_matters_message">¿Estás seguro de que deseas eliminar TODAS las asignaturas y sus clases asociadas? Esta acción es permanente y no se puede deshacer.</string>
+    <string name="nuke_confirm">Eliminar Todo</string>
+    <string name="selected_count_simple">%1$d seleccionadas</string>
+    <string name="delete_selected_dialog_title">Eliminar Seleccionadas</string>
+    <string name="delete_selected_dialog_message">¿Estás seguro de que deseas eliminar las %1$d asignaturas seleccionadas y todas sus clases asociadas?</string>
+    <string name="delete_selected_confirm">Eliminar</string>
+
+    <!-- Settings Screen strings -->
+    <string name="data_storage_header">Datos y Almacenamiento</string>
+    <string name="interface_header">Interfaz</string>
+    <string name="language_setting_title">Idioma</string>
+    <string name="theme_setting_title">Tema</string>
+    <string name="theme_system">Predeterminado del Sistema</string>
+    <string name="theme_light">Modo Claro</string>
+    <string name="theme_dark">Modo Oscuro</string>
+    <string name="tab_layout_setting_title">Diseño de Pestañas</string>
+    <string name="tab_layout_letters">Letras (Fijo)</string>
+    <string name="tab_layout_weekdays">Días de la Semana (Desplazable)</string>
+    <string name="sync_directory_setting_title">Directorio de Sincronización</string>
+    <string name="sync_directory_path_label">Carpeta de sinc.: %1$s</string>
+    <string name="sync_directory_not_selected">Sin carpeta seleccionada</string>
+    <string name="choose_folder_button">Seleccionar carpeta</string>
+    <string name="clear_folder_button">Limpiar carpeta</string>
+    <string name="export_backup_setting_title">Exportar Copia de Seguridad</string>
+    <string name="export_backup_desc">Guardar base de datos como copia JSON</string>
+    <string name="export_button">Exportar</string>
+    <string name="import_button">Importar</string>
+    <string name="import_schedule_desc">Cargar asignaturas y horarios desde un archivo JSON</string>
+
+    <!-- Notes & Attachments strings -->
+    <string name="notes_and_attachments_header">Notas y Archivos Adjuntos</string>
+    <string name="subject_notes_label">Notas de la Asignatura</string>
+    <string name="subject_notes_placeholder">Añade notas, enlaces al plan de estudios, fechas de exámenes o recordatorios...</string>
+    <string name="linked_files_label">Archivos Enlazados (%1$d)</string>
+    <string name="link_file_button">Enlazar Archivo</string>
+    
+    <!-- Toast & Dialog strings -->
+    <string name="file_not_found_message">Archivo no encontrado</string>
+    <string name="attachment_failed_message">Error al adjuntar el archivo: %1$s</string>
+    <string name="no_apps_for_file_message">No hay ninguna aplicación disponible para abrir este tipo de archivo</string>
+    <string name="language_selector_label">Seleccionar Idioma</string>
+    <string name="theme_selector_label">Seleccionar Tema</string>
+    <string name="export_success_local_and_sync">Copia de seguridad guardada localmente y en la carpeta de sinc.</string>
+    <string name="export_success_local">Copia de seguridad guardada con éxito</string>
+    <string name="export_success_sync">Copia de seguridad exportada a la carpeta de sinc.</string>
+    <string name="export_error_no_location">Configura un directorio de sinc. o elige una ubicación manual para guardar.</string>
+    <string name="export_error_prefix">Error al exportar: %1$s</string>
+</resources>

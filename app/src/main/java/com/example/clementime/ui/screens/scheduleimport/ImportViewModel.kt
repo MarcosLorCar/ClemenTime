@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.clementime.data.importing.model.JsonMatter
 import com.example.clementime.data.importing.model.ScheduleJsonSchema
+import com.example.clementime.data.importing.model.SelectedMatter
 import com.example.clementime.data.importing.repository.ImportRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +20,8 @@ sealed interface ImportUiState {
     object Parsing : ImportUiState
     data class Selection(
         val schema: ScheduleJsonSchema,
-        val selectedMatters: Set<JsonMatter>
+        val selectedMatters: Set<SelectedMatter>,
+        val searchQuery: String = ""
     ) : ImportUiState
     object Importing : ImportUiState
     object Success : ImportUiState
@@ -45,10 +47,9 @@ class ImportViewModel @Inject constructor(
                 val result = repository.parseJsonString(jsonString)
                 result.fold(
                     onSuccess = { schema ->
-                        // By default, pre-select all matters in the JSON
                         _uiState.value = ImportUiState.Selection(
                             schema = schema,
-                            selectedMatters = schema.matters.toSet()
+                            selectedMatters = emptySet()
                         )
                     },
                     onFailure = { error ->
@@ -61,14 +62,66 @@ class ImportViewModel @Inject constructor(
         }
     }
 
-    fun toggleMatterSelection(matter: JsonMatter) {
+    fun toggleMatterSelection(matter: JsonMatter, groupName: String) {
+        val currentState = _uiState.value
+        if (currentState is ImportUiState.Selection) {
+            val selectedMatter = SelectedMatter(matter, groupName)
+            val updatedSelection = currentState.selectedMatters.toMutableSet()
+            if (updatedSelection.contains(selectedMatter)) {
+                updatedSelection.remove(selectedMatter)
+            } else {
+                updatedSelection.add(selectedMatter)
+            }
+            _uiState.value = currentState.copy(selectedMatters = updatedSelection)
+        }
+    }
+
+    fun toggleAllMatters(targetMatters: Collection<SelectedMatter>) {
         val currentState = _uiState.value
         if (currentState is ImportUiState.Selection) {
             val updatedSelection = currentState.selectedMatters.toMutableSet()
-            if (updatedSelection.contains(matter)) {
-                updatedSelection.remove(matter)
+            val allSelected = targetMatters.isNotEmpty() && targetMatters.all { updatedSelection.contains(it) }
+            if (allSelected) {
+                updatedSelection.removeAll(targetMatters.toSet())
             } else {
-                updatedSelection.add(matter)
+                updatedSelection.addAll(targetMatters)
+            }
+            _uiState.value = currentState.copy(selectedMatters = updatedSelection)
+        }
+    }
+
+    fun toggleSectionMatters(sectionMatters: Collection<SelectedMatter>) {
+        toggleAllMatters(sectionMatters)
+    }
+
+    fun selectAllMatters(matters: Collection<SelectedMatter>? = null) {
+        val currentState = _uiState.value
+        if (currentState is ImportUiState.Selection) {
+            val toSelect = matters ?: run {
+                val fromRoot = currentState.schema.matters.map { SelectedMatter(it, "General") }
+                val fromYears = currentState.schema.years.flatMap { year ->
+                    val yearCommon = year.matters.map { SelectedMatter(it, "${year.name} Common") }
+                    val fromGroups = year.groups.flatMap { group ->
+                        group.matters.map { SelectedMatter(it, "${year.name} ${group.name}") }
+                    }
+                    yearCommon + fromGroups
+                }
+                fromRoot + fromYears
+            }
+            val updatedSelection = currentState.selectedMatters.toMutableSet()
+            updatedSelection.addAll(toSelect)
+            _uiState.value = currentState.copy(selectedMatters = updatedSelection)
+        }
+    }
+
+    fun deselectAllMatters(matters: Collection<SelectedMatter>? = null) {
+        val currentState = _uiState.value
+        if (currentState is ImportUiState.Selection) {
+            val updatedSelection = currentState.selectedMatters.toMutableSet()
+            if (matters == null) {
+                updatedSelection.clear()
+            } else {
+                updatedSelection.removeAll(matters.toSet())
             }
             _uiState.value = currentState.copy(selectedMatters = updatedSelection)
         }
@@ -86,6 +139,13 @@ class ImportViewModel @Inject constructor(
                     _uiState.value = ImportUiState.Error("Import failed: ${e.localizedMessage}")
                 }
             }
+        }
+    }
+
+    fun updateSearchQuery(query: String) {
+        val currentState = _uiState.value
+        if (currentState is ImportUiState.Selection) {
+            _uiState.value = currentState.copy(searchQuery = query)
         }
     }
 

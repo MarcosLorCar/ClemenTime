@@ -2,31 +2,58 @@ package com.example.clementime.data.importing.model
 
 import kotlinx.serialization.Serializable
 
+/**
+ * Root schema for imported JSON schedules.
+ */
 @Serializable
 data class ScheduleJsonSchema(
-    val version: Int = 1,
-    val title: String? = null,
-    val courseGroup: String? = null,
+    val version: Int = 1,                 // Schema version for future-proofing compatibility
+    val title: String? = null,            // Descriptive name of the schedule (e.g. "First Semester 2026/27")
+    val matters: List<JsonMatter> = emptyList(), // Root matters (Common for everyone)
+    val years: List<JsonYear> = emptyList()
+)
+
+/**
+ * Representation of a year level in the JSON schema.
+ */
+@Serializable
+data class JsonYear(
+    val name: String,                     // e.g. "1º"
+    val matters: List<JsonMatter> = emptyList(), // Matters common to all groups in this year
+    val groups: List<JsonGroup> = emptyList()
+)
+
+/**
+ * Representation of a course group/section in the JSON schema.
+ */
+@Serializable
+data class JsonGroup(
+    val name: String,                     // e.g. "A"
     val matters: List<JsonMatter> = emptyList()
 )
 
+/**
+ * Representation of a subject/matter in the JSON schema.
+ */
 @Serializable
 data class JsonMatter(
-    val code: String,
-    val name: String,
-    val color: Int? = null,
-    val courseGroup: String? = null,
+    val code: String,                     // Unique subject identifier (e.g. "SO")
+    val name: String,                     // Full name of the subject (e.g. "Sistemas Operativos")
+    val color: Int? = null,               // Color represented as ARGB Int (e.g. 0xFF4CAF50)
     val theorySlots: List<JsonTimeSlot> = emptyList(),
-    val labVariants: Map<String, List<JsonTimeSlot>> = emptyMap()
+    val labVariants: Map<String, List<JsonTimeSlot>> = emptyMap() // Map of lab variants, keyed by group name (e.g. "Lab-A1")
 )
 
+/**
+ * Class schedule slot details in the JSON schema.
+ */
 @Serializable
 data class JsonTimeSlot(
-    val dayOfWeek: String, // e.g. "MONDAY"
-    val startTime: String, // e.g. "08:30"
-    val endTime: String,   // e.g. "10:00"
-    val classroom: String? = null,
-    val groupName: String? = null, // e.g. "Lab-A1"
-    val entryType: String = "THEORY", // "THEORY", "LAB", "EXAM", "SEMINAR"
-    val professor: String? = null
+    val dayOfWeek: String,                // e.g. "MONDAY" (matching DayOfWeek enum names)
+    val startTime: String,                // Format: "HH:mm" (e.g. "08:30")
+    val endTime: String,                  // Format: "HH:mm" (e.g. "10:00")
+    val classroom: String? = null,        // Classroom or room number
+    val groupName: String? = null,        // Specific sub-group or variant name, null for theory
+    val entryType: String = "THEORY",     // Class type: "THEORY" or "LAB"
+    val professor: String? = null         // Instructor's name
 )

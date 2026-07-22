@@ -3,6 +3,8 @@ package com.example.clementime.data
 import androidx.room.TypeConverter
 import java.time.DayOfWeek
 import java.time.LocalTime
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
 
 class Converters {
     @TypeConverter
@@ -33,5 +35,17 @@ class Converters {
     @TypeConverter
     fun toEntryType(value: String?): EntryType? {
         return value?.let { EntryType.valueOf(it) }
+    }
+
+    private val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+
+    @TypeConverter
+    fun fromAttachedFiles(value: List<AttachedFileItem>?): String? {
+        return value?.let { json.encodeToString(it) }
+    }
+
+    @TypeConverter
+    fun toAttachedFiles(value: String?): List<AttachedFileItem>? {
+        return value?.let { json.decodeFromString(it) }
     }
 }
