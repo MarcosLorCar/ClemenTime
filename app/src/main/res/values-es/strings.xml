@@ -78,4 +78,12 @@
     <string name="export_success_sync">Copia de seguridad exportada a la carpeta de sinc.</string>
     <string name="export_error_no_location">Configura un directorio de sinc. o elige una ubicación manual para guardar.</string>
     <string name="export_error_prefix">Error al exportar: %1$s</string>
+    <string name="import_library_title">Biblioteca de Importación</string>
+    <string name="import_select_file_device">Importar JSON desde el dispositivo</string>
+    <string name="import_bundled_label">Incluido</string>
+    <string name="import_custom_label">Personalizado</string>
+    <string name="import_delete_confirm_title">Eliminar Archivo de Importación</string>
+    <string name="import_delete_confirm_message">¿Estás seguro de que deseas eliminar \"%1$s\" de tu biblioteca de importación?</string>
+    <string name="no_schedule_data">Sin datos de horario</string>
+    <string name="no_schedule_data_subtitle">Importa un horario o añade asignaturas para empezar.</string>
 </resources>

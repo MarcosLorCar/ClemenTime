@@ -4,24 +4,33 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.clementime.data.importing.model.ImportFile
 import com.example.clementime.data.importing.model.JsonMatter
 import com.example.clementime.data.importing.model.ScheduleJsonSchema
 import com.example.clementime.data.importing.model.SelectedMatter
 import com.example.clementime.data.importing.repository.ImportRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 import javax.inject.Inject
 
 sealed interface ImportUiState {
-    object Idle : ImportUiState
+    object LoadingLibrary : ImportUiState
+    data class Library(
+        val files: List<ImportFile>,
+        val error: String? = null
+    ) : ImportUiState
     object Parsing : ImportUiState
     data class Selection(
         val schema: ScheduleJsonSchema,
         val selectedMatters: Set<SelectedMatter>,
-        val searchQuery: String = ""
+        val searchQuery: String = "",
+        val selectedFile: ImportFile
     ) : ImportUiState
     object Importing : ImportUiState
     object Success : ImportUiState
@@ -33,23 +42,44 @@ class ImportViewModel @Inject constructor(
     private val repository: ImportRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<ImportUiState>(ImportUiState.Idle)
+    private val _uiState = MutableStateFlow<ImportUiState>(ImportUiState.LoadingLibrary)
     val uiState: StateFlow<ImportUiState> = _uiState.asStateFlow()
 
-    fun loadJsonFromUri(context: Context, uri: Uri) {
+    fun loadLibrary(context: Context) {
+        viewModelScope.launch {
+            _uiState.value = ImportUiState.LoadingLibrary
+            try {
+                val files = repository.listAvailableImportFiles(context)
+                _uiState.value = ImportUiState.Library(files)
+            } catch (e: Exception) {
+                _uiState.value = ImportUiState.Library(emptyList(), "Failed to load library: ${e.localizedMessage}")
+            }
+        }
+    }
+
+    fun loadFile(context: Context, file: ImportFile) {
         viewModelScope.launch {
             _uiState.value = ImportUiState.Parsing
             try {
-                val jsonString = context.contentResolver.openInputStream(uri)?.use { stream ->
-                    stream.bufferedReader().readText()
-                } ?: throw Exception("Could not open file stream")
+                val jsonString = if (file.isBundled) {
+                    withContext(Dispatchers.IO) {
+                        context.assets.open("primer_cuatrimestre.json").use { stream ->
+                            stream.bufferedReader().readText()
+                        }
+                    }
+                } else {
+                    withContext(Dispatchers.IO) {
+                        File(file.fileUri!!).readText()
+                    }
+                }
 
                 val result = repository.parseJsonString(jsonString)
                 result.fold(
                     onSuccess = { schema ->
                         _uiState.value = ImportUiState.Selection(
                             schema = schema,
-                            selectedMatters = emptySet()
+                            selectedMatters = emptySet(),
+                            selectedFile = file
                         )
                     },
                     onFailure = { error ->
@@ -59,6 +89,49 @@ class ImportViewModel @Inject constructor(
             } catch (e: Exception) {
                 _uiState.value = ImportUiState.Error("Failed to read file: ${e.localizedMessage}")
             }
+        }
+    }
+
+    fun selectAndSaveNewFile(context: Context, uri: Uri) {
+        viewModelScope.launch {
+            _uiState.value = ImportUiState.Parsing
+            val result = repository.saveJsonFile(context, uri)
+            result.fold(
+                onSuccess = { importFile ->
+                    loadFile(context, importFile)
+                },
+                onFailure = { error ->
+                    _uiState.value = ImportUiState.Error("Failed to save and parse file: ${error.localizedMessage}")
+                }
+            )
+        }
+    }
+
+    fun deleteFile(context: Context, file: ImportFile) {
+        viewModelScope.launch {
+            if (!file.isBundled) {
+                repository.deleteCustomImportFile(context, file.id)
+                loadLibrary(context)
+            }
+        }
+    }
+
+    fun resetToLibrary(context: Context) {
+        loadLibrary(context)
+    }
+
+    fun loadJsonFromUri(context: Context, uri: Uri) {
+        viewModelScope.launch {
+            _uiState.value = ImportUiState.Parsing
+            val result = repository.saveJsonFile(context, uri)
+            result.fold(
+                onSuccess = { importFile ->
+                    loadFile(context, importFile)
+                },
+                onFailure = { error ->
+                    _uiState.value = ImportUiState.Error("Failed to parse file: ${error.localizedMessage}")
+                }
+            )
         }
     }
 
@@ -137,6 +210,6 @@ class ImportViewModel @Inject constructor(
     }
 
     fun resetState() {
-        _uiState.value = ImportUiState.Idle
+        _uiState.value = ImportUiState.LoadingLibrary
     }
 }

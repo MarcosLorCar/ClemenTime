@@ -31,12 +31,14 @@ import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -90,6 +92,7 @@ fun MattersScreen(
     onMenuClick: () -> Unit,
     onNavigateToAddEditMatter: (Long?) -> Unit,
     onNavigateToSchedule: (DayOfWeek) -> Unit = {},
+    onNavigateToImport: () -> Unit,
     viewModel: MattersViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -99,7 +102,8 @@ fun MattersScreen(
         onEvent = viewModel::onEvent,
         onMenuClick = onMenuClick,
         onNavigateToAddEditMatter = onNavigateToAddEditMatter,
-        onNavigateToSchedule = onNavigateToSchedule
+        onNavigateToSchedule = onNavigateToSchedule,
+        onNavigateToImport = onNavigateToImport
     )
 }
 
@@ -110,7 +114,8 @@ fun MattersContent(
     onEvent: (MattersUiEvent) -> Unit,
     onMenuClick: () -> Unit,
     onNavigateToAddEditMatter: (Long?) -> Unit,
-    onNavigateToSchedule: (DayOfWeek) -> Unit = {}
+    onNavigateToSchedule: (DayOfWeek) -> Unit = {},
+    onNavigateToImport: () -> Unit
 ) {
     var matterToDelete by remember { mutableStateOf<Matter?>(null) }
     var showNukeDialog by remember { mutableStateOf(false) }
@@ -375,6 +380,12 @@ fun MattersContent(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
                     )
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Button(onClick = onNavigateToImport) {
+                        Icon(imageVector = Icons.Default.CloudUpload, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.import_schedule_title))
+                    }
                 }
             }
         } else {
@@ -845,7 +856,8 @@ private fun MattersContentPreviewLight() {
             uiState = MattersUiState(matters = previewMockMatters),
             onEvent = {},
             onMenuClick = {},
-            onNavigateToAddEditMatter = {}
+            onNavigateToAddEditMatter = {},
+            onNavigateToImport = {}
         )
     }
 }

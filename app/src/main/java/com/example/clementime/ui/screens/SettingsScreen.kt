@@ -59,7 +59,7 @@ import com.example.clementime.ui.theme.ClemenTimeTheme
 @Composable
 fun SettingsScreen(
     onMenuClick: () -> Unit,
-    onNavigateToImport: (String) -> Unit,
+    onNavigateToImport: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(
         checkNotNull(
             LocalViewModelStoreOwner.current
@@ -79,14 +79,6 @@ fun SettingsScreen(
             viewModel.exportData(context, uri) { status ->
                 exportStatus = status
             }
-        }
-    }
-
-    val filePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        if (uri != null) {
-            onNavigateToImport(uri.toString())
         }
     }
 
@@ -113,9 +105,7 @@ fun SettingsScreen(
         onExportData = {
             createDocLauncher.launch("clementime_export.json")
         },
-        onImportClick = {
-            filePickerLauncher.launch("application/json")
-        },
+        onImportClick = onNavigateToImport,
         onMenuClick = onMenuClick
     )
 }

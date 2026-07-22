@@ -77,4 +77,12 @@
     <string name="export_success_sync">Backup exported to Sync Folder</string>
     <string name="export_error_no_location">Please configure a Sync Directory or choose a manual save location.</string>
     <string name="export_error_prefix">Export failed: %1$s</string>
+    <string name="import_library_title">Import Library</string>
+    <string name="import_select_file_device">Import JSON from device</string>
+    <string name="import_bundled_label">Bundled</string>
+    <string name="import_custom_label">Custom</string>
+    <string name="import_delete_confirm_title">Delete Import File</string>
+    <string name="import_delete_confirm_message">Are you sure you want to remove \"%1$s\" from your import library?</string>
+    <string name="no_schedule_data">No schedule data</string>
+    <string name="no_schedule_data_subtitle">Import a schedule or add subjects to get started.</string>
 </resources>

@@ -1,5 +1,6 @@
 package com.example.clementime.ui.screens.scheduleimport
 
+import com.example.clementime.data.importing.model.ImportFile
 import com.example.clementime.data.importing.model.JsonGroup
 import com.example.clementime.data.importing.model.JsonMatter
 import com.example.clementime.data.importing.model.JsonYear
@@ -60,7 +61,8 @@ class ImportViewModelTest {
         val stateFlow = stateField.get(viewModel) as kotlinx.coroutines.flow.MutableStateFlow<ImportUiState>
         stateFlow.value = ImportUiState.Selection(
             schema = sampleSchema,
-            selectedMatters = emptySet()
+            selectedMatters = emptySet(),
+            selectedFile = ImportFile("bundled", "Test Bundled", true)
         )
 
         viewModel.selectAllMatters()
@@ -84,7 +86,8 @@ class ImportViewModelTest {
         val stateFlow = stateField.get(viewModel) as kotlinx.coroutines.flow.MutableStateFlow<ImportUiState>
         stateFlow.value = ImportUiState.Selection(
             schema = sampleSchema,
-            selectedMatters = setOf(selected1, selected2, selected3)
+            selectedMatters = setOf(selected1, selected2, selected3),
+            selectedFile = ImportFile("bundled", "Test Bundled", true)
         )
 
         // Deselect matter1
@@ -109,7 +112,8 @@ class ImportViewModelTest {
         val stateFlow = stateField.get(viewModel) as kotlinx.coroutines.flow.MutableStateFlow<ImportUiState>
         stateFlow.value = ImportUiState.Selection(
             schema = sampleSchema,
-            selectedMatters = setOf(selected1, selected2, selected3)
+            selectedMatters = setOf(selected1, selected2, selected3),
+            selectedFile = ImportFile("bundled", "Test Bundled", true)
         )
 
         val sectionA = listOf(selected1, selected2)
@@ -138,7 +142,8 @@ class ImportViewModelTest {
         val stateFlow = stateField.get(viewModel) as kotlinx.coroutines.flow.MutableStateFlow<ImportUiState>
         stateFlow.value = ImportUiState.Selection(
             schema = sampleSchema,
-            selectedMatters = setOf(selected1, selected2, selected3)
+            selectedMatters = setOf(selected1, selected2, selected3),
+            selectedFile = ImportFile("bundled", "Test Bundled", true)
         )
 
         val allFlattened = listOf(selected1, selected2, selected3)

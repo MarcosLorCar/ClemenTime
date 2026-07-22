@@ -2,6 +2,7 @@ package com.example.clementime.ui.screens.scheduleimport
 
 import android.net.Uri
 
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -25,7 +27,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -41,6 +47,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TriStateCheckbox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -59,6 +66,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.clementime.R
+import com.example.clementime.data.importing.model.ImportFile
 import com.example.clementime.data.importing.model.JsonGroup
 import com.example.clementime.data.importing.model.JsonMatter
 import com.example.clementime.data.importing.model.JsonYear
@@ -69,7 +77,6 @@ import com.example.clementime.ui.theme.ClemenTimeTheme
 
 @Composable
 fun ImportScreen(
-    uriString: String,
     onMenuClick: () -> Unit,
     onNavigateBack: () -> Unit,
     viewModel: ImportViewModel = hiltViewModel(),
@@ -77,14 +84,14 @@ fun ImportScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
 
-    LaunchedEffect(uriString) {
-        viewModel.loadJsonFromUri(context, Uri.parse(uriString))
+    LaunchedEffect(Unit) {
+        viewModel.loadLibrary(context)
     }
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
-        uri?.let { viewModel.loadJsonFromUri(context, it) }
+        uri?.let { viewModel.selectAndSaveNewFile(context, it) }
     }
 
     LaunchedEffect(uiState) {
@@ -93,25 +100,226 @@ fun ImportScreen(
         }
     }
 
-    ImportContent(
-        uiState = uiState,
-        onMenuClick = onMenuClick,
-        onSelectFileClick = { filePickerLauncher.launch("application/json") },
-        onToggleMatter = { matter, group -> viewModel.toggleMatterSelection(matter, group) },
-        onToggleAll = { viewModel.toggleAllMatters(it) },
-        onToggleSection = { viewModel.toggleSectionMatters(it) },
-        onUpdateSearchQuery = viewModel::updateSearchQuery,
-        onConfirmImport = { viewModel.confirmImport() },
-        onResetState = { viewModel.resetState() }
-    )
+    if (uiState is ImportUiState.Selection) {
+        BackHandler {
+            viewModel.resetToLibrary(context)
+        }
+    }
+
+    when (val state = uiState) {
+        is ImportUiState.LoadingLibrary, ImportUiState.Parsing, ImportUiState.Importing -> {
+            Scaffold(
+                topBar = {
+                    ClemenTimeTopBar(
+                        title = stringResource(R.string.import_schedule_title),
+                        onMenuClick = onMenuClick
+                    )
+                }
+            ) { paddingValues ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+        }
+        is ImportUiState.Library -> {
+            ImportLibraryContent(
+                files = state.files,
+                onMenuClick = onMenuClick,
+                onFileClick = { file -> viewModel.loadFile(context, file) },
+                onDeleteFileClick = { file -> viewModel.deleteFile(context, file) },
+                onSelectNewFileClick = { filePickerLauncher.launch("application/json") }
+            )
+        }
+        is ImportUiState.Selection -> {
+            ImportContent(
+                uiState = state,
+                onToggleMatter = { matter, group -> viewModel.toggleMatterSelection(matter, group) },
+                onToggleAll = { viewModel.toggleAllMatters(it) },
+                onToggleSection = { viewModel.toggleSectionMatters(it) },
+                onUpdateSearchQuery = viewModel::updateSearchQuery,
+                onConfirmImport = { viewModel.confirmImport() },
+                onResetState = { viewModel.resetToLibrary(context) }
+            )
+        }
+        is ImportUiState.Error -> {
+            Scaffold(
+                topBar = {
+                    ClemenTimeTopBar(
+                        title = stringResource(R.string.import_schedule_title),
+                        onMenuClick = onMenuClick
+                    )
+                }
+            ) { paddingValues ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(text = state.message, color = MaterialTheme.colorScheme.error)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = { viewModel.loadLibrary(context) }) {
+                            Text(stringResource(R.string.try_again))
+                        }
+                    }
+                }
+            }
+        }
+        is ImportUiState.Success -> {
+            // Handled by LaunchedEffect
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ImportLibraryContent(
+    files: List<ImportFile>,
+    onMenuClick: () -> Unit,
+    onFileClick: (ImportFile) -> Unit,
+    onDeleteFileClick: (ImportFile) -> Unit,
+    onSelectNewFileClick: () -> Unit
+) {
+    var fileToDelete by remember { mutableStateOf<ImportFile?>(null) }
+
+    fileToDelete?.let { file ->
+        AlertDialog(
+            onDismissRequest = { fileToDelete = null },
+            title = { Text(stringResource(R.string.import_delete_confirm_title)) },
+            text = { Text(stringResource(R.string.import_delete_confirm_message, file.title)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDeleteFileClick(file)
+                        fileToDelete = null
+                    }
+                ) {
+                    Text(stringResource(R.string.delete_matter_confirm), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { fileToDelete = null }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    Scaffold(
+        topBar = {
+            ClemenTimeTopBar(
+                title = stringResource(R.string.import_schedule_title),
+                onMenuClick = onMenuClick
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp)
+        ) {
+            Text(
+                text = "Select a schedule template from the library or import a custom schedule JSON file to pick subjects.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(files, key = { it.id }) { file ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onFileClick(file) },
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Description,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(36.dp)
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = file.title,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(4.dp),
+                                    color = if (file.isBundled) {
+                                        MaterialTheme.colorScheme.secondaryContainer
+                                    } else {
+                                        MaterialTheme.colorScheme.tertiaryContainer
+                                    }
+                                ) {
+                                    Text(
+                                        text = stringResource(
+                                            if (file.isBundled) R.string.import_bundled_label else R.string.import_custom_label
+                                        ),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                        color = if (file.isBundled) {
+                                            MaterialTheme.colorScheme.onSecondaryContainer
+                                        } else {
+                                            MaterialTheme.colorScheme.onTertiaryContainer
+                                        }
+                                    )
+                                }
+                            }
+                            if (!file.isBundled) {
+                                IconButton(onClick = { fileToDelete = file }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Delete custom file",
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = onSelectNewFileClick,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(imageVector = Icons.Default.CloudUpload, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(R.string.import_select_file_device))
+            }
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ImportContent(
-    uiState: ImportUiState,
-    onMenuClick: () -> Unit,
-    onSelectFileClick: () -> Unit,
+    uiState: ImportUiState.Selection,
     onToggleMatter: (JsonMatter, String) -> Unit,
     onToggleAll: (Collection<SelectedMatter>) -> Unit,
     onToggleSection: (Collection<SelectedMatter>) -> Unit,
@@ -124,23 +332,21 @@ fun ImportContent(
     Scaffold(
         topBar = {
             ClemenTimeTopBar(
-                title = stringResource(R.string.import_schedule_title),
-                onMenuClick = onMenuClick,
+                title = uiState.schema.title ?: stringResource(R.string.import_schedule_title),
+                onNavigateBack = onResetState,
                 actions = {
-                    if (uiState is ImportUiState.Selection) {
-                        IconButton(
-                            onClick = {
-                                isSearchVisible = !isSearchVisible
-                                if (!isSearchVisible) {
-                                    onUpdateSearchQuery("")
-                                }
+                    IconButton(
+                        onClick = {
+                            isSearchVisible = !isSearchVisible
+                            if (!isSearchVisible) {
+                                onUpdateSearchQuery("")
                             }
-                        ) {
-                            Icon(
-                                imageVector = if (isSearchVisible) Icons.Default.Close else Icons.Default.Search,
-                                contentDescription = if (isSearchVisible) "Close search" else "Search subjects"
-                            )
                         }
+                    ) {
+                        Icon(
+                            imageVector = if (isSearchVisible) Icons.Default.Close else Icons.Default.Search,
+                            contentDescription = if (isSearchVisible) "Close search" else "Search subjects"
+                        )
                     }
                 }
             )
@@ -153,254 +359,228 @@ fun ImportContent(
                 .padding(16.dp),
             contentAlignment = Alignment.Center
         ) {
-            when (uiState) {
-                is ImportUiState.Idle -> {
-                    Button(onClick = onSelectFileClick) {
-                        Text(stringResource(R.string.select_file_button))
-                    }
+            val availableYears = remember(uiState.schema) {
+                val years = uiState.schema.years.map { it.name }.sorted()
+                if (uiState.schema.matters.isNotEmpty()) {
+                    (listOf("General") + years).distinct()
+                } else {
+                    years.distinct()
                 }
+            }
 
-                is ImportUiState.Parsing, ImportUiState.Importing -> {
-                    CircularProgressIndicator()
+            var selectedYearFilter by remember { mutableStateOf<String?>(availableYears.firstOrNull()) }
+
+            // All matters in the schema flattened with their group/year info
+            val allFlattenedMatters = remember(uiState.schema) {
+                val fromRoot = uiState.schema.matters.map { SelectedMatter(it, "General") }
+                val fromYears = uiState.schema.years.flatMap { year ->
+                    val yearCommon = year.matters.map { SelectedMatter(it, "${year.name} Common") }
+                    val fromGroups = year.groups.flatMap { group ->
+                        group.matters.map { SelectedMatter(it, "${year.name} ${group.name}") }
+                    }
+                    yearCommon + fromGroups
                 }
+                fromRoot + fromYears
+            }
 
-                is ImportUiState.Error -> {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(text = uiState.message, color = MaterialTheme.colorScheme.error)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = onResetState) {
-                            Text(stringResource(R.string.try_again))
-                        }
-                    }
+            val filteredMatters = remember(allFlattenedMatters, selectedYearFilter, uiState.searchQuery) {
+                allFlattenedMatters.filter { selected ->
+                    val yearMatch = selectedYearFilter == null || selected.courseGroup.startsWith(selectedYearFilter!!)
+                    val queryMatch = uiState.searchQuery.isBlank() ||
+                            selected.matter.name.contains(uiState.searchQuery, ignoreCase = true) ||
+                            selected.matter.code.contains(uiState.searchQuery, ignoreCase = true)
+                    yearMatch && queryMatch
                 }
+            }
 
-                is ImportUiState.Selection -> {
-                    val availableYears = remember(uiState.schema) {
-                        val years = uiState.schema.years.map { it.name }.sorted()
-                        if (uiState.schema.matters.isNotEmpty()) {
-                            (listOf("General") + years).distinct()
-                        } else {
-                            years.distinct()
-                        }
-                    }
+            val groupedMatters = remember(filteredMatters) {
+                filteredMatters.groupBy { it.courseGroup }
+            }
 
-                    var selectedYearFilter by remember { mutableStateOf<String?>(availableYears.firstOrNull()) }
+            val globalToggleState = remember(filteredMatters, uiState.selectedMatters) {
+                filteredMatters.calculateToggleState(uiState.selectedMatters)
+            }
 
-                    // All matters in the schema flattened with their group/year info
-                    val allFlattenedMatters = remember(uiState.schema) {
-                        val fromRoot = uiState.schema.matters.map { SelectedMatter(it, "General") }
-                        val fromYears = uiState.schema.years.flatMap { year ->
-                            val yearCommon = year.matters.map { SelectedMatter(it, "${year.name} Common") }
-                            val fromGroups = year.groups.flatMap { group ->
-                                group.matters.map { SelectedMatter(it, "${year.name} ${group.name}") }
-                            }
-                            yearCommon + fromGroups
-                        }
-                        fromRoot + fromYears
-                    }
+            Column(modifier = Modifier.fillMaxSize()) {
+                Text(
+                    text = uiState.schema.title ?: "Select Subjects to Import",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
 
-                    val filteredMatters = remember(allFlattenedMatters, selectedYearFilter, uiState.searchQuery) {
-                        allFlattenedMatters.filter { selected ->
-                            val yearMatch = selectedYearFilter == null || selected.courseGroup.startsWith(selectedYearFilter!!)
-                            val queryMatch = uiState.searchQuery.isBlank() ||
-                                    selected.matter.name.contains(uiState.searchQuery, ignoreCase = true) ||
-                                    selected.matter.code.contains(uiState.searchQuery, ignoreCase = true)
-                            yearMatch && queryMatch
-                        }
-                    }
-
-                    val groupedMatters = remember(filteredMatters) {
-                        filteredMatters.groupBy { it.courseGroup }
-                    }
-
-                    val globalToggleState = remember(filteredMatters, uiState.selectedMatters) {
-                        filteredMatters.calculateToggleState(uiState.selectedMatters)
-                    }
-
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        Text(
-                            text = uiState.schema.title ?: "Select Subjects to Import",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        AnimatedVisibility(visible = isSearchVisible) {
-                            OutlinedTextField(
-                                value = uiState.searchQuery,
-                                onValueChange = onUpdateSearchQuery,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 8.dp),
-                                placeholder = { Text("Search subjects...") },
-                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                                trailingIcon = {
-                                    if (uiState.searchQuery.isNotEmpty()) {
-                                        IconButton(onClick = { onUpdateSearchQuery("") }) {
-                                            Icon(Icons.Default.Clear, contentDescription = "Clear search")
-                                        }
-                                    }
-                                },
-                                singleLine = true,
-                                shape = CircleShape
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        if (availableYears.size > 1) {
-                            FlowRow(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                availableYears.forEach { year ->
-                                    FilterChip(
-                                        selected = selectedYearFilter == year,
-                                        onClick = {
-                                            selectedYearFilter = year
-                                        },
-                                        label = { Text(year) }
-                                    )
+                AnimatedVisibility(visible = isSearchVisible) {
+                    OutlinedTextField(
+                        value = uiState.searchQuery,
+                        onValueChange = onUpdateSearchQuery,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        placeholder = { Text("Search subjects...") },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                        trailingIcon = {
+                            if (uiState.searchQuery.isNotEmpty()) {
+                                IconButton(onClick = { onUpdateSearchQuery("") }) {
+                                    Icon(Icons.Default.Clear, contentDescription = "Clear search")
                                 }
                             }
-                            Spacer(modifier = Modifier.height(8.dp))
-                        }
+                        },
+                        singleLine = true,
+                        shape = CircleShape
+                    )
+                }
 
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onToggleAll(filteredMatters) }
-                        ) {
-                            Row(
+                Spacer(modifier = Modifier.height(12.dp))
+
+                if (availableYears.size > 1) {
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        availableYears.forEach { year ->
+                            FilterChip(
+                                selected = selectedYearFilter == year,
+                                onClick = {
+                                    selectedYearFilter = year
+                                },
+                                label = { Text(year) }
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onToggleAll(filteredMatters) }
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TriStateCheckbox(
+                            state = globalToggleState,
+                            onClick = { onToggleAll(filteredMatters) }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = if (globalToggleState == ToggleableState.On) {
+                                    stringResource(R.string.deselect_all)
+                                } else {
+                                    stringResource(R.string.select_all)
+                                },
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = stringResource(
+                                    R.string.selected_count,
+                                    filteredMatters.count { uiState.selectedMatters.contains(it) },
+                                    filteredMatters.size
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    groupedMatters.forEach { (fullGroupName, selectedMatters) ->
+                        val sectionToggleState = selectedMatters.calculateToggleState(uiState.selectedMatters)
+
+                        item(key = "header_$fullGroupName") {
+                            Surface(
+                                color = MaterialTheme.colorScheme.secondaryContainer,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 8.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                                    .padding(top = 12.dp, bottom = 6.dp)
+                                    .clickable { onToggleSection(selectedMatters) },
+                                shape = RoundedCornerShape(8.dp)
                             ) {
-                                TriStateCheckbox(
-                                    state = globalToggleState,
-                                    onClick = { onToggleAll(filteredMatters) }
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Column(modifier = Modifier.weight(1f)) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    TriStateCheckbox(
+                                        state = sectionToggleState,
+                                        onClick = { onToggleSection(selectedMatters) }
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = if (globalToggleState == ToggleableState.On) {
-                                            stringResource(R.string.deselect_all)
-                                        } else {
-                                            stringResource(R.string.select_all)
-                                        },
+                                        text = fullGroupName,
                                         style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        modifier = Modifier.weight(1f)
                                     )
                                     Text(
                                         text = stringResource(
-                                            R.string.selected_count,
-                                            filteredMatters.count { uiState.selectedMatters.contains(it) },
-                                            filteredMatters.size
+                                            R.string.section_selected_count,
+                                            selectedMatters.count { uiState.selectedMatters.contains(it) },
+                                            selectedMatters.size
                                         ),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f),
+                                        modifier = Modifier.padding(end = 4.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        items(
+                            items = selectedMatters,
+                            key = { "${fullGroupName}_${it.matter.code}" }
+                        ) { selected ->
+                            val isSelected = uiState.selectedMatters.contains(selected)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onToggleMatter(selected.matter, fullGroupName) }
+                                    .padding(vertical = 4.dp, horizontal = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(
+                                    checked = isSelected,
+                                    onCheckedChange = { onToggleMatter(selected.matter, fullGroupName) }
+                                )
+                                Column(modifier = Modifier.padding(start = 8.dp)) {
+                                    Text(text = selected.matter.name, style = MaterialTheme.typography.bodyLarge)
+                                    Text(
+                                        text = selected.matter.code,
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        color = MaterialTheme.colorScheme.secondary
                                     )
                                 }
                             }
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        LazyColumn(
-                            modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            groupedMatters.forEach { (fullGroupName, selectedMatters) ->
-                                val sectionToggleState = selectedMatters.calculateToggleState(uiState.selectedMatters)
-
-                                item(key = "header_$fullGroupName") {
-                                    Surface(
-                                        color = MaterialTheme.colorScheme.secondaryContainer,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(top = 12.dp, bottom = 6.dp)
-                                            .clickable { onToggleSection(selectedMatters) },
-                                        shape = RoundedCornerShape(8.dp)
-                                    ) {
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(horizontal = 12.dp, vertical = 8.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            TriStateCheckbox(
-                                                state = sectionToggleState,
-                                                onClick = { onToggleSection(selectedMatters) }
-                                            )
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text(
-                                                text = fullGroupName,
-                                                style = MaterialTheme.typography.titleMedium,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                                modifier = Modifier.weight(1f)
-                                            )
-                                            Text(
-                                                text = stringResource(
-                                                    R.string.section_selected_count,
-                                                    selectedMatters.count { uiState.selectedMatters.contains(it) },
-                                                    selectedMatters.size
-                                                ),
-                                                style = MaterialTheme.typography.labelMedium,
-                                                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f),
-                                                modifier = Modifier.padding(end = 4.dp)
-                                            )
-                                        }
-                                    }
-                                }
-
-                                items(
-                                    items = selectedMatters,
-                                    key = { "${fullGroupName}_${it.matter.code}" }
-                                ) { selected ->
-                                    val isSelected = uiState.selectedMatters.contains(selected)
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clickable { onToggleMatter(selected.matter, fullGroupName) }
-                                            .padding(vertical = 4.dp, horizontal = 4.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Checkbox(
-                                            checked = isSelected,
-                                            onCheckedChange = { onToggleMatter(selected.matter, fullGroupName) }
-                                        )
-                                        Column(modifier = Modifier.padding(start = 8.dp)) {
-                                            Text(text = selected.matter.name, style = MaterialTheme.typography.bodyLarge)
-                                            Text(
-                                                text = selected.matter.code,
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.secondary
-                                            )
-                                        }
-                                    }
-                                    HorizontalDivider(
-                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-                                        modifier = Modifier.padding(start = 48.dp)
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(
-                            onClick = onConfirmImport,
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = uiState.selectedMatters.isNotEmpty()
-                        ) {
-                            Text(stringResource(R.string.import_selected_button, uiState.selectedMatters.size))
+                            HorizontalDivider(
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                                modifier = Modifier.padding(start = 48.dp)
+                            )
                         }
                     }
                 }
 
-                else -> {}
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = onConfirmImport,
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = uiState.selectedMatters.isNotEmpty()
+                ) {
+                    Text(stringResource(R.string.import_selected_button, uiState.selectedMatters.size))
+                }
             }
         }
     }
@@ -448,10 +628,9 @@ private fun ImportContentPreview() {
         ImportContent(
             uiState = ImportUiState.Selection(
                 schema = sampleSchema,
-                selectedMatters = selectedMatters
+                selectedMatters = selectedMatters,
+                selectedFile = ImportFile("bundled", "Horarios 2026/2027 - 1º Cuatrimestre", true, null)
             ),
-            onMenuClick = {},
-            onSelectFileClick = {},
             onToggleMatter = { _, _ -> },
             onToggleAll = {},
             onToggleSection = {},

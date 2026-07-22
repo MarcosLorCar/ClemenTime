@@ -1,12 +1,23 @@
 package com.example.clementime.ui.screens
 
+
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.PrimaryTabRow
@@ -14,13 +25,16 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -35,6 +49,7 @@ import com.example.clementime.ui.components.ScheduleTimeline
 import com.example.clementime.ui.theme.ClemenTimeTheme
 import com.example.clementime.utils.TimelineCluster
 import com.example.clementime.utils.getNarrowLabel
+import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalTime
 import java.time.format.TextStyle
@@ -44,6 +59,7 @@ import java.util.Locale
 fun ScheduleScreen(
     onMenuClick: () -> Unit,
     onClickMatter: (Long, Long) -> Unit,
+    onNavigateToImport: () -> Unit,
     viewModel: ScheduleViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -52,7 +68,8 @@ fun ScheduleScreen(
         uiState = uiState,
         onChangeTab = viewModel::changeTab,
         onMenuClick = onMenuClick,
-        onClickMatter = onClickMatter
+        onClickMatter = onClickMatter,
+        onNavigateToImport = onNavigateToImport
     )
 }
 
@@ -63,7 +80,30 @@ fun ScheduleContent(
     onMenuClick: () -> Unit,
     onChangeTab: (ScheduleTab) -> Unit,
     onClickMatter: (Long, Long) -> Unit = { _, _ -> },
+    onNavigateToImport: () -> Unit,
 ) {
+    val coroutineScope = rememberCoroutineScope()
+    val tabs = ScheduleTab.entries
+    val pagerState = rememberPagerState(
+        initialPage = uiState.selectedTab.ordinal,
+        pageCount = { tabs.size }
+    )
+
+    // Synchronize Pager swipe with ViewModel state
+    LaunchedEffect(pagerState.currentPage) {
+        val newTab = tabs[pagerState.currentPage]
+        if (newTab != uiState.selectedTab) {
+            onChangeTab(newTab)
+        }
+    }
+
+    // Keep pager in sync if selectedTab changes externally
+    LaunchedEffect(uiState.selectedTab) {
+        if (pagerState.currentPage != uiState.selectedTab.ordinal) {
+            pagerState.animateScrollToPage(uiState.selectedTab.ordinal)
+        }
+    }
+
     Scaffold(
         topBar = {
             Column {
@@ -76,17 +116,21 @@ fun ScheduleContent(
 
                 if (uiState.scrollableTabs) {
                     PrimaryScrollableTabRow(
-                        selectedTabIndex = uiState.selectedTab.ordinal,
+                        selectedTabIndex = pagerState.currentPage,
                         containerColor = MaterialTheme.colorScheme.surface,
                         edgePadding = 16.dp
                     ) {
-                        ScheduleTab.entries.forEachIndexed { index, day ->
-                            val selected = index == uiState.selectedTab.ordinal
+                        tabs.forEachIndexed { index, day ->
+                            val selected = index == pagerState.currentPage
                             val fullWeekdayName = day.dayOfWeek.getDisplayName(TextStyle.FULL, locale)
                                 .replaceFirstChar { it.uppercase(locale) }
                             Tab(
                                 selected = selected,
-                                onClick = { onChangeTab(day) },
+                                onClick = {
+                                    coroutineScope.launch {
+                                        pagerState.animateScrollToPage(index)
+                                    }
+                                },
                                 text = {
                                     Text(
                                         text = fullWeekdayName,
@@ -102,14 +146,18 @@ fun ScheduleContent(
                     }
                 } else {
                     PrimaryTabRow(
-                        selectedTabIndex = uiState.selectedTab.ordinal,
+                        selectedTabIndex = pagerState.currentPage,
                         containerColor = MaterialTheme.colorScheme.surface,
                     ) {
-                        ScheduleTab.entries.forEachIndexed { index, day ->
-                            val selected = index == uiState.selectedTab.ordinal
+                        tabs.forEachIndexed { index, day ->
+                            val selected = index == pagerState.currentPage
                             Tab(
                                 selected = selected,
-                                onClick = { onChangeTab(day) }
+                                onClick = {
+                                    coroutineScope.launch {
+                                        pagerState.animateScrollToPage(index)
+                                    }
+                                }
                             ) {
                                 Box(
                                     modifier = Modifier
@@ -140,34 +188,83 @@ fun ScheduleContent(
             ) {
                 CircularProgressIndicator()
             }
-        } else {
-            val daySlots = remember(uiState.mattersWithSlots, uiState.selectedTab) {
-                uiState.mattersWithSlots.flatMap { matterWithSlots ->
-                    matterWithSlots.slots
-                        .filter { it.dayOfWeek == uiState.selectedTab.dayOfWeek }
-                        .map { slot -> matterWithSlots.matter to slot }
-                }
-            }
-
-            val clusters = remember(daySlots) {
-                groupSlotsIntoClusters(daySlots)
-            }
-
-            if (clusters.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentAlignment = Alignment.Center
+        } else if (uiState.mattersWithSlots.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(32.dp)
                 ) {
-                    Text("No classes scheduled for today.")
+                    Icon(
+                        imageVector = Icons.Default.Schedule,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = stringResource(R.string.no_schedule_data),
+                        style = MaterialTheme.typography.titleMedium,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.no_schedule_data_subtitle),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Button(onClick = onNavigateToImport) {
+                        Icon(imageVector = Icons.Default.CloudUpload, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.import_schedule_title))
+                    }
                 }
-            } else {
-                ScheduleTimeline(
-                    clusters = clusters,
-                    onClickMatter = onClickMatter,
-                    modifier = Modifier.padding(paddingValues)
-                )
+            }
+        } else {
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) { pageIndex ->
+                val currentDay = tabs[pageIndex]
+
+                val daySlots = remember(uiState.mattersWithSlots, currentDay) {
+                    uiState.mattersWithSlots.flatMap { matterWithSlots ->
+                        matterWithSlots.slots
+                            .filter { it.dayOfWeek == currentDay.dayOfWeek }
+                            .map { slot -> matterWithSlots.matter to slot }
+                    }
+                }
+
+                val clusters = remember(daySlots) {
+                    groupSlotsIntoClusters(daySlots)
+                }
+
+                if (clusters.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No classes scheduled for ${currentDay.name.lowercase().replaceFirstChar { it.uppercase() }}.",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                } else {
+                    ScheduleTimeline(
+                        clusters = clusters,
+                        onClickMatter = onClickMatter,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             }
         }
     }
@@ -265,6 +362,7 @@ fun ScheduleScreenPreview() {
             ),
             onChangeTab = {},
             onMenuClick = {},
+            onNavigateToImport = {}
         )
     }
 }

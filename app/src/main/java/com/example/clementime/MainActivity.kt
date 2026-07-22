@@ -196,13 +196,14 @@ fun ClemenTimeApp(
                     onClickMatter = { matterId, slotId ->
                         navController.navigate(AddEditMatterRoute(matterId, slotId))
                     },
+                    onNavigateToImport = {
+                        navController.navigate(ImportRoute)
+                    }
                 )
             }
 
-            composable<ImportRoute> { backStackEntry ->
-                val route = backStackEntry.toRoute<ImportRoute>()
+            composable<ImportRoute> {
                 ImportScreen(
-                    uriString = route.uriString,
                     onMenuClick = { scope.launch { drawerState.open() } },
                     onNavigateBack = {
                         navController.popBackStack<ScheduleListRoute>(inclusive = false)
@@ -213,8 +214,8 @@ fun ClemenTimeApp(
             composable<SettingsRoute> {
                 SettingsScreen(
                     onMenuClick = { scope.launch { drawerState.open() } },
-                    onNavigateToImport = { uriString ->
-                        navController.navigate(ImportRoute(uriString))
+                    onNavigateToImport = {
+                        navController.navigate(ImportRoute)
                     }
                 )
             }
@@ -227,6 +228,9 @@ fun ClemenTimeApp(
                     },
                     onNavigateToSchedule = { dayOfWeek ->
                         navController.navigate(ScheduleListRoute(dayOfWeek = dayOfWeek.name))
+                    },
+                    onNavigateToImport = {
+                        navController.navigate(ImportRoute)
                     }
                 )
             }
