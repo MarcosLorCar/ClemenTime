@@ -14,28 +14,28 @@ interface ScheduleDao {
 
     // Main schedule view: Only loads active slots (Theory + Selected Lab)
     @Transaction
-    @Query("SELECT * FROM matters WHERE isActive = 1 ORDER BY name ASC")
-    fun getActiveMattersWithSlots(): Flow<List<MatterWithSlots>>
+    @Query("SELECT * FROM subjects WHERE isActive = 1 ORDER BY name ASC")
+    fun getActiveSubjectsWithSlots(): Flow<List<SubjectWithSlots>>
 
-    @Query("UPDATE matters SET isActive = :isActive WHERE id = :matterId")
-    suspend fun updateMatterActiveStatus(matterId: Long, isActive: Boolean)
-
-    @Transaction
-    @Query("SELECT * FROM matters ORDER BY name ASC")
-    fun getAllMattersWithSlots(): Flow<List<MatterWithSlots>>
+    @Query("UPDATE subjects SET isActive = :isActive WHERE id = :subjectId")
+    suspend fun updateSubjectActiveStatus(subjectId: Long, isActive: Boolean)
 
     @Transaction
-    @Query("SELECT * FROM matters WHERE id = :matterId")
-    fun getMatterWithSlotsById(matterId: Long): Flow<MatterWithSlots?>
+    @Query("SELECT * FROM subjects ORDER BY name ASC")
+    fun getAllSubjectsWithSlots(): Flow<List<SubjectWithSlots>>
+
+    @Transaction
+    @Query("SELECT * FROM subjects WHERE id = :subjectId")
+    fun getSubjectWithSlotsById(subjectId: Long): Flow<SubjectWithSlots?>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertMatter(matter: Matter): Long
+    suspend fun insertSubject(subject: Subject): Long
 
     @Update
-    suspend fun updateMatter(matter: Matter)
+    suspend fun updateSubject(subject: Subject)
 
-    @Query("DELETE FROM matters WHERE id = :matterId")
-    suspend fun deleteMatterById(matterId: Long)
+    @Query("DELETE FROM subjects WHERE id = :subjectId")
+    suspend fun deleteSubjectById(subjectId: Long)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSlot(slot: ClassSlot): Long
@@ -53,34 +53,34 @@ interface ScheduleDao {
     suspend fun deleteSlotById(slotId: Long)
 
     @Transaction
-    suspend fun upsertMatterWithSlots(matter: Matter, slots: List<ClassSlot>) {
-        val actualMatterId = if (matter.id == 0L) {
-            insertMatter(matter)
+    suspend fun upsertSubjectWithSlots(subject: Subject, slots: List<ClassSlot>) {
+        val actualSubjectId = if (subject.id == 0L) {
+            insertSubject(subject)
         } else {
-            updateMatter(matter)
-            matter.id
+            updateSubject(subject)
+            subject.id
         }
 
-        deleteSlotsForMatter(actualMatterId)
+        deleteSlotsForSubject(actualSubjectId)
 
         val updatedSlots = slots.map { slot ->
             slot.copy(
-                id = if (matter.id == 0L) 0L else slot.id,
-                matterId = actualMatterId
+                id = if (subject.id == 0L) 0L else slot.id,
+                subjectId = actualSubjectId
             )
         }
         insertSlots(updatedSlots)
     }
 
-    @Query("DELETE FROM class_slots WHERE matterId = :matterId")
-    suspend fun deleteSlotsForMatter(matterId: Long)
+    @Query("DELETE FROM class_slots WHERE subjectId = :subjectId")
+    suspend fun deleteSlotsForSubject(subjectId: Long)
 
-    @Query("DELETE FROM matters")
-    suspend fun deleteAllMatters()
+    @Query("DELETE FROM subjects")
+    suspend fun deleteAllSubjects()
 
-    @Query("DELETE FROM matters WHERE id IN (:matterIds)")
-    suspend fun deleteMattersByIds(matterIds: List<Long>)
+    @Query("DELETE FROM subjects WHERE id IN (:subjectIds)")
+    suspend fun deleteSubjectsByIds(subjectIds: List<Long>)
 
-    @Query("UPDATE matters SET isActive = :isActive WHERE id IN (:matterIds)")
-    suspend fun updateMattersActiveStatus(matterIds: List<Long>, isActive: Boolean)
+    @Query("UPDATE subjects SET isActive = :isActive WHERE id IN (:subjectIds)")
+    suspend fun updateSubjectsActiveStatus(subjectIds: List<Long>, isActive: Boolean)
 }

@@ -42,8 +42,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.clementime.R
 import com.example.clementime.data.ClassSlot
 import com.example.clementime.data.EntryType
-import com.example.clementime.data.Matter
-import com.example.clementime.data.MatterWithSlots
+import com.example.clementime.data.Subject
+import com.example.clementime.data.SubjectWithSlots
 import com.example.clementime.ui.components.ClemenTimeTopBar
 import com.example.clementime.ui.components.ScheduleTimeline
 import com.example.clementime.ui.theme.ClemenTimeTheme
@@ -57,10 +57,10 @@ import java.util.Locale
 
 @Composable
 fun ScheduleScreen(
-    onMenuClick: () -> Unit,
-    onClickMatter: (Long, Long) -> Unit,
+    onClickSubject: (Long, Long) -> Unit,
     onNavigateToImport: () -> Unit,
     viewModel: ScheduleViewModel = hiltViewModel(),
+    onMenuClick: (() -> Unit)? = null
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -68,7 +68,7 @@ fun ScheduleScreen(
         uiState = uiState,
         onChangeTab = viewModel::changeTab,
         onMenuClick = onMenuClick,
-        onClickMatter = onClickMatter,
+        onClickSubject = onClickSubject,
         onNavigateToImport = onNavigateToImport
     )
 }
@@ -77,10 +77,10 @@ fun ScheduleScreen(
 @Composable
 fun ScheduleContent(
     uiState: ScheduleUiState,
-    onMenuClick: () -> Unit,
     onChangeTab: (ScheduleTab) -> Unit,
-    onClickMatter: (Long, Long) -> Unit = { _, _ -> },
     onNavigateToImport: () -> Unit,
+    onMenuClick: (() -> Unit)? = null,
+    onClickSubject: (Long, Long) -> Unit = { _, _ -> }
 ) {
     val coroutineScope = rememberCoroutineScope()
     val tabs = ScheduleTab.entries
@@ -111,6 +111,8 @@ fun ScheduleContent(
                     onMenuClick = onMenuClick,
                     title = stringResource(R.string.schedule_screen_title)
                 )
+
+                if (uiState.subjectsWithSlots.isEmpty()) return@Column
 
                 val locale = LocalConfiguration.current.locales[0]
 
@@ -188,7 +190,7 @@ fun ScheduleContent(
             ) {
                 CircularProgressIndicator()
             }
-        } else if (uiState.mattersWithSlots.isEmpty()) {
+        } else if (uiState.subjectsWithSlots.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -235,11 +237,11 @@ fun ScheduleContent(
             ) { pageIndex ->
                 val currentDay = tabs[pageIndex]
 
-                val daySlots = remember(uiState.mattersWithSlots, currentDay) {
-                    uiState.mattersWithSlots.flatMap { matterWithSlots ->
-                        matterWithSlots.slots
+                val daySlots = remember(uiState.subjectsWithSlots, currentDay) {
+                    uiState.subjectsWithSlots.flatMap { subjectWithSlots ->
+                        subjectWithSlots.slots
                             .filter { it.dayOfWeek == currentDay.dayOfWeek }
-                            .map { slot -> matterWithSlots.matter to slot }
+                            .map { slot -> subjectWithSlots.subject to slot }
                     }
                 }
 
@@ -261,7 +263,7 @@ fun ScheduleContent(
                 } else {
                     ScheduleTimeline(
                         clusters = clusters,
-                        onClickMatter = onClickMatter,
+                        onClickSubject = onClickSubject,
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -271,7 +273,7 @@ fun ScheduleContent(
 }
 
 fun groupSlotsIntoClusters(
-    slots: List<Pair<Matter, ClassSlot>>
+    slots: List<Pair<Subject, ClassSlot>>
 ): List<TimelineCluster> {
     if (slots.isEmpty()) return emptyList()
 
@@ -318,7 +320,7 @@ enum class ScheduleTab(val dayOfWeek: DayOfWeek) {
 @Preview(showBackground = true)
 @Composable
 fun ScheduleScreenPreview() {
-    val previewMatter = Matter(
+    val previewSubject = Subject(
         id = 1,
         name = "Computer Architecture",
         color = 0xFF6200EE.toInt(),
@@ -327,12 +329,12 @@ fun ScheduleScreenPreview() {
     )
 
     val previewData = listOf(
-        MatterWithSlots(
-            matter = previewMatter,
+        SubjectWithSlots(
+            subject = previewSubject,
             slots = listOf(
                 ClassSlot(
                     id = 1,
-                    matterId = 1,
+                    subjectId = 1,
                     dayOfWeek = DayOfWeek.MONDAY,
                     startTime = LocalTime.of(9, 0),
                     endTime = LocalTime.of(11, 0),
@@ -341,7 +343,7 @@ fun ScheduleScreenPreview() {
                 ),
                 ClassSlot(
                     id = 2,
-                    matterId = 1,
+                    subjectId = 1,
                     dayOfWeek = DayOfWeek.MONDAY,
                     startTime = LocalTime.of(11, 30),
                     endTime = LocalTime.of(13, 30),
@@ -358,7 +360,7 @@ fun ScheduleScreenPreview() {
             uiState = ScheduleUiState(
                 isLoading = false,
                 selectedTab = ScheduleTab.MONDAY,
-                mattersWithSlots = previewData
+                subjectsWithSlots = previewData
             ),
             onChangeTab = {},
             onMenuClick = {},

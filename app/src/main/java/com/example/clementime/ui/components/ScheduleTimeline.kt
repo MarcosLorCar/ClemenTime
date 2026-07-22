@@ -31,7 +31,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.example.clementime.data.ClassSlot
 import com.example.clementime.data.EntryType
-import com.example.clementime.data.Matter
+import com.example.clementime.data.Subject
 import com.example.clementime.data.cardColor
 import com.example.clementime.utils.TimelineCluster
 import java.time.Duration
@@ -54,7 +54,7 @@ private val SLOT_GAP: Dp = 3.dp
 @Composable
 fun ScheduleTimeline(
     clusters: List<TimelineCluster>,
-    onClickMatter: (Long, Long) -> Unit,
+    onClickSubject: (Long, Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
@@ -122,16 +122,16 @@ fun ScheduleTimeline(
                         .padding(horizontal = 4.dp),
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    cluster.items.forEach { (matter, slot) ->
+                    cluster.items.forEach { (subject, slot) ->
                         Box(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight()
                         ) {
                             ClassSlotRow(
-                                matter = matter,
+                                subject = subject,
                                 slot = slot,
-                                onClickMatter = { onClickMatter(matter.id, slot.id) },
+                                onClickSubject = { onClickSubject(subject.id, slot.id) },
                                 modifier = Modifier.fillMaxHeight(),
                                 isSingle = cluster.items.size == 1
                             )
@@ -145,9 +145,9 @@ fun ScheduleTimeline(
 
 @Composable
 fun ClassSlotRow(
-    matter: Matter,
+    subject: Subject,
     slot: ClassSlot,
-    onClickMatter: () -> Unit,
+    onClickSubject: () -> Unit,
     modifier: Modifier = Modifier,
     isSingle: Boolean = true
 ) {
@@ -164,7 +164,7 @@ fun ClassSlotRow(
     }
 
     Card(
-        onClick = onClickMatter,
+        onClick = onClickSubject,
         modifier = modifier
             .fillMaxWidth()
             .fillMaxHeight(),
@@ -174,7 +174,7 @@ fun ClassSlotRow(
     ) {
         Surface(
             modifier = Modifier.fillMaxSize(),
-            color = matter.cardColor
+            color = subject.cardColor
         ) {
             Column(
                 modifier = Modifier
@@ -201,7 +201,7 @@ fun ClassSlotRow(
                     }
 
                     Text(
-                        text = matter.name,
+                        text = subject.name,
                         modifier = Modifier.weight(1f),
                         style = titleStyle,
                         overflow = TextOverflow.Ellipsis,
@@ -211,7 +211,7 @@ fun ClassSlotRow(
 
                 Column {
                     val codeAndGroup = listOfNotNull(
-                        matter.code,
+                        subject.code,
                         slot.labGroupName?.takeIf { it.isNotBlank() }
                     ).joinToString(" • ")
 

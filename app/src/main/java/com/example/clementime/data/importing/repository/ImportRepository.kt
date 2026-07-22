@@ -3,11 +3,11 @@ package com.example.clementime.data.importing.repository
 import android.content.Context
 import android.net.Uri
 import com.example.clementime.data.EntryType
-import com.example.clementime.data.Matter
+import com.example.clementime.data.Subject
 import com.example.clementime.data.ScheduleDao
 import com.example.clementime.data.importing.model.ImportFile
 import com.example.clementime.data.importing.model.ScheduleJsonSchema
-import com.example.clementime.data.importing.model.SelectedMatter
+import com.example.clementime.data.importing.model.SelectedSubject
 import com.example.clementime.data.importing.parser.JsonScheduleParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -118,22 +118,22 @@ class ImportRepository @Inject constructor(
         }
     }
 
-    suspend fun importMatters(selectedMatters: List<SelectedMatter>) {
-        selectedMatters.forEach { selected ->
-            val jsonMatter = selected.matter
-            val matter = Matter(
-                code = jsonMatter.code,
-                name = jsonMatter.name,
-                color = jsonMatter.color ?: Matter.PRESET_COLORS.random(),
+    suspend fun importSubjects(selectedSubjects: List<SelectedSubject>) {
+        selectedSubjects.forEach { selected ->
+            val jsonSubject = selected.subject
+            val subject = Subject(
+                code = jsonSubject.code,
+                name = jsonSubject.name,
+                color = jsonSubject.color ?: Subject.PRESET_COLORS.random(),
                 courseGroup = selected.courseGroup,
                 isActive = true
             )
 
-            val theorySlots = jsonMatter.theorySlots.map {
+            val theorySlots = jsonSubject.theorySlots.map {
                 with(parser) { it.toClassSlot() }
             }
 
-            val labSlots = jsonMatter.labVariants.flatMap { (groupName, variantSlots) ->
+            val labSlots = jsonSubject.labVariants.flatMap { (groupName, variantSlots) ->
                 variantSlots.map { slot ->
                     with(parser) {
                         slot.toClassSlot().copy(
@@ -144,7 +144,7 @@ class ImportRepository @Inject constructor(
                 }
             }
 
-            dao.upsertMatterWithSlots(matter, theorySlots + labSlots)
+            dao.upsertSubjectWithSlots(subject, theorySlots + labSlots)
         }
     }
 }

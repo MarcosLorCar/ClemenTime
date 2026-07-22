@@ -11,17 +11,17 @@ import java.time.LocalTime
     tableName = "class_slots",
     foreignKeys = [
         ForeignKey(
-            entity = Matter::class,
+            entity = Subject::class,
             parentColumns = ["id"],
-            childColumns = ["matterId"],
+            childColumns = ["subjectId"],
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("matterId")]
+    indices = [Index("subjectId")]
 )
 data class ClassSlot(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val matterId: Long,
+    val subjectId: Long,
     val dayOfWeek: DayOfWeek,
     val startTime: LocalTime,
     val endTime: LocalTime,

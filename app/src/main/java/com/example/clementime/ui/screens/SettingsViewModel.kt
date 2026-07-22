@@ -85,8 +85,8 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             onResult(ExportStatus.Exporting)
             try {
-                val matters = scheduleDao.getAllMattersWithSlots().first()
-                val jsonString = jsonScheduleParser.exportToJson("ClemenTime Export", matters)
+                val subjects = scheduleDao.getAllSubjectsWithSlots().first()
+                val jsonString = jsonScheduleParser.exportToJson("ClemenTime Export", subjects)
                 
                 val syncUriStr = settingsRepository.syncDirectoryFlow.first()
                 var syncWritten = false

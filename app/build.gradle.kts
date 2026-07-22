@@ -13,6 +13,7 @@ android {
     defaultConfig {
         applicationId = "com.example.clementime"
         minSdk = 24
+        //noinspection OldTargetApi
         targetSdk = 36
         val passedVersionName = project.findProperty("versionName") as? String
         val passedVersionCode = (project.findProperty("versionCode") as? String)?.toIntOrNull()
@@ -77,8 +78,13 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
 
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.compose.material3.adaptive)
+    implementation(libs.androidx.compose.material3.adaptive.layout)
+    implementation(libs.androidx.compose.material3.adaptive.navigation)
+    implementation(libs.androidx.compose.material3.adaptive.navigation.suite)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.core.splashscreen)
 
     // Room
     implementation(libs.androidx.room.runtime)

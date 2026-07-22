@@ -1,6 +1,5 @@
 package com.example.clementime.ui.screens
 
-import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -18,17 +17,15 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material.icons.filled.ViewCompact
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -58,7 +55,6 @@ import com.example.clementime.ui.theme.ClemenTimeTheme
 
 @Composable
 fun SettingsScreen(
-    onMenuClick: () -> Unit,
     onNavigateToImport: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(
         checkNotNull(
@@ -66,7 +62,8 @@ fun SettingsScreen(
         ) {
                 "No ViewModelStoreOwner was provided via LocalViewModelStoreOwner"
             }, null
-    )
+    ),
+    onMenuClick: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -118,7 +115,7 @@ fun SettingsContent(
     onToggleScrollableTabs: (Boolean) -> Unit,
     onExportData: () -> Unit,
     onImportClick: () -> Unit,
-    onMenuClick: () -> Unit
+    onMenuClick: (() -> Unit)? = null
 ) {
     Scaffold(
         topBar = {
@@ -374,17 +371,17 @@ fun SettingsContent(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.Default.CloudUpload,
+                        imageVector = Icons.AutoMirrored.Filled.LibraryBooks,
                         contentDescription = null
                     )
                     Spacer(modifier = Modifier.width(16.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = stringResource(R.string.import_schedule_title),
+                            text = stringResource(R.string.import_library_title),
                             style = MaterialTheme.typography.bodyLarge
                         )
                         Text(
-                            text = stringResource(R.string.import_schedule_desc),
+                            text = stringResource(R.string.import_library_desc),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

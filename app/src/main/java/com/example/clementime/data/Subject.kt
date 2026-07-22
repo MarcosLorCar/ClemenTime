@@ -4,8 +4,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "matters")
-data class Matter(
+@Entity(tableName = "subjects")
+data class Subject(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val code: String,                 // e.g. "FunProg1"
     val name: String,                 // e.g. "Fundamentos de Programación 1"
@@ -36,8 +36,8 @@ data class Matter(
     }
 }
 
-val Matter.uiColor: Color
+val Subject.uiColor: Color
     get() = Color(this.color)
 
-val Matter.cardColor: Color
+val Subject.cardColor: Color
     get() = uiColor.copy(alpha = 0.3f)

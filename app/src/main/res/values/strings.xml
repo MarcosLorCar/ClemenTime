@@ -4,15 +4,15 @@
     <string name="settings_screen_title">Settings</string>
     <string name="import_screen_title">Import Schedule</string>
     <string name="import_schedule_title">Import Schedule</string>
-    <string name="matters_screen_title">Matters</string>
-    <string name="search_matters_placeholder">Search by name or code…</string>
-    <string name="delete_matter_dialog_title">Delete Matter</string>
-    <string name="delete_matter_dialog_message">Are you sure you want to delete \"%1$s\"? This will also remove all associated schedule slots.</string>
-    <string name="delete_matter_confirm">Delete</string>
+    <string name="subjects_screen_title">Subjects</string>
+    <string name="search_subjects_placeholder">Search by name or code…</string>
+    <string name="delete_subject_dialog_title">Delete Subject</string>
+    <string name="delete_subject_dialog_message">Are you sure you want to delete \"%1$s\"? This will also remove all associated schedule slots.</string>
+    <string name="delete_subject_confirm">Delete</string>
     <string name="cancel">Cancel</string>
-    <string name="no_matters_title">No matters added yet</string>
-    <string name="no_matters_subtitle">Import a schedule or tap + to create one.</string>
-    <string name="no_search_results">No matters match your search.</string>
+    <string name="no_subjects_title">No subjects added yet</string>
+    <string name="no_subjects_subtitle">Import a schedule or tap + to create one.</string>
+    <string name="no_search_results">No subjects match your search.</string>
     <string name="slots_count">%1$d slot(s)</string>
     <string name="expand_slots">Show slots</string>
     <string name="collapse_slots">Hide slots</string>
@@ -25,16 +25,16 @@
     <string name="select_file_button">Select Schedule JSON File</string>
     <string name="try_again">Try Again</string>
     <string name="import_selected_button">Import Selected (%1$d)</string>
-    <string name="edit_matter">Edit</string>
-    <string name="delete_matter">Delete</string>
-    <string name="add_matter_title">Add Matter</string>
-    <string name="edit_matter_title">Edit Matter</string>
-    <string name="nuke_all_matters_title">Nuke All Matters</string>
-    <string name="nuke_all_matters_message">Are you sure you want to delete ALL matters and all associated class slots? This action is permanent and cannot be undone.</string>
+    <string name="edit_subject">Edit</string>
+    <string name="delete_subject">Delete</string>
+    <string name="add_subject_title">Add Subject</string>
+    <string name="edit_subject_title">Edit Subject</string>
+    <string name="nuke_all_subjects_title">Nuke All Subjects</string>
+    <string name="nuke_all_subjects_message">Are you sure you want to delete ALL subjects and all associated class slots? This action is permanent and cannot be undone.</string>
     <string name="nuke_confirm">Nuke All</string>
     <string name="selected_count_simple">%1$d selected</string>
     <string name="delete_selected_dialog_title">Delete Selected</string>
-    <string name="delete_selected_dialog_message">Are you sure you want to delete the %1$d selected matters and all their class slots?</string>
+    <string name="delete_selected_dialog_message">Are you sure you want to delete the %1$d selected subjects and all their class slots?</string>
     <string name="delete_selected_confirm">Delete</string>
 
     <!-- Settings Screen strings -->
@@ -57,7 +57,8 @@
     <string name="export_backup_desc">Save schedule and subjects to JSON file</string>
     <string name="export_button">Export</string>
     <string name="import_button">Import</string>
-    <string name="import_schedule_desc">Load matters and schedules from JSON file</string>
+    <string name="import_schedule_desc">Load subjects and schedules from JSON file</string>
+    <string name="import_library_desc">Browse and import schedules from the library or device</string>
 
     <!-- Notes & Attachments strings -->
     <string name="notes_and_attachments_header">Notes &amp; File Attachments</string>
@@ -85,4 +86,5 @@
     <string name="import_delete_confirm_message">Are you sure you want to remove \"%1$s\" from your import library?</string>
     <string name="no_schedule_data">No schedule data</string>
     <string name="no_schedule_data_subtitle">Import a schedule or add subjects to get started.</string>
+    <string name="import_screen_prompt">Select subjects to import</string>
 </resources>

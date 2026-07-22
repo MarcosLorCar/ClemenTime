@@ -1,4 +1,4 @@
-package com.example.clementime.ui.screens.matter
+package com.example.clementime.ui.screens.subject
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -7,9 +7,9 @@ import androidx.navigation.toRoute
 import com.example.clementime.data.AttachedFileItem
 import com.example.clementime.data.ClassSlot
 import com.example.clementime.data.EntryType
-import com.example.clementime.data.Matter
+import com.example.clementime.data.Subject
 import com.example.clementime.data.ScheduleDao
-import com.example.clementime.ui.navigation.AddEditMatterRoute
+import com.example.clementime.ui.navigation.AddEditSubjectRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,10 +22,9 @@ import java.time.Duration
 import java.time.LocalTime
 import javax.inject.Inject
 
-
 data class ClassSlotUiModel(
     val id: Long = 0L,
-    val matterId: Long = 0L,
+    val subjectId: Long = 0L,
     val dayOfWeek: DayOfWeek = DayOfWeek.MONDAY,
     val startTime: LocalTime? = null,
     val endTime: LocalTime? = null,
@@ -37,7 +36,7 @@ data class ClassSlotUiModel(
 
 fun ClassSlot.toUiModel(): ClassSlotUiModel = ClassSlotUiModel(
     id = id,
-    matterId = matterId,
+    subjectId = subjectId,
     dayOfWeek = dayOfWeek,
     startTime = startTime,
     endTime = endTime,
@@ -47,12 +46,12 @@ fun ClassSlot.toUiModel(): ClassSlotUiModel = ClassSlotUiModel(
     professor = professor
 )
 
-fun ClassSlotUiModel.toEntity(matterId: Long): ClassSlot? {
+fun ClassSlotUiModel.toEntity(subjectId: Long): ClassSlot? {
     val start = startTime ?: return null
     val end = endTime ?: return null
     return ClassSlot(
         id = id,
-        matterId = matterId,
+        subjectId = subjectId,
         dayOfWeek = dayOfWeek,
         startTime = start,
         endTime = end,
@@ -63,12 +62,12 @@ fun ClassSlotUiModel.toEntity(matterId: Long): ClassSlot? {
     )
 }
 
-data class AddEditMatterUiState(
-    val matterId: Long? = null,
+data class AddEditSubjectUiState(
+    val subjectId: Long? = null,
     val highlightSlotId: Long? = null,
     val code: String = "",
     val name: String = "",
-    val color: Int = Matter.PRESET_COLORS.first(),
+    val color: Int = Subject.PRESET_COLORS.first(),
     val defaultDurationMinutes: Int = 90,
     val notesText: String = "",
     val attachedFiles: List<AttachedFileItem> = emptyList(),
@@ -79,40 +78,40 @@ data class AddEditMatterUiState(
 )
 
 @HiltViewModel
-class AddEditMatterViewModel @Inject constructor(
+class AddEditSubjectViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val scheduleDao: ScheduleDao
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(AddEditMatterUiState())
-    val uiState: StateFlow<AddEditMatterUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(AddEditSubjectUiState())
+    val uiState: StateFlow<AddEditSubjectUiState> = _uiState.asStateFlow()
 
     init {
-        val route = runCatching { savedStateHandle.toRoute<AddEditMatterRoute>() }.getOrNull()
-        val routeMatterId = route?.matterId
+        val route = runCatching { savedStateHandle.toRoute<AddEditSubjectRoute>() }.getOrNull()
+        val routeSubjectId = route?.subjectId
         val highlightSlotId = route?.highlightSlotId
 
-        if (routeMatterId != null && routeMatterId > 0) {
-            loadMatter(routeMatterId, highlightSlotId)
+        if (routeSubjectId != null && routeSubjectId > 0) {
+            loadSubject(routeSubjectId, highlightSlotId)
         }
     }
 
-    private fun loadMatter(matterId: Long, highlightSlotId: Long? = null) {
+    private fun loadSubject(subjectId: Long, highlightSlotId: Long? = null) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, matterId = matterId, highlightSlotId = highlightSlotId) }
-            val matterWithSlots = scheduleDao.getMatterWithSlotsById(matterId).firstOrNull()
-            if (matterWithSlots != null) {
-                val matter = matterWithSlots.matter
+            _uiState.update { it.copy(isLoading = true, subjectId = subjectId, highlightSlotId = highlightSlotId) }
+            val subjectWithSlots = scheduleDao.getSubjectWithSlotsById(subjectId).firstOrNull()
+            if (subjectWithSlots != null) {
+                val subject = subjectWithSlots.subject
                 _uiState.update {
                     it.copy(
-                        matterId = matter.id,
-                        code = matter.code,
-                        name = matter.name,
-                        color = matter.color,
-                        defaultDurationMinutes = matter.defaultDurationMinutes ?: 90,
-                        notesText = matter.notes,
-                        attachedFiles = matter.attachedFiles,
-                        slots = matterWithSlots.slots.map { slot -> slot.toUiModel() },
+                        subjectId = subject.id,
+                        code = subject.code,
+                        name = subject.name,
+                        color = subject.color,
+                        defaultDurationMinutes = subject.defaultDurationMinutes ?: 90,
+                        notesText = subject.notes,
+                        attachedFiles = subject.attachedFiles,
+                        slots = subjectWithSlots.slots.map { slot -> slot.toUiModel() },
                         isLoading = false
                     )
                 }
@@ -162,7 +161,7 @@ class AddEditMatterViewModel @Inject constructor(
 
         val newSlot = ClassSlotUiModel(
             id = 0L,
-            matterId = _uiState.value.matterId ?: 0L,
+            subjectId = _uiState.value.subjectId ?: 0L,
             dayOfWeek = lastSlot?.dayOfWeek ?: DayOfWeek.MONDAY,
             startTime = null,
             endTime = null,
@@ -256,30 +255,30 @@ class AddEditMatterViewModel @Inject constructor(
         }
     }
 
-    fun saveMatter() {
+    fun saveSubject() {
         val state = _uiState.value
         if (state.code.isBlank() || state.name.isBlank()) return
 
         viewModelScope.launch {
-            val existingMatter = state.matterId?.let { id ->
-                scheduleDao.getMatterWithSlotsById(id).firstOrNull()?.matter
+            val existingSubject = state.subjectId?.let { id ->
+                scheduleDao.getSubjectWithSlotsById(id).firstOrNull()?.subject
             }
 
-            val matterToSave = Matter(
-                id = state.matterId ?: 0L,
+            val subjectToSave = Subject(
+                id = state.subjectId ?: 0L,
                 code = state.code.trim(),
                 name = state.name.trim(),
                 color = state.color,
-                courseGroup = existingMatter?.courseGroup,
-                isActive = existingMatter?.isActive ?: true,
+                courseGroup = existingSubject?.courseGroup,
+                isActive = existingSubject?.isActive ?: true,
                 defaultDurationMinutes = state.defaultDurationMinutes,
                 notes = state.notesText,
                 attachedFiles = state.attachedFiles
             )
 
-            val validEntities = state.slots.mapNotNull { it.toEntity(matterToSave.id) }
+            val validEntities = state.slots.mapNotNull { it.toEntity(subjectToSave.id) }
 
-            scheduleDao.upsertMatterWithSlots(matterToSave, validEntities)
+            scheduleDao.upsertSubjectWithSlots(subjectToSave, validEntities)
             _uiState.update { it.copy(isSaved = true) }
         }
     }

@@ -1,4 +1,4 @@
-package com.example.clementime.ui.screens.matter
+package com.example.clementime.ui.screens.subject
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandHorizontally
@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -78,30 +79,31 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.clementime.R
 import com.example.clementime.data.ClassSlot
 import com.example.clementime.data.EntryType
-import com.example.clementime.data.Matter
-import com.example.clementime.data.MatterWithSlots
+import com.example.clementime.data.Subject
+import com.example.clementime.data.SubjectWithSlots
 import com.example.clementime.data.cardColor
 import com.example.clementime.ui.components.ClemenTimeTopBar
 import com.example.clementime.ui.theme.ClemenTimeTheme
+import com.example.clementime.utils.fadingEdges
 import java.time.DayOfWeek
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 @Composable
-fun MattersScreen(
-    onMenuClick: () -> Unit,
-    onNavigateToAddEditMatter: (Long?) -> Unit,
+fun SubjectsScreen(
+    onNavigateToAddEditSubject: (Long?) -> Unit,
     onNavigateToSchedule: (DayOfWeek) -> Unit = {},
     onNavigateToImport: () -> Unit,
-    viewModel: MattersViewModel = hiltViewModel(),
+    viewModel: SubjectsViewModel = hiltViewModel(),
+    onMenuClick: (() -> Unit)? = null
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    MattersContent(
+    SubjectsContent(
         uiState = uiState,
         onEvent = viewModel::onEvent,
         onMenuClick = onMenuClick,
-        onNavigateToAddEditMatter = onNavigateToAddEditMatter,
+        onNavigateToAddEditSubject = onNavigateToAddEditSubject,
         onNavigateToSchedule = onNavigateToSchedule,
         onNavigateToImport = onNavigateToImport
     )
@@ -109,37 +111,37 @@ fun MattersScreen(
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun MattersContent(
-    uiState: MattersUiState,
-    onEvent: (MattersUiEvent) -> Unit,
-    onMenuClick: () -> Unit,
-    onNavigateToAddEditMatter: (Long?) -> Unit,
+fun SubjectsContent(
+    uiState: SubjectsUiState,
+    onEvent: (SubjectsUiEvent) -> Unit,
+    onNavigateToAddEditSubject: (Long?) -> Unit,
     onNavigateToSchedule: (DayOfWeek) -> Unit = {},
-    onNavigateToImport: () -> Unit
+    onNavigateToImport: () -> Unit,
+    onMenuClick: (() -> Unit)? = null
 ) {
-    var matterToDelete by remember { mutableStateOf<Matter?>(null) }
+    var subjectToDelete by remember { mutableStateOf<Subject?>(null) }
     var showNukeDialog by remember { mutableStateOf(false) }
 
-    matterToDelete?.let { matter ->
+    subjectToDelete?.let { subject ->
         AlertDialog(
-            onDismissRequest = { matterToDelete = null },
-            title = { Text(stringResource(R.string.delete_matter_dialog_title)) },
-            text = { Text(stringResource(R.string.delete_matter_dialog_message, matter.name)) },
+            onDismissRequest = { subjectToDelete = null },
+            title = { Text(stringResource(R.string.delete_subject_dialog_title)) },
+            text = { Text(stringResource(R.string.delete_subject_dialog_message, subject.name)) },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        onEvent(MattersUiEvent.DeleteMatter(matter.id))
-                        matterToDelete = null
+                        onEvent(SubjectsUiEvent.DeleteSubject(subject.id))
+                        subjectToDelete = null
                     }
                 ) {
                     Text(
-                        text = stringResource(R.string.delete_matter_confirm),
+                        text = stringResource(R.string.delete_subject_confirm),
                         color = MaterialTheme.colorScheme.error
                     )
                 }
             },
             dismissButton = {
-                TextButton(onClick = { matterToDelete = null }) {
+                TextButton(onClick = { subjectToDelete = null }) {
                     Text(stringResource(R.string.cancel))
                 }
             }
@@ -149,12 +151,12 @@ fun MattersContent(
     if (showNukeDialog) {
         AlertDialog(
             onDismissRequest = { showNukeDialog = false },
-            title = { Text(stringResource(R.string.nuke_all_matters_title)) },
-            text = { Text(stringResource(R.string.nuke_all_matters_message)) },
+            title = { Text(stringResource(R.string.nuke_all_subjects_title)) },
+            text = { Text(stringResource(R.string.nuke_all_subjects_message)) },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        onEvent(MattersUiEvent.NukeAllMatters)
+                        onEvent(SubjectsUiEvent.NukeAllSubjects)
                         showNukeDialog = false
                     }
                 ) {
@@ -178,11 +180,11 @@ fun MattersContent(
         AlertDialog(
             onDismissRequest = { showDeleteSelectedDialog = false },
             title = { Text(stringResource(R.string.delete_selected_dialog_title)) },
-            text = { Text(stringResource(R.string.delete_selected_dialog_message, uiState.selectedMatterIds.size)) },
+            text = { Text(stringResource(R.string.delete_selected_dialog_message, uiState.selectedSubjectIds.size)) },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        onEvent(MattersUiEvent.DeleteSelectedMatters)
+                        onEvent(SubjectsUiEvent.DeleteSelectedSubjects)
                         showDeleteSelectedDialog = false
                     }
                 ) {
@@ -202,47 +204,48 @@ fun MattersContent(
 
     var isSearchVisible by remember { mutableStateOf(false) }
     var isFilterVisible by remember { mutableStateOf(false) }
-    var selectedGroupFilter by remember { mutableStateOf("All") }
+    var selectedGroupFilter by remember { mutableStateOf<String?>(null) }
+    val subjectsListState = rememberLazyListState()
 
-    val availableFilters = remember(uiState.matters) {
-        val groups = uiState.matters.mapNotNull { it.matter.courseGroup }.filter { it.isNotBlank() }.distinct().sorted()
-        val filters = mutableListOf("All")
+    val availableFilters = remember(uiState.subjects) {
+        val groups = uiState.subjects.mapNotNull { it.subject.courseGroup }.filter { it.isNotBlank() }.distinct().sorted()
+        val filters = mutableListOf<String>()
         filters.addAll(groups)
         filters.add("Inactive")
         filters
     }
 
-    val filteredMatters = remember(uiState.filteredMatters, selectedGroupFilter) {
+    val filteredSubjects = remember(uiState.filteredSubjects, selectedGroupFilter) {
         when (selectedGroupFilter) {
-            "All", "" -> uiState.filteredMatters
-            "Inactive" -> uiState.filteredMatters.filter { !it.matter.isActive }
-            else -> uiState.filteredMatters.filter { it.matter.courseGroup == selectedGroupFilter }
+            null -> uiState.filteredSubjects
+            "Inactive" -> uiState.filteredSubjects.filter { !it.subject.isActive }
+            else -> uiState.filteredSubjects.filter { it.subject.courseGroup == selectedGroupFilter }
         }
     }
 
-    val groupedMatters = remember(filteredMatters) {
-        filteredMatters.groupBy { it.matter.courseGroup?.takeIf { g -> g.isNotBlank() } ?: "General" }
+    val groupedSubjects = remember(filteredSubjects) {
+        filteredSubjects.groupBy { it.subject.courseGroup?.takeIf { g -> g.isNotBlank() } ?: "General" }
     }
 
     Scaffold(
         topBar = {
             if (uiState.isInSelectionMode) {
                 ClemenTimeTopBar(
-                    title = stringResource(R.string.selected_count_simple, uiState.selectedMatterIds.size),
-                    onNavigateBack = { onEvent(MattersUiEvent.ClearSelection) },
+                    title = stringResource(R.string.selected_count_simple, uiState.selectedSubjectIds.size),
+                    onNavigateBack = { onEvent(SubjectsUiEvent.ClearSelection) },
                     actions = {
-                        if (uiState.selectedMatterIds.isNotEmpty()) {
-                            IconButton(onClick = { onEvent(MattersUiEvent.DisableSelectedMatters) }) {
+                        if (uiState.selectedSubjectIds.isNotEmpty()) {
+                            IconButton(onClick = { onEvent(SubjectsUiEvent.DisableSelectedSubjects) }) {
                                 Icon(
                                     imageVector = Icons.Default.VisibilityOff,
-                                    contentDescription = "Disable selected matters",
+                                    contentDescription = "Disable selected subjects",
                                     tint = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                             IconButton(onClick = { showDeleteSelectedDialog = true }) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
-                                    contentDescription = "Delete selected matters",
+                                    contentDescription = "Delete selected subjects",
                                     tint = MaterialTheme.colorScheme.error
                                 )
                             }
@@ -251,13 +254,13 @@ fun MattersContent(
                             onClick = {
                                 isFilterVisible = !isFilterVisible
                                 if (!isFilterVisible) {
-                                    selectedGroupFilter = "All"
+                                    selectedGroupFilter = null
                                 }
                             }
                         ) {
                             Icon(
                                 imageVector = Icons.Default.FilterList,
-                                contentDescription = "Filter matters",
+                                contentDescription = "Filter subjects",
                                 tint = if (isFilterVisible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                             )
                         }
@@ -265,34 +268,34 @@ fun MattersContent(
                             onClick = {
                                 isSearchVisible = !isSearchVisible
                                 if (!isSearchVisible) {
-                                    onEvent(MattersUiEvent.SearchQueryChanged(""))
+                                    onEvent(SubjectsUiEvent.SearchQueryChanged(""))
                                 }
                             }
                         ) {
                             Icon(
                                 imageVector = if (isSearchVisible) Icons.Default.Close else Icons.Default.Search,
-                                contentDescription = if (isSearchVisible) "Close search" else "Search matters"
+                                contentDescription = if (isSearchVisible) "Close search" else "Search subjects"
                             )
                         }
                     }
                 )
             } else {
                 ClemenTimeTopBar(
-                    title = stringResource(R.string.matters_screen_title),
+                    title = stringResource(R.string.subjects_screen_title),
                     onMenuClick = onMenuClick,
                     actions = {
-                        if (uiState.matters.isNotEmpty()) {
+                        if (uiState.subjects.isNotEmpty()) {
                             IconButton(onClick = { showNukeDialog = true }) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
-                                    contentDescription = "Nuke all matters",
+                                    contentDescription = "Nuke all subjects",
                                     tint = MaterialTheme.colorScheme.error
                                 )
                             }
                         }
                         IconButton(
                             onClick = {
-                                onEvent(MattersUiEvent.EnterSelectionMode)
+                                onEvent(SubjectsUiEvent.EnterSelectionMode)
                             }
                         ) {
                             Icon(
@@ -304,13 +307,13 @@ fun MattersContent(
                             onClick = {
                                 isFilterVisible = !isFilterVisible
                                 if (!isFilterVisible) {
-                                    selectedGroupFilter = "All"
+                                    selectedGroupFilter = null
                                 }
                             }
                         ) {
                             Icon(
                                 imageVector = Icons.Default.FilterList,
-                                contentDescription = "Filter matters",
+                                contentDescription = "Filter subjects",
                                 tint = if (isFilterVisible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                             )
                         }
@@ -318,13 +321,13 @@ fun MattersContent(
                             onClick = {
                                 isSearchVisible = !isSearchVisible
                                 if (!isSearchVisible) {
-                                    onEvent(MattersUiEvent.SearchQueryChanged(""))
+                                    onEvent(SubjectsUiEvent.SearchQueryChanged(""))
                                 }
                             }
                         ) {
                             Icon(
                                 imageVector = if (isSearchVisible) Icons.Default.Close else Icons.Default.Search,
-                                contentDescription = if (isSearchVisible) "Close search" else "Search matters"
+                                contentDescription = if (isSearchVisible) "Close search" else "Search subjects"
                             )
                         }
                     }
@@ -334,9 +337,9 @@ fun MattersContent(
         floatingActionButton = {
             if (!uiState.isInSelectionMode) {
                 FloatingActionButton(
-                    onClick = { onNavigateToAddEditMatter(null) }
+                    onClick = { onNavigateToAddEditSubject(null) }
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Matter")
+                    Icon(Icons.Default.Add, contentDescription = "Add Subject")
                 }
             }
         }
@@ -350,7 +353,7 @@ fun MattersContent(
             ) {
                 CircularProgressIndicator()
             }
-        } else if (uiState.matters.isEmpty()) {
+        } else if (uiState.subjects.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -369,13 +372,13 @@ fun MattersContent(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = stringResource(R.string.no_matters_title),
+                        text = stringResource(R.string.no_subjects_title),
                         style = MaterialTheme.typography.titleMedium,
                         textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = stringResource(R.string.no_matters_subtitle),
+                        text = stringResource(R.string.no_subjects_subtitle),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
@@ -397,15 +400,15 @@ fun MattersContent(
                 AnimatedVisibility(visible = isSearchVisible) {
                     OutlinedTextField(
                         value = uiState.searchQuery,
-                        onValueChange = { onEvent(MattersUiEvent.SearchQueryChanged(it)) },
+                        onValueChange = { onEvent(SubjectsUiEvent.SearchQueryChanged(it)) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 8.dp),
-                        placeholder = { Text(stringResource(R.string.search_matters_placeholder)) },
+                        placeholder = { Text(stringResource(R.string.search_subjects_placeholder)) },
                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                         trailingIcon = {
                             if (uiState.searchQuery.isNotEmpty()) {
-                                IconButton(onClick = { onEvent(MattersUiEvent.SearchQueryChanged("")) }) {
+                                IconButton(onClick = { onEvent(SubjectsUiEvent.SearchQueryChanged("")) }) {
                                     Icon(Icons.Default.Clear, contentDescription = "Clear search")
                                 }
                             }
@@ -426,7 +429,7 @@ fun MattersContent(
                             availableFilters.forEach { filter ->
                                 FilterChip(
                                     selected = selectedGroupFilter == filter,
-                                    onClick = { selectedGroupFilter = filter },
+                                    onClick = { selectedGroupFilter = if (selectedGroupFilter == filter) null else filter },
                                     label = { Text(filter) }
                                 )
                             }
@@ -434,7 +437,7 @@ fun MattersContent(
                     }
                 }
 
-                if (filteredMatters.isEmpty()) {
+                if (filteredSubjects.isEmpty()) {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -450,21 +453,24 @@ fun MattersContent(
                     }
                 } else {
                     LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
+                        state = subjectsListState,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .fadingEdges(subjectsListState),
                         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 80.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        groupedMatters.forEach { (groupName, mattersInGroup) ->
+                        groupedSubjects.forEach { (groupName, subjectsInGroup) ->
                             item(key = "header_$groupName") {
                                 if (uiState.isInSelectionMode) {
-                                    val sectionToggleState = mattersInGroup.calculateToggleState(uiState.selectedMatterIds)
+                                    val sectionToggleState = subjectsInGroup.calculateToggleState(uiState.selectedSubjectIds)
                                     Surface(
                                         color = MaterialTheme.colorScheme.secondaryContainer,
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(top = 12.dp, bottom = 6.dp)
                                             .clickable {
-                                                onEvent(MattersUiEvent.ToggleGroupSelection(mattersInGroup.map { it.matter.id }))
+                                                onEvent(SubjectsUiEvent.ToggleGroupSelection(subjectsInGroup.map { it.subject.id }))
                                             },
                                         shape = RoundedCornerShape(8.dp)
                                     ) {
@@ -477,7 +483,7 @@ fun MattersContent(
                                             TriStateCheckbox(
                                                 state = sectionToggleState,
                                                 onClick = {
-                                                    onEvent(MattersUiEvent.ToggleGroupSelection(mattersInGroup.map { it.matter.id }))
+                                                    onEvent(SubjectsUiEvent.ToggleGroupSelection(subjectsInGroup.map { it.subject.id }))
                                                 }
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
@@ -488,12 +494,12 @@ fun MattersContent(
                                                 color = MaterialTheme.colorScheme.onSecondaryContainer,
                                                 modifier = Modifier.weight(1f)
                                             )
-                                            val selectedInGroup = mattersInGroup.count { uiState.selectedMatterIds.contains(it.matter.id) }
+                                            val selectedInGroup = subjectsInGroup.count { uiState.selectedSubjectIds.contains(it.subject.id) }
                                             Text(
                                                 text = stringResource(
                                                     R.string.section_selected_count,
                                                     selectedInGroup,
-                                                    mattersInGroup.size
+                                                    subjectsInGroup.size
                                                 ),
                                                 style = MaterialTheme.typography.labelMedium,
                                                 color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f),
@@ -521,26 +527,26 @@ fun MattersContent(
                             }
 
                             items(
-                                items = mattersInGroup,
-                                key = { it.matter.id }
-                            ) { matterWithSlots ->
-                                val isSelected = uiState.selectedMatterIds.contains(matterWithSlots.matter.id)
-                                MatterItemCard(
-                                    matterWithSlots = matterWithSlots,
+                                items = subjectsInGroup,
+                                key = { it.subject.id }
+                            ) { subjectWithSlots ->
+                                val isSelected = uiState.selectedSubjectIds.contains(subjectWithSlots.subject.id)
+                                SubjectItemCard(
+                                    subjectWithSlots = subjectWithSlots,
                                     isInSelectionMode = uiState.isInSelectionMode,
                                     isSelected = isSelected,
                                     onToggleActive = { isActive ->
-                                        onEvent(MattersUiEvent.ToggleMatterActive(matterWithSlots.matter.id, isActive))
+                                        onEvent(SubjectsUiEvent.ToggleSubjectActive(subjectWithSlots.subject.id, isActive))
                                     },
                                     onEditClick = {
-                                        onNavigateToAddEditMatter(matterWithSlots.matter.id)
+                                        onNavigateToAddEditSubject(subjectWithSlots.subject.id)
                                     },
                                     onDeleteClick = {
-                                        matterToDelete = matterWithSlots.matter
+                                        subjectToDelete = subjectWithSlots.subject
                                     },
                                     onNavigateToSchedule = onNavigateToSchedule,
                                     onToggleSelection = {
-                                        onEvent(MattersUiEvent.ToggleMatterSelection(matterWithSlots.matter.id))
+                                        onEvent(SubjectsUiEvent.ToggleSubjectSelection(subjectWithSlots.subject.id))
                                     }
                                 )
                             }
@@ -554,8 +560,8 @@ fun MattersContent(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun MatterItemCard(
-    matterWithSlots: MatterWithSlots,
+private fun SubjectItemCard(
+    subjectWithSlots: SubjectWithSlots,
     isInSelectionMode: Boolean,
     isSelected: Boolean,
     onToggleActive: (Boolean) -> Unit,
@@ -564,11 +570,11 @@ private fun MatterItemCard(
     onNavigateToSchedule: (DayOfWeek) -> Unit,
     onToggleSelection: () -> Unit
 ) {
-    val matter = matterWithSlots.matter
+    val subject = subjectWithSlots.subject
     var isExpanded by remember { mutableStateOf(false) }
 
-    val cardBgColor = if (matter.isActive) {
-        matter.cardColor
+    val cardBgColor = if (subject.isActive) {
+        subject.cardColor
     } else {
         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
     }
@@ -613,12 +619,12 @@ private fun MatterItemCard(
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = matter.name,
+                        text = subject.name,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        color = if (matter.isActive) {
+                        color = if (subject.isActive) {
                             MaterialTheme.colorScheme.onSurface
                         } else {
                             MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
@@ -632,11 +638,11 @@ private fun MatterItemCard(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        val slotCountText = stringResource(R.string.slots_count, matterWithSlots.slots.size)
+                        val slotCountText = stringResource(R.string.slots_count, subjectWithSlots.slots.size)
                         Text(
-                            text = "${matter.code} • $slotCountText",
+                            text = "${subject.code} • $slotCountText",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = if (matter.isActive) {
+                            color = if (subject.isActive) {
                                 MaterialTheme.colorScheme.onSurfaceVariant
                             } else {
                                 MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
@@ -662,13 +668,13 @@ private fun MatterItemCard(
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.clickable { onToggleActive(!matter.isActive) }
+                                    modifier = Modifier.clickable { onToggleActive(!subject.isActive) }
                                 ) {
                                     Text(
-                                        text = stringResource(if (matter.isActive) R.string.active else R.string.inactive),
+                                        text = stringResource(if (subject.isActive) R.string.active else R.string.inactive),
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Medium,
-                                        color = if (matter.isActive) {
+                                        color = if (subject.isActive) {
                                             MaterialTheme.colorScheme.onSurface
                                         } else {
                                             MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
@@ -676,7 +682,7 @@ private fun MatterItemCard(
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Switch(
-                                        checked = matter.isActive,
+                                        checked = subject.isActive,
                                         onCheckedChange = onToggleActive
                                     )
                                 }
@@ -696,7 +702,7 @@ private fun MatterItemCard(
                                             modifier = Modifier.size(16.dp)
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
-                                        Text(stringResource(R.string.edit_matter))
+                                        Text(stringResource(R.string.edit_subject))
                                     }
 
                                     OutlinedButton(
@@ -713,14 +719,14 @@ private fun MatterItemCard(
                                             modifier = Modifier.size(16.dp)
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
-                                        Text(stringResource(R.string.delete_matter))
+                                        Text(stringResource(R.string.delete_subject))
                                     }
                                 }
                             }
 
                             Spacer(modifier = Modifier.height(12.dp))
 
-                            if (matterWithSlots.slots.isEmpty()) {
+                            if (subjectWithSlots.slots.isEmpty()) {
                                 Text(
                                     text = "No schedule slots assigned.",
                                     style = MaterialTheme.typography.bodySmall,
@@ -728,7 +734,7 @@ private fun MatterItemCard(
                                     modifier = Modifier.padding(vertical = 4.dp)
                                 )
                             } else {
-                                matterWithSlots.slots.forEach { slot ->
+                                subjectWithSlots.slots.forEach { slot ->
                                     SlotDetailRow(
                                         slot = slot,
                                         onSlotClick = { onNavigateToSchedule(slot.dayOfWeek) }
@@ -812,8 +818,8 @@ private fun SlotDetailRow(
     }
 }
 
-private fun Collection<MatterWithSlots>.calculateToggleState(selected: Set<Long>): ToggleableState {
-    val ids = map { it.matter.id }
+private fun Collection<SubjectWithSlots>.calculateToggleState(selected: Set<Long>): ToggleableState {
+    val ids = map { it.subject.id }
     val selectedCount = ids.count { selected.contains(it) }
     return when {
         isEmpty() -> ToggleableState.Off
@@ -823,19 +829,19 @@ private fun Collection<MatterWithSlots>.calculateToggleState(selected: Set<Long>
     }
 }
 
-private val previewMockMatters = listOf(
-    MatterWithSlots(
-        matter = Matter(
+private val previewMockSubjects = listOf(
+    SubjectWithSlots(
+        subject = Subject(
             id = 1L,
             name = "Sistemas Operativos",
             code = "SO",
-            color = Matter.PRESET_COLORS[0],
+            color = Subject.PRESET_COLORS[0],
             isActive = true
         ),
         slots = listOf(
             ClassSlot(
                 id = 101L,
-                matterId = 1L,
+                subjectId = 1L,
                 dayOfWeek = DayOfWeek.MONDAY,
                 startTime = LocalTime.of(9, 0),
                 endTime = LocalTime.of(11, 0),
@@ -848,15 +854,15 @@ private val previewMockMatters = listOf(
     )
 )
 
-@Preview(name = "Matters Screen - Light Mode", showBackground = true)
+@Preview(name = "Subjects Screen - Light Mode", showBackground = true)
 @Composable
-private fun MattersContentPreviewLight() {
+private fun SubjectsContentPreviewLight() {
     ClemenTimeTheme {
-        MattersContent(
-            uiState = MattersUiState(matters = previewMockMatters),
+        SubjectsContent(
+            uiState = SubjectsUiState(subjects = previewMockSubjects),
             onEvent = {},
             onMenuClick = {},
-            onNavigateToAddEditMatter = {},
+            onNavigateToAddEditSubject = {},
             onNavigateToImport = {}
         )
     }

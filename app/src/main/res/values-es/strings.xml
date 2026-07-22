@@ -5,14 +5,14 @@
     <string name="settings_screen_title">Ajustes</string>
     <string name="import_screen_title">Importar Horario</string>
     <string name="import_schedule_title">Importar Horario</string>
-    <string name="matters_screen_title">Asignaturas</string>
-    <string name="search_matters_placeholder">Buscar por nombre o código…</string>
-    <string name="delete_matter_dialog_title">Eliminar Asignatura</string>
-    <string name="delete_matter_dialog_message">¿Estás seguro de que deseas eliminar \"%1$s\"? Esto también eliminará todos los horarios asociados.</string>
-    <string name="delete_matter_confirm">Eliminar</string>
+    <string name="subjects_screen_title">Asignaturas</string>
+    <string name="search_subjects_placeholder">Buscar por nombre o código…</string>
+    <string name="delete_subject_dialog_title">Eliminar Asignatura</string>
+    <string name="delete_subject_dialog_message">¿Estás seguro de que deseas eliminar \"%1$s\"? Esto también eliminará todos los horarios asociados.</string>
+    <string name="delete_subject_confirm">Eliminar</string>
     <string name="cancel">Cancelar</string>
-    <string name="no_matters_title">Aún no hay asignaturas</string>
-    <string name="no_matters_subtitle">Importa un horario o toca + para crear uno.</string>
+    <string name="no_subjects_title">Aún no hay asignaturas</string>
+    <string name="no_subjects_subtitle">Importa un horario o toca + para crear uno.</string>
     <string name="no_search_results">Ninguna asignatura coincide con tu búsqueda.</string>
     <string name="slots_count">%1$d clase(s)</string>
     <string name="expand_slots">Mostrar clases</string>
@@ -26,12 +26,12 @@
     <string name="select_file_button">Seleccionar Archivo JSON de Horario</string>
     <string name="try_again">Reintentar</string>
     <string name="import_selected_button">Importar Seleccionadas (%1$d)</string>
-    <string name="edit_matter">Editar</string>
-    <string name="delete_matter">Eliminar</string>
-    <string name="add_matter_title">Añadir Asignatura</string>
-    <string name="edit_matter_title">Editar Asignatura</string>
-    <string name="nuke_all_matters_title">Borrar Todo</string>
-    <string name="nuke_all_matters_message">¿Estás seguro de que deseas eliminar TODAS las asignaturas y sus clases asociadas? Esta acción es permanente y no se puede deshacer.</string>
+    <string name="edit_subject">Editar</string>
+    <string name="delete_subject">Eliminar</string>
+    <string name="add_subject_title">Añadir Asignatura</string>
+    <string name="edit_subject_title">Editar Asignatura</string>
+    <string name="nuke_all_subjects_title">Borrar Todo</string>
+    <string name="nuke_all_subjects_message">¿Estás seguro de que deseas eliminar TODAS las asignaturas y sus clases asociadas? Esta acción es permanente y no se puede deshacer.</string>
     <string name="nuke_confirm">Eliminar Todo</string>
     <string name="selected_count_simple">%1$d seleccionadas</string>
     <string name="delete_selected_dialog_title">Eliminar Seleccionadas</string>
@@ -59,6 +59,7 @@
     <string name="export_button">Exportar</string>
     <string name="import_button">Importar</string>
     <string name="import_schedule_desc">Cargar asignaturas y horarios desde un archivo JSON</string>
+    <string name="import_library_desc">Examina e importa horarios desde la biblioteca o el dispositivo</string>
 
     <!-- Notes & Attachments strings -->
     <string name="notes_and_attachments_header">Notas y Archivos Adjuntos</string>
@@ -86,4 +87,5 @@
     <string name="import_delete_confirm_message">¿Estás seguro de que deseas eliminar \"%1$s\" de tu biblioteca de importación?</string>
     <string name="no_schedule_data">Sin datos de horario</string>
     <string name="no_schedule_data_subtitle">Importa un horario o añade asignaturas para empezar.</string>
+    <string name="import_screen_prompt">Selecciona qué asignaturas importar</string>
 </resources>

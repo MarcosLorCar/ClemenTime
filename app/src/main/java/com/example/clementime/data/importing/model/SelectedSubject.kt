@@ -1,6 +1,6 @@
 package com.example.clementime.data.importing.model
 
-data class SelectedMatter(
-    val matter: JsonMatter,
+data class SelectedSubject(
+    val subject: JsonSubject,
     val courseGroup: String
 )

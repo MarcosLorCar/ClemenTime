@@ -1,4 +1,4 @@
-package com.example.clementime.ui.screens.matter
+package com.example.clementime.ui.screens.subject
 
 import android.content.Context
 import android.content.Intent
@@ -87,7 +87,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.clementime.R
 import com.example.clementime.data.AttachedFileItem
 import com.example.clementime.data.EntryType
-import com.example.clementime.data.Matter
+import com.example.clementime.data.Subject
 import com.example.clementime.ui.components.ClemenTimeTopBar
 import com.example.clementime.ui.theme.ClemenTimeTheme
 import java.io.File
@@ -98,10 +98,10 @@ import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 @Composable
-fun AddEditMatterScreen(
+fun AddEditSubjectScreen(
     onNavigateBack: () -> Unit,
     onNavigateToSchedule: (DayOfWeek) -> Unit,
-    viewModel: AddEditMatterViewModel = hiltViewModel()
+    viewModel: AddEditSubjectViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -111,7 +111,7 @@ fun AddEditMatterScreen(
         }
     }
 
-    AddEditMatterContent(
+    AddEditSubjectContent(
         uiState = uiState,
         onNavigateBack = onNavigateBack,
         onNavigateToSchedule = onNavigateToSchedule,
@@ -127,14 +127,14 @@ fun AddEditMatterScreen(
         onDeleteSlot = viewModel::deleteSlot,
         onStartTimeSelected = viewModel::onStartTimeSelected,
         onEndTimeSelected = viewModel::onEndTimeSelected,
-        onSave = viewModel::saveMatter
+        onSave = viewModel::saveSubject
     )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddEditMatterContent(
-    uiState: AddEditMatterUiState,
+fun AddEditSubjectContent(
+    uiState: AddEditSubjectUiState,
     onNavigateBack: () -> Unit,
     onNavigateToSchedule: (DayOfWeek) -> Unit,
     onUpdateCode: (String) -> Unit,
@@ -194,11 +194,11 @@ fun AddEditMatterContent(
     }
 
     val defaultTitle = stringResource(
-        if (uiState.matterId == null || uiState.matterId == 0L) R.string.add_matter_title else R.string.edit_matter_title
+        if (uiState.subjectId == null || uiState.subjectId == 0L) R.string.add_subject_title else R.string.edit_subject_title
     )
 
-    val topBarTitle = remember(uiState.matterId, uiState.name, uiState.code, defaultTitle) {
-        if (uiState.matterId == null || uiState.matterId == 0L) {
+    val topBarTitle = remember(uiState.subjectId, uiState.name, uiState.code, defaultTitle) {
+        if (uiState.subjectId == null || uiState.subjectId == 0L) {
             defaultTitle
         } else {
             uiState.name.takeIf { it.isNotBlank() }
@@ -444,7 +444,7 @@ private fun SubjectBasicDetailsCard(
                     }
                 }
 
-                if (!Matter.PRESET_COLORS.contains(selectedColor)) {
+                if (!Subject.PRESET_COLORS.contains(selectedColor)) {
                     item {
                         Box(
                             modifier = Modifier
@@ -465,7 +465,7 @@ private fun SubjectBasicDetailsCard(
                     }
                 }
 
-                items(Matter.PRESET_COLORS) { colorInt ->
+                items(Subject.PRESET_COLORS) { colorInt ->
                     val isSelected = selectedColor == colorInt
                     Box(
                         modifier = Modifier
@@ -1006,16 +1006,16 @@ fun ColorPickerDialog(
 
 @Preview(showBackground = true)
 @Composable
-private fun AddEditMatterContentPreview() {
+private fun AddEditSubjectContentPreview() {
     ClemenTimeTheme {
-        AddEditMatterContent(
-            uiState = AddEditMatterUiState(
+        AddEditSubjectContent(
+            uiState = AddEditSubjectUiState(
                 code = "SO",
                 name = "Sistemas Operativos",
                 slots = listOf(
                     ClassSlotUiModel(
                         id = 1L,
-                        matterId = 1L,
+                        subjectId = 1L,
                         dayOfWeek = DayOfWeek.MONDAY,
                         startTime = null,
                         endTime = null,

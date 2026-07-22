@@ -1,5 +1,6 @@
 package com.example.clementime.data.importing.model
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
@@ -9,7 +10,7 @@ import kotlinx.serialization.Serializable
 data class ScheduleJsonSchema(
     val version: Int = 1,                 // Schema version for future-proofing compatibility
     val title: String? = null,            // Descriptive name of the schedule (e.g. "First Semester 2026/27")
-    val matters: List<JsonMatter> = emptyList(), // Root matters (Common for everyone)
+    @SerialName("matters") val subjects: List<JsonSubject> = emptyList(), // Root subjects (Common for everyone)
     val years: List<JsonYear> = emptyList()
 )
 
@@ -19,7 +20,7 @@ data class ScheduleJsonSchema(
 @Serializable
 data class JsonYear(
     val name: String,                     // e.g. "1º"
-    val matters: List<JsonMatter> = emptyList(), // Matters common to all groups in this year
+    @SerialName("matters") val subjects: List<JsonSubject> = emptyList(), // Subjects common to all groups in this year
     val groups: List<JsonGroup> = emptyList()
 )
 
@@ -29,14 +30,14 @@ data class JsonYear(
 @Serializable
 data class JsonGroup(
     val name: String,                     // e.g. "A"
-    val matters: List<JsonMatter> = emptyList()
+    @SerialName("matters") val subjects: List<JsonSubject> = emptyList()
 )
 
 /**
  * Representation of a subject/matter in the JSON schema.
  */
 @Serializable
-data class JsonMatter(
+data class JsonSubject(
     val code: String,                     // Unique subject identifier (e.g. "SO")
     val name: String,                     // Full name of the subject (e.g. "Sistemas Operativos")
     val color: Int? = null,               // Color represented as ARGB Int (e.g. 0xFF4CAF50)

@@ -4,7 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
-import com.example.clementime.data.MatterWithSlots
+import com.example.clementime.data.SubjectWithSlots
 import com.example.clementime.data.ScheduleDao
 import com.example.clementime.data.SettingsRepository
 import com.example.clementime.ui.navigation.ScheduleListRoute
@@ -19,13 +19,13 @@ import javax.inject.Inject
 data class ScheduleUiState(
     val isLoading: Boolean = true,
     val selectedTab: ScheduleTab = ScheduleTab.MONDAY,
-    val mattersWithSlots: List<MatterWithSlots> = emptyList(),
+    val subjectsWithSlots: List<SubjectWithSlots> = emptyList(),
     val scrollableTabs: Boolean = false
 )
 
 @HiltViewModel
 class ScheduleViewModel @Inject constructor(
-    private val scheduleDao: ScheduleDao,
+    scheduleDao: ScheduleDao,
     settingsRepository: SettingsRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -43,14 +43,14 @@ class ScheduleViewModel @Inject constructor(
     private val _selectedTab = MutableStateFlow(initialTab)
 
     val uiState: StateFlow<ScheduleUiState> = combine(
-        scheduleDao.getActiveMattersWithSlots(),
+        scheduleDao.getActiveSubjectsWithSlots(),
         _selectedTab,
         settingsRepository.scrollableTabsFlow
-    ) { mattersWithSlots, selectedTab, scrollable ->
+    ) { subjectsWithSlots, selectedTab, scrollable ->
         ScheduleUiState(
             isLoading = false,
             selectedTab = selectedTab,
-            mattersWithSlots = mattersWithSlots,
+            subjectsWithSlots = subjectsWithSlots,
             scrollableTabs = scrollable
         )
     }.stateIn(

@@ -5,9 +5,9 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.clementime.data.importing.model.ImportFile
-import com.example.clementime.data.importing.model.JsonMatter
+import com.example.clementime.data.importing.model.JsonSubject
 import com.example.clementime.data.importing.model.ScheduleJsonSchema
-import com.example.clementime.data.importing.model.SelectedMatter
+import com.example.clementime.data.importing.model.SelectedSubject
 import com.example.clementime.data.importing.repository.ImportRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -28,7 +28,7 @@ sealed interface ImportUiState {
     object Parsing : ImportUiState
     data class Selection(
         val schema: ScheduleJsonSchema,
-        val selectedMatters: Set<SelectedMatter>,
+        val selectedSubjects: Set<SelectedSubject>,
         val searchQuery: String = "",
         val selectedFile: ImportFile
     ) : ImportUiState
@@ -78,7 +78,7 @@ class ImportViewModel @Inject constructor(
                     onSuccess = { schema ->
                         _uiState.value = ImportUiState.Selection(
                             schema = schema,
-                            selectedMatters = emptySet(),
+                            selectedSubjects = emptySet(),
                             selectedFile = file
                         )
                     },
@@ -135,55 +135,62 @@ class ImportViewModel @Inject constructor(
         }
     }
 
-    fun toggleMatterSelection(matter: JsonMatter, groupName: String) {
+    fun toggleSubjectSelection(subject: JsonSubject, groupName: String) {
         val currentState = _uiState.value
         if (currentState is ImportUiState.Selection) {
-            val selectedMatter = SelectedMatter(matter, groupName)
-            val updatedSelection = currentState.selectedMatters.toMutableSet()
-            if (updatedSelection.contains(selectedMatter)) {
-                updatedSelection.remove(selectedMatter)
+            val selectedSubject = SelectedSubject(subject, groupName)
+            val updatedSelection = currentState.selectedSubjects.toMutableSet()
+            if (updatedSelection.contains(selectedSubject)) {
+                updatedSelection.remove(selectedSubject)
             } else {
-                updatedSelection.add(selectedMatter)
+                updatedSelection.add(selectedSubject)
             }
-            _uiState.value = currentState.copy(selectedMatters = updatedSelection)
+            _uiState.value = currentState.copy(selectedSubjects = updatedSelection)
         }
     }
 
-    fun toggleAllMatters(targetMatters: Collection<SelectedMatter>) {
+    fun toggleAllSubjects(targetSubjects: Collection<SelectedSubject>) {
         val currentState = _uiState.value
         if (currentState is ImportUiState.Selection) {
-            val updatedSelection = currentState.selectedMatters.toMutableSet()
-            val allSelected = targetMatters.isNotEmpty() && targetMatters.all { updatedSelection.contains(it) }
+            val updatedSelection = currentState.selectedSubjects.toMutableSet()
+            val allSelected = targetSubjects.isNotEmpty() && targetSubjects.all { updatedSelection.contains(it) }
             if (allSelected) {
-                updatedSelection.removeAll(targetMatters.toSet())
+                updatedSelection.removeAll(targetSubjects.toSet())
             } else {
-                updatedSelection.addAll(targetMatters)
+                updatedSelection.addAll(targetSubjects)
             }
-            _uiState.value = currentState.copy(selectedMatters = updatedSelection)
+            _uiState.value = currentState.copy(selectedSubjects = updatedSelection)
         }
     }
 
-    fun toggleSectionMatters(sectionMatters: Collection<SelectedMatter>) {
-        toggleAllMatters(sectionMatters)
+    fun toggleSectionSubjects(sectionSubjects: Collection<SelectedSubject>) {
+        toggleAllSubjects(sectionSubjects)
     }
 
-    fun selectAllMatters(matters: Collection<SelectedMatter>? = null) {
+    fun deselectAll() {
         val currentState = _uiState.value
         if (currentState is ImportUiState.Selection) {
-            val toSelect = matters ?: run {
-                val fromRoot = currentState.schema.matters.map { SelectedMatter(it, "General") }
+            _uiState.value = currentState.copy(selectedSubjects = emptySet())
+        }
+    }
+
+    fun selectAllSubjects(subjects: Collection<SelectedSubject>? = null) {
+        val currentState = _uiState.value
+        if (currentState is ImportUiState.Selection) {
+            val toSelect = subjects ?: run {
+                val fromRoot = currentState.schema.subjects.map { SelectedSubject(it, "General") }
                 val fromYears = currentState.schema.years.flatMap { year ->
-                    val yearCommon = year.matters.map { SelectedMatter(it, "${year.name} Common") }
+                    val yearCommon = year.subjects.map { SelectedSubject(it, "${year.name} Common") }
                     val fromGroups = year.groups.flatMap { group ->
-                        group.matters.map { SelectedMatter(it, "${year.name} ${group.name}") }
+                        group.subjects.map { SelectedSubject(it, "${year.name} ${group.name}") }
                     }
                     yearCommon + fromGroups
                 }
                 fromRoot + fromYears
             }
-            val updatedSelection = currentState.selectedMatters.toMutableSet()
+            val updatedSelection = currentState.selectedSubjects.toMutableSet()
             updatedSelection.addAll(toSelect)
-            _uiState.value = currentState.copy(selectedMatters = updatedSelection)
+            _uiState.value = currentState.copy(selectedSubjects = updatedSelection)
         }
     }
 
@@ -193,7 +200,7 @@ class ImportViewModel @Inject constructor(
             viewModelScope.launch {
                 _uiState.value = ImportUiState.Importing
                 try {
-                    repository.importMatters(currentState.selectedMatters.toList())
+                    repository.importSubjects(currentState.selectedSubjects.toList())
                     _uiState.value = ImportUiState.Success
                 } catch (e: Exception) {
                     _uiState.value = ImportUiState.Error("Import failed: ${e.localizedMessage}")

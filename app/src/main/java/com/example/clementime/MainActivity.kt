@@ -10,49 +10,48 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.DrawerValue
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberDrawerState
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavDestination.Companion.hasRoute
-import androidx.navigation.toRoute
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.clementime.data.SettingsRepository
-import com.example.clementime.ui.components.AppDrawerContent
-import com.example.clementime.ui.navigation.AddEditMatterRoute
+import com.example.clementime.ui.navigation.AddEditSubjectRoute
 import com.example.clementime.ui.navigation.ImportRoute
-import com.example.clementime.ui.navigation.MattersRoute
 import com.example.clementime.ui.navigation.ScheduleListRoute
 import com.example.clementime.ui.navigation.SettingsRoute
+import com.example.clementime.ui.navigation.SubjectsRoute
 import com.example.clementime.ui.screens.ScheduleScreen
 import com.example.clementime.ui.screens.SettingsScreen
 import com.example.clementime.ui.screens.scheduleimport.ImportScreen
-import com.example.clementime.ui.screens.matter.AddEditMatterScreen
-import com.example.clementime.ui.screens.matter.MattersScreen
-import androidx.compose.runtime.LaunchedEffect
+import com.example.clementime.ui.screens.subject.AddEditSubjectScreen
+import com.example.clementime.ui.screens.subject.SubjectsScreen
 import com.example.clementime.ui.theme.ClemenTimeTheme
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.launch
 import java.util.Locale
 import javax.inject.Inject
 
@@ -128,62 +127,57 @@ fun LocaleWrapper(localeCode: String, content: @Composable () -> Unit) {
     )
 }
 
-@Preview(showBackground = true)
 @Composable
-fun DrawerExpandedPreview() {
-    ClemenTimeTheme {
-        val drawerState = rememberDrawerState(DrawerValue.Open)
-        ModalNavigationDrawer(
-            drawerState = drawerState,
-            drawerContent = {
-                AppDrawerContent(
-                    isRouteSelected = { it == ScheduleListRoute::class },
-                    onNavigate = {},
-                    onCloseDrawer = {}
-                )
-            }
-        ) {
-            Scaffold { padding ->
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("Main Content Area")
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun ClemenTimeApp(
-    initialDrawerValue: DrawerValue = DrawerValue.Closed
-) {
+fun ClemenTimeApp() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
-    val drawerState = rememberDrawerState(initialDrawerValue)
-    val scope = rememberCoroutineScope()
+    val isNavVisible = currentDestination?.let { dest ->
+        dest.hasRoute(ScheduleListRoute::class) || 
+        dest.hasRoute(SubjectsRoute::class) || 
+        dest.hasRoute(SettingsRoute::class)
+    } ?: true
 
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
-            AppDrawerContent(
-                isRouteSelected = { routeClass ->
-                    currentDestination?.hasRoute(routeClass) == true
-                },
-                onNavigate = { route ->
-                    navController.navigate(route)
-                },
-                onCloseDrawer = {
-                    scope.launch { drawerState.close() }
-                }
-            )
-        },
-        gesturesEnabled = drawerState.currentValue == DrawerValue.Open || drawerState.isAnimationRunning
+    val adaptiveInfo = currentWindowAdaptiveInfo()
+    val layoutType = if (!isNavVisible) {
+        NavigationSuiteType.None
+    } else {
+        NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(adaptiveInfo)
+    }
+
+    val items = listOf(
+        Triple(stringResource(R.string.schedule_screen_title), Icons.Default.CalendarMonth, ScheduleListRoute::class),
+        Triple(stringResource(R.string.subjects_screen_title), Icons.Default.School, SubjectsRoute::class),
+        Triple(stringResource(R.string.settings_screen_title), Icons.Default.Settings, SettingsRoute::class)
+    )
+
+    NavigationSuiteScaffold(
+        layoutType = layoutType,
+        navigationSuiteItems = {
+            items.forEach { (label, icon, routeClass) ->
+                item(
+                    selected = currentDestination?.hasRoute(routeClass) == true,
+                    onClick = {
+                        val route = when(routeClass) {
+                            ScheduleListRoute::class -> ScheduleListRoute()
+                            SubjectsRoute::class -> SubjectsRoute
+                            SettingsRoute::class -> SettingsRoute
+                            else -> return@item
+                        }
+                        navController.navigate(route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    icon = { Icon(icon, contentDescription = null) },
+                    label = { Text(label) }
+                )
+            }
+        }
     ) {
         NavHost(
             navController = navController,
@@ -192,9 +186,8 @@ fun ClemenTimeApp(
         ) {
             composable<ScheduleListRoute> {
                 ScheduleScreen(
-                    onMenuClick = { scope.launch { drawerState.open() } },
-                    onClickMatter = { matterId, slotId ->
-                        navController.navigate(AddEditMatterRoute(matterId, slotId))
+                    onClickSubject = { subjectId, slotId ->
+                        navController.navigate(AddEditSubjectRoute(subjectId, slotId))
                     },
                     onNavigateToImport = {
                         navController.navigate(ImportRoute)
@@ -204,7 +197,6 @@ fun ClemenTimeApp(
 
             composable<ImportRoute> {
                 ImportScreen(
-                    onMenuClick = { scope.launch { drawerState.open() } },
                     onNavigateBack = {
                         navController.popBackStack<ScheduleListRoute>(inclusive = false)
                     }
@@ -213,18 +205,16 @@ fun ClemenTimeApp(
 
             composable<SettingsRoute> {
                 SettingsScreen(
-                    onMenuClick = { scope.launch { drawerState.open() } },
                     onNavigateToImport = {
                         navController.navigate(ImportRoute)
                     }
                 )
             }
 
-            composable<MattersRoute> {
-                MattersScreen(
-                    onMenuClick = { scope.launch { drawerState.open() } },
-                    onNavigateToAddEditMatter = { matterId ->
-                        navController.navigate(AddEditMatterRoute(matterId))
+            composable<SubjectsRoute> {
+                SubjectsScreen(
+                    onNavigateToAddEditSubject = { subjectId ->
+                        navController.navigate(AddEditSubjectRoute(subjectId))
                     },
                     onNavigateToSchedule = { dayOfWeek ->
                         navController.navigate(ScheduleListRoute(dayOfWeek = dayOfWeek.name))
@@ -235,8 +225,8 @@ fun ClemenTimeApp(
                 )
             }
 
-            composable<AddEditMatterRoute> {
-                AddEditMatterScreen(
+            composable<AddEditSubjectRoute> {
+                AddEditSubjectScreen(
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToSchedule = { dayOfWeek ->
                         navController.navigate(ScheduleListRoute(dayOfWeek = dayOfWeek.name)) {

@@ -1,10 +1,10 @@
-package com.example.clementime.ui.screens.matter
+package com.example.clementime.ui.screens.subject
 
 import androidx.lifecycle.SavedStateHandle
 import com.example.clementime.data.ClassSlot
 import com.example.clementime.data.EntryType
-import com.example.clementime.data.Matter
-import com.example.clementime.data.MatterWithSlots
+import com.example.clementime.data.Subject
+import com.example.clementime.data.SubjectWithSlots
 import com.example.clementime.data.ScheduleDao
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
@@ -15,35 +15,35 @@ import org.junit.Test
 import java.time.LocalTime
 
 class FakeScheduleDao : ScheduleDao {
-    val matters = mutableListOf<Matter>()
+    val subjects = mutableListOf<Subject>()
     val slots = mutableListOf<ClassSlot>()
 
-    override fun getActiveMattersWithSlots(): Flow<List<MatterWithSlots>> = flowOf(emptyList())
+    override fun getActiveSubjectsWithSlots(): Flow<List<SubjectWithSlots>> = flowOf(emptyList())
 
-    override suspend fun updateMatterActiveStatus(matterId: Long, isActive: Boolean) {}
+    override suspend fun updateSubjectActiveStatus(subjectId: Long, isActive: Boolean) {}
 
-    override fun getAllMattersWithSlots(): Flow<List<MatterWithSlots>> = flowOf(emptyList())
+    override fun getAllSubjectsWithSlots(): Flow<List<SubjectWithSlots>> = flowOf(emptyList())
 
-    override fun getMatterWithSlotsById(matterId: Long): Flow<MatterWithSlots?> {
-        val m = matters.find { it.id == matterId }
-        val s = slots.filter { it.matterId == matterId }
-        return flowOf(m?.let { MatterWithSlots(it, s) })
+    override fun getSubjectWithSlotsById(subjectId: Long): Flow<SubjectWithSlots?> {
+        val m = subjects.find { it.id == subjectId }
+        val s = slots.filter { it.subjectId == subjectId }
+        return flowOf(m?.let { SubjectWithSlots(it, s) })
     }
 
-    override suspend fun insertMatter(matter: Matter): Long {
-        val id = if (matter.id == 0L) (matters.size + 1).toLong() else matter.id
-        val newMatter = matter.copy(id = id)
-        matters.add(newMatter)
+    override suspend fun insertSubject(subject: Subject): Long {
+        val id = if (subject.id == 0L) (subjects.size + 1).toLong() else subject.id
+        val newSubject = subject.copy(id = id)
+        subjects.add(newSubject)
         return id
     }
 
-    override suspend fun updateMatter(matter: Matter) {
-        val index = matters.indexOfFirst { it.id == matter.id }
-        if (index >= 0) matters[index] = matter
+    override suspend fun updateSubject(subject: Subject) {
+        val index = subjects.indexOfFirst { it.id == subject.id }
+        if (index >= 0) subjects[index] = subject
     }
 
-    override suspend fun deleteMatterById(matterId: Long) {
-        matters.removeAll { it.id == matterId }
+    override suspend fun deleteSubjectById(subjectId: Long) {
+        subjects.removeAll { it.id == subjectId }
     }
 
     override suspend fun insertSlot(slot: ClassSlot): Long = 1L
@@ -58,31 +58,31 @@ class FakeScheduleDao : ScheduleDao {
 
     override suspend fun deleteSlotById(slotId: Long) {}
 
-    override suspend fun deleteSlotsForMatter(matterId: Long) {
-        slots.removeAll { it.matterId == matterId }
+    override suspend fun deleteSlotsForSubject(subjectId: Long) {
+        slots.removeAll { it.subjectId == subjectId }
     }
 
-    override suspend fun deleteAllMatters() {
-        matters.clear()
+    override suspend fun deleteAllSubjects() {
+        subjects.clear()
         slots.clear()
     }
 
-    override suspend fun deleteMattersByIds(matterIds: List<Long>) {
-        matters.removeAll { it.id in matterIds }
-        slots.removeAll { it.matterId in matterIds }
+    override suspend fun deleteSubjectsByIds(subjectIds: List<Long>) {
+        subjects.removeAll { it.id in subjectIds }
+        slots.removeAll { it.subjectId in subjectIds }
     }
 
-    override suspend fun updateMattersActiveStatus(matterIds: List<Long>, isActive: Boolean) {
-        for (i in matters.indices) {
-            val m = matters[i]
-            if (m.id in matterIds) {
-                matters[i] = m.copy(isActive = isActive)
+    override suspend fun updateSubjectsActiveStatus(subjectIds: List<Long>, isActive: Boolean) {
+        for (i in subjects.indices) {
+            val m = subjects[i]
+            if (m.id in subjectIds) {
+                subjects[i] = m.copy(isActive = isActive)
             }
         }
     }
 }
 
-class AddEditMatterViewModelTest {
+class AddEditSubjectViewModelTest {
 
     private lateinit var fakeDao: FakeScheduleDao
 
@@ -94,7 +94,7 @@ class AddEditMatterViewModelTest {
     @Test
     fun addSlot_initializesUnsetTimesAndAutofillsDetails() {
         val savedStateHandle = SavedStateHandle()
-        val viewModel = AddEditMatterViewModel(savedStateHandle, fakeDao)
+        val viewModel = AddEditSubjectViewModel(savedStateHandle, fakeDao)
 
         viewModel.addSlot()
         val slot1 = viewModel.uiState.value.slots.first()
@@ -105,7 +105,7 @@ class AddEditMatterViewModelTest {
     @Test
     fun addSlot_autofillsFromPreviousSlot() {
         val savedStateHandle = SavedStateHandle()
-        val viewModel = AddEditMatterViewModel(savedStateHandle, fakeDao)
+        val viewModel = AddEditSubjectViewModel(savedStateHandle, fakeDao)
 
         viewModel.addSlot()
         val slot1 = viewModel.uiState.value.slots.first()
@@ -133,7 +133,7 @@ class AddEditMatterViewModelTest {
     @Test
     fun duplicateSlot_clonesExactDetails() {
         val savedStateHandle = SavedStateHandle()
-        val viewModel = AddEditMatterViewModel(savedStateHandle, fakeDao)
+        val viewModel = AddEditSubjectViewModel(savedStateHandle, fakeDao)
 
         viewModel.addSlot()
         val slot1 = viewModel.uiState.value.slots.first().copy(
@@ -153,7 +153,7 @@ class AddEditMatterViewModelTest {
     @Test
     fun startTimeSelection_autoFillsEndTimeUsingDefaultDuration() {
         val savedStateHandle = SavedStateHandle()
-        val viewModel = AddEditMatterViewModel(savedStateHandle, fakeDao)
+        val viewModel = AddEditSubjectViewModel(savedStateHandle, fakeDao)
 
         viewModel.updateDefaultDuration(90)
         viewModel.addSlot()
@@ -169,7 +169,7 @@ class AddEditMatterViewModelTest {
     @Test
     fun endTimeSelectionFirst_autoFillsStartTimeUsingDefaultDuration() {
         val savedStateHandle = SavedStateHandle()
-        val viewModel = AddEditMatterViewModel(savedStateHandle, fakeDao)
+        val viewModel = AddEditSubjectViewModel(savedStateHandle, fakeDao)
 
         viewModel.updateDefaultDuration(90)
         viewModel.addSlot()
@@ -185,7 +185,7 @@ class AddEditMatterViewModelTest {
     @Test
     fun endTimeSelection_updatesDefaultDuration() {
         val savedStateHandle = SavedStateHandle()
-        val viewModel = AddEditMatterViewModel(savedStateHandle, fakeDao)
+        val viewModel = AddEditSubjectViewModel(savedStateHandle, fakeDao)
 
         viewModel.addSlot()
         val start = LocalTime.of(10, 0)

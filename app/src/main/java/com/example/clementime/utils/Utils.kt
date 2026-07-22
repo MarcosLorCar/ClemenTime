@@ -1,7 +1,7 @@
 package com.example.clementime.utils
 
 import com.example.clementime.data.ClassSlot
-import com.example.clementime.data.Matter
+import com.example.clementime.data.Subject
 import java.time.DayOfWeek
 import java.time.LocalTime
 import java.time.format.TextStyle
@@ -44,5 +44,5 @@ fun DayOfWeek.getNarrowLabel(locale: Locale): String {
 data class TimelineCluster(
     val startTime: LocalTime,
     val endTime: LocalTime,
-    val items: List<Pair<Matter, ClassSlot>>
+    val items: List<Pair<Subject, ClassSlot>>
 )

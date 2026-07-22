@@ -8,17 +8,16 @@ data class ScheduleListRoute(
 )
 
 @Serializable
-object SettingsRoute {
-}
+object SettingsRoute
 
 @Serializable
 object ImportRoute
 
 @Serializable
-object MattersRoute
+object SubjectsRoute
 
 @Serializable
-data class AddEditMatterRoute(
-    val matterId: Long? = null,
+data class AddEditSubjectRoute(
+    val subjectId: Long? = null,
     val highlightSlotId: Long? = null
 )
