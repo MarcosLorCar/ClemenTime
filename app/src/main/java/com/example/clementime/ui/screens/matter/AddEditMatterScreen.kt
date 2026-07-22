@@ -165,6 +165,7 @@ fun AddEditMatterContent(
     }
 
     val context = LocalContext.current
+    val attachmentFailedMessageTemplate = stringResource(R.string.attachment_failed_message)
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -185,7 +186,7 @@ fun AddEditMatterContent(
             } catch (e: Exception) {
                 Toast.makeText(
                     context,
-                    context.getString(R.string.attachment_failed_message, e.localizedMessage ?: ""),
+                    attachmentFailedMessageTemplate.format(e.localizedMessage ?: ""),
                     Toast.LENGTH_SHORT
                 ).show()
             }
@@ -313,7 +314,6 @@ fun AddEditMatterContent(
                 } else {
                     itemsIndexed(uiState.slots) { index, slot ->
                         ClassSlotItemCard(
-                            index = index,
                             slot = slot,
                             isHighlighted = slot.id == uiState.highlightSlotId,
                             onGoToSchedule = onNavigateToSchedule,
@@ -633,7 +633,6 @@ private fun SubjectNotesAndLinksCard(
 
 @Composable
 private fun ClassSlotItemCard(
-    index: Int,
     slot: ClassSlotUiModel,
     isHighlighted: Boolean = false,
     onGoToSchedule: (DayOfWeek) -> Unit,
@@ -1088,7 +1087,7 @@ private fun openFile(context: Context, fileItem: AttachedFileItem) {
     }
     try {
         context.startActivity(Intent.createChooser(intent, "Open File"))
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         Toast.makeText(context, context.getString(R.string.no_apps_for_file_message), Toast.LENGTH_SHORT).show()
     }
 }
