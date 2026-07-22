@@ -14,7 +14,8 @@ data class Subject(
     val isActive: Boolean,
     val defaultDurationMinutes: Int? = 90,
     val notes: String = "",
-    val attachedFiles: List<AttachedFileItem> = emptyList()
+    val attachedFiles: List<AttachedFileItem> = emptyList(),
+    val selectedLabGroup: String? = null
 ) {
     companion object {
         val PRESET_COLORS = listOf(

@@ -10,6 +10,7 @@ import com.example.clementime.data.importing.model.ScheduleJsonSchema
 import com.example.clementime.data.importing.model.SelectedSubject
 import com.example.clementime.data.importing.parser.JsonScheduleParser
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.security.MessageDigest
@@ -119,14 +120,33 @@ class ImportRepository @Inject constructor(
     }
 
     suspend fun importSubjects(selectedSubjects: List<SelectedSubject>) {
+        val existingSubjects = dao.getAllSubjectsWithSlots().first()
+        val usedColors = existingSubjects.map { it.subject.color }.toMutableSet()
+        
+        val availableColors = Subject.PRESET_COLORS.filter { it !in usedColors }.toMutableList()
+        availableColors.shuffle()
+
         selectedSubjects.forEach { selected ->
             val jsonSubject = selected.subject
+            
+            // Auto-select lab group if only one variant exists
+            val labGroups = jsonSubject.labVariants.keys
+            val autoSelectedLabGroup = if (labGroups.size == 1) labGroups.first() else null
+
+            val chosenColor = when {
+                jsonSubject.color != null -> jsonSubject.color
+                availableColors.isNotEmpty() -> availableColors.removeAt(0)
+                else -> Subject.PRESET_COLORS.random()
+            }
+            usedColors.add(chosenColor)
+
             val subject = Subject(
                 code = jsonSubject.code,
                 name = jsonSubject.name,
-                color = jsonSubject.color ?: Subject.PRESET_COLORS.random(),
+                color = chosenColor,
                 courseGroup = selected.courseGroup,
-                isActive = true
+                isActive = true,
+                selectedLabGroup = autoSelectedLabGroup
             )
 
             val theorySlots = jsonSubject.theorySlots.map {

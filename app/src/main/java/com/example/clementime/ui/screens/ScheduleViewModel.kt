@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import com.example.clementime.data.SubjectWithSlots
+import com.example.clementime.data.EntryType
 import com.example.clementime.data.ScheduleDao
 import com.example.clementime.data.SettingsRepository
 import com.example.clementime.ui.navigation.ScheduleListRoute
@@ -20,7 +21,8 @@ data class ScheduleUiState(
     val isLoading: Boolean = true,
     val selectedTab: ScheduleTab = ScheduleTab.MONDAY,
     val subjectsWithSlots: List<SubjectWithSlots> = emptyList(),
-    val scrollableTabs: Boolean = false
+    val scrollableTabs: Boolean = false,
+    val hasOverlaps: Boolean = false
 )
 
 @HiltViewModel
@@ -46,12 +48,24 @@ class ScheduleViewModel @Inject constructor(
         scheduleDao.getActiveSubjectsWithSlots(),
         _selectedTab,
         settingsRepository.scrollableTabsFlow
-    ) { subjectsWithSlots, selectedTab, scrollable ->
+    ) { rawSubjects, selectedTab, scrollable ->
+        val filteredSubjects = rawSubjects.map { sWithSlots ->
+            val filteredSlots = sWithSlots.slots.filter { slot ->
+                slot.entryType == EntryType.THEORY || 
+                sWithSlots.subject.selectedLabGroup == null || 
+                slot.labGroupName == sWithSlots.subject.selectedLabGroup
+            }
+            sWithSlots.copy(slots = filteredSlots)
+        }
+
+        val hasOverlaps = detectAnyOverlap(filteredSubjects)
+
         ScheduleUiState(
             isLoading = false,
             selectedTab = selectedTab,
-            subjectsWithSlots = subjectsWithSlots,
-            scrollableTabs = scrollable
+            subjectsWithSlots = filteredSubjects,
+            scrollableTabs = scrollable,
+            hasOverlaps = hasOverlaps
         )
     }.stateIn(
         scope = viewModelScope,
@@ -61,6 +75,24 @@ class ScheduleViewModel @Inject constructor(
 
     fun changeTab(tab: ScheduleTab) {
         _selectedTab.value = tab
+    }
+
+    private fun detectAnyOverlap(subjects: List<SubjectWithSlots>): Boolean {
+        val allSlots = subjects.flatMap { s -> s.slots.map { s.subject to it } }
+        val slotsByDay = allSlots.groupBy { it.second.dayOfWeek }
+        for (daySlots in slotsByDay.values) {
+            val sorted = daySlots.sortedBy { it.second.startTime }
+            for (i in 0 until sorted.size - 1) {
+                for (j in i + 1 until sorted.size) {
+                    val s1 = sorted[i].second
+                    val s2 = sorted[j].second
+                    if (!s1.isIgnored && !s2.isIgnored && s1.startTime < s2.endTime && s2.startTime < s1.endTime) {
+                        return true
+                    }
+                }
+            }
+        }
+        return false
     }
 
 }

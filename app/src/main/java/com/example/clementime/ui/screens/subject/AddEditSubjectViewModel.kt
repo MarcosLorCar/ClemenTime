@@ -72,6 +72,7 @@ data class AddEditSubjectUiState(
     val notesText: String = "",
     val attachedFiles: List<AttachedFileItem> = emptyList(),
     val slots: List<ClassSlotUiModel> = emptyList(),
+    val selectedLabGroup: String? = null,
     val isLoading: Boolean = false,
     val isSaved: Boolean = false,
     val errorMessage: String? = null
@@ -112,6 +113,7 @@ class AddEditSubjectViewModel @Inject constructor(
                         notesText = subject.notes,
                         attachedFiles = subject.attachedFiles,
                         slots = subjectWithSlots.slots.map { slot -> slot.toUiModel() },
+                        selectedLabGroup = subject.selectedLabGroup,
                         isLoading = false
                     )
                 }
@@ -119,6 +121,10 @@ class AddEditSubjectViewModel @Inject constructor(
                 _uiState.update { it.copy(isLoading = false) }
             }
         }
+    }
+
+    fun updateSelectedLabGroup(groupName: String?) {
+        _uiState.update { it.copy(selectedLabGroup = groupName) }
     }
 
     fun updateCode(code: String) {
@@ -273,7 +279,8 @@ class AddEditSubjectViewModel @Inject constructor(
                 isActive = existingSubject?.isActive ?: true,
                 defaultDurationMinutes = state.defaultDurationMinutes,
                 notes = state.notesText,
-                attachedFiles = state.attachedFiles
+                attachedFiles = state.attachedFiles,
+                selectedLabGroup = state.selectedLabGroup
             )
 
             val validEntities = state.slots.mapNotNull { it.toEntity(subjectToSave.id) }

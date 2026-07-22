@@ -47,6 +47,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TriStateCheckbox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -58,6 +59,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -136,6 +138,7 @@ fun ImportScreen(
             ImportContent(
                 uiState = state,
                 onToggleSubject = { subject, group -> viewModel.toggleSubjectSelection(subject, group) },
+                onToggleSection = { subjects -> viewModel.toggleSectionSubjects(subjects) },
                 onDeselectAll = { viewModel.deselectAll() },
                 onUpdateSearchQuery = viewModel::updateSearchQuery,
                 onConfirmImport = { viewModel.confirmImport() },
@@ -322,6 +325,7 @@ fun ImportLibraryContent(
 fun ImportContent(
     uiState: ImportUiState.Selection,
     onToggleSubject: (JsonSubject, String) -> Unit,
+    onToggleSection: (Collection<SelectedSubject>) -> Unit,
     onDeselectAll: () -> Unit,
     onUpdateSearchQuery: (String) -> Unit,
     onConfirmImport: () -> Unit,
@@ -458,8 +462,15 @@ fun ImportContent(
                         .fadingEdges(subjectsListState),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    groupedSubjects.forEach { (fullGroupName, selectedSubjects) ->
+                    groupedSubjects.forEach { (fullGroupName, groupSubjects) ->
                         item(key = "header_$fullGroupName") {
+                            val selectedCount = groupSubjects.count { uiState.selectedSubjects.contains(it) }
+                            val groupState = when (selectedCount) {
+                                0 -> ToggleableState.Off
+                                groupSubjects.size -> ToggleableState.On
+                                else -> ToggleableState.Indeterminate
+                            }
+
                             Surface(
                                 color = MaterialTheme.colorScheme.secondaryContainer,
                                 modifier = Modifier
@@ -470,9 +481,15 @@ fun ImportContent(
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                                        .padding(horizontal = 4.dp, vertical = 4.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
+                                    TriStateCheckbox(
+                                        state = groupState,
+                                        onClick = {
+                                            onToggleSection(groupSubjects)
+                                        }
+                                    )
                                     Text(
                                         text = fullGroupName,
                                         style = MaterialTheme.typography.titleMedium,
@@ -483,19 +500,19 @@ fun ImportContent(
                                     Text(
                                         text = stringResource(
                                             R.string.section_selected_count,
-                                            selectedSubjects.count { uiState.selectedSubjects.contains(it) },
-                                            selectedSubjects.size
+                                            selectedCount,
+                                            groupSubjects.size
                                         ),
                                         style = MaterialTheme.typography.labelMedium,
                                         color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f),
-                                        modifier = Modifier.padding(end = 4.dp)
+                                        modifier = Modifier.padding(end = 8.dp)
                                     )
                                 }
                             }
                         }
 
                         items(
-                            items = selectedSubjects,
+                            items = groupSubjects,
                             key = { "${fullGroupName}_${it.subject.code}" }
                         ) { selected ->
                             val isSelected = uiState.selectedSubjects.contains(selected)
@@ -586,6 +603,7 @@ private fun ImportContentPreview() {
                 selectedFile = ImportFile("bundled", "Horarios 2026/2027 - 1º Cuatrimestre", true, null)
             ),
             onToggleSubject = { _, _ -> },
+            onToggleSection = { _ -> },
             onDeselectAll = {},
             onUpdateSearchQuery = {},
             onConfirmImport = {},

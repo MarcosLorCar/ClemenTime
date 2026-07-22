@@ -23,6 +23,8 @@ local.properties
 /.idea/deviceManager.xml
 /.idea/tasks.xml
 /.idea/shelf/
+/.idea/planningMode.xml
+/.idea/misc.xml
 
 # Signing files
 *.jks

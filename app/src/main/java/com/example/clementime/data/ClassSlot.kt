@@ -29,4 +29,5 @@ data class ClassSlot(
     val labGroupName: String? = null, // e.g. "Lab-A1"
     val entryType: EntryType = EntryType.THEORY,
     val professor: String? = null,
+    val isIgnored: Boolean = false,
 )

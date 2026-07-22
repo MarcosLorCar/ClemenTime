@@ -20,6 +20,16 @@ interface ScheduleDao {
     @Query("UPDATE subjects SET isActive = :isActive WHERE id = :subjectId")
     suspend fun updateSubjectActiveStatus(subjectId: Long, isActive: Boolean)
 
+    @Query("UPDATE subjects SET selectedLabGroup = :labGroup WHERE id = :subjectId")
+    suspend fun updateSelectedLabGroup(subjectId: Long, labGroup: String?)
+
+    @Transaction
+    suspend fun updateSelectedLabGroups(selections: Map<Long, String?>) {
+        selections.forEach { (id, group) ->
+            updateSelectedLabGroup(id, group)
+        }
+    }
+
     @Transaction
     @Query("SELECT * FROM subjects ORDER BY name ASC")
     fun getAllSubjectsWithSlots(): Flow<List<SubjectWithSlots>>
@@ -45,6 +55,9 @@ interface ScheduleDao {
 
     @Update
     suspend fun updateSlot(slot: ClassSlot)
+
+    @Query("UPDATE class_slots SET isIgnored = :isIgnored WHERE id = :slotId")
+    suspend fun updateSlotIgnoredStatus(slotId: Long, isIgnored: Boolean)
 
     @Delete
     suspend fun deleteSlot(slot: ClassSlot)

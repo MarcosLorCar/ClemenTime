@@ -49,11 +49,13 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
@@ -124,6 +126,7 @@ fun AddEditSubjectScreen(
         onAddSlot = viewModel::addSlot,
         onDuplicateSlot = viewModel::duplicateSlot,
         onUpdateSlot = viewModel::updateSlot,
+        onUpdateSelectedLabGroup = viewModel::updateSelectedLabGroup,
         onDeleteSlot = viewModel::deleteSlot,
         onStartTimeSelected = viewModel::onStartTimeSelected,
         onEndTimeSelected = viewModel::onEndTimeSelected,
@@ -146,6 +149,7 @@ fun AddEditSubjectContent(
     onAddSlot: () -> Unit,
     onDuplicateSlot: (Int) -> Unit,
     onUpdateSlot: (Int, ClassSlotUiModel) -> Unit,
+    onUpdateSelectedLabGroup: (String?) -> Unit,
     onDeleteSlot: (Int) -> Unit,
     onStartTimeSelected: (Int, LocalTime) -> Unit,
     onEndTimeSelected: (Int, LocalTime) -> Unit,
@@ -153,6 +157,7 @@ fun AddEditSubjectContent(
 ) {
     val lazyListState = rememberLazyListState()
     var hasScrolled by remember { mutableStateOf(false) }
+    var expandedSlotIndices by remember { mutableStateOf(setOf<Int>()) }
 
     LaunchedEffect(uiState.slots, uiState.highlightSlotId) {
         if (!hasScrolled && uiState.slots.isNotEmpty() && uiState.highlightSlotId != null) {
@@ -225,7 +230,7 @@ fun AddEditSubjectContent(
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Save")
+                        Text(stringResource(R.string.save_button))
                     }
                 }
             )
@@ -277,14 +282,14 @@ fun AddEditSubjectContent(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Class Slots (${uiState.slots.size})",
+                            text = stringResource(R.string.class_slots_header, uiState.slots.size),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
                         Button(onClick = onAddSlot) {
                             Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(4.dp))
-                            Text("Add Class Slot")
+                            Text(stringResource(R.string.add_slot_button))
                         }
                     }
                 }
@@ -303,7 +308,7 @@ fun AddEditSubjectContent(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = "No class slots added yet.\nTap '+ Add Class Slot' to create one.",
+                                    text = stringResource(R.string.no_slots_message),
                                     textAlign = TextAlign.Center,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -316,8 +321,18 @@ fun AddEditSubjectContent(
                         ClassSlotItemCard(
                             slot = slot,
                             isHighlighted = slot.id == uiState.highlightSlotId,
+                            isExpanded = expandedSlotIndices.contains(index),
+                            selectedLabGroup = uiState.selectedLabGroup,
+                            onToggleExpand = {
+                                expandedSlotIndices = if (expandedSlotIndices.contains(index)) {
+                                    expandedSlotIndices - index
+                                } else {
+                                    expandedSlotIndices + index
+                                }
+                            },
                             onGoToSchedule = onNavigateToSchedule,
                             onUpdateSlot = { updated -> onUpdateSlot(index, updated) },
+                            onSelectLabGroup = onUpdateSelectedLabGroup,
                             onDuplicate = { onDuplicateSlot(index) },
                             onDelete = { onDeleteSlot(index) },
                             onStartTimeSelected = { time -> onStartTimeSelected(index, time) },
@@ -369,7 +384,7 @@ private fun SubjectBasicDetailsCard(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Text(
-                text = "Subject Information",
+                text = stringResource(R.string.edit_subject_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -384,8 +399,8 @@ private fun SubjectBasicDetailsCard(
                         localCode = it
                         onUpdateCode(it)
                     },
-                    label = { Text("Code") },
-                    placeholder = { Text("e.g. SO") },
+                    label = { Text(stringResource(R.string.code_label)) },
+                    placeholder = { Text(stringResource(R.string.code_placeholder)) },
                     singleLine = true,
                     modifier = Modifier.weight(0.35f)
                 )
@@ -395,8 +410,8 @@ private fun SubjectBasicDetailsCard(
                         localName = it
                         onUpdateName(it)
                     },
-                    label = { Text("Name") },
-                    placeholder = { Text("e.g. Sistemas Operativos") },
+                    label = { Text(stringResource(R.string.name_label)) },
+                    placeholder = { Text(stringResource(R.string.name_placeholder)) },
                     singleLine = true,
                     modifier = Modifier.weight(0.65f)
                 )
@@ -408,12 +423,12 @@ private fun SubjectBasicDetailsCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Color Badge",
+                    text = stringResource(R.string.color_badge_label),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "Swipe for more colors →",
+                    text = stringResource(R.string.swipe_colors_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -635,8 +650,12 @@ private fun SubjectNotesAndLinksCard(
 private fun ClassSlotItemCard(
     slot: ClassSlotUiModel,
     isHighlighted: Boolean = false,
+    isExpanded: Boolean = false,
+    selectedLabGroup: String? = null,
+    onToggleExpand: () -> Unit,
     onGoToSchedule: (DayOfWeek) -> Unit,
     onUpdateSlot: (ClassSlotUiModel) -> Unit,
+    onSelectLabGroup: (String?) -> Unit,
     onDuplicate: () -> Unit,
     onDelete: () -> Unit,
     onStartTimeSelected: (LocalTime) -> Unit,
@@ -671,7 +690,9 @@ private fun ClassSlotItemCard(
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onToggleExpand() },
         shape = RoundedCornerShape(12.dp),
         border = if (isHighlighted) {
             BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
@@ -691,148 +712,233 @@ private fun ClassSlotItemCard(
             modifier = Modifier.padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            // Header: Always visible
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    FilterChip(
-                        selected = slot.entryType == EntryType.THEORY,
-                        onClick = { onUpdateSlot(slot.copy(entryType = EntryType.THEORY)) },
-                        label = { Text("Theory") }
-                    )
-                    FilterChip(
-                        selected = slot.entryType == EntryType.LAB,
-                        onClick = { onUpdateSlot(slot.copy(entryType = EntryType.LAB)) },
-                        label = { Text("Lab") }
-                    )
-                }
-
-                Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                    if (slot.id > 0L) {
-                        IconButton(onClick = { onGoToSchedule(slot.dayOfWeek) }) {
-                            Icon(
-                                imageVector = Icons.Default.Schedule,
-                                contentDescription = "Show in Schedule",
-                                tint = MaterialTheme.colorScheme.primary
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            color = if (slot.entryType == EntryType.LAB) MaterialTheme.colorScheme.secondaryContainer 
+                                    else MaterialTheme.colorScheme.tertiaryContainer,
+                            shape = RoundedCornerShape(4.dp)
+                        ) {
+                            Text(
+                                text = if (slot.entryType == EntryType.LAB) stringResource(R.string.lab_label) else stringResource(R.string.theory_label),
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                color = if (slot.entryType == EntryType.LAB) MaterialTheme.colorScheme.onSecondaryContainer
+                                        else MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                        }
+                        if (slot.labGroupName != null) {
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = slot.labGroupName,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold
                             )
                         }
                     }
-                    IconButton(onClick = onDuplicate) {
-                        Icon(
-                            imageVector = Icons.Default.ContentCopy,
-                            contentDescription = "Duplicate Slot",
-                            tint = MaterialTheme.colorScheme.primary
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = "${
+                            when (slot.dayOfWeek) {
+                                DayOfWeek.MONDAY -> stringResource(R.string.mon_label)
+                                DayOfWeek.TUESDAY -> stringResource(R.string.tue_label)
+                                DayOfWeek.WEDNESDAY -> stringResource(R.string.wed_label)
+                                DayOfWeek.THURSDAY -> stringResource(R.string.thu_label)
+                                DayOfWeek.FRIDAY -> stringResource(R.string.fri_label)
+                                else -> slot.dayOfWeek.name
+                            }
+                        } • " +
+                                (if (slot.startTime != null && slot.endTime != null) 
+                                    "${slot.startTime.format(timeFormatter)} - ${slot.endTime.format(timeFormatter)}"
+                                else "--:-- - --:--"),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (slot.entryType == EntryType.LAB) {
+                        val isSelected = selectedLabGroup == slot.labGroupName && slot.labGroupName != null
+                        RadioButton(
+                            selected = isSelected,
+                            onClick = { 
+                                if (isSelected) onSelectLabGroup(null) 
+                                else onSelectLabGroup(slot.labGroupName)
+                            }
                         )
                     }
-                    IconButton(onClick = onDelete) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Delete Slot",
-                            tint = MaterialTheme.colorScheme.error
-                        )
+                    
+                    if (!isExpanded) {
+                        IconButton(onClick = onDelete) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = stringResource(R.string.delete_slot_label),
+                                tint = MaterialTheme.colorScheme.error.copy(alpha = 0.6f),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
                 }
             }
 
-            LazyRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                items(
+            if (isExpanded) {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        FilterChip(
+                            selected = slot.entryType == EntryType.THEORY,
+                            onClick = { onUpdateSlot(slot.copy(entryType = EntryType.THEORY)) },
+                            label = { Text(stringResource(R.string.theory_label)) }
+                        )
+                        FilterChip(
+                            selected = slot.entryType == EntryType.LAB,
+                            onClick = { onUpdateSlot(slot.copy(entryType = EntryType.LAB)) },
+                            label = { Text(stringResource(R.string.lab_label)) }
+                        )
+                    }
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                        if (slot.id > 0L) {
+                            IconButton(onClick = { onGoToSchedule(slot.dayOfWeek) }) {
+                                Icon(
+                                    imageVector = Icons.Default.Schedule,
+                                    contentDescription = stringResource(R.string.show_in_schedule_label),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                        IconButton(onClick = onDuplicate) {
+                            Icon(
+                                imageVector = Icons.Default.ContentCopy,
+                                contentDescription = stringResource(R.string.duplicate_slot_label),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        IconButton(onClick = onDelete) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = stringResource(R.string.delete_slot_label),
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                }
+
+                val days = remember {
                     listOf(
-                        DayOfWeek.MONDAY to "Mon",
-                        DayOfWeek.TUESDAY to "Tue",
-                        DayOfWeek.WEDNESDAY to "Wed",
-                        DayOfWeek.THURSDAY to "Thu",
-                        DayOfWeek.FRIDAY to "Fri"
-                    )
-                ) { (day, label) ->
-                    FilterChip(
-                        selected = slot.dayOfWeek == day,
-                        onClick = { onUpdateSlot(slot.copy(dayOfWeek = day)) },
-                        label = { Text(label, fontSize = 12.sp) }
+                        DayOfWeek.MONDAY to R.string.mon_label,
+                        DayOfWeek.TUESDAY to R.string.tue_label,
+                        DayOfWeek.WEDNESDAY to R.string.wed_label,
+                        DayOfWeek.THURSDAY to R.string.thu_label,
+                        DayOfWeek.FRIDAY to R.string.fri_label
                     )
                 }
-            }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedButton(
-                    onClick = { showStartTimePicker = true },
-                    modifier = Modifier.weight(1f)
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Schedule,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = if (slot.startTime != null) "Start: ${slot.startTime.format(timeFormatter)}" else "Start: --:--"
-                    )
+                    items(days) { (day, labelRes) ->
+                        FilterChip(
+                            selected = slot.dayOfWeek == day,
+                            onClick = { onUpdateSlot(slot.copy(dayOfWeek = day)) },
+                            label = { Text(stringResource(labelRes), fontSize = 12.sp) }
+                        )
+                    }
                 }
 
-                OutlinedButton(
-                    onClick = { showEndTimePicker = true },
-                    modifier = Modifier.weight(1f)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Schedule,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
+                    OutlinedButton(
+                        onClick = { showStartTimePicker = true },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Schedule,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            text = if (slot.startTime != null) {
+                                stringResource(R.string.start_time_label, slot.startTime.format(timeFormatter))
+                            } else "Start: --:--"
+                        )
+                    }
+
+                    OutlinedButton(
+                        onClick = { showEndTimePicker = true },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Schedule,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            text = if (slot.endTime != null) {
+                                stringResource(R.string.end_time_label, slot.endTime.format(timeFormatter))
+                            } else "End: --:--"
+                        )
+                    }
+                }
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = localClassroom,
+                        onValueChange = { text ->
+                            localClassroom = text
+                            onUpdateSlot(slot.copy(classroom = text.ifBlank { null }))
+                        },
+                        label = { Text(stringResource(R.string.room_label)) },
+                        placeholder = { Text(stringResource(R.string.room_placeholder)) },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f)
                     )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = if (slot.endTime != null) "End: ${slot.endTime.format(timeFormatter)}" else "End: --:--"
+                    OutlinedTextField(
+                        value = localProfessor,
+                        onValueChange = { text ->
+                            localProfessor = text
+                            onUpdateSlot(slot.copy(professor = text.ifBlank { null }))
+                        },
+                        label = { Text(stringResource(R.string.professor_label)) },
+                        placeholder = { Text(stringResource(R.string.professor_placeholder)) },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f)
                     )
                 }
-            }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = localClassroom,
-                    onValueChange = { text ->
-                        localClassroom = text
-                        onUpdateSlot(slot.copy(classroom = text.ifBlank { null }))
-                    },
-                    label = { Text("Room") },
-                    placeholder = { Text("Aula 1.2") },
-                    singleLine = true,
-                    modifier = Modifier.weight(1f)
-                )
-                OutlinedTextField(
-                    value = localProfessor,
-                    onValueChange = { text ->
-                        localProfessor = text
-                        onUpdateSlot(slot.copy(professor = text.ifBlank { null }))
-                    },
-                    label = { Text("Professor") },
-                    placeholder = { Text("Dr. Smith") },
-                    singleLine = true,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            if (slot.entryType == EntryType.LAB) {
-                OutlinedTextField(
-                    value = localLabGroupName,
-                    onValueChange = { text ->
-                        localLabGroupName = text
-                        onUpdateSlot(slot.copy(labGroupName = text.ifBlank { null }))
-                    },
-                    label = { Text("Lab Group") },
-                    placeholder = { Text("e.g. Lab-A1") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                if (slot.entryType == EntryType.LAB) {
+                    OutlinedTextField(
+                        value = localLabGroupName,
+                        onValueChange = { text ->
+                            localLabGroupName = text
+                            onUpdateSlot(slot.copy(labGroupName = text.ifBlank { null }))
+                        },
+                        label = { Text(stringResource(R.string.lab_group_label)) },
+                        placeholder = { Text(stringResource(R.string.lab_group_placeholder)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
         }
     }
@@ -882,12 +988,12 @@ fun RadialTimePickerDialog(
                     onTimeConfirm(time)
                 }
             ) {
-                Text("OK")
+                Text(stringResource(android.R.string.ok))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel))
             }
         },
         text = {
@@ -916,7 +1022,7 @@ fun ColorPickerDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Pick Custom Color") },
+        title = { Text(stringResource(R.string.custom_color_picker_title)) },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -946,7 +1052,7 @@ fun ColorPickerDialog(
                             }
                         }
                     },
-                    label = { Text("Hex Code (#RRGGBB)") },
+                    label = { Text(stringResource(R.string.hex_code_label)) },
                     prefix = { Text("#") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
@@ -991,12 +1097,12 @@ fun ColorPickerDialog(
         },
         confirmButton = {
             Button(onClick = { onColorSelected(currentColor) }) {
-                Text("Select Color")
+                Text(stringResource(R.string.select_color_button))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel))
             }
         }
     )
@@ -1035,6 +1141,7 @@ private fun AddEditSubjectContentPreview() {
             onAddSlot = {},
             onDuplicateSlot = {},
             onUpdateSlot = { _, _ -> },
+            onUpdateSelectedLabGroup = {},
             onDeleteSlot = {},
             onStartTimeSelected = { _, _ -> },
             onEndTimeSelected = { _, _ -> },

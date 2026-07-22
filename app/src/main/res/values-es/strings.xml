@@ -88,4 +88,59 @@
     <string name="no_schedule_data">Sin datos de horario</string>
     <string name="no_schedule_data_subtitle">Importa un horario o añade asignaturas para empezar.</string>
     <string name="import_screen_prompt">Selecciona qué asignaturas importar</string>
+
+    <!-- Conflict Resolver strings -->
+    <string name="conflict_resolver_title">Optimizador de Horario</string>
+    <string name="conflict_resolver_solutions_tab">Soluciones</string>
+    <string name="conflict_resolver_details_tab">Detalles y Omisión</string>
+    <string name="conflict_resolver_no_variants">No se han encontrado asignaturas con múltiples variantes de laboratorio.</string>
+    <string name="conflict_resolver_optimal_header">Selecciones Óptimas</string>
+    <string name="conflict_resolver_optimal_label">Selección Óptima</string>
+    <string name="conflict_resolver_possible_header">Selecciones Posibles</string>
+    <string name="conflict_resolver_possible_label">Selección Posible</string>
+    <string name="conflict_resolver_other_header">Otras Opciones</string>
+    <string name="conflict_resolver_overlaps">%1$d Solapamientos</string>
+    <string name="conflict_resolver_free_days">%1$d Días Libres</string>
+    <string name="conflict_resolver_score">Puntuación: %1$d</string>
+    <string name="conflict_resolver_apply">Aplicar</string>
+    <string name="conflict_resolver_applied">Aplicada</string>
+    <string name="conflict_resolver_current_badge">ACTUAL</string>
+    <string name="conflict_resolver_manual_config_header">Configuración Manual</string>
+    <string name="conflict_resolver_radio_desc">• Botones de opción: Fija una selección de laboratorio como definitiva. El optimizador respetará esta elección.</string>
+    <string name="conflict_resolver_checkbox_desc">• Casillas (Omitir): Excluye una clase de los cálculos de solapamiento (útil para clases opcionales).</string>
+    <string name="resolve_conflicts_tooltip">Resolver Conflictos</string>
+
+    <!-- Class Slot / Subject Editor strings -->
+    <string name="theory_label">Teoría</string>
+    <string name="lab_label">Lab</string>
+    <string name="class_slots_header">Horarios de Clase (%1$d)</string>
+    <string name="add_slot_button">Añadir Horario</string>
+    <string name="no_slots_message">Aún no hay horarios añadidos.\nToca \'+ Añadir Horario\' para crear uno.</string>
+    <string name="code_label">Código</string>
+    <string name="name_label">Nombre</string>
+    <string name="color_badge_label">Distintivo de Color</string>
+    <string name="swipe_colors_hint">Desliza para ver más colores →</string>
+    <string name="custom_color_picker_title">Elegir Color Personalizado</string>
+    <string name="hex_code_label">Código Hex (#RRGGBB)</string>
+    <string name="select_color_button">Seleccionar Color</string>
+    <string name="start_time_label">Inicio: %1$s</string>
+    <string name="end_time_label">Fin: %1$s</string>
+    <string name="room_label">Aula</string>
+    <string name="professor_label">Profesor</string>
+    <string name="lab_group_label">Grupo de Lab</string>
+    <string name="delete_slot_label">Eliminar Horario</string>
+    <string name="duplicate_slot_label">Duplicar Horario</string>
+    <string name="show_in_schedule_label">Mostrar en Horario</string>
+    <string name="mon_label">Lun</string>
+    <string name="tue_label">Mar</string>
+    <string name="wed_label">Mié</string>
+    <string name="thu_label">Jue</string>
+    <string name="fri_label">Vie</string>
+    <string name="save_button">Guardar</string>
+    <string name="code_placeholder">ej. SO</string>
+    <string name="name_placeholder">ej. Sistemas Operativos</string>
+    <string name="room_placeholder">Aula 1.2</string>
+    <string name="professor_placeholder">Prof. Pérez</string>
+    <string name="lab_group_placeholder">ej. Lab-A1</string>
 </resources>
+

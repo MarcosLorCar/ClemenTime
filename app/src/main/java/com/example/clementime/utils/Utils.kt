@@ -46,3 +46,38 @@ data class TimelineCluster(
     val endTime: LocalTime,
     val items: List<Pair<Subject, ClassSlot>>
 )
+
+fun groupSlotsIntoClusters(
+    slots: List<Pair<Subject, ClassSlot>>
+): List<TimelineCluster> {
+    if (slots.isEmpty()) return emptyList()
+
+    val sorted = slots.sortedBy { it.second.startTime }
+    val clusters = mutableListOf<TimelineCluster>()
+
+    var currentClusterItems = mutableListOf(sorted.first())
+    var clusterStart = sorted.first().second.startTime
+    var clusterEnd = sorted.first().second.endTime
+
+    for (i in 1 until sorted.size) {
+        val item = sorted[i]
+        val slot = item.second
+
+        // Check if current slot overlaps with the active cluster
+        if (slot.startTime < clusterEnd) {
+            currentClusterItems.add(item)
+            if (slot.endTime > clusterEnd) {
+                clusterEnd = slot.endTime
+            }
+        } else {
+            // No overlap: finalize current cluster and start a new one
+            clusters.add(TimelineCluster(clusterStart, clusterEnd, currentClusterItems))
+            currentClusterItems = mutableListOf(item)
+            clusterStart = slot.startTime
+            clusterEnd = slot.endTime
+        }
+    }
+
+    clusters.add(TimelineCluster(clusterStart, clusterEnd, currentClusterItems))
+    return clusters
+}

@@ -87,4 +87,58 @@
     <string name="no_schedule_data">No schedule data</string>
     <string name="no_schedule_data_subtitle">Import a schedule or add subjects to get started.</string>
     <string name="import_screen_prompt">Select subjects to import</string>
+
+    <!-- Conflict Resolver strings -->
+    <string name="conflict_resolver_title">Conflict Resolver</string>
+    <string name="conflict_resolver_solutions_tab">Solutions</string>
+    <string name="conflict_resolver_details_tab">Details &amp; Ignore</string>
+    <string name="conflict_resolver_no_variants">No subjects with multiple lab variants found.</string>
+    <string name="conflict_resolver_optimal_header">Optimal Selections</string>
+    <string name="conflict_resolver_optimal_label">Optimal Selection</string>
+    <string name="conflict_resolver_possible_header">Possible Selections</string>
+    <string name="conflict_resolver_possible_label">Possible Selection</string>
+    <string name="conflict_resolver_other_header">Other Options</string>
+    <string name="conflict_resolver_overlaps">%1$d Overlaps</string>
+    <string name="conflict_resolver_free_days">%1$d Free Days</string>
+    <string name="conflict_resolver_score">Score: %1$d</string>
+    <string name="conflict_resolver_apply">Apply</string>
+    <string name="conflict_resolver_applied">Applied</string>
+    <string name="conflict_resolver_current_badge">CURRENT</string>
+    <string name="conflict_resolver_manual_config_header">Manual Configuration</string>
+    <string name="conflict_resolver_radio_desc">• Radio Buttons: Pin a lab selection as fixed or already chosen. The optimizer will respect this choice.</string>
+    <string name="conflict_resolver_checkbox_desc">• Checkboxes (Ignore): Exclude a slot from overlap calculations entirely (useful for optional classes).</string>
+    <string name="resolve_conflicts_tooltip">Resolve Conflicts</string>
+
+    <!-- Class Slot / Subject Editor strings -->
+    <string name="theory_label">Theory</string>
+    <string name="lab_label">Lab</string>
+    <string name="class_slots_header">Class Slots (%1$d)</string>
+    <string name="add_slot_button">Add Class Slot</string>
+    <string name="no_slots_message">No class slots added yet.\nTap \'+ Add Class Slot\' to create one.</string>
+    <string name="code_label">Code</string>
+    <string name="name_label">Name</string>
+    <string name="color_badge_label">Color Badge</string>
+    <string name="swipe_colors_hint">Swipe for more colors →</string>
+    <string name="custom_color_picker_title">Pick Custom Color</string>
+    <string name="hex_code_label">Hex Code (#RRGGBB)</string>
+    <string name="select_color_button">Select Color</string>
+    <string name="start_time_label">Start: %1$s</string>
+    <string name="end_time_label">End: %1$s</string>
+    <string name="room_label">Room</string>
+    <string name="professor_label">Professor</string>
+    <string name="lab_group_label">Lab Group</string>
+    <string name="delete_slot_label">Delete Slot</string>
+    <string name="duplicate_slot_label">Duplicate Slot</string>
+    <string name="show_in_schedule_label">Show in Schedule</string>
+    <string name="mon_label">Mon</string>
+    <string name="tue_label">Tue</string>
+    <string name="wed_label">Wed</string>
+    <string name="thu_label">Thu</string>
+    <string name="fri_label">Fri</string>
+    <string name="save_button">Save</string>
+    <string name="code_placeholder">e.g. SO</string>
+    <string name="name_placeholder">e.g. Operating Systems</string>
+    <string name="room_placeholder">Room 1.2</string>
+    <string name="professor_placeholder">Dr. Smith</string>
+    <string name="lab_group_placeholder">e.g. Lab-A1</string>
 </resources>

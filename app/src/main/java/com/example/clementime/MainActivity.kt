@@ -41,12 +41,14 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.clementime.data.SettingsRepository
 import com.example.clementime.ui.navigation.AddEditSubjectRoute
+import com.example.clementime.ui.navigation.ConflictResolverRoute
 import com.example.clementime.ui.navigation.ImportRoute
 import com.example.clementime.ui.navigation.ScheduleListRoute
 import com.example.clementime.ui.navigation.SettingsRoute
 import com.example.clementime.ui.navigation.SubjectsRoute
 import com.example.clementime.ui.screens.ScheduleScreen
 import com.example.clementime.ui.screens.SettingsScreen
+import com.example.clementime.ui.screens.conflictresolver.ConflictResolverScreen
 import com.example.clementime.ui.screens.scheduleimport.ImportScreen
 import com.example.clementime.ui.screens.subject.AddEditSubjectScreen
 import com.example.clementime.ui.screens.subject.SubjectsScreen
@@ -191,7 +193,16 @@ fun ClemenTimeApp() {
                     },
                     onNavigateToImport = {
                         navController.navigate(ImportRoute)
+                    },
+                    onNavigateToConflictResolver = {
+                        navController.navigate(ConflictResolverRoute)
                     }
+                )
+            }
+
+            composable<ConflictResolverRoute> {
+                ConflictResolverScreen(
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
 

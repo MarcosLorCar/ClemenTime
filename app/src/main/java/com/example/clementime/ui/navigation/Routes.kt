@@ -17,6 +17,9 @@ object ImportRoute
 object SubjectsRoute
 
 @Serializable
+object ConflictResolverRoute
+
+@Serializable
 data class AddEditSubjectRoute(
     val subjectId: Long? = null,
     val highlightSlotId: Long? = null

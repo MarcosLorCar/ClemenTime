@@ -12,12 +12,16 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.PrimaryTabRow
@@ -48,6 +52,7 @@ import com.example.clementime.ui.components.ClemenTimeTopBar
 import com.example.clementime.ui.components.ScheduleTimeline
 import com.example.clementime.ui.theme.ClemenTimeTheme
 import com.example.clementime.utils.TimelineCluster
+import com.example.clementime.utils.groupSlotsIntoClusters
 import com.example.clementime.utils.getNarrowLabel
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
@@ -59,6 +64,7 @@ import java.util.Locale
 fun ScheduleScreen(
     onClickSubject: (Long, Long) -> Unit,
     onNavigateToImport: () -> Unit,
+    onNavigateToConflictResolver: () -> Unit,
     viewModel: ScheduleViewModel = hiltViewModel(),
     onMenuClick: (() -> Unit)? = null
 ) {
@@ -69,7 +75,8 @@ fun ScheduleScreen(
         onChangeTab = viewModel::changeTab,
         onMenuClick = onMenuClick,
         onClickSubject = onClickSubject,
-        onNavigateToImport = onNavigateToImport
+        onNavigateToImport = onNavigateToImport,
+        onNavigateToConflictResolver = onNavigateToConflictResolver
     )
 }
 
@@ -79,6 +86,7 @@ fun ScheduleContent(
     uiState: ScheduleUiState,
     onChangeTab: (ScheduleTab) -> Unit,
     onNavigateToImport: () -> Unit,
+    onNavigateToConflictResolver: () -> Unit,
     onMenuClick: (() -> Unit)? = null,
     onClickSubject: (Long, Long) -> Unit = { _, _ -> }
 ) {
@@ -109,7 +117,25 @@ fun ScheduleContent(
             Column {
                 ClemenTimeTopBar(
                     onMenuClick = onMenuClick,
-                    title = stringResource(R.string.schedule_screen_title)
+                    title = stringResource(R.string.schedule_screen_title),
+                    actions = {
+                        if (uiState.hasOverlaps) {
+                            IconButton(onClick = onNavigateToConflictResolver) {
+                                BadgedBox(
+                                    badge = {
+                                        Badge {
+                                            Text("!")
+                                        }
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.AutoFixHigh,
+                                        contentDescription = stringResource(R.string.resolve_conflicts_tooltip)
+                                    )
+                                }
+                            }
+                        }
+                    }
                 )
 
                 if (uiState.subjectsWithSlots.isEmpty()) return@Column
@@ -272,41 +298,6 @@ fun ScheduleContent(
     }
 }
 
-fun groupSlotsIntoClusters(
-    slots: List<Pair<Subject, ClassSlot>>
-): List<TimelineCluster> {
-    if (slots.isEmpty()) return emptyList()
-
-    val sorted = slots.sortedBy { it.second.startTime }
-    val clusters = mutableListOf<TimelineCluster>()
-
-    var currentClusterItems = mutableListOf(sorted.first())
-    var clusterStart = sorted.first().second.startTime
-    var clusterEnd = sorted.first().second.endTime
-
-    for (i in 1 until sorted.size) {
-        val item = sorted[i]
-        val slot = item.second
-
-        // Check if current slot overlaps with the active cluster
-        if (slot.startTime < clusterEnd) {
-            currentClusterItems.add(item)
-            if (slot.endTime > clusterEnd) {
-                clusterEnd = slot.endTime
-            }
-        } else {
-            // No overlap: finalize current cluster and start a new one
-            clusters.add(TimelineCluster(clusterStart, clusterEnd, currentClusterItems))
-            currentClusterItems = mutableListOf(item)
-            clusterStart = slot.startTime
-            clusterEnd = slot.endTime
-        }
-    }
-
-    clusters.add(TimelineCluster(clusterStart, clusterEnd, currentClusterItems))
-    return clusters
-}
-
 enum class ScheduleTab(val dayOfWeek: DayOfWeek) {
     MONDAY(DayOfWeek.MONDAY),
     TUESDAY(DayOfWeek.TUESDAY),
@@ -364,7 +355,8 @@ fun ScheduleScreenPreview() {
             ),
             onChangeTab = {},
             onMenuClick = {},
-            onNavigateToImport = {}
+            onNavigateToImport = {},
+            onNavigateToConflictResolver = {}
         )
     }
 }
