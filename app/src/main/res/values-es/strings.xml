@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingQuantity,UnusedResources">
     <string name="app_name">ClemenTime</string>
     <string name="schedule_screen_title">Horario</string>
     <string name="settings_screen_title">Ajustes</string>
-    <string name="import_screen_title">Importar Horario</string>
     <string name="import_schedule_title">Importar Horario</string>
     <string name="subjects_screen_title">Asignaturas</string>
     <string name="search_subjects_placeholder">Buscar por nombre o código…</string>
@@ -14,16 +13,15 @@
     <string name="no_subjects_title">Aún no hay asignaturas</string>
     <string name="no_subjects_subtitle">Importa un horario o toca + para crear uno.</string>
     <string name="no_search_results">Ninguna asignatura coincide con tu búsqueda.</string>
-    <string name="slots_count">%1$d clase(s)</string>
-    <string name="expand_slots">Mostrar clases</string>
-    <string name="collapse_slots">Ocultar clases</string>
+    <plurals name="slots_count">
+        <item quantity="one">%1$d clase</item>
+        <item quantity="many">%1$d clases</item>
+        <item quantity="other">%1$d clases</item>
+    </plurals>
     <string name="active">Activa</string>
     <string name="inactive">Inactiva</string>
-    <string name="select_all">Seleccionar Todo</string>
     <string name="deselect_all">Deseleccionar Todo</string>
-    <string name="selected_count">%1$d de %2$d seleccionadas</string>
-    <string name="section_selected_count">%1$d/%2$d seleccionadas</string>
-    <string name="select_file_button">Seleccionar Archivo JSON de Horario</string>
+    <string name="section_selected_count" tools:ignore="PluralsCandidate">%1$d/%2$d seleccionadas</string>
     <string name="try_again">Reintentar</string>
     <string name="import_selected_button">Importar Seleccionadas (%1$d)</string>
     <string name="edit_subject">Editar</string>
@@ -33,9 +31,17 @@
     <string name="nuke_all_subjects_title">Borrar Todo</string>
     <string name="nuke_all_subjects_message">¿Estás seguro de que deseas eliminar TODAS las asignaturas y sus clases asociadas? Esta acción es permanente y no se puede deshacer.</string>
     <string name="nuke_confirm">Eliminar Todo</string>
-    <string name="selected_count_simple">%1$d seleccionadas</string>
+    <plurals name="selected_count_simple">
+        <item quantity="one">%1$d seleccionada</item>
+        <item quantity="many">%1$d seleccionadas</item>
+        <item quantity="other">%1$d seleccionadas</item>
+    </plurals>
     <string name="delete_selected_dialog_title">Eliminar Seleccionadas</string>
-    <string name="delete_selected_dialog_message">¿Estás seguro de que deseas eliminar las %1$d asignaturas seleccionadas y todas sus clases asociadas?</string>
+    <plurals name="delete_selected_dialog_message">
+        <item quantity="one">¿Estás seguro de que deseas eliminar la asignatura seleccionada y todos sus horarios asociados?</item>
+        <item quantity="many">¿Estás seguro de que deseas eliminar las %1$d asignaturas seleccionadas y todos sus horarios asociados?</item>
+        <item quantity="other">¿Estás seguro de que deseas eliminar las %1$d asignaturas seleccionadas y todos sus horarios asociados?</item>
+    </plurals>
     <string name="delete_selected_confirm">Eliminar</string>
 
     <!-- Settings Screen strings -->
@@ -49,23 +55,17 @@
     <string name="tab_layout_setting_title">Diseño de Pestañas</string>
     <string name="tab_layout_letters">Letras (Fijo)</string>
     <string name="tab_layout_weekdays">Días de la Semana (Desplazable)</string>
-    <string name="sync_directory_setting_title">Directorio de Sincronización</string>
-    <string name="sync_directory_path_label">Carpeta de sinc.: %1$s</string>
-    <string name="sync_directory_not_selected">Sin carpeta seleccionada</string>
-    <string name="choose_folder_button">Seleccionar carpeta</string>
-    <string name="clear_folder_button">Limpiar carpeta</string>
+
     <string name="export_backup_setting_title">Exportar Horario</string>
     <string name="export_backup_desc">Guardar horario y asignaturas como archivo JSON</string>
-    <string name="export_button">Exportar</string>
-    <string name="import_button">Importar</string>
-    <string name="import_schedule_desc">Cargar asignaturas y horarios desde un archivo JSON</string>
+
     <string name="import_library_desc">Examina e importa horarios desde la biblioteca o el dispositivo</string>
 
     <!-- Notes & Attachments strings -->
     <string name="notes_and_attachments_header">Notas y Archivos Adjuntos</string>
     <string name="subject_notes_label">Notas de la Asignatura</string>
     <string name="subject_notes_placeholder">Añade notas, enlaces al plan de estudios, fechas de exámenes o recordatorios…</string>
-    <string name="linked_files_label">Archivos Enlazados (%1$d)</string>
+    <string name="linked_files_label" tools:ignore="PluralsCandidate">Archivos Enlazados (%1$d)</string>
     <string name="link_file_button">Enlazar Archivo</string>
     
     <!-- Toast & Dialog strings -->
@@ -74,10 +74,9 @@
     <string name="no_apps_for_file_message">No hay ninguna aplicación disponible para abrir este tipo de archivo</string>
     <string name="language_selector_label">Seleccionar Idioma</string>
     <string name="theme_selector_label">Seleccionar Tema</string>
-    <string name="export_success_local_and_sync">Copia de seguridad guardada localmente y en la carpeta de sinc.</string>
+
     <string name="export_success_local">Copia de seguridad guardada con éxito</string>
-    <string name="export_success_sync">Copia de seguridad exportada a la carpeta de sinc.</string>
-    <string name="export_error_no_location">Configura un directorio de sinc. o elige una ubicación manual para guardar.</string>
+
     <string name="export_error_prefix">Error al exportar: %1$s</string>
     <string name="import_library_title">Biblioteca de Importación</string>
     <string name="import_select_file_device">Importar JSON desde el dispositivo</string>
@@ -107,12 +106,20 @@
     <string name="conflict_resolver_possible_header">Selecciones Posibles</string>
     <string name="conflict_resolver_possible_label">Selección Posible</string>
     <string name="conflict_resolver_other_header">Otras Opciones</string>
-    <string name="conflict_resolver_overlaps">%1$d Solapamientos</string>
-    <string name="conflict_resolver_free_days">%1$d Días Libres</string>
+    <plurals name="conflict_resolver_overlaps">
+        <item quantity="one">%1$d Solapamiento</item>
+        <item quantity="many">%1$d Solapamientos</item>
+        <item quantity="other">%1$d Solapamientos</item>
+    </plurals>
+    <plurals name="conflict_resolver_free_days">
+        <item quantity="one">%1$d Día Libre</item>
+        <item quantity="many">%1$d Días Libres</item>
+        <item quantity="other">%1$d Días Libres</item>
+    </plurals>
     <string name="conflict_resolver_score">Puntuación: %1$d</string>
     <string name="conflict_resolver_apply">Aplicar</string>
     <string name="conflict_resolver_applied">Aplicada</string>
-    <string name="conflict_resolver_current_badge">ACTUAL</string>
+    <string name="conflict_resolver_current_badge">Actual</string>
     <string name="conflict_resolver_current_header">Selección Actual</string>
     <string name="conflict_resolver_manual_config_header">Preferencias Manuales (Opcional)</string>
     <string name="conflict_resolver_radio_desc">• Fijar Selecciones de Lab: Usa los botones de opción si hay grupos de laboratorio específicos que quieres mantener sí o sí. El optimizador trabajará en base a ellos. Si no los fijas, el optimizador buscará todas las opciones.</string>

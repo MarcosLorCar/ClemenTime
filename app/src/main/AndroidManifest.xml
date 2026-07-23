@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="MissingVersion,UnusedAttribute">
 
     <application
         android:name=".ClemenTimeApplication"
@@ -10,7 +12,9 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.ClemenTime">
+        android:theme="@style/Theme.ClemenTime"
+        android:localeConfig="@xml/locales_config"
+        tools:targetApi="33">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -22,6 +26,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+            android:enabled="false"
+            android:exported="false">
+            <meta-data
+                android:name="autoStoreLocales"
+                android:value="true" />
+        </service>
 
         <provider
             android:name="androidx.core.content.FileProvider"

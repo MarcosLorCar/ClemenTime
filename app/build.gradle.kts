@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.clementime"
+    namespace = "com.github.marcoslorcar.clementime"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.example.clementime"
+        applicationId = "com.github.marcoslorcar.clementime"
         minSdk = 24
         //noinspection OldTargetApi
         targetSdk = 36
@@ -49,13 +49,16 @@ android {
             keepDebugSymbols.add("**/libdatastore_shared_counter.so")
         }
     }
+    lint {
+        disable.addAll(listOf("WebpUnsupported", "UnusedResources", "VectorRaster"))
+    }
 }
 
 dependencies {
+    implementation(libs.androidx.appcompat)
     implementation(libs.androidx.compose.foundation.layout)
     implementation(libs.androidx.compose.runtime)
     implementation(libs.androidx.ui)
-    implementation(libs.material3)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)

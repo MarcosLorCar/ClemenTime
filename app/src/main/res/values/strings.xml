@@ -1,8 +1,7 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="UnusedResources">
     <string name="app_name">ClemenTime</string>
     <string name="schedule_screen_title">Schedule</string>
     <string name="settings_screen_title">Settings</string>
-    <string name="import_screen_title">Import Schedule</string>
     <string name="import_schedule_title">Import Schedule</string>
     <string name="subjects_screen_title">Subjects</string>
     <string name="search_subjects_placeholder">Search by name or code…</string>
@@ -13,16 +12,14 @@
     <string name="no_subjects_title">No subjects added yet</string>
     <string name="no_subjects_subtitle">Import a schedule or tap + to create one.</string>
     <string name="no_search_results">No subjects match your search.</string>
-    <string name="slots_count">%1$d slot(s)</string>
-    <string name="expand_slots">Show slots</string>
-    <string name="collapse_slots">Hide slots</string>
+    <plurals name="slots_count">
+        <item quantity="one">%1$d slot</item>
+        <item quantity="other">%1$d slots</item>
+    </plurals>
     <string name="active">Active</string>
     <string name="inactive">Inactive</string>
-    <string name="select_all">Select All</string>
     <string name="deselect_all">Deselect All</string>
-    <string name="selected_count">%1$d of %2$d selected</string>
-    <string name="section_selected_count">%1$d/%2$d selected</string>
-    <string name="select_file_button">Select Schedule JSON File</string>
+    <string name="section_selected_count" tools:ignore="PluralsCandidate">%1$d/%2$d selected</string>
     <string name="try_again">Try Again</string>
     <string name="import_selected_button">Import Selected (%1$d)</string>
     <string name="edit_subject">Edit</string>
@@ -32,9 +29,15 @@
     <string name="nuke_all_subjects_title">Nuke All Subjects</string>
     <string name="nuke_all_subjects_message">Are you sure you want to delete ALL subjects and all associated class slots? This action is permanent and cannot be undone.</string>
     <string name="nuke_confirm">Nuke All</string>
-    <string name="selected_count_simple">%1$d selected</string>
+    <plurals name="selected_count_simple">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
     <string name="delete_selected_dialog_title">Delete Selected</string>
-    <string name="delete_selected_dialog_message">Are you sure you want to delete the %1$d selected subjects and all their class slots?</string>
+    <plurals name="delete_selected_dialog_message">
+        <item quantity="one">Are you sure you want to delete the %1$d selected subject and all its class slots?</item>
+        <item quantity="other">Are you sure you want to delete the %1$d selected subjects and all their class slots?</item>
+    </plurals>
     <string name="delete_selected_confirm">Delete</string>
 
     <!-- Settings Screen strings -->
@@ -48,23 +51,17 @@
     <string name="tab_layout_setting_title">Tab Bar Layout</string>
     <string name="tab_layout_letters">Letters (Fixed)</string>
     <string name="tab_layout_weekdays">Weekday Names (Scrollable)</string>
-    <string name="sync_directory_setting_title">Sync Directory</string>
-    <string name="sync_directory_path_label">Sync Folder: %1$s</string>
-    <string name="sync_directory_not_selected">No directory selected</string>
-    <string name="choose_folder_button">Choose folder</string>
-    <string name="clear_folder_button">Clear folder</string>
+
     <string name="export_backup_setting_title">Export Schedule</string>
     <string name="export_backup_desc">Save schedule and subjects to JSON file</string>
-    <string name="export_button">Export</string>
-    <string name="import_button">Import</string>
-    <string name="import_schedule_desc">Load subjects and schedules from JSON file</string>
+
     <string name="import_library_desc">Browse and import schedules from the library or device</string>
 
     <!-- Notes & Attachments strings -->
     <string name="notes_and_attachments_header">Notes &amp; File Attachments</string>
     <string name="subject_notes_label">Subject Notes</string>
     <string name="subject_notes_placeholder">Add notes, syllabus links, exam dates, or reminders…</string>
-    <string name="linked_files_label">Linked Files (%1$d)</string>
+    <string name="linked_files_label" tools:ignore="PluralsCandidate">Linked Files (%1$d)</string>
     <string name="link_file_button">Link File</string>
     
     <!-- Toast & Dialog strings -->
@@ -73,10 +70,9 @@
     <string name="no_apps_for_file_message">No app available to open this file type</string>
     <string name="language_selector_label">Select Language</string>
     <string name="theme_selector_label">Select Theme</string>
-    <string name="export_success_local_and_sync">Backup saved locally and to Sync Folder</string>
+
     <string name="export_success_local">Backup saved successfully</string>
-    <string name="export_success_sync">Backup exported to Sync Folder</string>
-    <string name="export_error_no_location">Please configure a Sync Directory or choose a manual save location.</string>
+
     <string name="export_error_prefix">Export failed: %1$s</string>
     <string name="import_library_title">Import Library</string>
     <string name="import_select_file_device">Import JSON from device</string>
@@ -106,12 +102,18 @@
     <string name="conflict_resolver_possible_header">Possible Selections</string>
     <string name="conflict_resolver_possible_label">Possible Selection</string>
     <string name="conflict_resolver_other_header">Other Options</string>
-    <string name="conflict_resolver_overlaps">%1$d Overlaps</string>
-    <string name="conflict_resolver_free_days">%1$d Free Days</string>
+    <plurals name="conflict_resolver_overlaps">
+        <item quantity="one">%1$d Overlap</item>
+        <item quantity="other">%1$d Overlaps</item>
+    </plurals>
+    <plurals name="conflict_resolver_free_days">
+        <item quantity="one">%1$d Free Day</item>
+        <item quantity="other">%1$d Free Days</item>
+    </plurals>
     <string name="conflict_resolver_score">Score: %1$d</string>
     <string name="conflict_resolver_apply">Apply</string>
     <string name="conflict_resolver_applied">Applied</string>
-    <string name="conflict_resolver_current_badge">CURRENT</string>
+    <string name="conflict_resolver_current_badge">Current</string>
     <string name="conflict_resolver_current_header">Current Selection</string>
     <string name="conflict_resolver_manual_config_header">Manual Preferences (Optional)</string>
     <string name="conflict_resolver_radio_desc">• Pin Lab Selections: Use the radio buttons if you have specific lab groups you absolutely want to keep. The optimizer will work around them. Leaving them unpinned lets the optimizer search all options.</string>

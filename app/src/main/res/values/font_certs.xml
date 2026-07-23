@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <array name="com_google_android_gms_fonts_certs">
+<!-- suppress SpellCheckingInspection -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="Typos,PrivateResource,UnusedResources">
+    <array name="com_google_android_gms_fonts_certs" tools:override="true">
         <item>@array/com_google_android_gms_fonts_certs_dev</item>
         <item>@array/com_google_android_gms_fonts_certs_prod</item>
     </array>
-    <string-array name="com_google_android_gms_fonts_certs_dev">
+    <string-array name="com_google_android_gms_fonts_certs_dev" tools:override="true">
         <item>
             MIIEqDCCA5CgAwIBAgIJA071MA0GCSqGSIb3DQEBBAUAMIGUMQswCQYDVQQGEwJVUzETMBEGA1UECBMK
             Q2FsaWZvcm5pYTEWMBQGA1UEBxMNTW91bnRhaW4gVmlldzEQMA4GA1UEChMHQW5kcm9pZDEQMA4GA1UE
@@ -30,7 +31,7 @@
             PhJD9gs=
         </item>
     </string-array>
-    <string-array name="com_google_android_gms_fonts_certs_prod">
+    <string-array name="com_google_android_gms_fonts_certs_prod" tools:override="true">
         <item>
             MIIEqDCCA5CgAwIBAgIJA071MA0GCSqGSIb3DQEBBAUAMIGUMQswCQYDVQQGEwJVUzETMBEGA1UECBMK
             Q2FsaWZvcm5pYTEWMBQGA1UEBxMNTW91bnRhaW4gVmlldzEQMA4GA1UEChMHQW5kcm9pZDEQMA4GA1UE
