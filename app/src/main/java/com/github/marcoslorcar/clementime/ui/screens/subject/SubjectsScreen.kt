@@ -95,7 +95,7 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun SubjectsScreen(
     onNavigateToAddEditSubject: (Long?) -> Unit,
-    onNavigateToSchedule: (DayOfWeek) -> Unit = {},
+    onNavigateToSchedule: (DayOfWeek, Long?) -> Unit = { _, _ -> },
     onNavigateToImport: () -> Unit,
     viewModel: SubjectsViewModel = hiltViewModel(),
     onMenuClick: (() -> Unit)? = null
@@ -118,7 +118,7 @@ fun SubjectsContent(
     uiState: SubjectsUiState,
     onEvent: (SubjectsUiEvent) -> Unit,
     onNavigateToAddEditSubject: (Long?) -> Unit,
-    onNavigateToSchedule: (DayOfWeek) -> Unit = {},
+    onNavigateToSchedule: (DayOfWeek, Long?) -> Unit = { _, _ -> },
     onNavigateToImport: () -> Unit,
     onMenuClick: (() -> Unit)? = null
 ) {
@@ -574,7 +574,7 @@ private fun SubjectItemCard(
     onToggleActive: (Boolean) -> Unit,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
-    onNavigateToSchedule: (DayOfWeek) -> Unit,
+    onNavigateToSchedule: (DayOfWeek, Long?) -> Unit,
     onToggleSelection: () -> Unit
 ) {
     val subject = subjectWithSlots.subject
@@ -749,7 +749,7 @@ private fun SubjectItemCard(
                                 subjectWithSlots.slots.forEach { slot ->
                                     SlotDetailRow(
                                         slot = slot,
-                                        onSlotClick = { onNavigateToSchedule(slot.dayOfWeek) }
+                                        onSlotClick = { onNavigateToSchedule(slot.dayOfWeek, slot.id) }
                                     )
                                     Spacer(modifier = Modifier.height(6.dp))
                                 }

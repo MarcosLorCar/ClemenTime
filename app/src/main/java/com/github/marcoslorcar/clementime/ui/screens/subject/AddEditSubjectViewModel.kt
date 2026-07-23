@@ -1,5 +1,6 @@
 package com.github.marcoslorcar.clementime.ui.screens.subject
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -10,7 +11,9 @@ import com.github.marcoslorcar.clementime.data.EntryType
 import com.github.marcoslorcar.clementime.data.ScheduleDao
 import com.github.marcoslorcar.clementime.data.Subject
 import com.github.marcoslorcar.clementime.ui.navigation.AddEditSubjectRoute
+import com.github.marcoslorcar.clementime.ui.widget.ScheduleWidgetUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -87,7 +90,8 @@ data class AddEditSubjectUiState(
 @HiltViewModel
 class AddEditSubjectViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    private val scheduleDao: ScheduleDao
+    private val scheduleDao: ScheduleDao,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AddEditSubjectUiState())
@@ -313,6 +317,7 @@ class AddEditSubjectViewModel @Inject constructor(
             val validEntities = state.slots.mapNotNull { it.toEntity(subjectToSave.id) }
 
             scheduleDao.upsertSubjectWithSlots(subjectToSave, validEntities)
+            ScheduleWidgetUtils.updateWidget(context)
             _uiState.update { it.copy(isSaved = true) }
         }
     }

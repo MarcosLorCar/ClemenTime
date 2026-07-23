@@ -7,6 +7,9 @@ import java.time.LocalTime
 import java.time.format.TextStyle
 import java.util.Locale
 
+val DAY_START_TIME: LocalTime = LocalTime.of(8, 30)
+val DAY_END_TIME: LocalTime = LocalTime.of(21, 30)
+
 /**
  * Returns a unique single-character label for the day of the week, handling common
  * linguistic collisions (e.g., Tuesday/Thursday in English, Tuesday/Wednesday in Spanish).

@@ -205,5 +205,9 @@
     <string name="lab_group_placeholder">ej. Lab-A1</string>
     <string name="hidden_from_schedule">Oculto (Ignorado)</string>
     <string name="visible_in_schedule" >Activo</string>
+    <string name="widget_name">Horario</string>
+    <string name="widget_description">Muestra el horario de hoy o de mañana con centrado dinamico.</string>
+    <string name="widget_today_title">HOY (%1$s)</string>
+    <string name="widget_tomorrow_title">MAÑANA (%1$s)</string>
 </resources>
 

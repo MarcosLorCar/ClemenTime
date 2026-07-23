@@ -51,7 +51,6 @@ fun ClassSlotItemCard(
     modifier: Modifier = Modifier,
     slot: ClassSlotUiModel,
     isHighlighted: Boolean = false,
-    isEditMode: Boolean = true,
     onEditClick: (() -> Unit)? = null,
     onGoToSchedule: (DayOfWeek, Long) -> Unit = { _, _ -> },
     onDuplicate: () -> Unit = {},
@@ -64,7 +63,7 @@ fun ClassSlotItemCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(enabled = isEditMode && onEditClick != null) { onEditClick?.invoke() }
+            .clickable(enabled = onEditClick != null) { onEditClick?.invoke() }
             .animateContentSize()
             .alpha(if (slot.isIgnored) 0.6f else 1f),
         shape = RoundedCornerShape(12.dp),
@@ -169,23 +168,21 @@ fun ClassSlotItemCard(
                         }
                     }
 
-                    if (isEditMode) {
-                        IconButton(onClick = onDuplicate) {
-                            Icon(
-                                imageVector = Icons.Default.ContentCopy,
-                                contentDescription = stringResource(R.string.duplicate_slot_label),
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                        IconButton(onClick = { showDeleteConfirmation = true }) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = stringResource(R.string.delete_slot_label),
-                                tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
+                    IconButton(onClick = onDuplicate) {
+                        Icon(
+                            imageVector = Icons.Default.ContentCopy,
+                            contentDescription = stringResource(R.string.duplicate_slot_label),
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    IconButton(onClick = { showDeleteConfirmation = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = stringResource(R.string.delete_slot_label),
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
                 }
             }

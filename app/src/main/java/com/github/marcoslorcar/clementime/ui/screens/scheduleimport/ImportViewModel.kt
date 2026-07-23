@@ -16,8 +16,10 @@ import com.github.marcoslorcar.clementime.data.importing.repository.ImportReposi
 import com.github.marcoslorcar.clementime.ui.screens.scheduleimport.model.ConflictDetail
 import com.github.marcoslorcar.clementime.ui.screens.scheduleimport.model.ConflictStatus
 import com.github.marcoslorcar.clementime.ui.screens.scheduleimport.model.TheoryOverlap
+import com.github.marcoslorcar.clementime.ui.widget.ScheduleWidgetUtils
 import com.github.marcoslorcar.clementime.utils.ConflictSolver
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -50,7 +52,8 @@ sealed interface ImportUiState {
 @HiltViewModel
 class ImportViewModel @Inject constructor(
     private val repository: ImportRepository,
-    private val parser: JsonScheduleParser
+    private val parser: JsonScheduleParser,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ImportUiState>(ImportUiState.LoadingLibrary)
@@ -310,6 +313,7 @@ class ImportViewModel @Inject constructor(
                 _uiState.value = ImportUiState.Importing
                 try {
                     repository.importSubjects(currentState.selectedSubjects.toList())
+                    ScheduleWidgetUtils.updateWidget(context)
                     _uiState.value = ImportUiState.Success
                 } catch (e: Exception) {
                     _uiState.value = ImportUiState.Error("Import failed: ${e.localizedMessage}")

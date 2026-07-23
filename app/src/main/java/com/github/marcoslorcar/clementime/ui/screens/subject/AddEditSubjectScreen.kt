@@ -356,7 +356,6 @@ fun AddEditSubjectContent(
                         ClassSlotItemCard(
                             slot = slot,
                             isHighlighted = slot.id == activeHighlightSlotId,
-                            isEditMode = uiState.isEditMode,
                             onEditClick = { onOpenSlotEditor(index) },
                             onGoToSchedule = onNavigateToSchedule,
                             onDuplicate = { onDuplicateSlot(index) },
@@ -623,6 +622,7 @@ private fun SubjectNotesAndLinksCard(
 ) {
     val context = LocalContext.current
     var localNotesText by remember { mutableStateOf(notesText) }
+    var isInputExpanded by remember(notesText) { mutableStateOf(notesText.isNotBlank()) }
 
     LaunchedEffect(notesText) {
         if (localNotesText != notesText) {
@@ -649,18 +649,26 @@ private fun SubjectNotesAndLinksCard(
             )
 
             if (isEditMode) {
-                OutlinedTextField(
-                    value = localNotesText,
-                    onValueChange = {
-                        localNotesText = it
-                        onUpdateNotesText(it)
-                    },
-                    label = { Text(stringResource(R.string.subject_notes_label)) },
-                    placeholder = { Text(stringResource(R.string.subject_notes_placeholder)) },
-                    minLines = 3,
-                    maxLines = 5,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                if (isInputExpanded || localNotesText.isNotBlank()) {
+                    OutlinedTextField(
+                        value = localNotesText,
+                        onValueChange = {
+                            localNotesText = it
+                            onUpdateNotesText(it)
+                        },
+                        label = { Text(stringResource(R.string.subject_notes_label)) },
+                        placeholder = { Text(stringResource(R.string.subject_notes_placeholder)) },
+                        minLines = 3,
+                        maxLines = 5,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else {
+                    TextButton(onClick = { isInputExpanded = true }) {
+                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Add note")
+                    }
+                }
             } else if (notesText.isNotBlank()) {
                 Text(
                     text = notesText,

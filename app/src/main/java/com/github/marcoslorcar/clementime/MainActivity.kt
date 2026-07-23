@@ -26,6 +26,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.toRoute
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -139,8 +140,11 @@ fun ClemenTimeApp() {
             startDestination = ScheduleListRoute(),
             modifier = Modifier.fillMaxSize()
         ) {
-            composable<ScheduleListRoute> {
+            composable<ScheduleListRoute> { backStackEntry ->
+                val route = backStackEntry.toRoute<ScheduleListRoute>()
                 ScheduleScreen(
+                    targetDayOfWeek = route.dayOfWeek,
+                    targetHighlightSlotId = route.highlightSlotId,
                     onClickSubject = { subjectId, slotId ->
                         navController.navigate(AddEditSubjectRoute(subjectId, slotId))
                     },
@@ -162,7 +166,7 @@ fun ClemenTimeApp() {
             composable<ImportRoute> {
                 ImportScreen(
                     onNavigateBack = {
-                        navController.popBackStack<ScheduleListRoute>(inclusive = false)
+                        navController.popBackStack()
                     }
                 )
             }
@@ -180,8 +184,13 @@ fun ClemenTimeApp() {
                     onNavigateToAddEditSubject = { subjectId ->
                         navController.navigate(AddEditSubjectRoute(subjectId))
                     },
-                    onNavigateToSchedule = { dayOfWeek ->
-                        navController.navigate(ScheduleListRoute(dayOfWeek = dayOfWeek.name))
+                    onNavigateToSchedule = { dayOfWeek, slotId ->
+                        navController.navigate(ScheduleListRoute(dayOfWeek = dayOfWeek.name, highlightSlotId = slotId)) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = false
+                            }
+                            launchSingleTop = false
+                        }
                     },
                     onNavigateToImport = {
                         navController.navigate(ImportRoute)
@@ -194,7 +203,10 @@ fun ClemenTimeApp() {
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToSchedule = { dayOfWeek, slotId ->
                         navController.navigate(ScheduleListRoute(dayOfWeek = dayOfWeek.name, highlightSlotId = slotId)) {
-                            popUpTo<ScheduleListRoute> { inclusive = true }
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = false
+                            }
+                            launchSingleTop = false
                         }
                     }
                 )

@@ -1,10 +1,13 @@
 package com.github.marcoslorcar.clementime.ui.screens.subject
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.marcoslorcar.clementime.data.ScheduleDao
 import com.github.marcoslorcar.clementime.data.SubjectWithSlots
+import com.github.marcoslorcar.clementime.ui.widget.ScheduleWidgetUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -51,7 +54,8 @@ sealed interface SubjectsUiEvent {
 @HiltViewModel
 class SubjectsViewModel @Inject constructor(
     private val scheduleDao: ScheduleDao,
-    private val settingsRepository: com.github.marcoslorcar.clementime.data.SettingsRepository
+    private val settingsRepository: com.github.marcoslorcar.clementime.data.SettingsRepository,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SubjectsUiState())
@@ -88,16 +92,19 @@ class SubjectsViewModel @Inject constructor(
             is SubjectsUiEvent.ToggleSubjectActive -> {
                 viewModelScope.launch {
                     scheduleDao.updateSubjectActiveStatus(event.subjectId, event.isActive)
+                    ScheduleWidgetUtils.updateWidget(context)
                 }
             }
             is SubjectsUiEvent.DeleteSubject -> {
                 viewModelScope.launch {
                     scheduleDao.deleteSubjectById(event.subjectId)
+                    ScheduleWidgetUtils.updateWidget(context)
                 }
             }
             is SubjectsUiEvent.NukeAllSubjects -> {
                 viewModelScope.launch {
                     scheduleDao.deleteAllSubjects()
+                    ScheduleWidgetUtils.updateWidget(context)
                 }
             }
             is SubjectsUiEvent.ToggleSubjectSelection -> {
@@ -118,6 +125,7 @@ class SubjectsViewModel @Inject constructor(
                 viewModelScope.launch {
                     val idsToDelete = _uiState.value.selectedSubjectIds.toList()
                     scheduleDao.deleteSubjectsByIds(idsToDelete)
+                    ScheduleWidgetUtils.updateWidget(context)
                     _uiState.update { it.copy(selectedSubjectIds = emptySet(), isSelectionModeForced = false) }
                 }
             }
@@ -140,6 +148,7 @@ class SubjectsViewModel @Inject constructor(
                 viewModelScope.launch {
                     val idsToDisable = _uiState.value.selectedSubjectIds.toList()
                     scheduleDao.updateSubjectsActiveStatus(idsToDisable, false)
+                    ScheduleWidgetUtils.updateWidget(context)
                     _uiState.update { it.copy(selectedSubjectIds = emptySet(), isSelectionModeForced = false) }
                 }
             }

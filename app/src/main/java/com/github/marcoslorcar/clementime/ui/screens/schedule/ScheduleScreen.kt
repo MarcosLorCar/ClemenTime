@@ -63,8 +63,11 @@ import com.github.marcoslorcar.clementime.ui.components.ScheduleTimeline
 import com.github.marcoslorcar.clementime.ui.screens.subject.ClassSlotUiModel
 import com.github.marcoslorcar.clementime.ui.screens.subject.toUiModel
 import com.github.marcoslorcar.clementime.ui.theme.ClemenTimeTheme
+import com.github.marcoslorcar.clementime.utils.DAY_END_TIME
+import com.github.marcoslorcar.clementime.utils.DAY_START_TIME
 import com.github.marcoslorcar.clementime.utils.getNarrowLabel
 import com.github.marcoslorcar.clementime.utils.groupSlotsIntoClusters
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -75,6 +78,8 @@ import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun ScheduleScreen(
+    targetDayOfWeek: String? = null,
+    targetHighlightSlotId: Long? = null,
     onClickSubject: (Long, Long) -> Unit,
     onNavigateToImport: () -> Unit,
     onNavigateToConflictResolver: () -> Unit,
@@ -83,8 +88,18 @@ fun ScheduleScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    LaunchedEffect(targetDayOfWeek) {
+        if (targetDayOfWeek != null) {
+            val targetTab = ScheduleTab.entries.find { it.dayOfWeek.name.equals(targetDayOfWeek, ignoreCase = true) }
+            if (targetTab != null) {
+                viewModel.changeTab(targetTab)
+            }
+        }
+    }
+
     ScheduleContent(
         uiState = uiState,
+        overrideHighlightSlotId = targetHighlightSlotId,
         onChangeTab = viewModel::changeTab,
         onNavigateToImport = onNavigateToImport,
         onNavigateToConflictResolver = onNavigateToConflictResolver,
@@ -98,6 +113,7 @@ fun ScheduleScreen(
 @Composable
 fun ScheduleContent(
     uiState: ScheduleUiState,
+    overrideHighlightSlotId: Long? = null,
     onChangeTab: (ScheduleTab) -> Unit,
     onNavigateToImport: () -> Unit,
     onNavigateToConflictResolver: () -> Unit,
@@ -122,10 +138,25 @@ fun ScheduleContent(
     var isNearNow by remember { mutableStateOf(false) }
     val today = remember { LocalDate.now().dayOfWeek }
 
+    var currentTime by remember { mutableStateOf(LocalTime.now()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay((1000 * 30).milliseconds)
+            currentTime = LocalTime.now()
+        }
+    }
+
     // Synchronize Pager state with ViewModel only when it settles
     LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.settledPage }.collect { page ->
             onChangeTab(tabs[page])
+        }
+    }
+
+    // Synchronize Pager page when ViewModel changes selectedTab (e.g. via navigation)
+    LaunchedEffect(uiState.selectedTab) {
+        if (pagerState.currentPage != uiState.selectedTab.ordinal) {
+            pagerState.scrollToPage(uiState.selectedTab.ordinal)
         }
     }
 
@@ -232,9 +263,11 @@ fun ScheduleContent(
         },
         floatingActionButton = {
             val isWeekday = today != DayOfWeek.SATURDAY && today != DayOfWeek.SUNDAY
+            val isWithinTimelineRange = currentTime in DAY_START_TIME..DAY_END_TIME
             
             val shouldShowFab = uiState.showNowLine && 
                               isWeekday && 
+                              isWithinTimelineRange &&
                               uiState.subjectsWithSlots.isNotEmpty() && 
                               (!isNearNow || pagerState.currentPage != (tabs.find { it.dayOfWeek == today }?.ordinal ?: -1))
 
@@ -328,12 +361,13 @@ fun ScheduleContent(
                     groupSlotsIntoClusters(daySlots)
                 }
 
-    var activeHighlightSlotId by remember(uiState.highlightSlotId) { mutableStateOf(uiState.highlightSlotId) }
+    val slotToHighlight = overrideHighlightSlotId ?: uiState.highlightSlotId
+    var activeHighlightSlotId by remember(slotToHighlight) { mutableStateOf(slotToHighlight) }
 
-    LaunchedEffect(uiState.highlightSlotId) {
-        if (uiState.highlightSlotId != null) {
-            activeHighlightSlotId = uiState.highlightSlotId
-            kotlinx.coroutines.delay(2000L.milliseconds)
+    LaunchedEffect(slotToHighlight) {
+        if (slotToHighlight != null) {
+            activeHighlightSlotId = slotToHighlight
+            delay(2000L.milliseconds)
             activeHighlightSlotId = null
         }
     }
@@ -346,6 +380,7 @@ fun ScheduleContent(
                     dayOfWeek = currentDay.dayOfWeek,
                     scrollToNowTrigger = scrollToNowTrigger,
                     highContrastEnabled = uiState.highContrast,
+                    highlightSlotId = activeHighlightSlotId,
                     onNearNowChanged = { if (currentDay.dayOfWeek == today) isNearNow = it },
                     onClickSubject = onClickSubject
                 ) { subjectId, slotId ->
@@ -371,7 +406,6 @@ fun ScheduleContent(
             Box(modifier = Modifier.padding(16.dp)) {
                 ClassSlotItemCard(
                     slot = slot,
-                    isEditMode = false,
                     onGoToSchedule = { _, _ -> 
                         coroutineScope.launch { sheetState.hide() }.invokeOnCompletion {
                             selectedSlotForSheet = null

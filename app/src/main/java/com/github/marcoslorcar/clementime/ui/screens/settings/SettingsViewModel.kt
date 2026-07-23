@@ -9,7 +9,9 @@ import androidx.lifecycle.viewModelScope
 import com.github.marcoslorcar.clementime.data.ScheduleDao
 import com.github.marcoslorcar.clementime.data.SettingsRepository
 import com.github.marcoslorcar.clementime.data.importing.parser.JsonScheduleParser
+import com.github.marcoslorcar.clementime.ui.widget.ScheduleWidgetUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -40,7 +42,8 @@ sealed interface ExportStatus {
 class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val scheduleDao: ScheduleDao,
-    private val jsonScheduleParser: JsonScheduleParser
+    private val jsonScheduleParser: JsonScheduleParser,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     val uiState: StateFlow<SettingsUiState> = combine(
@@ -100,6 +103,7 @@ class SettingsViewModel @Inject constructor(
     fun setShowNowLine(show: Boolean) {
         viewModelScope.launch {
             settingsRepository.setShowNowLine(show)
+            ScheduleWidgetUtils.updateWidget(context)
         }
     }
 
@@ -107,6 +111,7 @@ class SettingsViewModel @Inject constructor(
     fun setNowLineStyle(style: String) {
         viewModelScope.launch {
             settingsRepository.setNowLineStyle(style)
+            ScheduleWidgetUtils.updateWidget(context)
         }
     }
 
@@ -114,6 +119,7 @@ class SettingsViewModel @Inject constructor(
     fun setHighContrast(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setHighContrast(enabled)
+            ScheduleWidgetUtils.updateWidget(context)
         }
     }
 

@@ -1,12 +1,15 @@
 package com.github.marcoslorcar.clementime.ui.screens.conflictresolver
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.marcoslorcar.clementime.data.ScheduleDao
 import com.github.marcoslorcar.clementime.data.SubjectWithSlots
+import com.github.marcoslorcar.clementime.ui.widget.ScheduleWidgetUtils
 import com.github.marcoslorcar.clementime.utils.ConflictSolver
 import com.github.marcoslorcar.clementime.utils.ScheduleSolution
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -32,7 +35,8 @@ data class ConflictResolverUiState(
 
 @HiltViewModel
 class ConflictResolverViewModel @Inject constructor(
-    private val dao: ScheduleDao
+    private val dao: ScheduleDao,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _preferenceMode = MutableStateFlow(PreferenceMode.FREE_DAYS)
@@ -103,6 +107,7 @@ class ConflictResolverViewModel @Inject constructor(
         viewModelScope.launch {
             val selections = solution.labSelections.mapValues { it.value.first() }
             dao.updateSelectedLabGroups(selections)
+            ScheduleWidgetUtils.updateWidget(context)
         }
     }
 
@@ -110,6 +115,7 @@ class ConflictResolverViewModel @Inject constructor(
         val previous = lastAppliedLabSelections ?: return
         viewModelScope.launch {
             dao.updateSelectedLabGroups(previous)
+            ScheduleWidgetUtils.updateWidget(context)
             lastAppliedLabSelections = null
         }
     }
@@ -117,12 +123,14 @@ class ConflictResolverViewModel @Inject constructor(
     fun toggleSlotIgnored(slotId: Long, isIgnored: Boolean) {
         viewModelScope.launch {
             dao.updateSlotIgnoredStatus(slotId, isIgnored)
+            ScheduleWidgetUtils.updateWidget(context)
         }
     }
 
     fun selectLabGroup(subjectId: Long, labGroupName: String?) {
         viewModelScope.launch {
             dao.updateSelectedLabGroup(subjectId, labGroupName)
+            ScheduleWidgetUtils.updateWidget(context)
         }
     }
 }

@@ -45,6 +45,8 @@ import com.github.marcoslorcar.clementime.data.ClassSlot
 import com.github.marcoslorcar.clementime.data.EntryType
 import com.github.marcoslorcar.clementime.data.Subject
 import com.github.marcoslorcar.clementime.data.cardColor
+import com.github.marcoslorcar.clementime.utils.DAY_END_TIME
+import com.github.marcoslorcar.clementime.utils.DAY_START_TIME
 import com.github.marcoslorcar.clementime.utils.TimelineCluster
 import kotlinx.coroutines.delay
 import java.time.DayOfWeek
@@ -57,8 +59,6 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.milliseconds
 
-private val DAY_START_TIME: LocalTime = LocalTime.of(8, 30)
-private val DAY_END_TIME: LocalTime = LocalTime.of(21, 30)
 private val MINUTE_HEIGHT: Dp = 1.4.dp
 
 private val TIME_LABEL_WIDTH: Dp = 56.dp
@@ -78,6 +78,7 @@ fun ScheduleTimeline(
     dayOfWeek: DayOfWeek? = null,
     scrollToNowTrigger: Long = 0L,
     highContrastEnabled: Boolean = false,
+    highlightSlotId: Long? = null,
     onNearNowChanged: (Boolean) -> Unit = {},
     onClickSubject: (Long, Long) -> Unit,
     onLongClickSubject: (Long, Long) -> Unit = { _, _ -> },
@@ -139,9 +140,24 @@ fun ScheduleTimeline(
         }
     }
 
-    LaunchedEffect(clusters, showNowLine, isToday, viewportHeightPx) {
+    LaunchedEffect(clusters, showNowLine, isToday, viewportHeightPx, highlightSlotId) {
         if (viewportHeightPx == 0) return@LaunchedEffect
         if (hasAutoScrolled) return@LaunchedEffect
+
+        if (highlightSlotId != null) {
+            val targetSlot = clusters.flatMap { it.items }.find { it.second.id == highlightSlotId }?.second
+            if (targetSlot != null) {
+                val startMinutes = Duration.between(DAY_START_TIME, targetSlot.startTime).toMinutes().toInt()
+                val slotTopPx = with(density) { ((MINUTE_HEIGHT * startMinutes) + TOP_TIMELINE_PADDING).toPx() }
+                
+                // Center the slot in the viewport
+                val targetPx = (slotTopPx - (viewportHeightPx / 2)).toInt().coerceAtLeast(0)
+                
+                scrollState.animateScrollTo(targetPx)
+                hasAutoScrolled = true
+                return@LaunchedEffect
+            }
+        }
 
         if (showNowLine && isToday && isWithinTimeRange) {
             scrollToNow()
@@ -230,6 +246,7 @@ fun ScheduleTimeline(
                                 subject = subject,
                                 slot = slot,
                                 highContrastEnabled = highContrastEnabled,
+                                isHighlighted = slot.id == highlightSlotId,
                                 onClickSubject = { onClickSubject(subject.id, slot.id) },
                                 onLongClickSubject = { onLongClickSubject(subject.id, slot.id) },
                                 modifier = Modifier.fillMaxHeight(),

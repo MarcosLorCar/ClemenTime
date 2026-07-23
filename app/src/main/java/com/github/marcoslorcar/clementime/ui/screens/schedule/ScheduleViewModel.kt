@@ -1,5 +1,6 @@
 package com.github.marcoslorcar.clementime.ui.screens.schedule
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,7 +10,9 @@ import com.github.marcoslorcar.clementime.data.ScheduleDao
 import com.github.marcoslorcar.clementime.data.SettingsRepository
 import com.github.marcoslorcar.clementime.data.SubjectWithSlots
 import com.github.marcoslorcar.clementime.ui.navigation.ScheduleListRoute
+import com.github.marcoslorcar.clementime.ui.widget.ScheduleWidgetUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -31,11 +34,20 @@ data class ScheduleUiState(
     val highlightSlotId: Long? = null
 )
 
+private data class SettingsAndHighlight(
+    val scrollable: Boolean,
+    val showNowLine: Boolean,
+    val nowLineStyle: String,
+    val highContrast: Boolean,
+    val highlightSlotId: Long?
+)
+
 @HiltViewModel
 class ScheduleViewModel @Inject constructor(
     private val scheduleDao: ScheduleDao,
     settingsRepository: SettingsRepository,
-    savedStateHandle: SavedStateHandle
+    savedStateHandle: SavedStateHandle,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val route = runCatching { savedStateHandle.toRoute<ScheduleListRoute>() }.getOrNull()
@@ -52,17 +64,31 @@ class ScheduleViewModel @Inject constructor(
 
     private val _selectedTab = MutableStateFlow(initialTab)
 
+    init {
+        viewModelScope.launch {
+            savedStateHandle.getStateFlow<String?>("dayOfWeek", route?.dayOfWeek).collect { dayName ->
+                if (dayName != null) {
+                    val targetTab = ScheduleTab.entries.find { it.dayOfWeek.name.equals(dayName, ignoreCase = true) }
+                    if (targetTab != null) {
+                        _selectedTab.value = targetTab
+                    }
+                }
+            }
+        }
+    }
+
     val uiState: StateFlow<ScheduleUiState> = combine(
         scheduleDao.getActiveSubjectsWithSlots(),
         _selectedTab,
-        settingsRepository.scrollableTabsFlow,
-        settingsRepository.showNowLineFlow,
         combine(
+            settingsRepository.scrollableTabsFlow,
+            settingsRepository.showNowLineFlow,
             settingsRepository.nowLineStyleFlow,
             settingsRepository.highContrastFlow,
-            ::Pair
+            savedStateHandle.getStateFlow<Long?>("highlightSlotId", route?.highlightSlotId),
+            ::SettingsAndHighlight
         )
-    ) { rawSubjects, selectedTab, scrollable, showNowLine, extras ->
+    ) { rawSubjects, selectedTab, settings ->
         val filteredSubjects = rawSubjects.map { sWithSlots ->
             val filteredSlots = sWithSlots.slots.filter { slot ->
                 slot.entryType == EntryType.THEORY || 
@@ -78,17 +104,17 @@ class ScheduleViewModel @Inject constructor(
             isLoading = false,
             selectedTab = selectedTab,
             subjectsWithSlots = filteredSubjects,
-            scrollableTabs = scrollable,
-            showNowLine = showNowLine,
-            nowLineStyle = extras.first,
-            highContrast = extras.second,
+            scrollableTabs = settings.scrollable,
+            showNowLine = settings.showNowLine,
+            nowLineStyle = settings.nowLineStyle,
+            highContrast = settings.highContrast,
             hasOverlaps = hasOverlaps,
-            highlightSlotId = route?.highlightSlotId
+            highlightSlotId = settings.highlightSlotId ?: route?.highlightSlotId
         )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = ScheduleUiState(isLoading = true)
+        initialValue = ScheduleUiState(isLoading = true, selectedTab = initialTab)
     )
 
     fun changeTab(tab: ScheduleTab) {
@@ -98,6 +124,7 @@ class ScheduleViewModel @Inject constructor(
     fun deleteSlot(slotId: Long) {
         viewModelScope.launch {
             scheduleDao.deleteSlotById(slotId)
+            ScheduleWidgetUtils.updateWidget(context)
         }
     }
 
