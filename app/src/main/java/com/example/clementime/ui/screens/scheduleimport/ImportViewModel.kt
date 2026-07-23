@@ -4,11 +4,19 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.clementime.data.EntryType
+import com.example.clementime.data.Subject
+import com.example.clementime.data.SubjectWithSlots
 import com.example.clementime.data.importing.model.ImportFile
 import com.example.clementime.data.importing.model.JsonSubject
 import com.example.clementime.data.importing.model.ScheduleJsonSchema
 import com.example.clementime.data.importing.model.SelectedSubject
 import com.example.clementime.data.importing.repository.ImportRepository
+import com.example.clementime.data.importing.parser.JsonScheduleParser
+import com.example.clementime.ui.screens.scheduleimport.model.ConflictDetail
+import com.example.clementime.ui.screens.scheduleimport.model.ConflictStatus
+import com.example.clementime.ui.screens.scheduleimport.model.TheoryOverlap
+import com.example.clementime.utils.ConflictSolver
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,7 +38,8 @@ sealed interface ImportUiState {
         val schema: ScheduleJsonSchema,
         val selectedSubjects: Set<SelectedSubject>,
         val searchQuery: String = "",
-        val selectedFile: ImportFile
+        val selectedFile: ImportFile,
+        val conflictStatus: ConflictStatus = ConflictStatus.None
     ) : ImportUiState
     object Importing : ImportUiState
     object Success : ImportUiState
@@ -39,7 +48,8 @@ sealed interface ImportUiState {
 
 @HiltViewModel
 class ImportViewModel @Inject constructor(
-    private val repository: ImportRepository
+    private val repository: ImportRepository,
+    private val parser: JsonScheduleParser
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ImportUiState>(ImportUiState.LoadingLibrary)
@@ -79,7 +89,8 @@ class ImportViewModel @Inject constructor(
                         _uiState.value = ImportUiState.Selection(
                             schema = schema,
                             selectedSubjects = emptySet(),
-                            selectedFile = file
+                            selectedFile = file,
+                            conflictStatus = ConflictStatus.None
                         )
                     },
                     onFailure = { error ->
@@ -145,7 +156,10 @@ class ImportViewModel @Inject constructor(
             } else {
                 updatedSelection.add(selectedSubject)
             }
-            _uiState.value = currentState.copy(selectedSubjects = updatedSelection)
+            _uiState.value = currentState.copy(
+                selectedSubjects = updatedSelection,
+                conflictStatus = calculateConflictStatus(updatedSelection)
+            )
         }
     }
 
@@ -159,7 +173,10 @@ class ImportViewModel @Inject constructor(
             } else {
                 updatedSelection.addAll(targetSubjects)
             }
-            _uiState.value = currentState.copy(selectedSubjects = updatedSelection)
+            _uiState.value = currentState.copy(
+                selectedSubjects = updatedSelection,
+                conflictStatus = calculateConflictStatus(updatedSelection)
+            )
         }
     }
 
@@ -170,7 +187,10 @@ class ImportViewModel @Inject constructor(
     fun deselectAll() {
         val currentState = _uiState.value
         if (currentState is ImportUiState.Selection) {
-            _uiState.value = currentState.copy(selectedSubjects = emptySet())
+            _uiState.value = currentState.copy(
+                selectedSubjects = emptySet(),
+                conflictStatus = ConflictStatus.None
+            )
         }
     }
 
@@ -190,7 +210,86 @@ class ImportViewModel @Inject constructor(
             }
             val updatedSelection = currentState.selectedSubjects.toMutableSet()
             updatedSelection.addAll(toSelect)
-            _uiState.value = currentState.copy(selectedSubjects = updatedSelection)
+            _uiState.value = currentState.copy(
+                selectedSubjects = updatedSelection,
+                conflictStatus = calculateConflictStatus(updatedSelection)
+            )
+        }
+    }
+
+    private fun calculateConflictStatus(selected: Set<SelectedSubject>): ConflictStatus {
+        if (selected.isEmpty()) return ConflictStatus.None
+
+        var slotIdCounter = 1L
+        val subjectsWithSlots = selected.map { selectedSubject ->
+            val jsonSubject = selectedSubject.subject
+            val subjectId = jsonSubject.code.hashCode().toLong()
+            val subject = Subject(
+                id = subjectId,
+                code = jsonSubject.code,
+                name = jsonSubject.name,
+                color = jsonSubject.color ?: Subject.PRESET_COLORS.indices.random(), // Random preset if null
+                isActive = true
+            )
+            val theorySlots = jsonSubject.theorySlots.map { 
+                with(parser) { it.toClassSlot(subjectId).copy(id = slotIdCounter++) }
+            }
+            val labSlots = jsonSubject.labVariants.flatMap { (groupName, variantSlots) ->
+                variantSlots.map { slot ->
+                    with(parser) {
+                        slot.toClassSlot(subjectId).copy(
+                            id = slotIdCounter++,
+                            labGroupName = groupName,
+                            entryType = EntryType.LAB
+                        )
+                    }
+                }
+            }
+            SubjectWithSlots(subject, theorySlots + labSlots)
+        }
+
+        val solutions = ConflictSolver.findSolutions(subjectsWithSlots)
+        val optimal = solutions.firstOrNull() ?: return ConflictStatus.None
+
+        val theoryOverlaps = mutableListOf<TheoryOverlap>()
+        val theorySlots = subjectsWithSlots.flatMap { s -> 
+            s.slots.filter { it.entryType == EntryType.THEORY }.map { s.subject to it } 
+        }
+        
+        for (i in 0 until theorySlots.size) {
+            for (j in i + 1 until theorySlots.size) {
+                val (subj1, slot1) = theorySlots[i]
+                val (subj2, slot2) = theorySlots[j]
+                if (slot1.dayOfWeek == slot2.dayOfWeek && slot1.startTime < slot2.endTime && slot2.startTime < slot1.endTime) {
+                    val sel1 = selected.find { it.subject.code == subj1.code }!!
+                    val sel2 = selected.find { it.subject.code == subj2.code }!!
+                    theoryOverlaps.add(TheoryOverlap(sel1, sel2, listOf(slot1 to slot2)))
+                }
+            }
+        }
+
+        val hasTheoryConflict = theoryOverlaps.isNotEmpty()
+        val hasLabConflict = optimal.overlapsCount > 0
+
+        return if (!hasTheoryConflict && !hasLabConflict) {
+            ConflictStatus.Valid
+        } else {
+            val theoryOverlappingSlots = theoryOverlaps.flatMap { overlap ->
+                overlap.slots.flatMap { pair ->
+                    val s1 = subjectsWithSlots.find { it.subject.code == overlap.subject1.subject.code }!!.subject
+                    val s2 = subjectsWithSlots.find { it.subject.code == overlap.subject2.subject.code }!!.subject
+                    listOf(s1 to pair.first, s2 to pair.second)
+                }
+            }.distinctBy { it.second.id }
+
+            ConflictStatus.Conflict(
+                ConflictDetail(
+                    selectedSubjects = selected.toList(),
+                    theoryOverlaps = theoryOverlaps,
+                    hasLabCombinationWithZeroOverlaps = !hasLabConflict,
+                    theoryOverlappingSlots = theoryOverlappingSlots
+                )
+            )
         }
     }
 

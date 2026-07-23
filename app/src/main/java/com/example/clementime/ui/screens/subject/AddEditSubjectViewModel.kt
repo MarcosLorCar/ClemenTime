@@ -31,7 +31,8 @@ data class ClassSlotUiModel(
     val classroom: String? = null,
     val labGroupName: String? = null,
     val entryType: EntryType = EntryType.THEORY,
-    val professor: String? = null
+    val professor: String? = null,
+    val isIgnored: Boolean = false
 )
 
 fun ClassSlot.toUiModel(): ClassSlotUiModel = ClassSlotUiModel(
@@ -43,7 +44,8 @@ fun ClassSlot.toUiModel(): ClassSlotUiModel = ClassSlotUiModel(
     classroom = classroom,
     labGroupName = labGroupName,
     entryType = entryType,
-    professor = professor
+    professor = professor,
+    isIgnored = isIgnored
 )
 
 fun ClassSlotUiModel.toEntity(subjectId: Long): ClassSlot? {
@@ -58,7 +60,8 @@ fun ClassSlotUiModel.toEntity(subjectId: Long): ClassSlot? {
         classroom = classroom,
         labGroupName = labGroupName,
         entryType = entryType,
-        professor = professor
+        professor = professor,
+        isIgnored = isIgnored
     )
 }
 

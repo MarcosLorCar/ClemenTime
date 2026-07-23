@@ -67,6 +67,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
@@ -547,6 +548,9 @@ fun SubjectsContent(
                                     onNavigateToSchedule = onNavigateToSchedule,
                                     onToggleSelection = {
                                         onEvent(SubjectsUiEvent.ToggleSubjectSelection(subjectWithSlots.subject.id))
+                                    },
+                                    onToggleSlotIgnored = { slotId, isIgnored ->
+                                        onEvent(SubjectsUiEvent.ToggleSlotIgnored(slotId, isIgnored))
                                     }
                                 )
                             }
@@ -568,7 +572,8 @@ private fun SubjectItemCard(
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onNavigateToSchedule: (DayOfWeek) -> Unit,
-    onToggleSelection: () -> Unit
+    onToggleSelection: () -> Unit,
+    onToggleSlotIgnored: (Long, Boolean) -> Unit
 ) {
     val subject = subjectWithSlots.subject
     var isExpanded by remember { mutableStateOf(false) }
@@ -765,6 +770,7 @@ private fun SlotDetailRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onSlotClick)
+            .alpha(if (slot.isIgnored) 0.6f else 1f)
     ) {
         Row(
             modifier = Modifier
@@ -813,6 +819,15 @@ private fun SlotDetailRow(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+            }
+            
+            if (slot.isIgnored) {
+                Icon(
+                    imageVector = Icons.Default.VisibilityOff,
+                    contentDescription = "Ignored",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    modifier = Modifier.size(20.dp)
+                )
             }
         }
     }

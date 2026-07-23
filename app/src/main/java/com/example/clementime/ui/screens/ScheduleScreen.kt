@@ -119,8 +119,8 @@ fun ScheduleContent(
                     onMenuClick = onMenuClick,
                     title = stringResource(R.string.schedule_screen_title),
                     actions = {
-                        if (uiState.hasOverlaps) {
-                            IconButton(onClick = onNavigateToConflictResolver) {
+                        IconButton(onClick = onNavigateToConflictResolver) {
+                            if (uiState.hasOverlaps) {
                                 BadgedBox(
                                     badge = {
                                         Badge {
@@ -133,6 +133,11 @@ fun ScheduleContent(
                                         contentDescription = stringResource(R.string.resolve_conflicts_tooltip)
                                     )
                                 }
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.AutoFixHigh,
+                                    contentDescription = stringResource(R.string.resolve_conflicts_tooltip)
+                                )
                             }
                         }
                     }

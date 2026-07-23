@@ -16,7 +16,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -217,15 +216,6 @@ fun ClassSlotRow(
                         overflow = TextOverflow.Ellipsis,
                         maxLines = 3
                     )
-
-                    if (slot.isIgnored) {
-                        Icon(
-                            imageVector = Icons.Default.Block,
-                            contentDescription = "Ignored",
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
-                        )
-                    }
                 }
 
                 Column {

@@ -478,6 +478,17 @@
                     "professor": "Ester Castillo"
                   }
                 ],
+                "Lab-B1": [
+                  {
+                    "dayOfWeek": "WEDNESDAY",
+                    "startTime": "13:00",
+                    "endTime": "14:30",
+                    "classroom": "LD2-Dennis Ritchie",
+                    "groupName": "Lab-B1",
+                    "entryType": "LAB",
+                    "professor": "Julio Alberto López"
+                  }
+                ],
                 "Lab-B2": [
                   {
                     "dayOfWeek": "WEDNESDAY",
@@ -487,15 +498,6 @@
                     "groupName": "Lab-B2",
                     "entryType": "LAB",
                     "professor": "Ester Castillo"
-                  },
-                  {
-                    "dayOfWeek": "WEDNESDAY",
-                    "startTime": "13:00",
-                    "endTime": "14:30",
-                    "classroom": "LD2-Dennis Ritchie",
-                    "groupName": "Lab-B2",
-                    "entryType": "LAB",
-                    "professor": "Julio Alberto López"
                   }
                 ]
               }
@@ -538,20 +540,22 @@
                 ],
                 "Lab-B1": [
                   {
-                    "dayOfWeek": "WEDNESDAY",
-                    "startTime": "13:00",
-                    "endTime": "14:30",
-                    "classroom": "A2.2-Grace Murray",
-                    "groupName": "Lab-B1",
-                    "entryType": "LAB",
-                    "professor": "Julio Alberto López"
-                  },
-                  {
                     "dayOfWeek": "FRIDAY",
                     "startTime": "11:30",
                     "endTime": "13:00",
                     "classroom": "LD2-Dennis Ritchie",
                     "groupName": "Lab-B1",
+                    "entryType": "LAB",
+                    "professor": "Jesús Salido"
+                  }
+                ],
+                "Lab-B2": [
+                  {
+                    "dayOfWeek": "WEDNESDAY",
+                    "startTime": "13:00",
+                    "endTime": "14:30",
+                    "classroom": "A2.2-Grace Murray",
+                    "groupName": "Lab-B2",
                     "entryType": "LAB",
                     "professor": "Jesús Salido"
                   }

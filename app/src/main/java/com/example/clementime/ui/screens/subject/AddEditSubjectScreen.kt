@@ -42,10 +42,13 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -72,6 +75,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -692,7 +696,8 @@ private fun ClassSlotItemCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onToggleExpand() },
+            .clickable { onToggleExpand() }
+            .alpha(if (slot.isIgnored) 0.6f else 1f),
         shape = RoundedCornerShape(12.dp),
         border = if (isHighlighted) {
             BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
@@ -773,6 +778,15 @@ private fun ClassSlotItemCard(
                             }
                         )
                     }
+
+                    if (slot.isIgnored && !isExpanded) {
+                        Icon(
+                            imageVector = Icons.Default.VisibilityOff,
+                            contentDescription = "Ignored",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            modifier = Modifier.padding(horizontal = 8.dp).size(20.dp)
+                        )
+                    }
                     
                     if (!isExpanded) {
                         IconButton(onClick = onDelete) {
@@ -812,6 +826,14 @@ private fun ClassSlotItemCard(
                     }
 
                     Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                        IconButton(onClick = { onUpdateSlot(slot.copy(isIgnored = !slot.isIgnored)) }) {
+                            Icon(
+                                imageVector = if (slot.isIgnored) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                contentDescription = if (slot.isIgnored) "Unignore slot" else "Ignore slot",
+                                tint = if (slot.isIgnored) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f) 
+                                       else MaterialTheme.colorScheme.primary
+                            )
+                        }
                         if (slot.id > 0L) {
                             IconButton(onClick = { onGoToSchedule(slot.dayOfWeek) }) {
                                 Icon(

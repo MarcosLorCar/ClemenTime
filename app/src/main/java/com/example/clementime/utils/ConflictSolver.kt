@@ -8,12 +8,14 @@ import java.time.Duration
 import java.time.LocalTime
 
 data class ScheduleSolution(
-    val labSelections: Map<Long, String>, // subjectId -> labGroupName
+    val labSelections: Map<Long, List<String>>, // subjectId -> List of equivalent lab group names
     val overlapsCount: Int,
+    val theoryOverlapsCount: Int,
     val overlappingSlotIds: Set<Long>,
     val freeDaysCount: Int,
     val compactnessScore: Double, // Higher is better (lower gaps)
-    val totalSlots: List<Pair<Subject, ClassSlot>>
+    val totalSlots: List<Pair<Subject, ClassSlot>>,
+    val isCurrent: Boolean = false
 )
 
 object ConflictSolver {
@@ -23,14 +25,25 @@ object ConflictSolver {
      */
     fun findSolutions(subjects: List<SubjectWithSlots>): List<ScheduleSolution> {
         // 1. Separate subjects into those with choice (multiple lab variants) and fixed ones.
+        // A choice now represents a unique *schedule* of labs for that subject.
         val subjectsWithChoices = subjects.filter { s ->
-            s.slots.filter { it.entryType == EntryType.LAB }.mapNotNull { it.labGroupName }.distinct().size > 1
+            val uniqueLabSchedules = s.slots
+                .filter { it.entryType == EntryType.LAB }
+                .groupBy { it.labGroupName }
+                .map { (_, slots) -> slots.map { it.dayOfWeek to (it.startTime to it.endTime) }.sortedBy { it.first } }
+                .distinct()
+            uniqueLabSchedules.size > 1
         }
         
         val fixedSlots = subjects.flatMap { s ->
-            val labGroups = s.slots.filter { it.entryType == EntryType.LAB }.mapNotNull { it.labGroupName }.distinct()
-            if (labGroups.size <= 1) {
-                // All slots for this subject are "fixed" (Theory or the only Lab variant)
+            val uniqueLabSchedules = s.slots
+                .filter { it.entryType == EntryType.LAB }
+                .groupBy { it.labGroupName }
+                .map { (_, slots) -> slots.map { it.dayOfWeek to (it.startTime to it.endTime) }.sortedBy { it.first } }
+                .distinct()
+
+            if (uniqueLabSchedules.size <= 1) {
+                // All slots for this subject are "fixed" (Theory or the only unique Lab schedule)
                 s.slots.map { s.subject to it }
             } else {
                 // Only Theory slots are fixed
@@ -38,11 +51,23 @@ object ConflictSolver {
             }
         }
 
-        // 2. Generate Cartesian product of lab choices
+        // 2. Generate Cartesian product of UNIQUE lab schedules
         val choices = subjectsWithChoices.map { s ->
-            val groups = s.slots.filter { it.entryType == EntryType.LAB }.mapNotNull { it.labGroupName }.distinct()
-            groups.map { groupName ->
-                s.subject.id to (groupName to s.slots.filter { it.labGroupName == groupName })
+            val labGroups = s.slots.filter { it.entryType == EntryType.LAB }.groupBy { it.labGroupName }
+            
+            // Group lab group names by their schedule signature
+            val scheduleToGroupNames = labGroups.entries.groupBy(
+                keySelector = { entry -> 
+                    entry.value.map { it.dayOfWeek to (it.startTime to it.endTime) }.sortedBy { it.first } 
+                },
+                valueTransform = { it.key!! }
+            )
+
+            scheduleToGroupNames.map { (_, groupNames) ->
+                // representative slots for this schedule
+                val repGroupName = groupNames.first()
+                val slots = labGroups[repGroupName]!!
+                s.subject.id to (groupNames to slots)
             }
         }
 
@@ -69,10 +94,11 @@ object ConflictSolver {
     }
 
     private fun evaluateSolution(
-        labSelections: Map<Long, String>,
+        labSelections: Map<Long, List<String>>,
         slots: List<Pair<Subject, ClassSlot>>
     ): ScheduleSolution {
         var overlapsCount = 0
+        var theoryOverlapsCount = 0
         val overlappingSlotIds = mutableSetOf<Long>()
         val slotsByDay = slots.groupBy { it.second.dayOfWeek }
         
@@ -86,11 +112,18 @@ object ConflictSolver {
             // Check overlaps
             for (i in 0 until sortedSlots.size) {
                 for (j in i + 1 until sortedSlots.size) {
-                    val s1 = sortedSlots[i].second
-                    val s2 = sortedSlots[j].second
+                    val pair1 = sortedSlots[i]
+                    val pair2 = sortedSlots[j]
+                    val s1 = pair1.second
+                    val s2 = pair2.second
                     
                     if (!s1.isIgnored && !s2.isIgnored && s1.startTime < s2.endTime && s2.startTime < s1.endTime) {
-                        overlapsCount++
+                        val isTheoryTheory = s1.entryType == EntryType.THEORY && s2.entryType == EntryType.THEORY
+                        if (isTheoryTheory) {
+                            theoryOverlapsCount++
+                        } else {
+                            overlapsCount++
+                        }
                         overlappingSlotIds.add(s1.id)
                         overlappingSlotIds.add(s2.id)
                     }
@@ -118,6 +151,7 @@ object ConflictSolver {
         return ScheduleSolution(
             labSelections = labSelections,
             overlapsCount = overlapsCount,
+            theoryOverlapsCount = theoryOverlapsCount,
             overlappingSlotIds = overlappingSlotIds,
             freeDaysCount = 5 - activeDays, // Assuming 5-day week
             compactnessScore = compactnessScore,

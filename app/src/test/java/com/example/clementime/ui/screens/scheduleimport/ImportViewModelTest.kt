@@ -7,6 +7,8 @@ import com.example.clementime.data.importing.model.JsonYear
 import com.example.clementime.data.importing.model.ScheduleJsonSchema
 import com.example.clementime.data.importing.model.SelectedSubject
 import com.example.clementime.data.importing.repository.ImportRepository
+import com.example.clementime.data.importing.parser.JsonScheduleParser
+import com.example.clementime.ui.screens.scheduleimport.model.ConflictStatus
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -53,7 +55,7 @@ class ImportViewModelTest {
 
     @Test
     fun selectAllSubjects_selectsAllLevels() {
-        val viewModel = ImportViewModel(mockRepository)
+        val viewModel = ImportViewModel(mockRepository, JsonScheduleParser())
 
         val stateField = ImportViewModel::class.java.getDeclaredField("_uiState")
         stateField.isAccessible = true
@@ -78,7 +80,7 @@ class ImportViewModelTest {
 
     @Test
     fun toggleSubjectSelection_togglesIndividualSelection() {
-        val viewModel = ImportViewModel(mockRepository)
+        val viewModel = ImportViewModel(mockRepository, JsonScheduleParser())
 
         val stateField = ImportViewModel::class.java.getDeclaredField("_uiState")
         stateField.isAccessible = true
@@ -104,7 +106,7 @@ class ImportViewModelTest {
 
     @Test
     fun toggleSectionSubjects_togglesAllSubjectsInSection() {
-        val viewModel = ImportViewModel(mockRepository)
+        val viewModel = ImportViewModel(mockRepository, JsonScheduleParser())
 
         val stateField = ImportViewModel::class.java.getDeclaredField("_uiState")
         stateField.isAccessible = true
@@ -134,7 +136,7 @@ class ImportViewModelTest {
 
     @Test
     fun toggleAllSubjects_togglesEntireTargetCollection() {
-        val viewModel = ImportViewModel(mockRepository)
+        val viewModel = ImportViewModel(mockRepository, JsonScheduleParser())
 
         val stateField = ImportViewModel::class.java.getDeclaredField("_uiState")
         stateField.isAccessible = true
@@ -158,6 +160,37 @@ class ImportViewModelTest {
         currentSelection = (viewModel.uiState.value as ImportUiState.Selection).selectedSubjects
         assertEquals(3, currentSelection.size)
     }
+
+    @Test
+    fun conflictCheck_detectsTheoryOverlap() {
+        val theorySlot = com.example.clementime.data.importing.model.JsonTimeSlot(
+            dayOfWeek = "MONDAY", startTime = "09:00", endTime = "11:00", entryType = "THEORY"
+        )
+        val s1 = JsonSubject(code = "S1", name = "Sub 1", theorySlots = listOf(theorySlot))
+        val s2 = JsonSubject(code = "S2", name = "Sub 2", theorySlots = listOf(theorySlot))
+        
+        val viewModel = ImportViewModel(mockRepository, JsonScheduleParser())
+        val stateField = ImportViewModel::class.java.getDeclaredField("_uiState")
+        stateField.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        val stateFlow = stateField.get(viewModel) as kotlinx.coroutines.flow.MutableStateFlow<ImportUiState>
+        stateFlow.value = ImportUiState.Selection(
+            schema = ScheduleJsonSchema(subjects = listOf(s1, s2)),
+            selectedSubjects = emptySet(),
+            selectedFile = ImportFile("bundled", "Test", true),
+            conflictStatus = ConflictStatus.None
+        )
+
+        viewModel.toggleSubjectSelection(s1, "General")
+        assertTrue(viewModel.uiState.value is ImportUiState.Selection)
+        assertEquals(ConflictStatus.Valid, (viewModel.uiState.value as ImportUiState.Selection).conflictStatus)
+
+        viewModel.toggleSubjectSelection(s2, "General")
+        val state = viewModel.uiState.value as ImportUiState.Selection
+        assertTrue(state.conflictStatus is ConflictStatus.Conflict)
+        val conflict = state.conflictStatus as ConflictStatus.Conflict
+        assertTrue(conflict.detail.theoryOverlaps.isNotEmpty())
+    }
 }
 
 class FakeScheduleDaoForImport : com.example.clementime.data.ScheduleDao {
@@ -165,12 +198,15 @@ class FakeScheduleDaoForImport : com.example.clementime.data.ScheduleDao {
     override fun getActiveSubjectsWithSlots() = kotlinx.coroutines.flow.flowOf(emptyList<com.example.clementime.data.SubjectWithSlots>())
     override fun getSubjectWithSlotsById(subjectId: Long) = kotlinx.coroutines.flow.flowOf(null)
     override suspend fun updateSubjectActiveStatus(subjectId: Long, isActive: Boolean) {}
+    override suspend fun updateSelectedLabGroup(subjectId: Long, labGroup: String?) {}
+    override suspend fun updateSelectedLabGroups(selections: Map<Long, String?>) {}
     override suspend fun insertSubject(subject: com.example.clementime.data.Subject): Long = 1L
     override suspend fun updateSubject(subject: com.example.clementime.data.Subject) {}
     override suspend fun deleteSubjectById(subjectId: Long) {}
     override suspend fun insertSlot(slot: com.example.clementime.data.ClassSlot): Long = 1L
     override suspend fun insertSlots(slots: List<com.example.clementime.data.ClassSlot>) {}
     override suspend fun updateSlot(slot: com.example.clementime.data.ClassSlot) {}
+    override suspend fun updateSlotIgnoredStatus(slotId: Long, isIgnored: Boolean) {}
     override suspend fun deleteSlot(slot: com.example.clementime.data.ClassSlot) {}
     override suspend fun deleteSlotById(slotId: Long) {}
     override suspend fun deleteSlotsForSubject(subjectId: Long) {}

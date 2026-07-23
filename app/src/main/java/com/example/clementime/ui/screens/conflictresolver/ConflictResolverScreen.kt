@@ -19,11 +19,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
@@ -45,6 +49,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -79,14 +84,23 @@ fun ConflictResolverScreen(
                     Tab(
                         selected = selectedTab == 0,
                         onClick = { selectedTab = 0 },
-                        text = { Text(stringResource(R.string.conflict_resolver_solutions_tab)) }
+                        text = { Text(stringResource(R.string.conflict_resolver_details_tab)) }
                     )
                     Tab(
                         selected = selectedTab == 1,
                         onClick = { selectedTab = 1 },
-                        text = { Text(stringResource(R.string.conflict_resolver_details_tab)) }
+                        text = { Text(stringResource(R.string.conflict_resolver_solutions_tab)) }
                     )
                 }
+            }
+        },
+        floatingActionButton = {
+            if (selectedTab == 0) {
+                ExtendedFloatingActionButton(
+                    onClick = { selectedTab = 1 },
+                    icon = { Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null) },
+                    text = { Text(stringResource(R.string.conflict_resolver_continue)) }
+                )
             }
         }
     ) { paddingValues ->
@@ -99,18 +113,18 @@ fun ConflictResolverScreen(
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else {
                 when (selectedTab) {
-                    0 -> SolutionsList(
+                    0 -> ConflictsDetail(
+                        subjects = uiState.subjects,
+                        onToggleIgnored = viewModel::toggleSlotIgnored,
+                        onSelectLabGroup = viewModel::selectLabGroup
+                    )
+                    1 -> SolutionsList(
                         solutions = uiState.solutions,
                         subjects = uiState.subjects,
                         onApply = { 
                             viewModel.applySolution(it)
                             onNavigateBack()
                         }
-                    )
-                    1 -> ConflictsDetail(
-                        subjects = uiState.subjects,
-                        onToggleIgnored = viewModel::toggleSlotIgnored,
-                        onSelectLabGroup = viewModel::selectLabGroup
                     )
                 }
             }
@@ -131,14 +145,41 @@ fun SolutionsList(
         return
     }
 
-    val perfectSolutions = remember(solutions) { solutions.filter { it.overlapsCount == 0 } }
-    val otherSolutions = remember(solutions) { solutions.filter { it.overlapsCount > 0 } }
+    val currentSolution = remember(solutions) { solutions.find { it.isCurrent } }
+    val perfectSolutions = remember(solutions) { solutions.filter { it.overlapsCount == 0 && !it.isCurrent } }
+    val otherSolutions = remember(solutions) { solutions.filter { it.overlapsCount > 0 && !it.isCurrent } }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        if (currentSolution != null) {
+            item(key = "header_current") {
+                Text(
+                    text = stringResource(R.string.conflict_resolver_current_header),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+            item(
+                key = "current_${currentSolution.labSelections.entries.sortedBy { it.key }.joinToString { "${it.key}:${it.value.joinToString(",")}" }}_${currentSolution.totalSlots.size}"
+            ) {
+                SolutionCard(
+                    solution = currentSolution,
+                    allSubjects = subjects,
+                    onApply = { onApply(currentSolution) }
+                )
+            }
+            if (perfectSolutions.isNotEmpty() || otherSolutions.isNotEmpty()) {
+                item(key = "current_divider") {
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                }
+            }
+        }
+
         if (perfectSolutions.isNotEmpty()) {
             item(key = "header_optimal") {
                 Text(
@@ -152,7 +193,7 @@ fun SolutionsList(
             items(
                 items = perfectSolutions,
                 key = { solution -> 
-                    "perfect_${solution.labSelections.entries.sortedBy { it.key }.joinToString { "${it.key}:${it.value}" }}_${solution.totalSlots.size}"
+                    "perfect_${solution.labSelections.entries.sortedBy { it.key }.joinToString { "${it.key}:${it.value.joinToString(",")}" }}_${solution.totalSlots.size}"
                 }
             ) { solution ->
                 SolutionCard(
@@ -187,7 +228,7 @@ fun SolutionsList(
             items(
                 items = otherSolutions,
                 key = { solution -> 
-                    "other_${solution.labSelections.entries.sortedBy { it.key }.joinToString { "${it.key}:${it.value}" }}_${solution.totalSlots.size}"
+                    "other_${solution.labSelections.entries.sortedBy { it.key }.joinToString { "${it.key}:${it.value.joinToString(",")}" }}_${solution.totalSlots.size}"
                 }
             ) { solution ->
                 SolutionCard(
@@ -206,11 +247,7 @@ fun SolutionCard(
     allSubjects: List<SubjectWithSlots>,
     onApply: () -> Unit
 ) {
-    val isCurrent = remember(solution, allSubjects) {
-        solution.labSelections.all { (subId, group) ->
-            allSubjects.find { it.subject.id == subId }?.subject?.selectedLabGroup == group
-        } && solution.labSelections.isNotEmpty()
-    }
+    val isCurrent = solution.isCurrent
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -307,7 +344,7 @@ fun SolutionCard(
                         .padding(8.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    solution.labSelections.forEach { (subjectId, labGroupName) ->
+                    solution.labSelections.forEach { (subjectId, labGroupNames) ->
                         val subject = allSubjects.find { it.subject.id == subjectId }?.subject
                         val subjectName = subject?.name ?: "Unknown"
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -326,7 +363,7 @@ fun SolutionCard(
                                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                             )
                             Text(
-                                text = labGroupName,
+                                text = labGroupNames.joinToString(" / "),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
@@ -387,13 +424,20 @@ fun ConflictsDetail(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp),
+                        .padding(vertical = 4.dp)
+                        .alpha(if (slot.isIgnored) 0.6f else 1f),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Checkbox(
-                        checked = slot.isIgnored,
-                        onCheckedChange = { onToggleIgnored(slot.id, it) }
-                    )
+                    IconButton(
+                        onClick = { onToggleIgnored(slot.id, !slot.isIgnored) }
+                    ) {
+                        Icon(
+                            imageVector = if (slot.isIgnored) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                            contentDescription = if (slot.isIgnored) "Unignore slot" else "Ignore slot",
+                            tint = if (slot.isIgnored) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f) 
+                                   else MaterialTheme.colorScheme.primary
+                        )
+                    }
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = (slot.labGroupName ?: stringResource(R.string.theory_label)) + " - " + 
@@ -424,17 +468,13 @@ fun ConflictsDetail(
                                 )
                             }
                         )
-                    } else if (slot.isIgnored) {
-                        Icon(
-                            imageVector = Icons.Default.Block,
-                            contentDescription = "Ignored",
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(16.dp)
-                        )
                     }
                 }
                 HorizontalDivider(modifier = Modifier.padding(start = 48.dp))
             }
+        }
+        item {
+            Spacer(modifier = Modifier.height(72.dp))
         }
     }
 }

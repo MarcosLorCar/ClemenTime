@@ -32,9 +32,17 @@ class ConflictResolverViewModel @Inject constructor(
         .map { subjects ->
             try {
                 val solutions = ConflictSolver.findSolutions(subjects)
+                val mappedSolutions = solutions.map { solution ->
+                    val isCurrent = solution.labSelections.isNotEmpty() && solution.labSelections.all { (subId, groups) ->
+                        val selected = subjects.find { it.subject.id == subId }?.subject?.selectedLabGroup
+                        selected != null && groups.contains(selected)
+                    }
+                    solution.copy(isCurrent = isCurrent)
+                }.sortedByDescending { it.isCurrent }
+
                 ConflictResolverUiState(
                     isLoading = false,
-                    solutions = solutions,
+                    solutions = mappedSolutions,
                     subjects = subjects
                 )
             } catch (e: Exception) {
@@ -50,7 +58,8 @@ class ConflictResolverViewModel @Inject constructor(
 
     fun applySolution(solution: ScheduleSolution) {
         viewModelScope.launch {
-            dao.updateSelectedLabGroups(solution.labSelections)
+            val selections = solution.labSelections.mapValues { it.value.first() }
+            dao.updateSelectedLabGroups(selections)
         }
     }
     

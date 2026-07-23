@@ -22,6 +22,7 @@ class SubjectsViewModelTestFakeDao : ScheduleDao {
     val subjectsFlow = MutableStateFlow<List<SubjectWithSlots>>(emptyList())
     val deletedSubjectIds = mutableListOf<Long>()
     val updatedActiveStatus = mutableMapOf<Long, Boolean>()
+    val updatedIgnoredStatus = mutableMapOf<Long, Boolean>()
     var deleteAllSubjectsCalled = false
     var deleteSubjectsByIdsCalledWith: List<Long>? = null
 
@@ -34,6 +35,10 @@ class SubjectsViewModelTestFakeDao : ScheduleDao {
     override suspend fun updateSubjectActiveStatus(subjectId: Long, isActive: Boolean) {
         updatedActiveStatus[subjectId] = isActive
     }
+
+    override suspend fun updateSelectedLabGroup(subjectId: Long, labGroup: String?) {}
+
+    override suspend fun updateSelectedLabGroups(selections: Map<Long, String?>) {}
 
     override suspend fun insertSubject(subject: Subject): Long = 1L
 
@@ -48,6 +53,10 @@ class SubjectsViewModelTestFakeDao : ScheduleDao {
     override suspend fun insertSlots(slots: List<ClassSlot>) {}
 
     override suspend fun updateSlot(slot: ClassSlot) {}
+
+    override suspend fun updateSlotIgnoredStatus(slotId: Long, isIgnored: Boolean) {
+        updatedIgnoredStatus[slotId] = isIgnored
+    }
 
     override suspend fun deleteSlot(slot: ClassSlot) {}
 
@@ -214,5 +223,14 @@ class SubjectsViewModelTest {
         assertEquals(true, fakeDao.bulkUpdatedActiveStatus[listOf(10L, 20L)] == false)
         assertEquals(emptySet<Long>(), viewModel.uiState.value.selectedSubjectIds)
         assertEquals(false, viewModel.uiState.value.isSelectionModeForced)
+    }
+
+    @Test
+    fun toggleSlotIgnored_invokesDaoUpdate() = runTest {
+        val viewModel = SubjectsViewModel(fakeDao)
+        viewModel.onEvent(SubjectsUiEvent.ToggleSlotIgnored(101L, true))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(true, fakeDao.updatedIgnoredStatus[101L])
     }
 }

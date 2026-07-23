@@ -24,12 +24,14 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -57,6 +59,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.state.ToggleableState
@@ -72,6 +75,9 @@ import com.example.clementime.data.importing.model.JsonYear
 import com.example.clementime.data.importing.model.ScheduleJsonSchema
 import com.example.clementime.data.importing.model.SelectedSubject
 import com.example.clementime.ui.components.ClemenTimeTopBar
+import com.example.clementime.ui.components.ScheduleMiniPreview
+import com.example.clementime.ui.screens.scheduleimport.model.ConflictDetail
+import com.example.clementime.ui.screens.scheduleimport.model.ConflictStatus
 import com.example.clementime.ui.theme.ClemenTimeTheme
 import com.example.clementime.utils.fadingEdges
 
@@ -332,7 +338,15 @@ fun ImportContent(
     onResetState: () -> Unit
 ) {
     var isSearchVisible by remember { mutableStateOf(false) }
+    var showConflictDialog by remember { mutableStateOf(false) }
     val subjectsListState = rememberLazyListState()
+
+    if (showConflictDialog && uiState.conflictStatus is ConflictStatus.Conflict) {
+        ConflictDetailsDialog(
+            detail = uiState.conflictStatus.detail,
+            onDismiss = { showConflictDialog = false }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -340,6 +354,28 @@ fun ImportContent(
                 title = uiState.schema.title ?: stringResource(R.string.import_schedule_title),
                 onNavigateBack = onResetState,
                 actions = {
+                    // Conflict Status Icon
+                    when (uiState.conflictStatus) {
+                        is ConflictStatus.Valid -> {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = "No conflicts",
+                                tint = Color(0xFF4CAF50),
+                                modifier = Modifier.padding(8.dp).size(24.dp)
+                            )
+                        }
+                        is ConflictStatus.Conflict -> {
+                            IconButton(onClick = { showConflictDialog = true }) {
+                                Icon(
+                                    imageVector = Icons.Default.Warning,
+                                    contentDescription = "Conflicts detected",
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
+                        ConflictStatus.None -> {}
+                    }
+
                     if (uiState.selectedSubjects.isNotEmpty()) {
                         TextButton(onClick = onDeselectAll) {
                             Text(stringResource(R.string.deselect_all))
@@ -555,6 +591,78 @@ fun ImportContent(
             }
         }
     }
+}
+
+@Composable
+fun ConflictDetailsDialog(
+    detail: ConflictDetail,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.import_conflict_dialog_title)) },
+        text = {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                if (detail.theoryOverlaps.isNotEmpty()) {
+                    item {
+                        Text(
+                            text = stringResource(R.string.import_conflict_theory_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = stringResource(R.string.import_conflict_theory_desc),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        detail.theoryOverlaps.forEach { overlap ->
+                            Text(
+                                text = "• ${overlap.subject1.subject.name} & ${overlap.subject2.subject.name}",
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                            )
+                        }
+                    }
+                    
+                    item {
+                        Text(
+                            text = stringResource(R.string.import_conflict_theory_visualization),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        ScheduleMiniPreview(
+                            slots = detail.theoryOverlappingSlots,
+                            overlappingSlotIds = detail.theoryOverlappingSlots.map { it.second.id }.toSet(),
+                            modifier = Modifier.height(150.dp)
+                        )
+                    }
+                }
+
+                if (!detail.hasLabCombinationWithZeroOverlaps) {
+                    item {
+                        Text(
+                            text = stringResource(R.string.import_conflict_lab_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = stringResource(R.string.import_conflict_lab_desc),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(android.R.string.ok))
+            }
+        }
+    )
 }
 
 @Preview(showBackground = true, showSystemUi = true)

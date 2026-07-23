@@ -89,6 +89,14 @@
     <string name="no_schedule_data_subtitle">Importa un horario o añade asignaturas para empezar.</string>
     <string name="import_screen_prompt">Selecciona qué asignaturas importar</string>
 
+    <!-- Import Conflict strings -->
+    <string name="import_conflict_dialog_title">Conflictos de Horario</string>
+    <string name="import_conflict_theory_title">Solapamientos de Teoría</string>
+    <string name="import_conflict_lab_title">Sin Combinación de Laboratorios</string>
+    <string name="import_conflict_theory_desc">Las siguientes asignaturas tienen clases de teoría que se solapan. Esto es inevitable para estas asignaturas:</string>
+    <string name="import_conflict_lab_desc">No hay ninguna combinación de grupos de laboratorio que permita encajar todas las asignaturas seleccionadas sin solapamientos (excluyendo los de teoría).</string>
+    <string name="import_conflict_theory_visualization">Visualización de Solapamientos:</string>
+
     <!-- Conflict Resolver strings -->
     <string name="conflict_resolver_title">Optimizador de Horario</string>
     <string name="conflict_resolver_solutions_tab">Soluciones</string>
@@ -105,9 +113,11 @@
     <string name="conflict_resolver_apply">Aplicar</string>
     <string name="conflict_resolver_applied">Aplicada</string>
     <string name="conflict_resolver_current_badge">ACTUAL</string>
-    <string name="conflict_resolver_manual_config_header">Configuración Manual</string>
-    <string name="conflict_resolver_radio_desc">• Botones de opción: Fija una selección de laboratorio como definitiva. El optimizador respetará esta elección.</string>
-    <string name="conflict_resolver_checkbox_desc">• Casillas (Omitir): Excluye una clase de los cálculos de solapamiento (útil para clases opcionales).</string>
+    <string name="conflict_resolver_current_header">Selección Actual</string>
+    <string name="conflict_resolver_manual_config_header">Preferencias Manuales (Opcional)</string>
+    <string name="conflict_resolver_radio_desc">• Fijar Selecciones de Lab: Usa los botones de opción si hay grupos de laboratorio específicos que quieres mantener sí o sí. El optimizador trabajará en base a ellos. Si no los fijas, el optimizador buscará todas las opciones.</string>
+    <string name="conflict_resolver_checkbox_desc">• Omitir Horarios: Marca las clases que quieras excluir de los cálculos de solapamiento (por ejemplo, clases opcionales o no obligatorias).</string>
+    <string name="conflict_resolver_continue">Ver Soluciones</string>
     <string name="resolve_conflicts_tooltip">Resolver Conflictos</string>
 
     <!-- Class Slot / Subject Editor strings -->

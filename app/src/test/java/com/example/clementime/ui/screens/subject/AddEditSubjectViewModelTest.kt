@@ -6,8 +6,14 @@ import com.example.clementime.data.EntryType
 import com.example.clementime.data.Subject
 import com.example.clementime.data.SubjectWithSlots
 import com.example.clementime.data.ScheduleDao
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
@@ -21,6 +27,10 @@ class FakeScheduleDao : ScheduleDao {
     override fun getActiveSubjectsWithSlots(): Flow<List<SubjectWithSlots>> = flowOf(emptyList())
 
     override suspend fun updateSubjectActiveStatus(subjectId: Long, isActive: Boolean) {}
+
+    override suspend fun updateSelectedLabGroup(subjectId: Long, labGroup: String?) {}
+
+    override suspend fun updateSelectedLabGroups(selections: Map<Long, String?>) {}
 
     override fun getAllSubjectsWithSlots(): Flow<List<SubjectWithSlots>> = flowOf(emptyList())
 
@@ -54,6 +64,8 @@ class FakeScheduleDao : ScheduleDao {
 
     override suspend fun updateSlot(slot: ClassSlot) {}
 
+    override suspend fun updateSlotIgnoredStatus(slotId: Long, isIgnored: Boolean) {}
+
     override suspend fun deleteSlot(slot: ClassSlot) {}
 
     override suspend fun deleteSlotById(slotId: Long) {}
@@ -82,13 +94,21 @@ class FakeScheduleDao : ScheduleDao {
     }
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class AddEditSubjectViewModelTest {
 
+    private val testDispatcher = StandardTestDispatcher()
     private lateinit var fakeDao: FakeScheduleDao
 
     @Before
     fun setUp() {
+        Dispatchers.setMain(testDispatcher)
         fakeDao = FakeScheduleDao()
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
     }
 
     @Test
@@ -183,18 +203,24 @@ class AddEditSubjectViewModelTest {
     }
 
     @Test
-    fun endTimeSelection_updatesDefaultDuration() {
+    fun saveSubject_persistsIgnoredStatus() {
         val savedStateHandle = SavedStateHandle()
         val viewModel = AddEditSubjectViewModel(savedStateHandle, fakeDao)
-
+        
+        viewModel.updateCode("TEST")
+        viewModel.updateName("Test Subject")
         viewModel.addSlot()
-        val start = LocalTime.of(10, 0)
-        viewModel.onStartTimeSelected(0, start)
-
-        val end = LocalTime.of(12, 0) // 120 minutes
-        viewModel.onEndTimeSelected(0, end)
-
-        assertEquals(120, viewModel.uiState.value.defaultDurationMinutes)
-        assertEquals(end, viewModel.uiState.value.slots.first().endTime)
+        
+        val slot = viewModel.uiState.value.slots.first().copy(
+            startTime = LocalTime.of(9, 0),
+            endTime = LocalTime.of(10, 0),
+            isIgnored = true
+        )
+        viewModel.updateSlot(0, slot)
+        
+        viewModel.saveSubject()
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        assertEquals(true, fakeDao.slots.first().isIgnored)
     }
 }

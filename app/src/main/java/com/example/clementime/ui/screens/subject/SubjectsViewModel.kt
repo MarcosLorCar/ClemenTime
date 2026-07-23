@@ -44,6 +44,7 @@ sealed interface SubjectsUiEvent {
     object EnterSelectionMode : SubjectsUiEvent
     data class ToggleGroupSelection(val subjectIds: List<Long>) : SubjectsUiEvent
     object DisableSelectedSubjects : SubjectsUiEvent
+    data class ToggleSlotIgnored(val slotId: Long, val isIgnored: Boolean) : SubjectsUiEvent
 }
 
 @HiltViewModel
@@ -129,6 +130,11 @@ class SubjectsViewModel @Inject constructor(
                     val idsToDisable = _uiState.value.selectedSubjectIds.toList()
                     scheduleDao.updateSubjectsActiveStatus(idsToDisable, false)
                     _uiState.update { it.copy(selectedSubjectIds = emptySet(), isSelectionModeForced = false) }
+                }
+            }
+            is SubjectsUiEvent.ToggleSlotIgnored -> {
+                viewModelScope.launch {
+                    scheduleDao.updateSlotIgnoredStatus(event.slotId, event.isIgnored)
                 }
             }
         }
