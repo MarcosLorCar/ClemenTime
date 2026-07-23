@@ -4,7 +4,8 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class ScheduleListRoute(
-    val dayOfWeek: String? = null
+    val dayOfWeek: String? = null,
+    val highlightSlotId: Long? = null
 )
 
 @Serializable

@@ -1,4 +1,4 @@
-package com.github.marcoslorcar.clementime.ui.screens
+package com.github.marcoslorcar.clementime.ui.screens.settings
 
 import android.content.Context
 import android.net.Uri
@@ -16,12 +16,17 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.util.Locale
 import javax.inject.Inject
 
 data class SettingsUiState(
     val themeMode: String = "system",
     val appLanguage: String = "en",
-    val scrollableTabs: Boolean = false
+    val scrollableTabs: Boolean = false,
+    val showNowLine: Boolean = true,
+    val nowLineStyle: String = "discrete",
+    val highContrast: Boolean = false,
+    val selectedTheme: String = "clementine"
 )
 
 sealed interface ExportStatus {
@@ -40,12 +45,23 @@ class SettingsViewModel @Inject constructor(
 
     val uiState: StateFlow<SettingsUiState> = combine(
         settingsRepository.themeFlow,
-        settingsRepository.scrollableTabsFlow
-    ) { theme, scrollable ->
+        settingsRepository.scrollableTabsFlow,
+        settingsRepository.showNowLineFlow,
+        settingsRepository.nowLineStyleFlow,
+        combine(
+            settingsRepository.highContrastFlow,
+            settingsRepository.selectedThemeFlow,
+            ::Pair
+        )
+    ) { theme, scrollable, showNowLine, nowLineStyle, other ->
         SettingsUiState(
             themeMode = theme,
             appLanguage = getCurrentLanguage(),
-            scrollableTabs = scrollable
+            scrollableTabs = scrollable,
+            showNowLine = showNowLine,
+            nowLineStyle = nowLineStyle,
+            highContrast = other.first,
+            selectedTheme = other.second
         )
     }.stateIn(
         scope = viewModelScope,
@@ -58,7 +74,7 @@ class SettingsViewModel @Inject constructor(
         return if (!locales.isEmpty) {
             locales.get(0)?.language ?: "en"
         } else {
-            val systemLanguage = java.util.Locale.getDefault().language
+            val systemLanguage = Locale.getDefault().language
             if (systemLanguage == "es") "es" else "en"
         }
     }
@@ -77,6 +93,34 @@ class SettingsViewModel @Inject constructor(
     fun setScrollableTabs(scrollable: Boolean) {
         viewModelScope.launch {
             settingsRepository.setScrollableTabs(scrollable)
+        }
+    }
+
+
+    fun setShowNowLine(show: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setShowNowLine(show)
+        }
+    }
+
+
+    fun setNowLineStyle(style: String) {
+        viewModelScope.launch {
+            settingsRepository.setNowLineStyle(style)
+        }
+    }
+
+
+    fun setHighContrast(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setHighContrast(enabled)
+        }
+    }
+
+
+    fun setSelectedTheme(theme: String) {
+        viewModelScope.launch {
+            settingsRepository.setSelectedTheme(theme)
         }
     }
 

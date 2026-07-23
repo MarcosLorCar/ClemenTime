@@ -16,34 +16,128 @@ import javax.inject.Singleton
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
 @Singleton
-class SettingsRepository @Inject constructor(
-    @param:ApplicationContext private val context: Context
+open class SettingsRepository @Inject constructor(
+    @param:ApplicationContext private val context: Context?
 ) {
     private val themeKey = stringPreferencesKey("theme_mode")
     private val scrollableTabsKey = booleanPreferencesKey("scrollable_tabs")
+    private val showNowLineKey = booleanPreferencesKey("show_now_line")
+    private val nowLineStyleKey = stringPreferencesKey("now_line_style")
+    private val highContrastKey = booleanPreferencesKey("high_contrast")
+    private val selectedThemeKey = stringPreferencesKey("selected_theme")
 
 
-    val themeFlow: Flow<String> = context.dataStore.data.map { preferences ->
-        preferences[themeKey] ?: "system"
-    }
-
-
-    val scrollableTabsFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
-        preferences[scrollableTabsKey] ?: false
-    }
-
-
-    suspend fun setThemeMode(theme: String) {
-        context.dataStore.edit { preferences ->
-            preferences[themeKey] = theme
+    open val themeFlow: Flow<String>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[themeKey] ?: "system"
+            } ?: kotlinx.coroutines.flow.flowOf("system")
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf("system")
         }
-    }
 
 
-    suspend fun setScrollableTabs(scrollable: Boolean) {
-        context.dataStore.edit { preferences ->
-            preferences[scrollableTabsKey] = scrollable
+    open val scrollableTabsFlow: Flow<Boolean>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[scrollableTabsKey] ?: false
+            } ?: kotlinx.coroutines.flow.flowOf(false)
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf(false)
         }
+
+
+    open val showNowLineFlow: Flow<Boolean>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[showNowLineKey] ?: true
+            } ?: kotlinx.coroutines.flow.flowOf(true)
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf(true)
+        }
+
+
+    open val nowLineStyleFlow: Flow<String>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[nowLineStyleKey] ?: "discrete"
+            } ?: kotlinx.coroutines.flow.flowOf("discrete")
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf("discrete")
+        }
+
+
+    open val highContrastFlow: Flow<Boolean>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[highContrastKey] ?: false
+            } ?: kotlinx.coroutines.flow.flowOf(false)
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf(false)
+        }
+
+
+    open val selectedThemeFlow: Flow<String>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[selectedThemeKey] ?: "clementine"
+            } ?: kotlinx.coroutines.flow.flowOf("clementine")
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf("clementine")
+        }
+
+
+    open suspend fun setThemeMode(theme: String) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[themeKey] = theme
+            }
+        } catch (_: Throwable) {}
     }
 
+
+    open suspend fun setScrollableTabs(scrollable: Boolean) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[scrollableTabsKey] = scrollable
+            }
+        } catch (_: Throwable) {}
+    }
+
+
+    open suspend fun setShowNowLine(show: Boolean) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[showNowLineKey] = show
+            }
+        } catch (_: Throwable) {}
+    }
+
+
+    open suspend fun setNowLineStyle(style: String) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[nowLineStyleKey] = style
+            }
+        } catch (_: Throwable) {}
+    }
+
+
+    open suspend fun setHighContrast(enabled: Boolean) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[highContrastKey] = enabled
+            }
+        } catch (_: Throwable) {}
+    }
+
+
+    open suspend fun setSelectedTheme(theme: String) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[selectedThemeKey] = theme
+            }
+        } catch (_: Throwable) {}
+    }
 }
+

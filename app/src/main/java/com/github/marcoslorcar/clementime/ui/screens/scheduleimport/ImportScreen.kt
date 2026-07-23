@@ -618,7 +618,7 @@ fun ConflictDetailsDialog(
                         )
                         detail.theoryOverlaps.forEach { overlap ->
                             Text(
-                                text = "• ${overlap.subject1.subject.name} & ${overlap.subject2.subject.name}",
+                                text = "• ${overlap.subject1Name} & ${overlap.subject2Name}",
                                 style = MaterialTheme.typography.bodySmall,
                                 modifier = Modifier.padding(start = 8.dp, top = 4.dp)
                             )

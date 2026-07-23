@@ -191,6 +191,45 @@ class ImportViewModelTest {
         val conflict = state.conflictStatus as ConflictStatus.Conflict
         assertTrue(conflict.detail.theoryOverlaps.isNotEmpty())
     }
+
+    @Test
+    fun conflictCheck_detectsConflictWithExistingActiveSubject() {
+        val theorySlot = com.github.marcoslorcar.clementime.data.importing.model.JsonTimeSlot(
+            dayOfWeek = "MONDAY", startTime = "09:00", endTime = "11:00", entryType = "THEORY"
+        )
+        val s1 = JsonSubject(code = "S1", name = "Sub 1", theorySlots = listOf(theorySlot))
+        
+        val existingSubject = com.github.marcoslorcar.clementime.data.Subject(
+            id = 100L, code = "S2", name = "Existing Active Sub", color = 0, isActive = true
+        )
+        val existingSlot = com.github.marcoslorcar.clementime.data.ClassSlot(
+            id = 200L, subjectId = 100L, dayOfWeek = java.time.DayOfWeek.MONDAY,
+            startTime = java.time.LocalTime.of(9, 0), endTime = java.time.LocalTime.of(11, 0),
+            entryType = com.github.marcoslorcar.clementime.data.EntryType.THEORY
+        )
+        val existing = listOf(com.github.marcoslorcar.clementime.data.SubjectWithSlots(existingSubject, listOf(existingSlot)))
+
+        val viewModel = ImportViewModel(mockRepository, JsonScheduleParser())
+        val stateField = ImportViewModel::class.java.getDeclaredField("_uiState")
+        stateField.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        val stateFlow = stateField.get(viewModel) as kotlinx.coroutines.flow.MutableStateFlow<ImportUiState>
+        stateFlow.value = ImportUiState.Selection(
+            schema = ScheduleJsonSchema(subjects = listOf(s1)),
+            selectedSubjects = emptySet(),
+            selectedFile = ImportFile("bundled", "Test", true),
+            conflictStatus = ConflictStatus.None,
+            existingSubjects = existing
+        )
+
+        viewModel.toggleSubjectSelection(s1, "General")
+        val state = viewModel.uiState.value as ImportUiState.Selection
+        assertTrue(state.conflictStatus is ConflictStatus.Conflict)
+        val conflict = state.conflictStatus as ConflictStatus.Conflict
+        assertTrue(conflict.detail.theoryOverlaps.isNotEmpty())
+        assertEquals("S1", conflict.detail.theoryOverlaps[0].subject1Code)
+        assertEquals("S2", conflict.detail.theoryOverlaps[0].subject2Code)
+    }
 }
 
 class FakeScheduleDaoForImport : com.github.marcoslorcar.clementime.data.ScheduleDao {

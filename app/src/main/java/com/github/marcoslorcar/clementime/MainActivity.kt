@@ -37,8 +37,8 @@ import com.github.marcoslorcar.clementime.ui.navigation.ImportRoute
 import com.github.marcoslorcar.clementime.ui.navigation.ScheduleListRoute
 import com.github.marcoslorcar.clementime.ui.navigation.SettingsRoute
 import com.github.marcoslorcar.clementime.ui.navigation.SubjectsRoute
-import com.github.marcoslorcar.clementime.ui.screens.ScheduleScreen
-import com.github.marcoslorcar.clementime.ui.screens.SettingsScreen
+import com.github.marcoslorcar.clementime.ui.screens.schedule.ScheduleScreen
+import com.github.marcoslorcar.clementime.ui.screens.settings.SettingsScreen
 import com.github.marcoslorcar.clementime.ui.screens.conflictresolver.ConflictResolverScreen
 import com.github.marcoslorcar.clementime.ui.screens.scheduleimport.ImportScreen
 import com.github.marcoslorcar.clementime.ui.screens.subject.AddEditSubjectScreen
@@ -59,6 +59,7 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContent {
             val themeMode by settingsRepository.themeFlow.collectAsState(initial = "system")
+            val selectedTheme by settingsRepository.selectedThemeFlow.collectAsState(initial = "clementine")
 
             val darkTheme = when (themeMode) {
                 "light" -> false
@@ -66,7 +67,10 @@ class MainActivity : AppCompatActivity() {
                 else -> isSystemInDarkTheme()
             }
 
-            ClemenTimeTheme(darkTheme = darkTheme) {
+            ClemenTimeTheme(
+                darkTheme = darkTheme,
+                selectedTheme = selectedTheme
+            ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
@@ -188,8 +192,8 @@ fun ClemenTimeApp() {
             composable<AddEditSubjectRoute> {
                 AddEditSubjectScreen(
                     onNavigateBack = { navController.popBackStack() },
-                    onNavigateToSchedule = { dayOfWeek ->
-                        navController.navigate(ScheduleListRoute(dayOfWeek = dayOfWeek.name)) {
+                    onNavigateToSchedule = { dayOfWeek, slotId ->
+                        navController.navigate(ScheduleListRoute(dayOfWeek = dayOfWeek.name, highlightSlotId = slotId)) {
                             popUpTo<ScheduleListRoute> { inclusive = true }
                         }
                     }

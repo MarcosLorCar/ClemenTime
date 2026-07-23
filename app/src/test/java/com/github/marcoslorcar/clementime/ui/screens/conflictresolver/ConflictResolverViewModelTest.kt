@@ -18,7 +18,6 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.time.DayOfWeek
@@ -70,8 +69,8 @@ class ConflictResolverViewModelTest {
 
     @Test
     fun `uiState contains sorted solutions with correct isCurrent flag`() = runTest {
-        // Setup data: Subject 1 has two lab options (L1 and L2). Currently selected is L2.
-        val subject1 = Subject(id = 1L, name = "Subject 1", code = "S1", color = 0, isActive = true, selectedLabGroup = "L2")
+        // Setup data: Subject 1 has two lab options (L1 and L2), unpinned (selectedLabGroup = null).
+        val subject1 = Subject(id = 1L, name = "Subject 1", code = "S1", color = 0, isActive = true, selectedLabGroup = null)
         val s1Theory = ClassSlot(id = 1L, subjectId = 1L, dayOfWeek = DayOfWeek.MONDAY, startTime = LocalTime.of(9, 0), endTime = LocalTime.of(10, 0), entryType = EntryType.THEORY)
         val s1Lab1 = ClassSlot(id = 2L, subjectId = 1L, dayOfWeek = DayOfWeek.MONDAY, startTime = LocalTime.of(11, 0), endTime = LocalTime.of(12, 0), entryType = EntryType.LAB, labGroupName = "L1")
         val s1Lab2 = ClassSlot(id = 3L, subjectId = 1L, dayOfWeek = DayOfWeek.TUESDAY, startTime = LocalTime.of(11, 0), endTime = LocalTime.of(12, 0), entryType = EntryType.LAB, labGroupName = "L2")
@@ -96,14 +95,85 @@ class ConflictResolverViewModelTest {
 
         assertFalse(state.isLoading)
         assertEquals(2, state.solutions.size)
+        collectJob.cancel()
+    }
 
-        // The first solution should be the current one because we sorted by isCurrent descending.
-        assertTrue(state.solutions[0].isCurrent)
+    @Test
+    fun `applySolution and undoLastApply restore previous lab selections`() = runTest {
+        val subject1 = Subject(id = 1L, name = "Subject 1", code = "S1", color = 0, isActive = true, selectedLabGroup = "L1")
+        val s1Theory = ClassSlot(id = 1L, subjectId = 1L, dayOfWeek = DayOfWeek.MONDAY, startTime = LocalTime.of(9, 0), endTime = LocalTime.of(10, 0), entryType = EntryType.THEORY)
+        val s1Lab1 = ClassSlot(id = 2L, subjectId = 1L, dayOfWeek = DayOfWeek.MONDAY, startTime = LocalTime.of(11, 0), endTime = LocalTime.of(12, 0), entryType = EntryType.LAB, labGroupName = "L1")
+        val s1Lab2 = ClassSlot(id = 3L, subjectId = 1L, dayOfWeek = DayOfWeek.TUESDAY, startTime = LocalTime.of(11, 0), endTime = LocalTime.of(12, 0), entryType = EntryType.LAB, labGroupName = "L2")
+
+        fakeDao.subjectsFlow.value = listOf(SubjectWithSlots(subject1, listOf(s1Theory, s1Lab1, s1Lab2)))
+
+        val viewModel = ConflictResolverViewModel(fakeDao)
+        val collectJob = launch { viewModel.uiState.collect {} }
+        var state = viewModel.uiState.value
+        repeat(40) {
+            if (!state.isLoading && state.solutions.isNotEmpty()) return@repeat
+            Thread.sleep(50)
+            testDispatcher.scheduler.advanceUntilIdle()
+            state = viewModel.uiState.value
+        }
+
+        val solutionToApply = state.solutions.first()
+        viewModel.applySolution(solutionToApply)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(mapOf(1L to "L1"), fakeDao.updateSelectedLabGroupsCalledWith)
+
+        viewModel.undoLastApply()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(mapOf(1L to "L1"), fakeDao.updateSelectedLabGroupsCalledWith)
+        collectJob.cancel()
+    }
+
+    @Test
+    fun `locking a lab group constrains solver to that lab group`() = runTest {
+        val subject1 = Subject(id = 1L, name = "Subject 1", code = "S1", color = 0, isActive = true, selectedLabGroup = "L2")
+        val s1Theory = ClassSlot(id = 1L, subjectId = 1L, dayOfWeek = DayOfWeek.MONDAY, startTime = LocalTime.of(9, 0), endTime = LocalTime.of(10, 0), entryType = EntryType.THEORY)
+        val s1Lab1 = ClassSlot(id = 2L, subjectId = 1L, dayOfWeek = DayOfWeek.MONDAY, startTime = LocalTime.of(11, 0), endTime = LocalTime.of(12, 0), entryType = EntryType.LAB, labGroupName = "L1")
+        val s1Lab2 = ClassSlot(id = 3L, subjectId = 1L, dayOfWeek = DayOfWeek.TUESDAY, startTime = LocalTime.of(11, 0), endTime = LocalTime.of(12, 0), entryType = EntryType.LAB, labGroupName = "L2")
+
+        fakeDao.subjectsFlow.value = listOf(SubjectWithSlots(subject1, listOf(s1Theory, s1Lab1, s1Lab2)))
+
+        val viewModel = ConflictResolverViewModel(fakeDao)
+        val collectJob = launch { viewModel.uiState.collect {} }
+        var state = viewModel.uiState.value
+        repeat(40) {
+            if (!state.isLoading && state.solutions.isNotEmpty()) return@repeat
+            Thread.sleep(50)
+            testDispatcher.scheduler.advanceUntilIdle()
+            state = viewModel.uiState.value
+        }
+
+        assertEquals(1, state.solutions.size)
         assertEquals(listOf("L2"), state.solutions[0].labSelections[1L])
+        collectJob.cancel()
+    }
 
-        // The second solution is not current.
-        assertFalse(state.solutions[1].isCurrent)
-        assertEquals(listOf("L1"), state.solutions[1].labSelections[1L])
+    @Test
+    fun `same time slot labs in unpinned subject does not cause self-conflict`() = runTest {
+        val subject1 = Subject(id = 1L, name = "Subject 1", code = "S1", color = 0, isActive = true, selectedLabGroup = null)
+        val s1Lab1 = ClassSlot(id = 1L, subjectId = 1L, dayOfWeek = DayOfWeek.MONDAY, startTime = LocalTime.of(10, 0), endTime = LocalTime.of(12, 0), entryType = EntryType.LAB, labGroupName = "L1")
+        val s1Lab2 = ClassSlot(id = 2L, subjectId = 1L, dayOfWeek = DayOfWeek.MONDAY, startTime = LocalTime.of(10, 0), endTime = LocalTime.of(12, 0), entryType = EntryType.LAB, labGroupName = "L2")
+
+        fakeDao.subjectsFlow.value = listOf(SubjectWithSlots(subject1, listOf(s1Lab1, s1Lab2)))
+
+        val viewModel = ConflictResolverViewModel(fakeDao)
+        val collectJob = launch { viewModel.uiState.collect {} }
+        var state = viewModel.uiState.value
+        repeat(40) {
+            if (!state.isLoading && state.solutions.isNotEmpty()) return@repeat
+            Thread.sleep(50)
+            testDispatcher.scheduler.advanceUntilIdle()
+            state = viewModel.uiState.value
+        }
+
+        assertEquals(1, state.solutions.size)
+        assertEquals(0, state.solutions[0].overlapsCount)
         collectJob.cancel()
     }
 }

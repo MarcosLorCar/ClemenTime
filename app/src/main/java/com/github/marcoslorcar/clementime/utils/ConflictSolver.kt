@@ -24,36 +24,50 @@ object ConflictSolver {
      * Generates and ranks possible schedule solutions by selecting one lab variant per subject.
      */
     fun findSolutions(subjects: List<SubjectWithSlots>): List<ScheduleSolution> {
-        // 1. Separate subjects into those with choice (multiple lab variants) and fixed ones.
-        // A choice now represents a unique *schedule* of labs for that subject.
+        // 1. Separate subjects into those with choices (unpinned with >1 lab group) and fixed ones.
         val subjectsWithChoices = subjects.filter { s ->
-            !s.subject.isDummy && run {
-                val uniqueLabSchedules = s.slots
+            !s.subject.isDummy && s.subject.selectedLabGroup == null && run {
+                val labGroupCount = s.slots
                     .filter { it.entryType == EntryType.LAB }
-                    .groupBy { it.labGroupName }
-                    .map { (_, slots) -> slots.map { it.dayOfWeek to (it.startTime to it.endTime) }.sortedBy { it.first } }
+                    .mapNotNull { it.labGroupName }
                     .distinct()
-                uniqueLabSchedules.size > 1
+                    .size
+                labGroupCount > 1
             }
         }
         
         val fixedSlots = subjects.flatMap { s ->
-            val uniqueLabSchedules = s.slots
-                .filter { it.entryType == EntryType.LAB }
-                .groupBy { it.labGroupName }
-                .map { (_, slots) -> slots.map { it.dayOfWeek to (it.startTime to it.endTime) }.sortedBy { it.first } }
-                .distinct()
-
-            if (uniqueLabSchedules.size <= 1) {
-                // All slots for this subject are "fixed" (Theory or the only unique Lab schedule)
-                s.slots.map { s.subject to it }
+            val pinnedGroup = s.subject.selectedLabGroup
+            if (pinnedGroup != null) {
+                // If a lab group is pinned/locked, include Theory slots AND only slots of the pinned Lab group
+                s.slots.filter { 
+                    it.entryType == EntryType.THEORY || it.labGroupName == pinnedGroup 
+                }.map { s.subject to it }
             } else {
-                // Only Theory slots are fixed
-                s.slots.filter { it.entryType == EntryType.THEORY }.map { s.subject to it }
+                val labGroupCount = s.slots
+                    .filter { it.entryType == EntryType.LAB }
+                    .mapNotNull { it.labGroupName }
+                    .distinct()
+                    .size
+
+                if (labGroupCount <= 1) {
+                    // All slots for this subject are "fixed" (Theory or the only Lab group)
+                    s.slots.map { s.subject to it }
+                } else {
+                    // Only Theory slots are fixed; lab groups will be evaluated as choices
+                    s.slots.filter { it.entryType == EntryType.THEORY }.map { s.subject to it }
+                }
             }
         }
 
-        // 2. Generate Cartesian product of UNIQUE lab schedules
+        val pinnedLabSelections = subjects.mapNotNull { s ->
+            val group = s.subject.selectedLabGroup
+            if (group != null) {
+                s.subject.id to listOf(group)
+            } else null
+        }.toMap()
+
+        // 2. Generate Cartesian product of UNIQUE lab schedules for unpinned subjects
         val choices = subjectsWithChoices.map { s ->
             val labGroups = s.slots.filter { it.entryType == EntryType.LAB }.groupBy { it.labGroupName }
             
@@ -66,7 +80,6 @@ object ConflictSolver {
             )
 
             scheduleToGroupNames.map { (_, groupNames) ->
-                // representative slots for this schedule
                 val repGroupName = groupNames.first()
                 val slots = labGroups[repGroupName]!!
                 s.subject.id to (groupNames to slots)
@@ -77,7 +90,9 @@ object ConflictSolver {
 
         // 3. Evaluate each combination
         val solutions = allCombinations.map { combination ->
-            val labSelections = combination.associate { it.first to it.second.first }
+            val combinationLabSelections = combination.associate { it.first to it.second.first }
+            val labSelections = pinnedLabSelections + combinationLabSelections
+
             val chosenLabSlots = combination.flatMap { comb ->
                 val subject = subjects.find { it.subject.id == comb.first }!!.subject
                 comb.second.second.map { slot -> subject to slot }
@@ -87,7 +102,7 @@ object ConflictSolver {
             evaluateSolution(labSelections, totalSlots)
         }
 
-        // 4. Rank solutions
+        // 4. Rank solutions: ALWAYS overlapsCount ascending first
         return solutions.sortedWith(
             compareBy<ScheduleSolution> { it.overlapsCount }
                 .thenByDescending { it.freeDaysCount }

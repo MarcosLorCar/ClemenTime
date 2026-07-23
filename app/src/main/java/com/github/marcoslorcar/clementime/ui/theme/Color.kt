@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package com.github.marcoslorcar.clementime.ui.theme
 
 import androidx.compose.ui.graphics.Color
@@ -49,3 +51,46 @@ val ClementineOnSurfaceDark = Color(0xFFF4F4F5)
 val ClementineSurfaceVariantDark = Color(0xFF27272A) // Zinc 800 variant
 val ClementineOnSurfaceVariantDark = Color(0xFFA1A1AA)
 val ClementineOutlineDark = Color(0xFF3F3F46) // Zinc 700
+
+// New Themes (Primary, Secondary, Tertiary, Container)
+val ClementinePrimary = Color(0xFFFF9800)
+val ClementineSecondary = Color(0xFFFB8C00)
+val ClementineTertiary = Color(0xFFFFB74D)
+val ClementineContainer = Color(0xFF4E2A00)
+
+val BlueberryPrimary = Color(0xFF5B8CFF)
+val BlueberrySecondary = Color(0xFF8CAEFF)
+val BlueberryTertiary = Color(0xFF3B6ACC)
+val BlueberryContainer = Color(0xFF002966)
+
+val MatchaPrimary = Color(0xFF81C784)
+val MatchaSecondary = Color(0xFFA5D6A7)
+val MatchaTertiary = Color(0xFF4CAF50)
+val MatchaContainer = Color(0xFF1B3E20)
+
+// Espresso Colors
+// Light theme uses rich, dark brown tones for legibility
+val EspressoPrimaryLight = Color(0xFF5D4037)
+val EspressoOnPrimaryLight = Color(0xFFFFFFFF)
+val EspressoPrimaryContainerLight = Color(0xFFD7CCC8)
+val EspressoOnPrimaryContainerLight = Color(0xFF2C1D18)
+val EspressoSecondaryLight = Color(0xFF6D4C41)
+val EspressoOnSecondaryLight = Color(0xFFFFFFFF)
+val EspressoSecondaryContainerLight = Color(0xFFEFEBE9)
+val EspressoOnSecondaryContainerLight = Color(0xFF281815)
+val EspressoTertiaryLight = Color(0xFF4E342E)
+val EspressoOnTertiaryLight = Color(0xFFFFFFFF)
+
+// Dark theme colors
+val EspressoPrimaryDark = Color(0xFFD7CCC8)
+val EspressoOnPrimaryDark = Color(0xFF3E2723)
+val EspressoSecondaryDark = Color(0xFFBCAAA4)
+val EspressoOnSecondaryDark = Color(0xFF2C1D18)
+val EspressoTertiaryDark = Color(0xFF8D6E63)
+val EspressoOnTertiaryDark = Color(0xFF1C0D0A)
+val EspressoContainerDark = Color(0xFF3E2723)
+
+val GrapePrimary = Color(0xFFBA68C8)
+val GrapeSecondary = Color(0xFFCE93D8)
+val GrapeTertiary = Color(0xFF9C27B0)
+val GrapeContainer = Color(0xFF3B1044)

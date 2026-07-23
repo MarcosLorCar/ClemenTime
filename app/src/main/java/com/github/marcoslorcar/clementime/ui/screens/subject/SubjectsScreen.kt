@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -231,7 +232,7 @@ fun SubjectsContent(
 
     Scaffold(
         topBar = {
-            if (uiState.isInSelectionMode) {
+            if (uiState.isInSelectionMode)
                 ClemenTimeTopBar(
                     title = pluralStringResource(R.plurals.selected_count_simple, uiState.selectedSubjectIds.size, uiState.selectedSubjectIds.size),
                     onNavigateBack = { onEvent(SubjectsUiEvent.ClearSelection) },
@@ -242,13 +243,6 @@ fun SubjectsContent(
                                     imageVector = Icons.Default.VisibilityOff,
                                     contentDescription = "Disable selected subjects",
                                     tint = MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                            IconButton(onClick = { showDeleteSelectedDialog = true }) {
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = "Delete selected subjects",
-                                    tint = MaterialTheme.colorScheme.error
                                 )
                             }
                         }
@@ -279,22 +273,26 @@ fun SubjectsContent(
                                 contentDescription = if (isSearchVisible) "Close search" else "Search subjects"
                             )
                         }
-                    }
-                )
-            } else {
-                ClemenTimeTopBar(
-                    title = stringResource(R.string.subjects_screen_title),
-                    onMenuClick = onMenuClick,
-                    actions = {
-                        if (uiState.subjects.isNotEmpty()) {
-                            IconButton(onClick = { showNukeDialog = true }) {
+                        if (uiState.selectedSubjectIds.isNotEmpty()) {
+                            IconButton(onClick = { showDeleteSelectedDialog = true }) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
-                                    contentDescription = "Nuke all subjects",
+                                    contentDescription = "Delete selected subjects",
                                     tint = MaterialTheme.colorScheme.error
                                 )
                             }
                         }
+                    }
+                )
+            else
+                ClemenTimeTopBar(
+                    title = stringResource(R.string.subjects_screen_title),
+                    onMenuClick = onMenuClick,
+                    actions = actions@{
+                        if (uiState.subjects.isEmpty()) {
+                            return@actions
+                        }
+
                         IconButton(
                             onClick = {
                                 onEvent(SubjectsUiEvent.EnterSelectionMode)
@@ -332,17 +330,22 @@ fun SubjectsContent(
                                 contentDescription = if (isSearchVisible) "Close search" else "Search subjects"
                             )
                         }
+                        IconButton(onClick = { showNukeDialog = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Nuke all subjects",
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
                     }
                 )
-            }
         },
-        floatingActionButton = {
-            if (!uiState.isInSelectionMode) {
-                FloatingActionButton(
-                    onClick = { onNavigateToAddEditSubject(null) }
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Subject")
-                }
+        floatingActionButton = floatingActionButton@{
+            if (uiState.isInSelectionMode) {
+                return@floatingActionButton
+            }
+            FloatingActionButton(onClick = { onNavigateToAddEditSubject(null) }) {
+                Icon(Icons.Default.Add, contentDescription = "Add Subject")
             }
         }
     ) { innerPadding ->
@@ -537,6 +540,7 @@ fun SubjectsContent(
                                     subjectWithSlots = subjectWithSlots,
                                     isInSelectionMode = uiState.isInSelectionMode,
                                     isSelected = isSelected,
+                                    highContrastEnabled = uiState.highContrast,
                                     onToggleActive = { isActive ->
                                         onEvent(SubjectsUiEvent.ToggleSubjectActive(subjectWithSlots.subject.id, isActive))
                                     },
@@ -566,6 +570,7 @@ private fun SubjectItemCard(
     subjectWithSlots: SubjectWithSlots,
     isInSelectionMode: Boolean,
     isSelected: Boolean,
+    highContrastEnabled: Boolean,
     onToggleActive: (Boolean) -> Unit,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
@@ -575,7 +580,9 @@ private fun SubjectItemCard(
     val subject = subjectWithSlots.subject
     var isExpanded by remember { mutableStateOf(false) }
 
-    val cardBgColor = if (subject.isActive) {
+    val cardBgColor = if (highContrastEnabled) {
+        if (subject.isActive) subject.cardColor else MaterialTheme.colorScheme.surfaceVariant
+    } else if (subject.isActive) {
         subject.cardColor
     } else {
         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
@@ -584,6 +591,7 @@ private fun SubjectItemCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = if (highContrastEnabled) androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.outline) else null,
         shape = RoundedCornerShape(12.dp)
     ) {
         Surface(
@@ -623,10 +631,12 @@ private fun SubjectItemCard(
                     Text(
                         text = subject.name,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = if (highContrastEnabled) FontWeight.Bold else FontWeight.SemiBold,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        color = if (subject.isActive) {
+                        color = if (highContrastEnabled) {
+                            if (subject.isActive) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        } else if (subject.isActive) {
                             MaterialTheme.colorScheme.onSurface
                         } else {
                             MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
@@ -699,12 +709,12 @@ private fun SubjectItemCard(
                                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Default.Edit,
+                                            imageVector = Icons.Default.Visibility,
                                             contentDescription = null,
                                             modifier = Modifier.size(16.dp)
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
-                                        Text(stringResource(R.string.edit_subject))
+                                        Text(stringResource(R.string.view_subject_button))
                                     }
 
                                     OutlinedButton(

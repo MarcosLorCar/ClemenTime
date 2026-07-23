@@ -1,4 +1,4 @@
-package com.github.marcoslorcar.clementime.ui.screens
+package com.github.marcoslorcar.clementime.ui.screens.schedule
 
 
 import androidx.compose.foundation.layout.Box
@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.CloudUpload
@@ -20,19 +21,27 @@ import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -48,16 +57,21 @@ import com.github.marcoslorcar.clementime.data.ClassSlot
 import com.github.marcoslorcar.clementime.data.EntryType
 import com.github.marcoslorcar.clementime.data.Subject
 import com.github.marcoslorcar.clementime.data.SubjectWithSlots
+import com.github.marcoslorcar.clementime.ui.components.ClassSlotItemCard
 import com.github.marcoslorcar.clementime.ui.components.ClemenTimeTopBar
 import com.github.marcoslorcar.clementime.ui.components.ScheduleTimeline
+import com.github.marcoslorcar.clementime.ui.screens.subject.ClassSlotUiModel
+import com.github.marcoslorcar.clementime.ui.screens.subject.toUiModel
 import com.github.marcoslorcar.clementime.ui.theme.ClemenTimeTheme
 import com.github.marcoslorcar.clementime.utils.getNarrowLabel
 import com.github.marcoslorcar.clementime.utils.groupSlotsIntoClusters
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
+import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.TextStyle
 import java.util.Locale
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun ScheduleScreen(
@@ -72,10 +86,11 @@ fun ScheduleScreen(
     ScheduleContent(
         uiState = uiState,
         onChangeTab = viewModel::changeTab,
+        onNavigateToImport = onNavigateToImport,
+        onNavigateToConflictResolver = onNavigateToConflictResolver,
         onMenuClick = onMenuClick,
         onClickSubject = onClickSubject,
-        onNavigateToImport = onNavigateToImport,
-        onNavigateToConflictResolver = onNavigateToConflictResolver
+        onDeleteSlot = viewModel::deleteSlot
     )
 }
 
@@ -87,7 +102,8 @@ fun ScheduleContent(
     onNavigateToImport: () -> Unit,
     onNavigateToConflictResolver: () -> Unit,
     onMenuClick: (() -> Unit)? = null,
-    onClickSubject: (Long, Long) -> Unit = { _, _ -> }
+    onClickSubject: (Long, Long) -> Unit = { _, _ -> },
+    onDeleteSlot: (Long) -> Unit = { _ -> }
 ) {
     val coroutineScope = rememberCoroutineScope()
     val tabs = ScheduleTab.entries
@@ -96,18 +112,20 @@ fun ScheduleContent(
         pageCount = { tabs.size }
     )
 
-    // Synchronize Pager swipe with ViewModel state
-    LaunchedEffect(pagerState.currentPage) {
-        val newTab = tabs[pagerState.currentPage]
-        if (newTab != uiState.selectedTab) {
-            onChangeTab(newTab)
-        }
-    }
+    var selectedSlotForSheet by remember { mutableStateOf<Pair<Subject, ClassSlotUiModel>?>(null) }
+    val sheetState = rememberBottomSheetState(
+        initialValue = SheetValue.Hidden,
+        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
+    )
 
-    // Keep pager in sync if selectedTab changes externally
-    LaunchedEffect(uiState.selectedTab) {
-        if (pagerState.currentPage != uiState.selectedTab.ordinal) {
-            pagerState.animateScrollToPage(uiState.selectedTab.ordinal)
+    var scrollToNowTrigger by remember { mutableLongStateOf(0L) }
+    var isNearNow by remember { mutableStateOf(false) }
+    val today = remember { LocalDate.now().dayOfWeek }
+
+    // Synchronize Pager state with ViewModel only when it settles
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.settledPage }.collect { page ->
+            onChangeTab(tabs[page])
         }
     }
 
@@ -118,25 +136,27 @@ fun ScheduleContent(
                     onMenuClick = onMenuClick,
                     title = stringResource(R.string.schedule_screen_title),
                     actions = {
-                        IconButton(onClick = onNavigateToConflictResolver) {
-                            if (uiState.hasOverlaps) {
-                                BadgedBox(
-                                    badge = {
-                                        Badge {
-                                            Text("!")
+                        if (uiState.subjectsWithSlots.isNotEmpty()) {
+                            IconButton(onClick = onNavigateToConflictResolver) {
+                                if (uiState.hasOverlaps) {
+                                    BadgedBox(
+                                        badge = {
+                                            Badge {
+                                                Text("!")
+                                            }
                                         }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.AutoFixHigh,
+                                            contentDescription = stringResource(R.string.resolve_conflicts_tooltip)
+                                        )
                                     }
-                                ) {
+                                } else {
                                     Icon(
                                         imageVector = Icons.Default.AutoFixHigh,
                                         contentDescription = stringResource(R.string.resolve_conflicts_tooltip)
                                     )
                                 }
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Default.AutoFixHigh,
-                                    contentDescription = stringResource(R.string.resolve_conflicts_tooltip)
-                                )
                             }
                         }
                     }
@@ -209,6 +229,35 @@ fun ScheduleContent(
                     }
                 }
             }
+        },
+        floatingActionButton = {
+            val isWeekday = today != DayOfWeek.SATURDAY && today != DayOfWeek.SUNDAY
+            
+            val shouldShowFab = uiState.showNowLine && 
+                              isWeekday && 
+                              uiState.subjectsWithSlots.isNotEmpty() && 
+                              (!isNearNow || pagerState.currentPage != (tabs.find { it.dayOfWeek == today }?.ordinal ?: -1))
+
+            if (shouldShowFab) {
+                FloatingActionButton(
+                    onClick = {
+                        val todayTab = tabs.find { it.dayOfWeek == today }
+                        if (todayTab != null) {
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(todayTab.ordinal)
+                                scrollToNowTrigger = System.currentTimeMillis()
+                            }
+                        }
+                    },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Schedule,
+                        contentDescription = stringResource(R.string.jump_to_now_label)
+                    )
+                }
+            }
         }
     ) { paddingValues ->
         if (uiState.isLoading) {
@@ -279,25 +328,64 @@ fun ScheduleContent(
                     groupSlotsIntoClusters(daySlots)
                 }
 
-                if (clusters.isEmpty()) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "No classes scheduled for ${currentDay.name.lowercase().replaceFirstChar { it.uppercase() }}.",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+    var activeHighlightSlotId by remember(uiState.highlightSlotId) { mutableStateOf(uiState.highlightSlotId) }
+
+    LaunchedEffect(uiState.highlightSlotId) {
+        if (uiState.highlightSlotId != null) {
+            activeHighlightSlotId = uiState.highlightSlotId
+            kotlinx.coroutines.delay(2000L.milliseconds)
+            activeHighlightSlotId = null
+        }
+    }
+
+                ScheduleTimeline(
+                    modifier = Modifier.fillMaxSize(),
+                    clusters = clusters,
+                    showNowLine = uiState.showNowLine,
+                    nowLineStyle = uiState.nowLineStyle,
+                    dayOfWeek = currentDay.dayOfWeek,
+                    scrollToNowTrigger = scrollToNowTrigger,
+                    highContrastEnabled = uiState.highContrast,
+                    onNearNowChanged = { if (currentDay.dayOfWeek == today) isNearNow = it },
+                    onClickSubject = onClickSubject
+                ) { subjectId, slotId ->
+                    val subjectWithSlots =
+                        uiState.subjectsWithSlots.find { it.subject.id == subjectId }
+                    val slot = subjectWithSlots?.slots?.find { it.id == slotId }
+                    if (subjectWithSlots != null && slot != null) {
+                        selectedSlotForSheet = subjectWithSlots.subject to slot.toUiModel()
                     }
-                } else {
-                    ScheduleTimeline(
-                        clusters = clusters,
-                        onClickSubject = onClickSubject,
-                        modifier = Modifier.fillMaxSize()
-                    )
                 }
             }
+        }
+    }
+
+    if (selectedSlotForSheet != null) {
+        ModalBottomSheet(
+            onDismissRequest = { selectedSlotForSheet = null },
+            sheetState = sheetState,
+            dragHandle = null,
+            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+        ) {
+            val (_, slot) = selectedSlotForSheet!!
+            Box(modifier = Modifier.padding(16.dp)) {
+                ClassSlotItemCard(
+                    slot = slot,
+                    isEditMode = false,
+                    onGoToSchedule = { _, _ -> 
+                        coroutineScope.launch { sheetState.hide() }.invokeOnCompletion {
+                            selectedSlotForSheet = null
+                        }
+                    },
+                    onDelete = { 
+                        onDeleteSlot(slot.id)
+                        coroutineScope.launch { sheetState.hide() }.invokeOnCompletion {
+                            selectedSlotForSheet = null
+                        }
+                    }
+                )
+            }
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }

@@ -1,4 +1,4 @@
-package com.github.marcoslorcar.clementime.ui.screens
+package com.github.marcoslorcar.clementime.ui.screens.schedule
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import java.time.LocalDate
 import javax.inject.Inject
 
 data class ScheduleUiState(
@@ -22,23 +24,29 @@ data class ScheduleUiState(
     val selectedTab: ScheduleTab = ScheduleTab.MONDAY,
     val subjectsWithSlots: List<SubjectWithSlots> = emptyList(),
     val scrollableTabs: Boolean = false,
-    val hasOverlaps: Boolean = false
+    val showNowLine: Boolean = true,
+    val nowLineStyle: String = "discrete",
+    val highContrast: Boolean = false,
+    val hasOverlaps: Boolean = false,
+    val highlightSlotId: Long? = null
 )
 
 @HiltViewModel
 class ScheduleViewModel @Inject constructor(
-    scheduleDao: ScheduleDao,
+    private val scheduleDao: ScheduleDao,
     settingsRepository: SettingsRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
+    private val route = runCatching { savedStateHandle.toRoute<ScheduleListRoute>() }.getOrNull()
+
     private val initialTab: ScheduleTab = run {
-        val route = runCatching { savedStateHandle.toRoute<ScheduleListRoute>() }.getOrNull()
         val dayName = route?.dayOfWeek ?: savedStateHandle.get<String>("dayOfWeek")
         if (dayName != null) {
             ScheduleTab.entries.find { it.dayOfWeek.name.equals(dayName, ignoreCase = true) } ?: ScheduleTab.MONDAY
         } else {
-            ScheduleTab.MONDAY
+            val today = LocalDate.now().dayOfWeek
+            ScheduleTab.entries.find { it.dayOfWeek == today } ?: ScheduleTab.MONDAY
         }
     }
 
@@ -47,8 +55,14 @@ class ScheduleViewModel @Inject constructor(
     val uiState: StateFlow<ScheduleUiState> = combine(
         scheduleDao.getActiveSubjectsWithSlots(),
         _selectedTab,
-        settingsRepository.scrollableTabsFlow
-    ) { rawSubjects, selectedTab, scrollable ->
+        settingsRepository.scrollableTabsFlow,
+        settingsRepository.showNowLineFlow,
+        combine(
+            settingsRepository.nowLineStyleFlow,
+            settingsRepository.highContrastFlow,
+            ::Pair
+        )
+    ) { rawSubjects, selectedTab, scrollable, showNowLine, extras ->
         val filteredSubjects = rawSubjects.map { sWithSlots ->
             val filteredSlots = sWithSlots.slots.filter { slot ->
                 slot.entryType == EntryType.THEORY || 
@@ -65,7 +79,11 @@ class ScheduleViewModel @Inject constructor(
             selectedTab = selectedTab,
             subjectsWithSlots = filteredSubjects,
             scrollableTabs = scrollable,
-            hasOverlaps = hasOverlaps
+            showNowLine = showNowLine,
+            nowLineStyle = extras.first,
+            highContrast = extras.second,
+            hasOverlaps = hasOverlaps,
+            highlightSlotId = route?.highlightSlotId
         )
     }.stateIn(
         scope = viewModelScope,
@@ -75,6 +93,12 @@ class ScheduleViewModel @Inject constructor(
 
     fun changeTab(tab: ScheduleTab) {
         _selectedTab.value = tab
+    }
+
+    fun deleteSlot(slotId: Long) {
+        viewModelScope.launch {
+            scheduleDao.deleteSlotById(slotId)
+        }
     }
 
     private fun detectAnyOverlap(subjects: List<SubjectWithSlots>): Boolean {

@@ -38,26 +38,18 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
@@ -74,7 +66,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -85,28 +76,35 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import com.github.marcoslorcar.clementime.R
 import com.github.marcoslorcar.clementime.data.AttachedFileItem
-import com.github.marcoslorcar.clementime.data.EntryType
 import com.github.marcoslorcar.clementime.data.Subject
+import com.github.marcoslorcar.clementime.ui.components.ClassSlotItemCard
 import com.github.marcoslorcar.clementime.ui.components.ClemenTimeTopBar
 import com.github.marcoslorcar.clementime.ui.theme.ClemenTimeTheme
+import com.github.marcoslorcar.clementime.utils.fadingEdges
 import java.io.File
 import java.io.FileOutputStream
 import java.time.DayOfWeek
 import java.time.LocalTime
-import java.time.format.DateTimeFormatter
 import java.util.UUID
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun AddEditSubjectScreen(
     onNavigateBack: () -> Unit,
-    onNavigateToSchedule: (DayOfWeek) -> Unit,
-    viewModel: AddEditSubjectViewModel = hiltViewModel()
+    onNavigateToSchedule: (DayOfWeek, Long?) -> Unit,
+    viewModel: AddEditSubjectViewModel = hiltViewModel(
+        checkNotNull(
+            LocalViewModelStoreOwner.current
+        ) {
+            "No ViewModelStoreOwner was provided via LocalViewModelStoreOwner"
+        }, null
+    )
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -126,13 +124,12 @@ fun AddEditSubjectScreen(
         onUpdateNotesText = viewModel::updateNotesText,
         onAddAttachedFile = viewModel::addAttachedFile,
         onRemoveAttachedFile = viewModel::removeAttachedFile,
-        onAddSlot = viewModel::addSlot,
         onDuplicateSlot = viewModel::duplicateSlot,
-        onUpdateSlot = viewModel::updateSlot,
-        onUpdateSelectedLabGroup = viewModel::updateSelectedLabGroup,
         onDeleteSlot = viewModel::deleteSlot,
-        onStartTimeSelected = viewModel::onStartTimeSelected,
-        onEndTimeSelected = viewModel::onEndTimeSelected,
+        onToggleEditMode = viewModel::toggleEditMode,
+        onOpenSlotEditor = viewModel::openSlotEditor,
+        onCloseSlotEditor = viewModel::closeSlotEditor,
+        onSaveSlotFromEditor = viewModel::saveSlotFromEditor,
         onSave = viewModel::saveSubject
     )
 }
@@ -142,25 +139,32 @@ fun AddEditSubjectScreen(
 fun AddEditSubjectContent(
     uiState: AddEditSubjectUiState,
     onNavigateBack: () -> Unit,
-    onNavigateToSchedule: (DayOfWeek) -> Unit,
+    onNavigateToSchedule: (DayOfWeek, Long?) -> Unit,
     onUpdateCode: (String) -> Unit,
     onUpdateName: (String) -> Unit,
     onUpdateColor: (Int) -> Unit,
     onUpdateNotesText: (String) -> Unit,
     onAddAttachedFile: (String, String, String) -> Unit,
     onRemoveAttachedFile: (String) -> Unit,
-    onAddSlot: () -> Unit,
     onDuplicateSlot: (Int) -> Unit,
-    onUpdateSlot: (Int, ClassSlotUiModel) -> Unit,
-    onUpdateSelectedLabGroup: (String?) -> Unit,
     onDeleteSlot: (Int) -> Unit,
-    onStartTimeSelected: (Int, LocalTime) -> Unit,
-    onEndTimeSelected: (Int, LocalTime) -> Unit,
-    onSave: () -> Unit
+    onToggleEditMode: () -> Unit = {},
+    onOpenSlotEditor: (Int?) -> Unit = {},
+    onCloseSlotEditor: () -> Unit = {},
+    onSaveSlotFromEditor: (ClassSlotUiModel) -> Unit = {},
+    onSave: () -> Unit = {}
 ) {
     val lazyListState = rememberLazyListState()
     var hasScrolled by remember { mutableStateOf(false) }
-    var expandedSlotIndices by remember { mutableStateOf(setOf<Int>()) }
+    var activeHighlightSlotId by remember(uiState.highlightSlotId) { mutableStateOf(uiState.highlightSlotId) }
+
+    LaunchedEffect(uiState.highlightSlotId) {
+        if (uiState.highlightSlotId != null) {
+            activeHighlightSlotId = uiState.highlightSlotId
+            kotlinx.coroutines.delay(2000L.milliseconds)
+            activeHighlightSlotId = null
+        }
+    }
 
     LaunchedEffect(uiState.slots, uiState.highlightSlotId) {
         if (!hasScrolled && uiState.slots.isNotEmpty() && uiState.highlightSlotId != null) {
@@ -201,18 +205,12 @@ fun AddEditSubjectContent(
         }
     }
 
-    val defaultTitle = stringResource(
-        if (uiState.subjectId == null || uiState.subjectId == 0L) R.string.add_subject_title else R.string.edit_subject_title
-    )
+    val isNewSubject = uiState.subjectId == null || uiState.subjectId == 0L
 
-    val topBarTitle = remember(uiState.subjectId, uiState.name, uiState.code, defaultTitle) {
-        if (uiState.subjectId == null || uiState.subjectId == 0L) {
-            defaultTitle
-        } else {
-            uiState.name.takeIf { it.isNotBlank() }
-                ?: uiState.code.takeIf { it.isNotBlank() }
-                ?: defaultTitle
-        }
+    val topBarTitle = when {
+        isNewSubject -> stringResource(R.string.new_subject_title)
+        uiState.isEditMode -> stringResource(R.string.edit_subject_title)
+        else -> uiState.name.ifBlank { uiState.code.ifBlank { stringResource(R.string.view_subject_title) } }
     }
 
     Scaffold(
@@ -222,18 +220,30 @@ fun AddEditSubjectContent(
                 title = topBarTitle,
                 onNavigateBack = onNavigateBack,
                 actions = {
-                    Button(
-                        enabled = uiState.code.isNotBlank() && uiState.name.isNotBlank(),
-                        onClick = onSave,
-                        modifier = Modifier.padding(end = 8.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(stringResource(R.string.save_button))
+                    if (uiState.isEditMode) {
+                        Button(
+                            enabled = uiState.code.isNotBlank() && uiState.name.isNotBlank(),
+                            onClick = onSave,
+                            modifier = Modifier.padding(end = 8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(stringResource(R.string.save_button))
+                        }
+                    } else {
+                        IconButton(
+                            onClick = onToggleEditMode,
+                            modifier = Modifier.padding(end = 8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = stringResource(R.string.edit_subject_button)
+                            )
+                        }
                     }
                 }
             )
@@ -262,16 +272,36 @@ fun AddEditSubjectContent(
                         code = uiState.code,
                         name = uiState.name,
                         selectedColor = uiState.color,
+                        isEditMode = uiState.isEditMode,
                         onUpdateCode = onUpdateCode,
                         onUpdateName = onUpdateName,
                         onUpdateColor = onUpdateColor
                     )
                 }
 
+                // Weekly Schedule Mini Preview
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = stringResource(R.string.schedule_preview_header),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        com.github.marcoslorcar.clementime.ui.components.SubjectScheduleMiniPreview(
+                            modifier = Modifier.fillMaxWidth(),
+                            slots = uiState.slots,
+                            subjectColor = Color(uiState.color),
+                            selectedLabGroup = uiState.selectedLabGroup,
+                            onSlotClick = { slot -> onNavigateToSchedule(slot.dayOfWeek, slot.id) }
+                        )
+                    }
+                }
+
                 item {
                     SubjectNotesAndLinksCard(
                         notesText = uiState.notesText,
                         attachedFiles = uiState.attachedFiles,
+                        isEditMode = uiState.isEditMode,
                         onUpdateNotesText = onUpdateNotesText,
                         onRemoveAttachedFile = onRemoveAttachedFile,
                         onAddFileClick = { filePickerLauncher.launch("*/*") }
@@ -289,10 +319,12 @@ fun AddEditSubjectContent(
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
-                        Button(onClick = onAddSlot) {
-                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text(stringResource(R.string.add_slot_button))
+                        if (uiState.isEditMode) {
+                            Button(onClick = { onOpenSlotEditor(null) }) {
+                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text(stringResource(R.string.add_slot_button))
+                            }
                         }
                     }
                 }
@@ -323,23 +355,12 @@ fun AddEditSubjectContent(
                     itemsIndexed(uiState.slots) { index, slot ->
                         ClassSlotItemCard(
                             slot = slot,
-                            isHighlighted = slot.id == uiState.highlightSlotId,
-                            isExpanded = expandedSlotIndices.contains(index),
-                            selectedLabGroup = uiState.selectedLabGroup,
-                            onToggleExpand = {
-                                expandedSlotIndices = if (expandedSlotIndices.contains(index)) {
-                                    expandedSlotIndices - index
-                                } else {
-                                    expandedSlotIndices + index
-                                }
-                            },
+                            isHighlighted = slot.id == activeHighlightSlotId,
+                            isEditMode = uiState.isEditMode,
+                            onEditClick = { onOpenSlotEditor(index) },
                             onGoToSchedule = onNavigateToSchedule,
-                            onUpdateSlot = { updated -> onUpdateSlot(index, updated) },
-                            onSelectLabGroup = onUpdateSelectedLabGroup,
                             onDuplicate = { onDuplicateSlot(index) },
-                            onDelete = { onDeleteSlot(index) },
-                            onStartTimeSelected = { time -> onStartTimeSelected(index, time) },
-                            onEndTimeSelected = { time -> onEndTimeSelected(index, time) }
+                            onDelete = { onDeleteSlot(index) }
                         )
                     }
                 }
@@ -351,6 +372,25 @@ fun AddEditSubjectContent(
         }
     }
 
+    // Slot Edit Bottom Sheet
+    if (uiState.isSlotEditorOpen) {
+        val initialSlot = uiState.editingSlotIndex?.let { uiState.slots.getOrNull(it) }
+            ?: ClassSlotUiModel(
+                subjectId = uiState.subjectId ?: 0L,
+                dayOfWeek = uiState.slots.lastOrNull()?.dayOfWeek ?: DayOfWeek.MONDAY,
+                classroom = uiState.slots.lastOrNull()?.classroom,
+                labGroupName = uiState.slots.lastOrNull()?.labGroupName,
+                entryType = uiState.slots.lastOrNull()?.entryType ?: com.github.marcoslorcar.clementime.data.EntryType.THEORY,
+                professor = uiState.slots.lastOrNull()?.professor
+            )
+
+        SlotEditBottomSheet(
+            initialSlot = initialSlot,
+            onDismiss = onCloseSlotEditor,
+            onSaveSlot = onSaveSlotFromEditor
+        )
+    }
+
 
 }
 
@@ -359,13 +399,53 @@ private fun SubjectBasicDetailsCard(
     code: String,
     name: String,
     selectedColor: Int,
+    isEditMode: Boolean,
     onUpdateCode: (String) -> Unit,
     onUpdateName: (String) -> Unit,
     onUpdateColor: (Int) -> Unit
 ) {
+    if (!isEditMode) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(Color(selectedColor))
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = name.ifBlank { "Subject Name" },
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    if (code.isNotBlank()) {
+                        Text(
+                            text = "Code: $code",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
+        return
+    }
+
     var localCode by remember { mutableStateOf(code) }
     var localName by remember { mutableStateOf(name) }
     var showColorPicker by remember { mutableStateOf(false) }
+
+    val colorsListState = rememberLazyListState()
 
     LaunchedEffect(code) {
         if (localCode != code) {
@@ -375,6 +455,16 @@ private fun SubjectBasicDetailsCard(
     LaunchedEffect(name) {
         if (localName != name) {
             localName = name
+        }
+    }
+
+    LaunchedEffect(selectedColor) {
+        if (selectedColor != 0) {
+            val presetIndex = Subject.PRESET_COLORS.indexOf(selectedColor)
+            if (presetIndex != -1) {
+                val targetIndex = if (!Subject.PRESET_COLORS.contains(selectedColor)) presetIndex + 2 else presetIndex + 1
+                colorsListState.animateScrollToItem((targetIndex - 2).coerceAtLeast(0))
+            }
         }
     }
 
@@ -430,18 +520,16 @@ private fun SubjectBasicDetailsCard(
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Text(
-                    text = stringResource(R.string.swipe_colors_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
 
             LazyRow(
+                state = colorsListState,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 contentPadding = PaddingValues(horizontal = 2.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fadingEdges(colorsListState, horizontal = true)
             ) {
                 item {
                     Box(
@@ -528,6 +616,7 @@ private fun SubjectBasicDetailsCard(
 private fun SubjectNotesAndLinksCard(
     notesText: String,
     attachedFiles: List<AttachedFileItem>,
+    isEditMode: Boolean,
     onUpdateNotesText: (String) -> Unit,
     onRemoveAttachedFile: (String) -> Unit,
     onAddFileClick: () -> Unit
@@ -539,6 +628,10 @@ private fun SubjectNotesAndLinksCard(
         if (localNotesText != notesText) {
             localNotesText = notesText
         }
+    }
+
+    if (!isEditMode && notesText.isBlank() && attachedFiles.isEmpty()) {
+        return
     }
 
     Card(
@@ -555,33 +648,45 @@ private fun SubjectNotesAndLinksCard(
                 fontWeight = FontWeight.Bold
             )
 
-            OutlinedTextField(
-                value = localNotesText,
-                onValueChange = {
-                    localNotesText = it
-                    onUpdateNotesText(it)
-                },
-                label = { Text(stringResource(R.string.subject_notes_label)) },
-                placeholder = { Text(stringResource(R.string.subject_notes_placeholder)) },
-                minLines = 3,
-                maxLines = 5,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            if (isEditMode) {
+                OutlinedTextField(
+                    value = localNotesText,
+                    onValueChange = {
+                        localNotesText = it
+                        onUpdateNotesText(it)
+                    },
+                    label = { Text(stringResource(R.string.subject_notes_label)) },
+                    placeholder = { Text(stringResource(R.string.subject_notes_placeholder)) },
+                    minLines = 3,
+                    maxLines = 5,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            } else if (notesText.isNotBlank()) {
                 Text(
-                    text = stringResource(R.string.linked_files_label, attachedFiles.size),
-                    style = MaterialTheme.typography.labelLarge,
+                    text = notesText,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                TextButton(onClick = onAddFileClick) {
-                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text(stringResource(R.string.link_file_button))
+            }
+
+            if (isEditMode || attachedFiles.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.linked_files_label, attachedFiles.size),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (isEditMode) {
+                        TextButton(onClick = onAddFileClick) {
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text(stringResource(R.string.link_file_button))
+                        }
+                    }
                 }
             }
 
@@ -629,16 +734,18 @@ private fun SubjectNotesAndLinksCard(
                                     }
                                 }
 
-                                IconButton(
-                                    onClick = { onRemoveAttachedFile(file.id) },
-                                    modifier = Modifier.size(28.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Close,
-                                        contentDescription = "Remove file",
-                                        tint = MaterialTheme.colorScheme.error,
-                                        modifier = Modifier.size(16.dp)
-                                    )
+                                if (isEditMode) {
+                                    IconButton(
+                                        onClick = { onRemoveAttachedFile(file.id) },
+                                        modifier = Modifier.size(28.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = "Remove file",
+                                            tint = MaterialTheme.colorScheme.error,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -646,344 +753,6 @@ private fun SubjectNotesAndLinksCard(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun ClassSlotItemCard(
-    slot: ClassSlotUiModel,
-    isHighlighted: Boolean = false,
-    isExpanded: Boolean = false,
-    selectedLabGroup: String? = null,
-    onToggleExpand: () -> Unit,
-    onGoToSchedule: (DayOfWeek) -> Unit,
-    onUpdateSlot: (ClassSlotUiModel) -> Unit,
-    onSelectLabGroup: (String?) -> Unit,
-    onDuplicate: () -> Unit,
-    onDelete: () -> Unit,
-    onStartTimeSelected: (LocalTime) -> Unit,
-    onEndTimeSelected: (LocalTime) -> Unit
-) {
-    var showStartTimePicker by remember { mutableStateOf(false) }
-    var showEndTimePicker by remember { mutableStateOf(false) }
-
-    val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
-
-    var localClassroom by remember { mutableStateOf(slot.classroom ?: "") }
-    var localProfessor by remember { mutableStateOf(slot.professor ?: "") }
-    var localLabGroupName by remember { mutableStateOf(slot.labGroupName ?: "") }
-
-    LaunchedEffect(slot.classroom) {
-        val external = slot.classroom ?: ""
-        if (localClassroom != external) {
-            localClassroom = external
-        }
-    }
-    LaunchedEffect(slot.professor) {
-        val external = slot.professor ?: ""
-        if (localProfessor != external) {
-            localProfessor = external
-        }
-    }
-    LaunchedEffect(slot.labGroupName) {
-        val external = slot.labGroupName ?: ""
-        if (localLabGroupName != external) {
-            localLabGroupName = external
-        }
-    }
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onToggleExpand() }
-            .alpha(if (slot.isIgnored) 0.6f else 1f),
-        shape = RoundedCornerShape(12.dp),
-        border = if (isHighlighted) {
-            BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
-        } else {
-            BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-        },
-        colors = if (isHighlighted) {
-            CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
-            )
-        } else {
-            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-        },
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            // Header: Always visible
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(
-                            color = if (slot.entryType == EntryType.LAB) MaterialTheme.colorScheme.secondaryContainer 
-                                    else MaterialTheme.colorScheme.tertiaryContainer,
-                            shape = RoundedCornerShape(4.dp)
-                        ) {
-                            Text(
-                                text = if (slot.entryType == EntryType.LAB) stringResource(R.string.lab_label) else stringResource(R.string.theory_label),
-                                style = MaterialTheme.typography.labelSmall,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                color = if (slot.entryType == EntryType.LAB) MaterialTheme.colorScheme.onSecondaryContainer
-                                        else MaterialTheme.colorScheme.onTertiaryContainer
-                            )
-                        }
-                        if (slot.labGroupName != null) {
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                text = slot.labGroupName,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = "${
-                            when (slot.dayOfWeek) {
-                                DayOfWeek.MONDAY -> stringResource(R.string.mon_label)
-                                DayOfWeek.TUESDAY -> stringResource(R.string.tue_label)
-                                DayOfWeek.WEDNESDAY -> stringResource(R.string.wed_label)
-                                DayOfWeek.THURSDAY -> stringResource(R.string.thu_label)
-                                DayOfWeek.FRIDAY -> stringResource(R.string.fri_label)
-                                else -> slot.dayOfWeek.name
-                            }
-                        } • " +
-                                (if (slot.startTime != null && slot.endTime != null) 
-                                    "${slot.startTime.format(timeFormatter)} - ${slot.endTime.format(timeFormatter)}"
-                                else "--:-- - --:--"),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (slot.entryType == EntryType.LAB) {
-                        val isSelected = selectedLabGroup == slot.labGroupName && slot.labGroupName != null
-                        RadioButton(
-                            selected = isSelected,
-                            onClick = { 
-                                if (isSelected) onSelectLabGroup(null) 
-                                else onSelectLabGroup(slot.labGroupName)
-                            }
-                        )
-                    }
-
-                    if (slot.isIgnored && !isExpanded) {
-                        Icon(
-                            imageVector = Icons.Default.VisibilityOff,
-                            contentDescription = "Ignored",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                            modifier = Modifier.padding(horizontal = 8.dp).size(20.dp)
-                        )
-                    }
-                    
-                    if (!isExpanded) {
-                        IconButton(onClick = onDelete) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = stringResource(R.string.delete_slot_label),
-                                tint = MaterialTheme.colorScheme.error.copy(alpha = 0.6f),
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-                }
-            }
-
-            if (isExpanded) {
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        FilterChip(
-                            selected = slot.entryType == EntryType.THEORY,
-                            onClick = { onUpdateSlot(slot.copy(entryType = EntryType.THEORY)) },
-                            label = { Text(stringResource(R.string.theory_label)) }
-                        )
-                        FilterChip(
-                            selected = slot.entryType == EntryType.LAB,
-                            onClick = { onUpdateSlot(slot.copy(entryType = EntryType.LAB)) },
-                            label = { Text(stringResource(R.string.lab_label)) }
-                        )
-                    }
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                        IconButton(onClick = { onUpdateSlot(slot.copy(isIgnored = !slot.isIgnored)) }) {
-                            Icon(
-                                imageVector = if (slot.isIgnored) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                contentDescription = if (slot.isIgnored) "Unignore slot" else "Ignore slot",
-                                tint = if (slot.isIgnored) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f) 
-                                       else MaterialTheme.colorScheme.primary
-                            )
-                        }
-                        if (slot.id > 0L) {
-                            IconButton(onClick = { onGoToSchedule(slot.dayOfWeek) }) {
-                                Icon(
-                                    imageVector = Icons.Default.Schedule,
-                                    contentDescription = stringResource(R.string.show_in_schedule_label),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                        }
-                        IconButton(onClick = onDuplicate) {
-                            Icon(
-                                imageVector = Icons.Default.ContentCopy,
-                                contentDescription = stringResource(R.string.duplicate_slot_label),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                        IconButton(onClick = onDelete) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = stringResource(R.string.delete_slot_label),
-                                tint = MaterialTheme.colorScheme.error
-                            )
-                        }
-                    }
-                }
-
-                val days = remember {
-                    listOf(
-                        DayOfWeek.MONDAY to R.string.mon_label,
-                        DayOfWeek.TUESDAY to R.string.tue_label,
-                        DayOfWeek.WEDNESDAY to R.string.wed_label,
-                        DayOfWeek.THURSDAY to R.string.thu_label,
-                        DayOfWeek.FRIDAY to R.string.fri_label
-                    )
-                }
-
-                LazyRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    items(days) { (day, labelRes) ->
-                        FilterChip(
-                            selected = slot.dayOfWeek == day,
-                            onClick = { onUpdateSlot(slot.copy(dayOfWeek = day)) },
-                            label = { Text(stringResource(labelRes), fontSize = 12.sp) }
-                        )
-                    }
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    OutlinedButton(
-                        onClick = { showStartTimePicker = true },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Schedule,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Text(
-                            text = if (slot.startTime != null) {
-                                stringResource(R.string.start_time_label, slot.startTime.format(timeFormatter))
-                            } else "Start: --:--"
-                        )
-                    }
-
-                    OutlinedButton(
-                        onClick = { showEndTimePicker = true },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Schedule,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Text(
-                            text = if (slot.endTime != null) {
-                                stringResource(R.string.end_time_label, slot.endTime.format(timeFormatter))
-                            } else "End: --:--"
-                        )
-                    }
-                }
-
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(
-                        value = localClassroom,
-                        onValueChange = { text ->
-                            localClassroom = text
-                            onUpdateSlot(slot.copy(classroom = text.ifBlank { null }))
-                        },
-                        label = { Text(stringResource(R.string.room_label)) },
-                        placeholder = { Text(stringResource(R.string.room_placeholder)) },
-                        singleLine = true,
-                        modifier = Modifier.weight(1f)
-                    )
-                    OutlinedTextField(
-                        value = localProfessor,
-                        onValueChange = { text ->
-                            localProfessor = text
-                            onUpdateSlot(slot.copy(professor = text.ifBlank { null }))
-                        },
-                        label = { Text(stringResource(R.string.professor_label)) },
-                        placeholder = { Text(stringResource(R.string.professor_placeholder)) },
-                        singleLine = true,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-
-                if (slot.entryType == EntryType.LAB) {
-                    OutlinedTextField(
-                        value = localLabGroupName,
-                        onValueChange = { text ->
-                            localLabGroupName = text
-                            onUpdateSlot(slot.copy(labGroupName = text.ifBlank { null }))
-                        },
-                        label = { Text(stringResource(R.string.lab_group_label)) },
-                        placeholder = { Text(stringResource(R.string.lab_group_placeholder)) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
-        }
-    }
-
-    if (showStartTimePicker) {
-        RadialTimePickerDialog(
-            initialTime = slot.startTime ?: LocalTime.of(9, 0),
-            onDismiss = { showStartTimePicker = false },
-            onTimeConfirm = { selectedTime ->
-                onStartTimeSelected(selectedTime)
-                showStartTimePicker = false
-            }
-        )
-    }
-
-    if (showEndTimePicker) {
-        RadialTimePickerDialog(
-            initialTime = slot.endTime ?: (slot.startTime?.plusMinutes(90) ?: LocalTime.of(10, 30)),
-            onDismiss = { showEndTimePicker = false },
-            onTimeConfirm = { selectedTime ->
-                onEndTimeSelected(selectedTime)
-                showEndTimePicker = false
-            }
-        )
     }
 }
 
@@ -1152,20 +921,15 @@ private fun AddEditSubjectContentPreview() {
                 )
             ),
             onNavigateBack = {},
-            onNavigateToSchedule = {},
+            onNavigateToSchedule = { _, _ -> },
             onUpdateCode = {},
             onUpdateName = {},
             onUpdateColor = {},
             onUpdateNotesText = {},
             onAddAttachedFile = { _, _, _ -> },
             onRemoveAttachedFile = {},
-            onAddSlot = {},
             onDuplicateSlot = {},
-            onUpdateSlot = { _, _ -> },
-            onUpdateSelectedLabGroup = {},
             onDeleteSlot = {},
-            onStartTimeSelected = { _, _ -> },
-            onEndTimeSelected = { _, _ -> },
             onSave = {}
         )
     }

@@ -68,6 +68,9 @@ fun ClassSlotUiModel.toEntity(subjectId: Long): ClassSlot? {
 data class AddEditSubjectUiState(
     val subjectId: Long? = null,
     val highlightSlotId: Long? = null,
+    val isEditMode: Boolean = true,
+    val editingSlotIndex: Int? = null,
+    val isSlotEditorOpen: Boolean = false,
     val code: String = "",
     val name: String = "",
     val color: Int = Subject.PRESET_COLORS.first(),
@@ -96,7 +99,10 @@ class AddEditSubjectViewModel @Inject constructor(
         val highlightSlotId = route?.highlightSlotId
 
         if (routeSubjectId != null && routeSubjectId > 0) {
+            _uiState.update { it.copy(isEditMode = false) }
             loadSubject(routeSubjectId, highlightSlotId)
+        } else {
+            _uiState.update { it.copy(isEditMode = true) }
         }
     }
 
@@ -126,8 +132,26 @@ class AddEditSubjectViewModel @Inject constructor(
         }
     }
 
-    fun updateSelectedLabGroup(groupName: String?) {
-        _uiState.update { it.copy(selectedLabGroup = groupName) }
+    fun toggleEditMode() {
+        _uiState.update { it.copy(isEditMode = !it.isEditMode) }
+    }
+
+    fun openSlotEditor(index: Int?) {
+        _uiState.update { it.copy(editingSlotIndex = index, isSlotEditorOpen = true) }
+    }
+
+    fun closeSlotEditor() {
+        _uiState.update { it.copy(editingSlotIndex = null, isSlotEditorOpen = false) }
+    }
+
+    fun saveSlotFromEditor(slot: ClassSlotUiModel) {
+        val index = _uiState.value.editingSlotIndex
+        if (index != null && index in _uiState.value.slots.indices) {
+            updateSlot(index, slot)
+        } else {
+            _uiState.update { it.copy(slots = it.slots + slot) }
+        }
+        closeSlotEditor()
     }
 
     fun updateCode(code: String) {

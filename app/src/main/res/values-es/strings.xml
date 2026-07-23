@@ -56,6 +56,21 @@
     <string name="tab_layout_letters">Letras (Fijo)</string>
     <string name="tab_layout_weekdays">Días de la Semana (Desplazable)</string>
 
+    <string name="now_line_setting_title">Mostrar Línea de \"Ahora\"</string>
+    <string name="now_line_style_title">Estilo de Línea</string>
+    <string name="now_line_style_obvious">Llamativo</string>
+    <string name="now_line_style_discrete">Discreto</string>
+    <string name="jump_to_now_label">Ir al momento actual</string>
+
+    <string name="high_contrast_setting_title">Tarjetas de Alto Contraste</string>
+    <string name="high_contrast_setting_desc">Tarjetas más opacas para una mejor legibilidad</string>
+    <string name="theme_preview_title">Selección de Tema</string>
+    <string name="theme_clementine">Clementina</string>
+    <string name="theme_blueberry">Arándano</string>
+    <string name="theme_matcha">Matcha</string>
+    <string name="theme_espresso">Espresso</string>
+    <string name="theme_grape">Uva</string>
+
     <string name="export_backup_setting_title">Exportar Horario</string>
     <string name="export_backup_desc">Guardar horario y asignaturas como archivo JSON</string>
 
@@ -126,10 +141,39 @@
     <string name="conflict_resolver_checkbox_desc">• Omitir Horarios: Marca las clases que quieras excluir de los cálculos de solapamiento (por ejemplo, clases opcionales o no obligatorias).</string>
     <string name="conflict_resolver_continue">Ver Soluciones</string>
     <string name="resolve_conflicts_tooltip">Resolver Conflictos</string>
+    <string name="conflict_resolver_help_title">Ayuda del Optimizador</string>
+    <string name="conflict_resolver_help_desc">Fija grupos de laboratorio para obligar al optimizador a usarlos. Al pulsar un grupo sin fijar se fija (icono de candado 🔒) y al pulsar uno fijado se desfija. Activa "Excluir de conflictos" para ignorar clases específicas durante la optimización.</string>
+    <string name="conflict_resolver_pref_free_days">Días Libres</string>
+    <string name="conflict_resolver_pref_compact">Compacidad</string>
+    <string name="conflict_resolver_generate_preview">Previsualizar Soluciones</string>
+    <string name="conflict_resolver_generate_preview_warning">Previsualizar Soluciones (Hay Conflictos)</string>
+    <string name="conflict_resolver_badge_zero_overlaps">Sin Solapamientos</string>
+    <string name="conflict_resolver_badge_conflict">⚠️ Con Conflictos</string>
+    <string name="conflict_resolver_badge_free_days">Máx Días Libres</string>
+    <string name="conflict_resolver_badge_compact">Más Compacto</string>
+    <string name="conflict_resolver_confirm_title">¿Actualizar Horario?</string>
+    <string name="conflict_resolver_confirm_message">Se establecerán los siguientes grupos de laboratorio como tus clases activas:\n\n%1$s</string>
+    <string name="conflict_resolver_confirm_save">Confirmar y Guardar</string>
+    <string name="conflict_resolver_applied_snackbar">Horario actualizado con éxito.</string>
+    <string name="conflict_resolver_undo">DESHACER</string>
+    <string name="conflict_resolver_subjects_header">Asignaturas y Grupos de Lab</string>
+    <string name="conflict_resolver_filter_header">Prioridad Secundaria (Tras Solapamientos)</string>
+    <string name="conflict_resolver_ignore_section_label">Ignorar franja horaria</string>
+    <string name="conflict_resolver_ignored_badge">Ignorado</string>
+
+    <string name="new_subject_title">Nueva Asignatura</string>
+    <string name="view_subject_title">Detalles de Asignatura</string>
+    <string name="schedule_preview_header">Previsualización Semanal</string>
+    <string name="slot_editor_title_add">Añadir Horario</string>
+    <string name="slot_editor_title_edit">Editar Horario</string>
+    <string name="total_weekly_hours">%1$.1f hrs/semana</string>
+    <string name="total_slots_metric">%1$d Clases</string>
+    <string name="edit_subject_button">Editar Asignatura</string>
+    <string name="view_subject_button">Detalles</string>
 
     <!-- Class Slot / Subject Editor strings -->
     <string name="theory_label">Teoría</string>
-    <string name="lab_label">Lab</string>
+    <string name="lab_label">Laboratorio</string>
     <string name="class_slots_header">Horarios de Clase (%1$d)</string>
     <string name="add_slot_button">Añadir Horario</string>
     <string name="no_slots_message">Aún no hay horarios añadidos.\nToca \'+ Añadir Horario\' para crear uno.</string>
@@ -159,5 +203,7 @@
     <string name="room_placeholder">Aula 1.2</string>
     <string name="professor_placeholder">Prof. Pérez</string>
     <string name="lab_group_placeholder">ej. Lab-A1</string>
+    <string name="hidden_from_schedule">Oculto (Ignorado)</string>
+    <string name="visible_in_schedule" >Activo</string>
 </resources>
 

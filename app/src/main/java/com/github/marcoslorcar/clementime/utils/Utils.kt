@@ -37,6 +37,12 @@ fun DayOfWeek.getNarrowLabel(locale: Locale): String {
     }
 }
 
+fun DayOfWeek.shortName(locale: Locale): String =
+    getDisplayName(
+        TextStyle.FULL_STANDALONE,
+        locale
+    ).replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }.take(3)
+
 /**
  * Represents a horizontal row/bucket in the timeline that contains
  * one or more overlapping class slots.

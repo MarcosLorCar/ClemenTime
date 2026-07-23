@@ -17,7 +17,8 @@ data class SubjectsUiState(
     val searchQuery: String = "",
     val isLoading: Boolean = false,
     val selectedSubjectIds: Set<Long> = emptySet(),
-    val isSelectionModeForced: Boolean = false
+    val isSelectionModeForced: Boolean = false,
+    val highContrast: Boolean = false
 ) {
     val isInSelectionMode: Boolean
         get() = isSelectionModeForced || selectedSubjectIds.isNotEmpty()
@@ -49,7 +50,8 @@ sealed interface SubjectsUiEvent {
 
 @HiltViewModel
 class SubjectsViewModel @Inject constructor(
-    private val scheduleDao: ScheduleDao
+    private val scheduleDao: ScheduleDao,
+    private val settingsRepository: com.github.marcoslorcar.clementime.data.SettingsRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SubjectsUiState())
@@ -57,6 +59,15 @@ class SubjectsViewModel @Inject constructor(
 
     init {
         loadSubjects()
+        observeSettings()
+    }
+
+    private fun observeSettings() {
+        viewModelScope.launch {
+            settingsRepository.highContrastFlow.collect { hc ->
+                _uiState.update { it.copy(highContrast = hc) }
+            }
+        }
     }
 
     private fun loadSubjects() {

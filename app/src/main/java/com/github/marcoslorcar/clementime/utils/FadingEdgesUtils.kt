@@ -20,36 +20,63 @@ import androidx.compose.ui.unit.dp
 fun Modifier.fadingEdges(
     state: LazyListState,
     topEdgeHeight: Dp = 16.dp,
-    bottomEdgeHeight: Dp = 24.dp
+    bottomEdgeHeight: Dp = 24.dp,
+    horizontal: Boolean = false
 ): Modifier = this
     .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
     .drawWithContent {
         drawContent()
 
-        val topFadeHeightPx = topEdgeHeight.toPx()
-        val bottomFadeHeightPx = bottomEdgeHeight.toPx()
+        val topFadePx = topEdgeHeight.toPx()
+        val bottomFadePx = bottomEdgeHeight.toPx()
 
-        // Draw Top Fade
-        if (state.canScrollBackward && topFadeHeightPx > 0f) {
-            drawRect(
-                brush = Brush.verticalGradient(
-                    colors = listOf(Color.Transparent, Color.Black),
-                    startY = 0f,
-                    endY = topFadeHeightPx
-                ),
-                blendMode = BlendMode.DstIn
-            )
-        }
+        if (horizontal) {
+            // Draw Left Fade
+            if (state.canScrollBackward && topFadePx > 0f) {
+                drawRect(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(Color.Transparent, Color.Black),
+                        startX = 0f,
+                        endX = topFadePx
+                    ),
+                    blendMode = BlendMode.DstIn
+                )
+            }
 
-        // Draw Bottom Fade
-        if (state.canScrollForward && bottomFadeHeightPx > 0f) {
-            drawRect(
-                brush = Brush.verticalGradient(
-                    colors = listOf(Color.Black, Color.Transparent),
-                    startY = size.height - bottomFadeHeightPx,
-                    endY = size.height
-                ),
-                blendMode = BlendMode.DstIn
-            )
+            // Draw Right Fade
+            if (state.canScrollForward && bottomFadePx > 0f) {
+                drawRect(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(Color.Black, Color.Transparent),
+                        startX = size.width - bottomFadePx,
+                        endX = size.width
+                    ),
+                    blendMode = BlendMode.DstIn
+                )
+            }
+        } else {
+            // Draw Top Fade
+            if (state.canScrollBackward && topFadePx > 0f) {
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(Color.Transparent, Color.Black),
+                        startY = 0f,
+                        endY = topFadePx
+                    ),
+                    blendMode = BlendMode.DstIn
+                )
+            }
+
+            // Draw Bottom Fade
+            if (state.canScrollForward && bottomFadePx > 0f) {
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(Color.Black, Color.Transparent),
+                        startY = size.height - bottomFadePx,
+                        endY = size.height
+                    ),
+                    blendMode = BlendMode.DstIn
+                )
+            }
         }
     }

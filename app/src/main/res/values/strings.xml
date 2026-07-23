@@ -52,6 +52,21 @@
     <string name="tab_layout_letters">Letters (Fixed)</string>
     <string name="tab_layout_weekdays">Weekday Names (Scrollable)</string>
 
+    <string name="now_line_setting_title">Show \"Now\" Line</string>
+    <string name="now_line_style_title">Line Style</string>
+    <string name="now_line_style_obvious">Obvious</string>
+    <string name="now_line_style_discrete">Discrete</string>
+    <string name="jump_to_now_label">Jump to current time</string>
+
+    <string name="high_contrast_setting_title">High Contrast Cards</string>
+    <string name="high_contrast_setting_desc">Make schedule cards more opaque for better legibility</string>
+    <string name="theme_preview_title">Theme Selection</string>
+    <string name="theme_clementine">Clementine</string>
+    <string name="theme_blueberry">Blueberry</string>
+    <string name="theme_matcha">Matcha</string>
+    <string name="theme_espresso">Espresso</string>
+    <string name="theme_grape">Grape</string>
+
     <string name="export_backup_setting_title">Export Schedule</string>
     <string name="export_backup_desc">Save schedule and subjects to JSON file</string>
 
@@ -120,6 +135,35 @@
     <string name="conflict_resolver_checkbox_desc">• Ignore Slots: Check classes you want to exclude from overlap checks entirely (e.g. optional or non-mandatory classes).</string>
     <string name="conflict_resolver_continue">View Solutions</string>
     <string name="resolve_conflicts_tooltip">Resolve Conflicts</string>
+    <string name="conflict_resolver_help_title">Conflict Resolver Help</string>
+    <string name="conflict_resolver_help_desc">Pin lab groups to lock them as mandatory selections for the solver. Tapping an unpinned group pins it, while tapping a pinned group unpins it. Toggle "Exclude from conflicts" to ignore specific classes during optimization.</string>
+    <string name="conflict_resolver_pref_free_days">Free Days</string>
+    <string name="conflict_resolver_pref_compact">Compactness</string>
+    <string name="conflict_resolver_generate_preview">Preview Solutions</string>
+    <string name="conflict_resolver_generate_preview_warning">Preview Solutions (Conflicts Exist)</string>
+    <string name="conflict_resolver_badge_zero_overlaps">0 Overlaps</string>
+    <string name="conflict_resolver_badge_conflict">⚠️ Conflict</string>
+    <string name="conflict_resolver_badge_free_days">Max Free Days</string>
+    <string name="conflict_resolver_badge_compact">Most Compact</string>
+    <string name="conflict_resolver_confirm_title">Update Schedule?</string>
+    <string name="conflict_resolver_confirm_message">This will set the following lab groups as your active classes:\n\n%1$s</string>
+    <string name="conflict_resolver_confirm_save">Confirm &amp; Save</string>
+    <string name="conflict_resolver_applied_snackbar">Schedule updated successfully.</string>
+    <string name="conflict_resolver_undo">UNDO</string>
+    <string name="conflict_resolver_subjects_header">Subjects &amp; Lab Groups</string>
+    <string name="conflict_resolver_filter_header">Secondary Priority (After Overlaps)</string>
+    <string name="conflict_resolver_ignore_section_label">Ignore class slot</string>
+    <string name="conflict_resolver_ignored_badge">Ignored</string>
+
+    <string name="new_subject_title">New Subject</string>
+    <string name="view_subject_title">Subject Details</string>
+    <string name="schedule_preview_header">Weekly Schedule Preview</string>
+    <string name="slot_editor_title_add">Add Class Slot</string>
+    <string name="slot_editor_title_edit">Edit Class Slot</string>
+    <string name="total_weekly_hours">%1$.1f hrs/week</string>
+    <string name="total_slots_metric" tools:ignore="PluralsCandidate">%1$d Slots</string>
+    <string name="edit_subject_button">Edit Subject</string>
+    <string name="view_subject_button">Details</string>
 
     <!-- Class Slot / Subject Editor strings -->
     <string name="theory_label">Theory</string>
@@ -153,4 +197,6 @@
     <string name="room_placeholder">Room 1.2</string>
     <string name="professor_placeholder">Dr. Smith</string>
     <string name="lab_group_placeholder">e.g. Lab-A1</string>
+    <string name="hidden_from_schedule">Hidden (Ignored)</string>
+    <string name="visible_in_schedule" >Active</string>
 </resources>

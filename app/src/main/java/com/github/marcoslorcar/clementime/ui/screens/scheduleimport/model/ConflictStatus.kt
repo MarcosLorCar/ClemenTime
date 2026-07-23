@@ -26,7 +26,9 @@ data class ConflictDetail(
 )
 
 data class TheoryOverlap(
-    val subject1: SelectedSubject,
-    val subject2: SelectedSubject,
+    val subject1Code: String,
+    val subject1Name: String,
+    val subject2Code: String,
+    val subject2Name: String,
     val slots: List<Pair<ClassSlot, ClassSlot>>
 )

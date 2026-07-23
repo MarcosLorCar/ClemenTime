@@ -167,5 +167,9 @@ class ImportRepository @Inject constructor(
 
             dao.upsertSubjectWithSlots(subject, theorySlots + labSlots)
         }
+     }
+
+    suspend fun getExistingActiveSubjects(): List<com.github.marcoslorcar.clementime.data.SubjectWithSlots> = withContext(Dispatchers.IO) {
+        dao.getAllSubjectsWithSlots().first().filter { it.subject.isActive }
     }
 }

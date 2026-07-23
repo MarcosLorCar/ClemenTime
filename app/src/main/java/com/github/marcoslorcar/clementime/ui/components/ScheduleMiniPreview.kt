@@ -93,6 +93,23 @@ fun ScheduleMiniPreview(
                             strokeWidth = strokeWidth
                         )
                     }
+
+                    // Draw horizontal lines indicating 30 mins
+                    val stepMinutes = 30
+                    val intervalCount = totalMinutes / stepMinutes
+                    for (i in 1 until intervalCount) {
+                        val minuteOffset = i * stepMinutes
+                        val y = size.height * (minuteOffset.toFloat() / totalMinutes)
+                        val isHour = minuteOffset % 60 == 0
+                        val lineAlpha = if (isHour) 0.20f else 0.10f
+                        
+                        drawLine(
+                            color = Color.LightGray.copy(alpha = lineAlpha),
+                            start = androidx.compose.ui.geometry.Offset(0f, y),
+                            end = androidx.compose.ui.geometry.Offset(size.width, y),
+                            strokeWidth = strokeWidth
+                        )
+                    }
                 }
             ) {
                 val maxHeightDp = maxHeight

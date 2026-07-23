@@ -79,16 +79,23 @@ class SubjectsViewModelTestFakeDao : ScheduleDao {
     }
 }
 
+class FakeSettingsRepository : com.github.marcoslorcar.clementime.data.SettingsRepository(context = null) {
+    val highContrastSubject = MutableStateFlow(false)
+    override val highContrastFlow: Flow<Boolean> = highContrastSubject
+}
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class SubjectsViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var fakeDao: SubjectsViewModelTestFakeDao
+    private lateinit var fakeSettingsRepository: FakeSettingsRepository
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         fakeDao = SubjectsViewModelTestFakeDao()
+        fakeSettingsRepository = FakeSettingsRepository()
     }
 
     @After
@@ -110,7 +117,7 @@ class SubjectsViewModelTest {
         )
         fakeDao.subjectsFlow.value = subjects
 
-        val viewModel = SubjectsViewModel(fakeDao)
+        val viewModel = SubjectsViewModel(fakeDao, fakeSettingsRepository)
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(2, viewModel.uiState.value.filteredSubjects.size)
@@ -132,7 +139,7 @@ class SubjectsViewModelTest {
 
     @Test
     fun toggleSubjectActive_invokesDaoUpdate() = runTest {
-        val viewModel = SubjectsViewModel(fakeDao)
+        val viewModel = SubjectsViewModel(fakeDao, fakeSettingsRepository)
         viewModel.onEvent(SubjectsUiEvent.ToggleSubjectActive(10L, false))
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -141,7 +148,7 @@ class SubjectsViewModelTest {
 
     @Test
     fun deleteSubject_invokesDaoDelete() = runTest {
-        val viewModel = SubjectsViewModel(fakeDao)
+        val viewModel = SubjectsViewModel(fakeDao, fakeSettingsRepository)
         viewModel.onEvent(SubjectsUiEvent.DeleteSubject(5L))
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -150,7 +157,7 @@ class SubjectsViewModelTest {
 
     @Test
     fun nukeAllSubjects_invokesDaoDeleteAll() = runTest {
-        val viewModel = SubjectsViewModel(fakeDao)
+        val viewModel = SubjectsViewModel(fakeDao, fakeSettingsRepository)
         viewModel.onEvent(SubjectsUiEvent.NukeAllSubjects)
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -159,7 +166,7 @@ class SubjectsViewModelTest {
 
     @Test
     fun toggleSubjectSelection_updatesState() = runTest {
-        val viewModel = SubjectsViewModel(fakeDao)
+        val viewModel = SubjectsViewModel(fakeDao, fakeSettingsRepository)
         viewModel.onEvent(SubjectsUiEvent.ToggleSubjectSelection(42L))
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -176,7 +183,7 @@ class SubjectsViewModelTest {
 
     @Test
     fun deleteSelectedSubjects_invokesDaoDeleteSelected() = runTest {
-        val viewModel = SubjectsViewModel(fakeDao)
+        val viewModel = SubjectsViewModel(fakeDao, fakeSettingsRepository)
         viewModel.onEvent(SubjectsUiEvent.ToggleSubjectSelection(10L))
         viewModel.onEvent(SubjectsUiEvent.ToggleSubjectSelection(20L))
         viewModel.onEvent(SubjectsUiEvent.DeleteSelectedSubjects)
@@ -188,7 +195,7 @@ class SubjectsViewModelTest {
 
     @Test
     fun enterSelectionMode_forcesSelectionMode() = runTest {
-        val viewModel = SubjectsViewModel(fakeDao)
+        val viewModel = SubjectsViewModel(fakeDao, fakeSettingsRepository)
         viewModel.onEvent(SubjectsUiEvent.EnterSelectionMode)
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -198,7 +205,7 @@ class SubjectsViewModelTest {
 
     @Test
     fun toggleGroupSelection_updatesSelectedIds() = runTest {
-        val viewModel = SubjectsViewModel(fakeDao)
+        val viewModel = SubjectsViewModel(fakeDao, fakeSettingsRepository)
         val ids = listOf(1L, 2L, 3L)
 
         // Select all
@@ -214,7 +221,7 @@ class SubjectsViewModelTest {
 
     @Test
     fun disableSelectedSubjects_updatesDaoAndClearsSelection() = runTest {
-        val viewModel = SubjectsViewModel(fakeDao)
+        val viewModel = SubjectsViewModel(fakeDao, fakeSettingsRepository)
         viewModel.onEvent(SubjectsUiEvent.ToggleSubjectSelection(10L))
         viewModel.onEvent(SubjectsUiEvent.ToggleSubjectSelection(20L))
         viewModel.onEvent(SubjectsUiEvent.DisableSelectedSubjects)

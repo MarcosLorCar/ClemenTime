@@ -39,7 +39,8 @@ sealed interface ImportUiState {
         val selectedSubjects: Set<SelectedSubject>,
         val searchQuery: String = "",
         val selectedFile: ImportFile,
-        val conflictStatus: ConflictStatus = ConflictStatus.None
+        val conflictStatus: ConflictStatus = ConflictStatus.None,
+        val existingSubjects: List<SubjectWithSlots> = emptyList()
     ) : ImportUiState
     object Importing : ImportUiState
     object Success : ImportUiState
@@ -84,13 +85,15 @@ class ImportViewModel @Inject constructor(
                 }
 
                 val result = repository.parseJsonString(jsonString)
+                val existing = repository.getExistingActiveSubjects()
                 result.fold(
                     onSuccess = { schema ->
                         _uiState.value = ImportUiState.Selection(
                             schema = schema,
                             selectedSubjects = emptySet(),
                             selectedFile = file,
-                            conflictStatus = ConflictStatus.None
+                            conflictStatus = ConflictStatus.None,
+                            existingSubjects = existing
                         )
                     },
                     onFailure = { error ->
@@ -143,7 +146,7 @@ class ImportViewModel @Inject constructor(
             }
             _uiState.value = currentState.copy(
                 selectedSubjects = updatedSelection,
-                conflictStatus = calculateConflictStatus(updatedSelection)
+                conflictStatus = calculateConflictStatus(updatedSelection, currentState.existingSubjects)
             )
         }
     }
@@ -160,7 +163,7 @@ class ImportViewModel @Inject constructor(
             }
             _uiState.value = currentState.copy(
                 selectedSubjects = updatedSelection,
-                conflictStatus = calculateConflictStatus(updatedSelection)
+                conflictStatus = calculateConflictStatus(updatedSelection, currentState.existingSubjects)
             )
         }
     }
@@ -197,12 +200,15 @@ class ImportViewModel @Inject constructor(
             updatedSelection.addAll(toSelect)
             _uiState.value = currentState.copy(
                 selectedSubjects = updatedSelection,
-                conflictStatus = calculateConflictStatus(updatedSelection)
+                conflictStatus = calculateConflictStatus(updatedSelection, currentState.existingSubjects)
             )
         }
     }
 
-    private fun calculateConflictStatus(selected: Set<SelectedSubject>): ConflictStatus {
+    private fun calculateConflictStatus(
+        selected: Set<SelectedSubject>,
+        existing: List<SubjectWithSlots>
+    ): ConflictStatus {
         if (selected.isEmpty()) return ConflictStatus.None
 
         var slotIdCounter = 1L
@@ -233,11 +239,24 @@ class ImportViewModel @Inject constructor(
             SubjectWithSlots(subject, theorySlots + labSlots)
         }
 
-        val solutions = ConflictSolver.findSolutions(subjectsWithSlots)
+        val mappedExisting = existing.map { sWithSlots ->
+            val activeSlots = sWithSlots.slots.filter { slot ->
+                slot.entryType == EntryType.THEORY ||
+                sWithSlots.subject.selectedLabGroup == null ||
+                slot.labGroupName == sWithSlots.subject.selectedLabGroup
+            }.map { slot ->
+                slot.copy(id = slotIdCounter++)
+            }
+            sWithSlots.copy(slots = activeSlots)
+        }
+
+        val allSubjectsWithSlots = subjectsWithSlots + mappedExisting
+
+        val solutions = ConflictSolver.findSolutions(allSubjectsWithSlots)
         val optimal = solutions.firstOrNull() ?: return ConflictStatus.None
 
         val theoryOverlaps = mutableListOf<TheoryOverlap>()
-        val theorySlots = subjectsWithSlots.flatMap { s -> 
+        val theorySlots = allSubjectsWithSlots.flatMap { s -> 
             s.slots.filter { it.entryType == EntryType.THEORY }.map { s.subject to it } 
         }
         
@@ -246,9 +265,15 @@ class ImportViewModel @Inject constructor(
                 val (subj1, slot1) = theorySlots[i]
                 val (subj2, slot2) = theorySlots[j]
                 if (slot1.dayOfWeek == slot2.dayOfWeek && slot1.startTime < slot2.endTime && slot2.startTime < slot1.endTime) {
-                    val sel1 = selected.find { it.subject.code == subj1.code }!!
-                    val sel2 = selected.find { it.subject.code == subj2.code }!!
-                    theoryOverlaps.add(TheoryOverlap(sel1, sel2, listOf(slot1 to slot2)))
+                    theoryOverlaps.add(
+                        TheoryOverlap(
+                            subject1Code = subj1.code,
+                            subject1Name = subj1.name,
+                            subject2Code = subj2.code,
+                            subject2Name = subj2.name,
+                            slots = listOf(slot1 to slot2)
+                        )
+                    )
                 }
             }
         }
@@ -261,8 +286,8 @@ class ImportViewModel @Inject constructor(
         } else {
             val theoryOverlappingSlots = theoryOverlaps.flatMap { overlap ->
                 overlap.slots.flatMap { pair ->
-                    val s1 = subjectsWithSlots.find { it.subject.code == overlap.subject1.subject.code }!!.subject
-                    val s2 = subjectsWithSlots.find { it.subject.code == overlap.subject2.subject.code }!!.subject
+                    val s1 = allSubjectsWithSlots.find { it.subject.code == overlap.subject1Code }!!.subject
+                    val s2 = allSubjectsWithSlots.find { it.subject.code == overlap.subject2Code }!!.subject
                     listOf(s1 to pair.first, s2 to pair.second)
                 }
             }.distinctBy { it.second.id }
