@@ -17,4 +17,9 @@ interface GitHubScheduleApiService {
     suspend fun getScheduleSchema(
         @Url url: String
     ): Response<ScheduleJsonSchema>
+
+    @GET
+    suspend fun getRawScheduleSchema(
+        @Url url: String
+    ): Response<okhttp3.ResponseBody>
 }

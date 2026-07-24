@@ -5,23 +5,41 @@ import android.net.Uri
 import com.github.marcoslorcar.clementime.data.EntryType
 import com.github.marcoslorcar.clementime.data.ScheduleDao
 import com.github.marcoslorcar.clementime.data.Subject
+import com.github.marcoslorcar.clementime.data.api.GitHubScheduleApiService
 import com.github.marcoslorcar.clementime.data.importing.model.ImportFile
+import com.github.marcoslorcar.clementime.data.importing.model.RemoteScheduleSummary
 import com.github.marcoslorcar.clementime.data.importing.model.ScheduleJsonSchema
 import com.github.marcoslorcar.clementime.data.importing.model.SelectedSubject
 import com.github.marcoslorcar.clementime.data.importing.parser.JsonScheduleParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import java.io.File
 import java.security.MessageDigest
 import javax.inject.Inject
-import com.github.marcoslorcar.clementime.data.api.GitHubScheduleApiService
-import com.github.marcoslorcar.clementime.data.importing.model.RemoteScheduleSummary
+
+@Serializable
+data class CacheMetadata(
+    val id: String,
+    val title: String,
+    val description: String?,
+    val remotePath: String,
+    val lastUsed: Long,
+    val hash: String
+)
+
+@Serializable
+data class RemoteCacheList(
+    val entries: List<CacheMetadata> = emptyList()
+)
 
 class ImportRepository @Inject constructor(
     private val dao: ScheduleDao,
     private val parser: JsonScheduleParser = JsonScheduleParser(),
-    private val apiService: GitHubScheduleApiService? = null
+    private val apiService: GitHubScheduleApiService? = null,
+    private val json: Json = Json { ignoreUnknownKeys = true; coerceInputValues = true; encodeDefaults = true }
 ) {
 
     private fun String.sha256(): String {
@@ -216,18 +234,111 @@ class ImportRepository @Inject constructor(
         }
     }
 
-    suspend fun fetchRemoteScheduleSchema(rawFullUrl: String): Result<ScheduleJsonSchema> = withContext(Dispatchers.IO) {
-        try {
-            if (apiService == null) return@withContext Result.failure(Exception("Network service unavailable"))
-            val fullUrl = normalizeGitHubUrl(rawFullUrl)
-            val response = apiService.getScheduleSchema(fullUrl)
-            if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
-            } else {
-                Result.failure(Exception("Failed to fetch remote schema: ${response.code()} ${response.message()}"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
+    fun getCacheDir(context: Context): File {
+        val dir = File(context.filesDir, "remote_cache")
+        if (!dir.exists()) {
+            dir.mkdirs()
+        }
+        return dir
+    }
+
+    private fun getMetadataFile(context: Context): File {
+        return File(getCacheDir(context), "metadata.json")
+    }
+
+    fun getCachedRemoteSchedules(context: Context): List<CacheMetadata> {
+        return readCacheMetadata(context)
+    }
+
+    private fun readCacheMetadata(context: Context): List<CacheMetadata> {
+        val file = getMetadataFile(context)
+        if (!file.exists()) return emptyList()
+        return try {
+            val jsonString = file.readText()
+            json.decodeFromString<RemoteCacheList>(jsonString).entries
+        } catch (_: Exception) {
+            emptyList()
         }
     }
+
+    private fun writeCacheMetadata(context: Context, entries: List<CacheMetadata>) {
+        val file = getMetadataFile(context)
+        try {
+            val jsonString = json.encodeToString(RemoteCacheList(entries))
+            file.writeText(jsonString)
+        } catch (_: Exception) {
+            // Ignore
+        }
+    }
+
+    suspend fun fetchRemoteScheduleSchema(
+        context: Context,
+        file: ImportFile
+    ): Result<ScheduleJsonSchema> = withContext(Dispatchers.IO) {
+        val cacheDir = getCacheDir(context)
+        val cacheFile = File(cacheDir, "cache_${file.id}.json")
+        val metadataList = readCacheMetadata(context).toMutableList()
+        val existingEntry = metadataList.find { it.id == file.id }
+
+        try {
+            if (apiService == null) throw Exception("Network service unavailable")
+            val fullUrl = normalizeGitHubUrl(file.remotePath ?: throw Exception("Remote path is null"))
+            val response = apiService.getRawScheduleSchema(fullUrl)
+            if (response.isSuccessful) {
+                val jsonBody = response.body()?.string() ?: throw Exception("Response body is empty")
+                val schema = parser.parseJson(jsonBody).getOrThrow()
+                val newHash = jsonBody.sha256()
+
+                val updatedEntry = CacheMetadata(
+                    id = file.id,
+                    title = schema.title ?: file.title,
+                    description = file.description,
+                    remotePath = file.remotePath,
+                    lastUsed = System.currentTimeMillis(),
+                    hash = newHash
+                )
+
+                if (existingEntry == null || existingEntry.hash != newHash || !cacheFile.exists()) {
+                    cacheFile.writeText(jsonBody)
+                    metadataList.removeAll { it.id == file.id }
+                    metadataList.add(updatedEntry)
+
+                    if (metadataList.size > 5) {
+                        metadataList.sortBy { it.lastUsed }
+                        while (metadataList.size > 5) {
+                            val oldest = metadataList.removeAt(0)
+                            val oldestFile = File(cacheDir, "cache_${oldest.id}.json")
+                            if (oldestFile.exists()) {
+                                oldestFile.delete()
+                            }
+                        }
+                    }
+                } else {
+                    metadataList.removeAll { it.id == file.id }
+                    metadataList.add(updatedEntry)
+                }
+
+                writeCacheMetadata(context, metadataList)
+                Result.success(schema)
+            } else {
+                throw Exception("Failed to fetch remote schema: ${response.code()} ${response.message()}")
+            }
+        } catch (e: Exception) {
+            if (existingEntry != null && cacheFile.exists()) {
+                try {
+                    val jsonBody = cacheFile.readText()
+                    val schema = parser.parseJson(jsonBody).getOrThrow()
+                    metadataList.removeAll { it.id == file.id }
+                    metadataList.add(existingEntry.copy(lastUsed = System.currentTimeMillis()))
+                    writeCacheMetadata(context, metadataList)
+                    Result.success(schema)
+                } catch (_: Exception) {
+                    Result.failure(e)
+                }
+            } else {
+                Result.failure(e)
+            }
+        }
+    }
+
 }

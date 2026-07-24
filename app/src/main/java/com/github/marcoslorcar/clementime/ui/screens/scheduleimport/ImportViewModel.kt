@@ -98,25 +98,59 @@ class ImportViewModel @Inject constructor(
                     else -> "$baseUrl/"
                 }
 
+                val cacheMetadata = repository.getCachedRemoteSchedules(context)
+                val cacheDir = repository.getCacheDir(context)
+
                 val remoteResult = repository.fetchRemoteSchedules(baseUrl)
-                val remoteFiles = remoteResult.getOrDefault(emptyList()).map { summary ->
-                    val fullPath = when {
-                        summary.path.startsWith("http://") || summary.path.startsWith("https://") -> summary.path
-                        else -> "$folderUrl${summary.path.removePrefix("/")}"
+                val remoteFiles = remoteResult.fold(
+                    onSuccess = { list ->
+                        list.map { summary ->
+                            val fullPath = when {
+                                summary.path.startsWith("http://") || summary.path.startsWith("https://") -> summary.path
+                                else -> "$folderUrl${summary.path.removePrefix("/")}"
+                            }
+                            val isCached = cacheMetadata.any { it.id == summary.id } && 
+                                           File(cacheDir, "cache_${summary.id}.json").exists()
+                            ImportFile(
+                                id = summary.id,
+                                title = summary.title,
+                                isBundled = false,
+                                fileUri = null,
+                                sourceType = ImportSourceType.REMOTE,
+                                remotePath = fullPath,
+                                description = summary.description,
+                                isCached = isCached
+                            )
+                        }
+                    },
+                    onFailure = { _ ->
+                        cacheMetadata.filter { 
+                            File(cacheDir, "cache_${it.id}.json").exists()
+                        }.map { entry ->
+                            ImportFile(
+                                id = entry.id,
+                                title = entry.title,
+                                isBundled = false,
+                                fileUri = null,
+                                sourceType = ImportSourceType.REMOTE,
+                                remotePath = entry.remotePath,
+                                description = entry.description,
+                                isCached = true
+                            )
+                        }
                     }
-                    ImportFile(
-                        id = summary.id,
-                        title = summary.title,
-                        isBundled = false,
-                        fileUri = null,
-                        sourceType = ImportSourceType.REMOTE,
-                        remotePath = fullPath,
-                        description = summary.description
-                    )
-                }
+                )
 
                 val combined = remoteFiles + localFiles
-                _uiState.value = ImportUiState.Library(combined)
+                val errorMsg = if (remoteResult.isFailure && remoteFiles.isNotEmpty()) {
+                    "Offline: showing cached schedules"
+                } else if (remoteResult.isFailure) {
+                    "Failed to load remote schedules: ${remoteResult.exceptionOrNull()?.localizedMessage}"
+                } else {
+                    null
+                }
+
+                _uiState.value = ImportUiState.Library(combined, errorMsg)
             } catch (e: Exception) {
                 _uiState.value = ImportUiState.Library(emptyList(), "Failed to load library: ${e.localizedMessage}")
             }
@@ -128,8 +162,8 @@ class ImportViewModel @Inject constructor(
             _uiState.value = ImportUiState.Parsing
             try {
                 val schemaResult: Result<ScheduleJsonSchema> = when {
-                    file.sourceType == ImportSourceType.REMOTE && file.remotePath != null -> {
-                        repository.fetchRemoteScheduleSchema(file.remotePath)
+                    file.sourceType == ImportSourceType.REMOTE -> {
+                        repository.fetchRemoteScheduleSchema(context, file)
                     }
                     file.isBundled -> {
                         val jsonString = withContext(Dispatchers.IO) {

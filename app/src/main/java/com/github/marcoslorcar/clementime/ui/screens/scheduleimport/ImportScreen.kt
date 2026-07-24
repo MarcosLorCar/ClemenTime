@@ -135,6 +135,7 @@ fun ImportScreen(
         is ImportUiState.Library -> {
             ImportLibraryContent(
                 files = state.files,
+                error = state.error,
                 onNavigateBack = onNavigateBack,
                 onFileClick = { file -> viewModel.loadFile(context, file) },
                 onDeleteFileClick = { file -> viewModel.deleteFile(context, file) },
@@ -189,6 +190,7 @@ fun ImportScreen(
 @Composable
 fun ImportLibraryContent(
     files: List<ImportFile>,
+    error: String? = null,
     onNavigateBack: () -> Unit,
     onFileClick: (ImportFile) -> Unit,
     onDeleteFileClick: (ImportFile) -> Unit,
@@ -240,6 +242,33 @@ fun ImportLibraryContent(
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
+            if (!error.isNullOrBlank()) {
+                Surface(
+                    color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.8f),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = "Warning",
+                            tint = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = error,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
+            }
+
             val libraryListState = rememberLazyListState()
 
             LazyColumn(
@@ -286,28 +315,46 @@ fun ImportLibraryContent(
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
-                                Surface(
-                                    shape = RoundedCornerShape(4.dp),
-                                    color = when {
-                                        file.sourceType == com.github.marcoslorcar.clementime.data.importing.model.ImportSourceType.REMOTE -> MaterialTheme.colorScheme.primaryContainer
-                                        file.isBundled -> MaterialTheme.colorScheme.secondaryContainer
-                                        else -> MaterialTheme.colorScheme.tertiaryContainer
-                                    }
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(
-                                        text = when {
-                                            file.sourceType == com.github.marcoslorcar.clementime.data.importing.model.ImportSourceType.REMOTE -> "Online Repository"
-                                            file.isBundled -> stringResource(R.string.import_bundled_label)
-                                            else -> stringResource(R.string.import_custom_label)
-                                        },
-                                        style = MaterialTheme.typography.labelSmall,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    Surface(
+                                        shape = RoundedCornerShape(4.dp),
                                         color = when {
-                                            file.sourceType == com.github.marcoslorcar.clementime.data.importing.model.ImportSourceType.REMOTE -> MaterialTheme.colorScheme.onPrimaryContainer
-                                            file.isBundled -> MaterialTheme.colorScheme.onSecondaryContainer
-                                            else -> MaterialTheme.colorScheme.onTertiaryContainer
+                                            file.sourceType == com.github.marcoslorcar.clementime.data.importing.model.ImportSourceType.REMOTE -> MaterialTheme.colorScheme.primaryContainer
+                                            file.isBundled -> MaterialTheme.colorScheme.secondaryContainer
+                                            else -> MaterialTheme.colorScheme.tertiaryContainer
                                         }
-                                    )
+                                    ) {
+                                        Text(
+                                            text = when {
+                                                file.sourceType == com.github.marcoslorcar.clementime.data.importing.model.ImportSourceType.REMOTE -> "Online Repository"
+                                                file.isBundled -> stringResource(R.string.import_bundled_label)
+                                                else -> stringResource(R.string.import_custom_label)
+                                            },
+                                            style = MaterialTheme.typography.labelSmall,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                            color = when {
+                                                file.sourceType == com.github.marcoslorcar.clementime.data.importing.model.ImportSourceType.REMOTE -> MaterialTheme.colorScheme.onPrimaryContainer
+                                                file.isBundled -> MaterialTheme.colorScheme.onSecondaryContainer
+                                                else -> MaterialTheme.colorScheme.onTertiaryContainer
+                                            }
+                                        )
+                                    }
+                                    if (file.isCached) {
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = Color(0xFFC8E6C9)
+                                        ) {
+                                            Text(
+                                                text = "Saved",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                                color = Color(0xFF2E7D32)
+                                            )
+                                        }
+                                    }
                                 }
                             }
                             if (file.sourceType == com.github.marcoslorcar.clementime.data.importing.model.ImportSourceType.CUSTOM) {

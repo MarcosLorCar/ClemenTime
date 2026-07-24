@@ -5,6 +5,7 @@ import com.github.marcoslorcar.clementime.data.EntryType
 import com.github.marcoslorcar.clementime.data.ScheduleDao
 import com.github.marcoslorcar.clementime.data.Subject
 import com.github.marcoslorcar.clementime.data.SubjectWithSlots
+import com.github.marcoslorcar.clementime.data.SettingsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -55,11 +56,13 @@ class ConflictResolverViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var fakeDao: ConflictResolverViewModelTestFakeDao
+    private lateinit var fakeSettingsRepository: SettingsRepository
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         fakeDao = ConflictResolverViewModelTestFakeDao()
+        fakeSettingsRepository = SettingsRepository(context = null)
     }
 
     @After
@@ -80,7 +83,7 @@ class ConflictResolverViewModelTest {
         )
         fakeDao.subjectsFlow.value = subjects
 
-        val viewModel = ConflictResolverViewModel(fakeDao, null)
+        val viewModel = ConflictResolverViewModel(fakeDao, fakeSettingsRepository)
         val collectJob = launch {
             viewModel.uiState.collect {}
         }
@@ -107,7 +110,7 @@ class ConflictResolverViewModelTest {
 
         fakeDao.subjectsFlow.value = listOf(SubjectWithSlots(subject1, listOf(s1Theory, s1Lab1, s1Lab2)))
 
-        val viewModel = ConflictResolverViewModel(fakeDao, null)
+        val viewModel = ConflictResolverViewModel(fakeDao, fakeSettingsRepository)
         val collectJob = launch { viewModel.uiState.collect {} }
         var state = viewModel.uiState.value
         repeat(40) {
@@ -139,7 +142,7 @@ class ConflictResolverViewModelTest {
 
         fakeDao.subjectsFlow.value = listOf(SubjectWithSlots(subject1, listOf(s1Theory, s1Lab1, s1Lab2)))
 
-        val viewModel = ConflictResolverViewModel(fakeDao, null)
+        val viewModel = ConflictResolverViewModel(fakeDao, fakeSettingsRepository)
         val collectJob = launch { viewModel.uiState.collect {} }
         var state = viewModel.uiState.value
         repeat(40) {
@@ -162,7 +165,7 @@ class ConflictResolverViewModelTest {
 
         fakeDao.subjectsFlow.value = listOf(SubjectWithSlots(subject1, listOf(s1Lab1, s1Lab2)))
 
-        val viewModel = ConflictResolverViewModel(fakeDao, null)
+        val viewModel = ConflictResolverViewModel(fakeDao, fakeSettingsRepository)
         val collectJob = launch { viewModel.uiState.collect {} }
         var state = viewModel.uiState.value
         repeat(40) {
