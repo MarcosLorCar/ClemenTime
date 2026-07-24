@@ -55,32 +55,6 @@
           "name": "A",
           "matters": [
             {
-              "code": "Álgebra",
-              "name": "Algebra",
-              "color": null,
-              "theorySlots": [
-                {
-                  "dayOfWeek": "TUESDAY",
-                  "startTime": "08:30",
-                  "endTime": "10:00",
-                  "classroom": "A1.1-John Von N",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Jose Angel Martin"
-                },
-                {
-                  "dayOfWeek": "MONDAY",
-                  "startTime": "11:30",
-                  "endTime": "13:00",
-                  "classroom": "A1.1-John Von N",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Jose Angel Martin"
-                }
-              ],
-              "labVariants": {}
-            },
-            {
               "code": "SistInf",
               "name": "Sistemas de Informacion",
               "color": null,
@@ -181,6 +155,15 @@
                   "groupName": null,
                   "entryType": "THEORY",
                   "professor": "Fernando Rincon"
+                },
+                {
+                  "dayOfWeek": "MONDAY",
+                  "startTime": "11:30",
+                  "endTime": "13:00",
+                  "classroom": "A1.1-John Von N",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Jose Angel Martin"
                 },
                 {
                   "dayOfWeek": "TUESDAY",
@@ -425,35 +408,18 @@
                     "groupName": "Lab-B1",
                     "entryType": "LAB",
                     "professor": null
+                  },
+                  {
+                    "dayOfWeek": "TUESDAY",
+                    "startTime": "13:00",
+                    "endTime": "14:30",
+                    "classroom": "A2.2-Grace Murray",
+                    "groupName": "Lab-B1",
+                    "entryType": "LAB",
+                    "professor": "Eusebio Angulo"
                   }
                 ]
               }
-            },
-            {
-              "code": "Álgebra",
-              "name": "Algebra",
-              "color": null,
-              "theorySlots": [
-                {
-                  "dayOfWeek": "THURSDAY",
-                  "startTime": "08:30",
-                  "endTime": "10:00",
-                  "classroom": "A2.2-Grace Murray",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Eusebio Angulo"
-                },
-                {
-                  "dayOfWeek": "TUESDAY",
-                  "startTime": "13:00",
-                  "endTime": "14:30",
-                  "classroom": "A2.2-Grace Murray",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Eusebio Angulo"
-                }
-              ],
-              "labVariants": {}
             },
             {
               "code": "Redes I",
@@ -655,6 +621,15 @@
                     "professor": "Juan Carlos Lopez"
                   },
                   {
+                    "dayOfWeek": "THURSDAY",
+                    "startTime": "10:00",
+                    "endTime": "11:30",
+                    "classroom": "A1.2-Tim Berners-Lee",
+                    "groupName": null,
+                    "entryType": "LAB",
+                    "professor": "Eusebio Angulo"
+                  },
+                  {
                     "dayOfWeek": "WEDNESDAY",
                     "startTime": "13:00",
                     "endTime": "14:30",
@@ -703,6 +678,15 @@
                     "groupName": null,
                     "entryType": "LAB",
                     "professor": "Cristina Bolaños"
+                  },
+                  {
+                    "dayOfWeek": "MONDAY",
+                    "startTime": "11:30",
+                    "endTime": "13:00",
+                    "classroom": "A1.2-Tim Berners-Lee",
+                    "groupName": null,
+                    "entryType": "LAB",
+                    "professor": "Eusebio Angulo"
                   },
                   {
                     "dayOfWeek": "THURSDAY",
@@ -789,34 +773,6 @@
               }
             },
             {
-              "code": "Álgebra",
-              "name": "Algebra",
-              "color": null,
-              "theorySlots": [],
-              "labVariants": {
-                "Lab-1": [
-                  {
-                    "dayOfWeek": "THURSDAY",
-                    "startTime": "10:00",
-                    "endTime": "11:30",
-                    "classroom": "A1.2-Tim Berners-Lee",
-                    "groupName": null,
-                    "entryType": "LAB",
-                    "professor": "Eusebio Angulo"
-                  },
-                  {
-                    "dayOfWeek": "MONDAY",
-                    "startTime": "11:30",
-                    "endTime": "13:00",
-                    "classroom": "A1.2-Tim Berners-Lee",
-                    "groupName": null,
-                    "entryType": "LAB",
-                    "professor": "Eusebio Angulo"
-                  }
-                ]
-              }
-            },
-            {
               "code": "Algebra",
               "name": "Algebra",
               "color": null,
@@ -851,34 +807,6 @@
         {
           "name": "D",
           "matters": [
-            {
-              "code": "Álgebra",
-              "name": "Algebra",
-              "color": null,
-              "theorySlots": [],
-              "labVariants": {
-                "Lab-1": [
-                  {
-                    "dayOfWeek": "MONDAY",
-                    "startTime": "15:30",
-                    "endTime": "16:50",
-                    "classroom": "A1.2-Tim Berners-Lee",
-                    "groupName": null,
-                    "entryType": "LAB",
-                    "professor": "Eusebio Angulo"
-                  },
-                  {
-                    "dayOfWeek": "TUESDAY",
-                    "startTime": "18:30",
-                    "endTime": "20:00",
-                    "classroom": "A1.2-Tim Berners-Lee",
-                    "groupName": null,
-                    "entryType": "LAB",
-                    "professor": "Eusebio Angulo"
-                  }
-                ]
-              }
-            },
             {
               "code": "FPII",
               "name": "Fundamentos de Programacion II",
@@ -925,6 +853,15 @@
                     "groupName": "Lab-D2",
                     "entryType": "LAB",
                     "professor": null
+                  },
+                  {
+                    "dayOfWeek": "TUESDAY",
+                    "startTime": "18:30",
+                    "endTime": "20:00",
+                    "classroom": "A1.2-Tim Berners-Lee",
+                    "groupName": "Lab-D2",
+                    "entryType": "LAB",
+                    "professor": "Eusebio Angulo"
                   }
                 ],
                 "Lab-D1": [
@@ -1132,6 +1069,15 @@
                     "groupName": "Lab-A2",
                     "entryType": "LAB",
                     "professor": "Jesus Fontecha"
+                  },
+                  {
+                    "dayOfWeek": "TUESDAY",
+                    "startTime": "11:30",
+                    "endTime": "14:30",
+                    "classroom": "0.05-Edsger W. Dijkstra",
+                    "groupName": "Lab-A2",
+                    "entryType": "LAB",
+                    "professor": "Irene Garcia"
                   }
                 ],
                 "Lab-A1": [
@@ -1160,6 +1106,15 @@
                   "groupName": null,
                   "entryType": "THEORY",
                   "professor": "Jose Antonio Cruz"
+                },
+                {
+                  "dayOfWeek": "WEDNESDAY",
+                  "startTime": "10:00",
+                  "endTime": "11:30",
+                  "classroom": "0.05-Edsger W. Dijkstra",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Irene Garcia"
                 },
                 {
                   "dayOfWeek": "MONDAY",
@@ -1282,110 +1237,12 @@
                   }
                 ]
               }
-            },
-            {
-              "code": "Estadística",
-              "name": "Estadistica",
-              "color": null,
-              "theorySlots": [
-                {
-                  "dayOfWeek": "WEDNESDAY",
-                  "startTime": "10:00",
-                  "endTime": "11:30",
-                  "classroom": "0.05-Edsger W. Dijkstra",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Irene Garcia"
-                },
-                {
-                  "dayOfWeek": "TUESDAY",
-                  "startTime": "11:30",
-                  "endTime": "13:00",
-                  "classroom": "0.05-Edsger W. Dijkstra",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Irene Garcia"
-                }
-              ],
-              "labVariants": {
-                "Lab-A1": [
-                  {
-                    "dayOfWeek": "TUESDAY",
-                    "startTime": "13:00",
-                    "endTime": "14:30",
-                    "classroom": "0.05-Edsger W. Dijkstra",
-                    "groupName": "Lab-A1",
-                    "entryType": "LAB",
-                    "professor": "Irene Garcia"
-                  }
-                ]
-              }
             }
           ]
         },
         {
           "name": "B",
           "matters": [
-            {
-              "code": "Estadística",
-              "name": "Estadistica",
-              "color": null,
-              "theorySlots": [
-                {
-                  "dayOfWeek": "TUESDAY",
-                  "startTime": "08:30",
-                  "endTime": "10:00",
-                  "classroom": null,
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Eusebio Angulo"
-                },
-                {
-                  "dayOfWeek": "THURSDAY",
-                  "startTime": "13:00",
-                  "endTime": "14:30",
-                  "classroom": null,
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Eusebio Angulo"
-                }
-              ],
-              "labVariants": {
-                "Lab-B1": [
-                  {
-                    "dayOfWeek": "FRIDAY",
-                    "startTime": "11:30",
-                    "endTime": "13:00",
-                    "classroom": "LD4-John Carmack",
-                    "groupName": "Lab-B1",
-                    "entryType": "LAB",
-                    "professor": null
-                  }
-                ],
-                "Lab-B2": [
-                  {
-                    "dayOfWeek": "FRIDAY",
-                    "startTime": "13:00",
-                    "endTime": "14:30",
-                    "classroom": "LD4-John Carmack",
-                    "groupName": "Lab-B2",
-                    "entryType": "LAB",
-                    "professor": null
-                  }
-                ],
-                "Lab-BC1": [
-                  {
-                    "dayOfWeek": "TUESDAY",
-                    "startTime": "17:00",
-                    "endTime": "18:30",
-                    "classroom": "LD2-Dennis Ritchie",
-                    "groupName": "Lab-BC1",
-                    "entryType": "LAB",
-                    "professor": null
-                  }
-                ]
-              }
-            },
             {
               "code": "PCTR",
               "name": "Programacion Concurrente y de Tiempo Real",
@@ -1403,8 +1260,8 @@
                 {
                   "dayOfWeek": "FRIDAY",
                   "startTime": "10:00",
-                  "endTime": "11:30",
-                  "classroom": null,
+                  "endTime": "14:30",
+                  "classroom": "LD4-John Carmack",
                   "groupName": null,
                   "entryType": "THEORY",
                   "professor": "Miguel Angel Redondo"
@@ -1498,7 +1355,7 @@
                     "dayOfWeek": "TUESDAY",
                     "startTime": "17:00",
                     "endTime": "18:30",
-                    "classroom": "LD4-John Carmack",
+                    "classroom": "LD2-Dennis Ritchie",
                     "groupName": "Lab-BCD1",
                     "entryType": "LAB",
                     "professor": null
@@ -1540,6 +1397,15 @@
                     "groupName": "Lab-BD3",
                     "entryType": "LAB",
                     "professor": null
+                  },
+                  {
+                    "dayOfWeek": "THURSDAY",
+                    "startTime": "13:00",
+                    "endTime": "14:30",
+                    "classroom": "0.04-Hedy Lamarr",
+                    "groupName": "Lab-BD3",
+                    "entryType": "LAB",
+                    "professor": "Eusebio Angulo"
                   }
                 ],
                 "Lab-BD1": [
@@ -1654,6 +1520,15 @@
                     "groupName": "Lab-BCD2",
                     "entryType": "LAB",
                     "professor": "Ayudante Doctor LSI"
+                  },
+                  {
+                    "dayOfWeek": "THURSDAY",
+                    "startTime": "15:30",
+                    "endTime": "16:50",
+                    "classroom": "A2.2-Grace Murray",
+                    "groupName": "Lab-BCD2",
+                    "entryType": "LAB",
+                    "professor": "AyudanteDr.MAT"
                   }
                 ],
                 "Lab-C1": [
@@ -1790,55 +1665,6 @@
               }
             },
             {
-              "code": "Estadística",
-              "name": "Estadistica",
-              "color": null,
-              "theorySlots": [
-                {
-                  "dayOfWeek": "THURSDAY",
-                  "startTime": "15:30",
-                  "endTime": "16:50",
-                  "classroom": "A2.2-Grace Murray",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "AyudanteDr.MAT"
-                },
-                {
-                  "dayOfWeek": "MONDAY",
-                  "startTime": "18:30",
-                  "endTime": "20:00",
-                  "classroom": "A2.2-Grace Murray",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "AyudanteDr.MAT"
-                }
-              ],
-              "labVariants": {
-                "Lab-C2": [
-                  {
-                    "dayOfWeek": "TUESDAY",
-                    "startTime": "15:30",
-                    "endTime": "16:50",
-                    "classroom": "LD4-John Carmack",
-                    "groupName": "Lab-C2",
-                    "entryType": "LAB",
-                    "professor": null
-                  }
-                ],
-                "Lab-C1": [
-                  {
-                    "dayOfWeek": "MONDAY",
-                    "startTime": "20:00",
-                    "endTime": "21:30",
-                    "classroom": "A2.2-Grace Murray",
-                    "groupName": "Lab-C1",
-                    "entryType": "LAB",
-                    "professor": "AyudanteDr.MAT"
-                  }
-                ]
-              }
-            },
-            {
               "code": "Redes II",
               "name": "Redes II",
               "color": null,
@@ -1846,11 +1672,11 @@
                 {
                   "dayOfWeek": "MONDAY",
                   "startTime": "17:00",
-                  "endTime": "18:30",
+                  "endTime": "21:30",
                   "classroom": "A2.2-Grace Murray",
                   "groupName": null,
                   "entryType": "THEORY",
-                  "professor": null
+                  "professor": "AyudanteDr.MAT"
                 },
                 {
                   "dayOfWeek": "WEDNESDAY",
@@ -1904,32 +1730,6 @@
           "name": "D",
           "matters": [
             {
-              "code": "Estadística",
-              "name": "Estadistica",
-              "color": null,
-              "theorySlots": [
-                {
-                  "dayOfWeek": "TUESDAY",
-                  "startTime": "08:30",
-                  "endTime": "10:00",
-                  "classroom": null,
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Eusebio Angulo"
-                },
-                {
-                  "dayOfWeek": "THURSDAY",
-                  "startTime": "13:00",
-                  "endTime": "14:30",
-                  "classroom": null,
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Eusebio Angulo"
-                }
-              ],
-              "labVariants": {}
-            },
-            {
               "code": "PCTR",
               "name": "Programacion Concurrente y de Tiempo Real",
               "color": null,
@@ -1946,8 +1746,8 @@
                 {
                   "dayOfWeek": "FRIDAY",
                   "startTime": "10:00",
-                  "endTime": "11:30",
-                  "classroom": null,
+                  "endTime": "14:30",
+                  "classroom": "LD4-John Carmack",
                   "groupName": null,
                   "entryType": "THEORY",
                   "professor": "Miguel Angel Redondo"
@@ -2030,7 +1830,7 @@
                     "dayOfWeek": "TUESDAY",
                     "startTime": "17:00",
                     "endTime": "18:30",
-                    "classroom": "LD4-John Carmack",
+                    "classroom": "LD2-Dennis Ritchie",
                     "groupName": "Lab-BCD1",
                     "entryType": "LAB",
                     "professor": null
@@ -2072,6 +1872,15 @@
                     "groupName": "Lab-BD3",
                     "entryType": "LAB",
                     "professor": null
+                  },
+                  {
+                    "dayOfWeek": "THURSDAY",
+                    "startTime": "13:00",
+                    "endTime": "14:30",
+                    "classroom": "0.04-Hedy Lamarr",
+                    "groupName": "Lab-BD3",
+                    "entryType": "LAB",
+                    "professor": "Eusebio Angulo"
                   }
                 ],
                 "Lab-BD1": [
@@ -2173,6 +1982,15 @@
                   "professor": "Felix Oscar Garcia"
                 },
                 {
+                  "dayOfWeek": "TUESDAY",
+                  "startTime": "17:00",
+                  "endTime": "18:30",
+                  "classroom": "0.07-Claude Shannon",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Ester Castillo"
+                },
+                {
                   "dayOfWeek": "WEDNESDAY",
                   "startTime": "20:00",
                   "endTime": "21:30",
@@ -2267,6 +2085,15 @@
                   "groupName": null,
                   "entryType": "THEORY",
                   "professor": "Julian Ruiz"
+                },
+                {
+                  "dayOfWeek": "MONDAY",
+                  "startTime": "18:30",
+                  "endTime": "21:30",
+                  "classroom": "0.07-Claude Shannon",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Ester Castillo"
                 }
               ],
               "labVariants": {
@@ -2279,44 +2106,6 @@
                     "groupName": "Lab-CO",
                     "entryType": "LAB",
                     "professor": "Julian Ruiz"
-                  }
-                ]
-              }
-            },
-            {
-              "code": "TeoríaAC",
-              "name": "Teoria de Automatas y Computabilidad",
-              "color": null,
-              "theorySlots": [
-                {
-                  "dayOfWeek": "TUESDAY",
-                  "startTime": "17:00",
-                  "endTime": "18:30",
-                  "classroom": "0.07-Claude Shannon",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Ester Castillo"
-                },
-                {
-                  "dayOfWeek": "MONDAY",
-                  "startTime": "18:30",
-                  "endTime": "20:00",
-                  "classroom": "0.07-Claude Shannon",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Ester Castillo"
-                }
-              ],
-              "labVariants": {
-                "Lab-CO": [
-                  {
-                    "dayOfWeek": "MONDAY",
-                    "startTime": "20:00",
-                    "endTime": "21:30",
-                    "classroom": "0.07-Claude Shannon",
-                    "groupName": "Lab-CO",
-                    "entryType": "LAB",
-                    "professor": "Ester Castillo"
                   }
                 ]
               }
@@ -2620,44 +2409,6 @@
               }
             },
             {
-              "code": "DiseñoSW",
-              "name": "Diseno del Software",
-              "color": null,
-              "theorySlots": [
-                {
-                  "dayOfWeek": "WEDNESDAY",
-                  "startTime": "15:30",
-                  "endTime": "16:50",
-                  "classroom": null,
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Macario Polo"
-                },
-                {
-                  "dayOfWeek": "MONDAY",
-                  "startTime": "18:30",
-                  "endTime": "20:00",
-                  "classroom": null,
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Macario Polo"
-                }
-              ],
-              "labVariants": {
-                "Lab-IS": [
-                  {
-                    "dayOfWeek": "MONDAY",
-                    "startTime": "20:00",
-                    "endTime": "21:30",
-                    "classroom": null,
-                    "groupName": "Lab-IS",
-                    "entryType": "LAB",
-                    "professor": "Macario Polo"
-                  }
-                ]
-              }
-            },
-            {
               "code": "SIEmpresariales",
               "name": "Sistemas de Informacion Empresariales",
               "color": null,
@@ -2708,6 +2459,15 @@
                   "groupName": null,
                   "entryType": "THEORY",
                   "professor": "Eduardo Fernande"
+                },
+                {
+                  "dayOfWeek": "MONDAY",
+                  "startTime": "18:30",
+                  "endTime": "21:30",
+                  "classroom": null,
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Macario Polo"
                 },
                 {
                   "dayOfWeek": "WEDNESDAY",
@@ -3003,32 +2763,6 @@
                   "professor": "David Garcia Rosado"
                 },
                 {
-                  "dayOfWeek": "THURSDAY",
-                  "startTime": "11:30",
-                  "endTime": "14:30",
-                  "classroom": "A2.1-George Boole",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "David Garcia Rosado"
-                }
-              ],
-              "labVariants": {}
-            },
-            {
-              "code": "AuditoríaSI",
-              "name": "Auditoria de Sistemas de Informacion",
-              "color": null,
-              "theorySlots": [
-                {
-                  "dayOfWeek": "WEDNESDAY",
-                  "startTime": "08:30",
-                  "endTime": "11:30",
-                  "classroom": "A2.1-George Boole",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Ignacio Garcia Rodriguez"
-                },
-                {
                   "dayOfWeek": "TUESDAY",
                   "startTime": "10:00",
                   "endTime": "11:30",
@@ -3036,6 +2770,15 @@
                   "groupName": null,
                   "entryType": "THEORY",
                   "professor": "Ignacio Garcia Rodriguez"
+                },
+                {
+                  "dayOfWeek": "THURSDAY",
+                  "startTime": "11:30",
+                  "endTime": "14:30",
+                  "classroom": "A2.1-George Boole",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "David Garcia Rosado"
                 }
               ],
               "labVariants": {}
