@@ -740,7 +740,7 @@ private fun SubjectItemCard(
 
                             if (subjectWithSlots.slots.isEmpty()) {
                                 Text(
-                                    text = "No schedule slots assigned.",
+                                    text = stringResource(R.string.no_slots_assigned),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.padding(vertical = 4.dp)

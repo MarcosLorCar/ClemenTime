@@ -35,12 +35,14 @@ import com.github.marcoslorcar.clementime.data.SettingsRepository
 import com.github.marcoslorcar.clementime.ui.navigation.AddEditSubjectRoute
 import com.github.marcoslorcar.clementime.ui.navigation.ConflictResolverRoute
 import com.github.marcoslorcar.clementime.ui.navigation.ImportRoute
+import com.github.marcoslorcar.clementime.ui.navigation.OnboardingRoute
 import com.github.marcoslorcar.clementime.ui.navigation.ScheduleListRoute
 import com.github.marcoslorcar.clementime.ui.navigation.SettingsRoute
 import com.github.marcoslorcar.clementime.ui.navigation.SubjectsRoute
 import com.github.marcoslorcar.clementime.ui.screens.schedule.ScheduleScreen
 import com.github.marcoslorcar.clementime.ui.screens.settings.SettingsScreen
 import com.github.marcoslorcar.clementime.ui.screens.conflictresolver.ConflictResolverScreen
+import com.github.marcoslorcar.clementime.ui.screens.onboarding.OnboardingScreen
 import com.github.marcoslorcar.clementime.ui.screens.scheduleimport.ImportScreen
 import com.github.marcoslorcar.clementime.ui.screens.subject.AddEditSubjectScreen
 import com.github.marcoslorcar.clementime.ui.screens.subject.SubjectsScreen
@@ -61,6 +63,7 @@ class MainActivity : AppCompatActivity() {
         setContent {
             val themeMode by settingsRepository.themeFlow.collectAsState(initial = "system")
             val selectedTheme by settingsRepository.selectedThemeFlow.collectAsState(initial = "clementine")
+            val isOnboardingCompleted by settingsRepository.isOnboardingCompletedFlow.collectAsState(initial = null)
 
             val darkTheme = when (themeMode) {
                 "light" -> false
@@ -76,7 +79,9 @@ class MainActivity : AppCompatActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
                 ) {
-                    ClemenTimeApp()
+                    if (isOnboardingCompleted != null) {
+                        ClemenTimeApp(isOnboardingCompleted!!)
+                    }
                 }
             }
         }
@@ -84,15 +89,15 @@ class MainActivity : AppCompatActivity() {
 }
 
 @Composable
-fun ClemenTimeApp() {
+fun ClemenTimeApp(isOnboardingCompleted: Boolean) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
     val isNavVisible = currentDestination?.let { dest ->
-        dest.hasRoute(ScheduleListRoute::class) || 
+        (dest.hasRoute(ScheduleListRoute::class) || 
         dest.hasRoute(SubjectsRoute::class) || 
-        dest.hasRoute(SettingsRoute::class)
+        dest.hasRoute(SettingsRoute::class)) && !dest.hasRoute(OnboardingRoute::class)
     } ?: true
 
     val adaptiveInfo = currentWindowAdaptiveInfo()
@@ -111,35 +116,47 @@ fun ClemenTimeApp() {
     NavigationSuiteScaffold(
         layoutType = layoutType,
         navigationSuiteItems = {
-            items.forEach { (label, icon, routeClass) ->
-                item(
-                    selected = currentDestination?.hasRoute(routeClass) == true,
-                    onClick = {
-                        val route = when(routeClass) {
-                            ScheduleListRoute::class -> ScheduleListRoute()
-                            SubjectsRoute::class -> SubjectsRoute
-                            SettingsRoute::class -> SettingsRoute
-                            else -> return@item
-                        }
-                        navController.navigate(route) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
+            if (isOnboardingCompleted) {
+                items.forEach { (label, icon, routeClass) ->
+                    item(
+                        selected = currentDestination?.hasRoute(routeClass) == true,
+                        onClick = {
+                            val route = when (routeClass) {
+                                ScheduleListRoute::class -> ScheduleListRoute()
+                                SubjectsRoute::class -> SubjectsRoute
+                                SettingsRoute::class -> SettingsRoute
+                                else -> return@item
                             }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    },
-                    icon = { Icon(icon, contentDescription = null) },
-                    label = { Text(label) }
-                )
+                            navController.navigate(route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                        icon = { Icon(icon, contentDescription = null) },
+                        label = { Text(label) }
+                    )
+                }
             }
         }
     ) {
         NavHost(
             navController = navController,
-            startDestination = ScheduleListRoute(),
+            startDestination = if (isOnboardingCompleted) ScheduleListRoute() else OnboardingRoute,
             modifier = Modifier.fillMaxSize()
         ) {
+            composable<OnboardingRoute> {
+                OnboardingScreen(
+                    onFinish = {
+                        navController.navigate(ScheduleListRoute()) {
+                            popUpTo(OnboardingRoute) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
             composable<ScheduleListRoute> { backStackEntry ->
                 val route = backStackEntry.toRoute<ScheduleListRoute>()
                 ScheduleScreen(

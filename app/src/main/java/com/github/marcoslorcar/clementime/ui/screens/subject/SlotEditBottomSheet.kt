@@ -101,7 +101,7 @@ fun SlotEditBottomSheet(
             // Day of Week Filter Chips
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    text = "Day of Week",
+                    text = stringResource(R.string.day_of_week_label),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

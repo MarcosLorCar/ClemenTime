@@ -84,6 +84,7 @@ import com.github.marcoslorcar.clementime.data.EntryType
 import com.github.marcoslorcar.clementime.data.SubjectWithSlots
 import com.github.marcoslorcar.clementime.data.uiColor
 import com.github.marcoslorcar.clementime.ui.components.ClemenTimeTopBar
+import com.github.marcoslorcar.clementime.ui.components.OnboardingTooltip
 import com.github.marcoslorcar.clementime.ui.components.ScheduleMiniPreview
 import com.github.marcoslorcar.clementime.utils.ScheduleSolution
 import kotlinx.coroutines.launch
@@ -185,7 +186,10 @@ fun ConflictResolverScreen(
                     preferenceMode = uiState.preferenceMode,
                     onSelectPreferenceMode = viewModel::setPreferenceMode,
                     onToggleIgnored = viewModel::toggleSlotIgnored,
-                    onSelectLabGroup = viewModel::selectLabGroup
+                    onSelectLabGroup = viewModel::selectLabGroup,
+                    onboardingTooltipsEnabled = uiState.onboardingTooltipsEnabled,
+                    hasSeenPrioritiesTooltip = uiState.hasSeenPrioritiesTooltip,
+                    onMarkPrioritiesTooltipSeen = viewModel::markPrioritiesTooltipSeen
                 )
             }
         }
@@ -217,7 +221,10 @@ fun ConflictResolverScreen(
                 subjects = uiState.subjects,
                 onSelectSolution = { solution ->
                     solutionToConfirm = solution
-                }
+                },
+                onboardingTooltipsEnabled = uiState.onboardingTooltipsEnabled,
+                hasSeenApplyTooltip = uiState.hasSeenApplyTooltip,
+                onMarkApplyTooltipSeen = viewModel::markApplyTooltipSeen
             )
         }
     }
@@ -265,7 +272,10 @@ fun UnifiedWorkspace(
     preferenceMode: PreferenceMode,
     onSelectPreferenceMode: (PreferenceMode) -> Unit,
     onToggleIgnored: (Long, Boolean) -> Unit,
-    onSelectLabGroup: (Long, String?) -> Unit
+    onSelectLabGroup: (Long, String?) -> Unit,
+    onboardingTooltipsEnabled: Boolean = true,
+    hasSeenPrioritiesTooltip: Boolean = false,
+    onMarkPrioritiesTooltipSeen: () -> Unit = {}
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -280,23 +290,42 @@ fun UnifiedWorkspace(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
-                SingleChoiceSegmentedButtonRow(
-                    modifier = Modifier.fillMaxWidth()
+                OnboardingTooltip(
+                    text = stringResource(R.string.tooltip_resolver_priorities_desc),
+                    title = stringResource(R.string.tooltip_resolver_priorities_title),
+                    show = onboardingTooltipsEnabled && !hasSeenPrioritiesTooltip,
+                    onDismiss = onMarkPrioritiesTooltipSeen
                 ) {
-                    SegmentedButton(
-                        selected = preferenceMode == PreferenceMode.FREE_DAYS,
-                        onClick = { onSelectPreferenceMode(PreferenceMode.FREE_DAYS) },
-                        shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
-                        icon = { Icon(Icons.Default.DateRange, contentDescription = null, modifier = Modifier.size(18.dp)) },
-                        label = { Text(stringResource(R.string.conflict_resolver_pref_free_days)) }
-                    )
-                    SegmentedButton(
-                        selected = preferenceMode == PreferenceMode.COMPACTNESS,
-                        onClick = { onSelectPreferenceMode(PreferenceMode.COMPACTNESS) },
-                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
-                        icon = { Icon(Icons.Default.Compress, contentDescription = null, modifier = Modifier.size(18.dp)) },
-                        label = { Text(stringResource(R.string.conflict_resolver_pref_compact)) }
-                    )
+                    SingleChoiceSegmentedButtonRow(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        SegmentedButton(
+                            selected = preferenceMode == PreferenceMode.FREE_DAYS,
+                            onClick = { onSelectPreferenceMode(PreferenceMode.FREE_DAYS) },
+                            shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                            icon = {
+                                Icon(
+                                    Icons.Default.DateRange,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            },
+                            label = { Text(stringResource(R.string.conflict_resolver_pref_free_days)) }
+                        )
+                        SegmentedButton(
+                            selected = preferenceMode == PreferenceMode.COMPACTNESS,
+                            onClick = { onSelectPreferenceMode(PreferenceMode.COMPACTNESS) },
+                            shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                            icon = {
+                                Icon(
+                                    Icons.Default.Compress,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            },
+                            label = { Text(stringResource(R.string.conflict_resolver_pref_compact)) }
+                        )
+                    }
                 }
             }
         }
@@ -488,7 +517,10 @@ fun SubjectConfigCard(
 fun SolutionsSheetContent(
     solutions: List<ScheduleSolution>,
     subjects: List<SubjectWithSlots>,
-    onSelectSolution: (ScheduleSolution) -> Unit
+    onSelectSolution: (ScheduleSolution) -> Unit,
+    onboardingTooltipsEnabled: Boolean = true,
+    hasSeenApplyTooltip: Boolean = false,
+    onMarkApplyTooltipSeen: () -> Unit = {}
 ) {
     if (solutions.isEmpty()) {
         Box(
@@ -521,10 +553,17 @@ fun SolutionsSheetContent(
                 "solution_${solution.labSelections.entries.sortedBy { it.key }.joinToString { "${it.key}:${it.value.joinToString(",")}" }}_${solution.totalSlots.size}"
             }
         ) { solution ->
+            // Show tooltip only for the first non-current solution
+            val isFirstNonCurrent = remember(solutions, solution) {
+                solutions.firstOrNull { !it.isCurrent } == solution
+            }
+
             SolutionCard(
                 solution = solution,
                 allSubjects = subjects,
-                onApply = { onSelectSolution(solution) }
+                onApply = { onSelectSolution(solution) },
+                showOnboardingTooltip = isFirstNonCurrent && onboardingTooltipsEnabled && !hasSeenApplyTooltip,
+                onMarkApplyTooltipSeen = onMarkApplyTooltipSeen
             )
         }
     }
@@ -535,7 +574,9 @@ fun SolutionsSheetContent(
 fun SolutionCard(
     solution: ScheduleSolution,
     allSubjects: List<SubjectWithSlots>,
-    onApply: () -> Unit
+    onApply: () -> Unit,
+    showOnboardingTooltip: Boolean = false,
+    onMarkApplyTooltipSeen: () -> Unit = {}
 ) {
     val isCurrent = solution.isCurrent
     val hasOverlaps = solution.overlapsCount > 0
@@ -610,23 +651,30 @@ fun SolutionCard(
                     )
                 }
 
-                Button(
-                    onClick = onApply,
-                    enabled = !isCurrent
+                OnboardingTooltip(
+                    text = stringResource(R.string.tooltip_resolver_apply_desc),
+                    title = stringResource(R.string.tooltip_resolver_apply_title),
+                    show = showOnboardingTooltip,
+                    onDismiss = onMarkApplyTooltipSeen
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (isCurrent) {
-                            stringResource(R.string.conflict_resolver_applied)
-                        } else {
-                            stringResource(R.string.conflict_resolver_apply)
-                        }
-                    )
+                    Button(
+                        onClick = onApply,
+                        enabled = !isCurrent
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (isCurrent) {
+                                stringResource(R.string.conflict_resolver_applied)
+                            } else {
+                                stringResource(R.string.conflict_resolver_apply)
+                            }
+                        )
+                    }
                 }
             }
 

@@ -29,7 +29,8 @@ data class SettingsUiState(
     val nowLineStyle: String = "discrete",
     val highContrast: Boolean = false,
     val selectedTheme: String = "clementine",
-    val githubRepoBaseUrl: String = "https://raw.githubusercontent.com/MarcosLorCar/ClemenTime/master/schedules/dist/"
+    val githubRepoBaseUrl: String = "https://raw.githubusercontent.com/MarcosLorCar/ClemenTime/master/schedules/dist/",
+    val onboardingTooltipsEnabled: Boolean = true
 )
 
 sealed interface ExportStatus {
@@ -47,27 +48,26 @@ class SettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
-    val uiState: StateFlow<SettingsUiState> = combine(
+    val uiState: StateFlow<SettingsUiState> = combine<Any?, SettingsUiState>(
         settingsRepository.themeFlow,
         settingsRepository.scrollableTabsFlow,
         settingsRepository.showNowLineFlow,
         settingsRepository.nowLineStyleFlow,
-        combine(
-            settingsRepository.highContrastFlow,
-            settingsRepository.selectedThemeFlow,
-            settingsRepository.githubRepoBaseUrlFlow,
-            ::Triple
-        )
-    ) { theme, scrollable, showNowLine, nowLineStyle, (highContrast, selectedTheme, repoUrl) ->
+        settingsRepository.highContrastFlow,
+        settingsRepository.selectedThemeFlow,
+        settingsRepository.githubRepoBaseUrlFlow,
+        settingsRepository.onboardingTooltipsEnabledFlow
+    ) { args: Array<Any?> ->
         SettingsUiState(
-            themeMode = theme,
-            appLanguage = getCurrentLanguage(),
-            scrollableTabs = scrollable,
-            showNowLine = showNowLine,
-            nowLineStyle = nowLineStyle,
-            highContrast = highContrast,
-            selectedTheme = selectedTheme,
-            githubRepoBaseUrl = repoUrl
+            themeMode = args[0] as String,
+            scrollableTabs = args[1] as Boolean,
+            showNowLine = args[2] as Boolean,
+            nowLineStyle = args[3] as String,
+            highContrast = args[4] as Boolean,
+            selectedTheme = args[5] as String,
+            githubRepoBaseUrl = args[6] as String,
+            onboardingTooltipsEnabled = args[7] as Boolean,
+            appLanguage = getCurrentLanguage()
         )
     }.stateIn(
         scope = viewModelScope,
@@ -130,6 +130,12 @@ class SettingsViewModel @Inject constructor(
     fun setSelectedTheme(theme: String) {
         viewModelScope.launch {
             settingsRepository.setSelectedTheme(theme)
+        }
+    }
+
+    fun setOnboardingTooltipsEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setOnboardingTooltipsEnabled(enabled)
         }
     }
 

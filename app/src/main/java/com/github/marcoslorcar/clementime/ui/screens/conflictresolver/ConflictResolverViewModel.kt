@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.marcoslorcar.clementime.data.ScheduleDao
+import com.github.marcoslorcar.clementime.data.SettingsRepository
 import com.github.marcoslorcar.clementime.data.SubjectWithSlots
 import com.github.marcoslorcar.clementime.ui.widget.ScheduleWidgetUtils
 import com.github.marcoslorcar.clementime.utils.ConflictSolver
@@ -30,12 +31,16 @@ data class ConflictResolverUiState(
     val solutions: List<ScheduleSolution> = emptyList(),
     val subjects: List<SubjectWithSlots> = emptyList(),
     val preferenceMode: PreferenceMode = PreferenceMode.FREE_DAYS,
-    val canUndo: Boolean = false
+    val canUndo: Boolean = false,
+    val onboardingTooltipsEnabled: Boolean = true,
+    val hasSeenPrioritiesTooltip: Boolean = false,
+    val hasSeenApplyTooltip: Boolean = false
 )
 
 @HiltViewModel
 class ConflictResolverViewModel @Inject constructor(
     private val dao: ScheduleDao,
+    private val settingsRepository: SettingsRepository,
     @ApplicationContext private val context: Context? = null
 ) : ViewModel() {
 
@@ -44,8 +49,11 @@ class ConflictResolverViewModel @Inject constructor(
 
     val uiState: StateFlow<ConflictResolverUiState> = combine(
         dao.getAllSubjectsWithSlots(),
-        _preferenceMode
-    ) { subjects, prefMode ->
+        _preferenceMode,
+        settingsRepository.onboardingTooltipsEnabledFlow,
+        settingsRepository.hasSeenResolverPrioritiesTooltipFlow,
+        settingsRepository.hasSeenResolverApplyTooltipFlow
+    ) { subjects, prefMode, onboardingEnabled, seenPriorities, seenApply ->
         try {
             val solutions = ConflictSolver.findSolutions(subjects)
             val mappedSolutions = solutions.map { solution ->
@@ -76,14 +84,20 @@ class ConflictResolverViewModel @Inject constructor(
                 solutions = sortedSolutions,
                 subjects = subjects,
                 preferenceMode = prefMode,
-                canUndo = lastAppliedLabSelections != null
+                canUndo = lastAppliedLabSelections != null,
+                onboardingTooltipsEnabled = onboardingEnabled,
+                hasSeenPrioritiesTooltip = seenPriorities,
+                hasSeenApplyTooltip = seenApply
             )
         } catch (_: Exception) {
             ConflictResolverUiState(
                 isLoading = false,
                 subjects = subjects,
                 preferenceMode = prefMode,
-                canUndo = lastAppliedLabSelections != null
+                canUndo = lastAppliedLabSelections != null,
+                onboardingTooltipsEnabled = onboardingEnabled,
+                hasSeenPrioritiesTooltip = seenPriorities,
+                hasSeenApplyTooltip = seenApply
             )
         }
     }
@@ -131,6 +145,18 @@ class ConflictResolverViewModel @Inject constructor(
         viewModelScope.launch {
             dao.updateSelectedLabGroup(subjectId, labGroupName)
             ScheduleWidgetUtils.updateWidget(context)
+        }
+    }
+
+    fun markPrioritiesTooltipSeen() {
+        viewModelScope.launch {
+            settingsRepository.setHasSeenResolverPrioritiesTooltip(true)
+        }
+    }
+
+    fun markApplyTooltipSeen() {
+        viewModelScope.launch {
+            settingsRepository.setHasSeenResolverApplyTooltip(true)
         }
     }
 }

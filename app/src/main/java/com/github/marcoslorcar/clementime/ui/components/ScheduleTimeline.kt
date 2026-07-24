@@ -23,6 +23,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.ui.res.stringResource
+import com.github.marcoslorcar.clementime.R
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -199,7 +201,7 @@ fun ScheduleTimeline(
             if (clusters.isEmpty()) {
                 val dayName = dayOfWeek?.getDisplayName(TextStyle.FULL, Locale.getDefault()) ?: ""
                 Text(
-                    text = "No classes scheduled for $dayName.",
+                    text = stringResource(R.string.empty_schedule_day, dayName),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                     modifier = Modifier

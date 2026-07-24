@@ -59,6 +59,7 @@ import com.github.marcoslorcar.clementime.data.Subject
 import com.github.marcoslorcar.clementime.data.SubjectWithSlots
 import com.github.marcoslorcar.clementime.ui.components.ClassSlotItemCard
 import com.github.marcoslorcar.clementime.ui.components.ClemenTimeTopBar
+import com.github.marcoslorcar.clementime.ui.components.OnboardingTooltip
 import com.github.marcoslorcar.clementime.ui.components.ScheduleTimeline
 import com.github.marcoslorcar.clementime.ui.screens.subject.ClassSlotUiModel
 import com.github.marcoslorcar.clementime.ui.screens.subject.toUiModel
@@ -105,7 +106,8 @@ fun ScheduleScreen(
         onNavigateToConflictResolver = onNavigateToConflictResolver,
         onMenuClick = onMenuClick,
         onClickSubject = onClickSubject,
-        onDeleteSlot = viewModel::deleteSlot
+        onDeleteSlot = viewModel::deleteSlot,
+        onMarkOptimizerTooltipSeen = viewModel::markOptimizerTooltipSeen
     )
 }
 
@@ -119,7 +121,8 @@ fun ScheduleContent(
     onNavigateToConflictResolver: () -> Unit,
     onMenuClick: (() -> Unit)? = null,
     onClickSubject: (Long, Long) -> Unit = { _, _ -> },
-    onDeleteSlot: (Long) -> Unit = { _ -> }
+    onDeleteSlot: (Long) -> Unit = { _ -> },
+    onMarkOptimizerTooltipSeen: () -> Unit = {}
 ) {
     val coroutineScope = rememberCoroutineScope()
     val tabs = ScheduleTab.entries
@@ -146,16 +149,18 @@ fun ScheduleContent(
         }
     }
 
-    // Synchronize Pager state with ViewModel only when it settles
+    // Synchronize Pager state with ViewModel only when it settles and we're not programmatically scrolling
     LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.settledPage }.collect { page ->
-            onChangeTab(tabs[page])
+            if (!pagerState.isScrollInProgress) {
+                onChangeTab(tabs[page])
+            }
         }
     }
 
     // Synchronize Pager page when ViewModel changes selectedTab (e.g. via navigation)
     LaunchedEffect(uiState.selectedTab) {
-        if (pagerState.currentPage != uiState.selectedTab.ordinal) {
+        if (!uiState.isLoading && pagerState.currentPage != uiState.selectedTab.ordinal) {
             pagerState.scrollToPage(uiState.selectedTab.ordinal)
         }
     }
@@ -168,25 +173,32 @@ fun ScheduleContent(
                     title = stringResource(R.string.schedule_screen_title),
                     actions = {
                         if (uiState.subjectsWithSlots.isNotEmpty()) {
-                            IconButton(onClick = onNavigateToConflictResolver) {
-                                if (uiState.hasOverlaps) {
-                                    BadgedBox(
-                                        badge = {
-                                            Badge {
-                                                Text("!")
+                            OnboardingTooltip(
+                                text = stringResource(R.string.tooltip_optimizer_desc),
+                                title = stringResource(R.string.tooltip_optimizer_title),
+                                show = uiState.onboardingTooltipsEnabled && !uiState.hasSeenOptimizerTooltip && uiState.hasOverlaps,
+                                onDismiss = onMarkOptimizerTooltipSeen
+                            ) {
+                                IconButton(onClick = onNavigateToConflictResolver) {
+                                    if (uiState.hasOverlaps) {
+                                        BadgedBox(
+                                            badge = {
+                                                Badge {
+                                                    Text("!")
+                                                }
                                             }
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.AutoFixHigh,
+                                                contentDescription = stringResource(R.string.resolve_conflicts_tooltip)
+                                            )
                                         }
-                                    ) {
+                                    } else {
                                         Icon(
                                             imageVector = Icons.Default.AutoFixHigh,
                                             contentDescription = stringResource(R.string.resolve_conflicts_tooltip)
                                         )
                                     }
-                                } else {
-                                    Icon(
-                                        imageVector = Icons.Default.AutoFixHigh,
-                                        contentDescription = stringResource(R.string.resolve_conflicts_tooltip)
-                                    )
                                 }
                             }
                         }

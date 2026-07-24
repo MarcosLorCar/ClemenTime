@@ -109,6 +109,11 @@ The script persists confirmed mappings in `mappings.json`:
     "Antonio.Adan": "Antonio Adán",
     "PeterS.Normile": "Peter S. Normile",
     "Javier.Verdugo": "Javier Verdugo"
+  },
+  "classrooms": {
+    "0.04-Hedy": "0.04-Hedy Lamarr",
+    "0.05-Eds": "0.05-Edsger W.",
+    "LD2-Den": "LD2-Dennis Ritchie"
   }
 }
 ```

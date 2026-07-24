@@ -74,7 +74,7 @@
           "dayOfWeek": "MONDAY",
           "startTime": "15:30",
           "endTime": "16:50",
-          "classroom": "A1.2-Tim Berner",
+          "classroom": "A1.2-Tim Berners-Lee",
           "groupName": null,
           "entryType": "THEORY",
           "professor": "Eusebio Angulo"
@@ -154,10 +154,10 @@
           "dayOfWeek": "WEDNESDAY",
           "startTime": "18:30",
           "endTime": "21:30",
-          "classroom": "A2.2-Grace Murray",
+          "classroom": "A1.2-Tim Berners-Lee",
           "groupName": null,
           "entryType": "THEORY",
-          "professor": "Santiago Sanchez"
+          "professor": "Inocente Sanchez"
         },
         {
           "dayOfWeek": "WEDNESDAY",

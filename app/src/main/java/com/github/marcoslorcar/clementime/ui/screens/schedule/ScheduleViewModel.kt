@@ -31,7 +31,9 @@ data class ScheduleUiState(
     val nowLineStyle: String = "discrete",
     val highContrast: Boolean = false,
     val hasOverlaps: Boolean = false,
-    val highlightSlotId: Long? = null
+    val highlightSlotId: Long? = null,
+    val onboardingTooltipsEnabled: Boolean = true,
+    val hasSeenOptimizerTooltip: Boolean = false
 )
 
 private data class SettingsAndHighlight(
@@ -39,13 +41,15 @@ private data class SettingsAndHighlight(
     val showNowLine: Boolean,
     val nowLineStyle: String,
     val highContrast: Boolean,
-    val highlightSlotId: Long?
+    val highlightSlotId: Long?,
+    val onboardingTooltipsEnabled: Boolean,
+    val hasSeenOptimizerTooltip: Boolean
 )
 
 @HiltViewModel
 class ScheduleViewModel @Inject constructor(
     private val scheduleDao: ScheduleDao,
-    settingsRepository: SettingsRepository,
+    private val settingsRepository: SettingsRepository,
     savedStateHandle: SavedStateHandle,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
@@ -80,14 +84,25 @@ class ScheduleViewModel @Inject constructor(
     val uiState: StateFlow<ScheduleUiState> = combine(
         scheduleDao.getActiveSubjectsWithSlots(),
         _selectedTab,
-        combine(
+        combine<Any?, SettingsAndHighlight>(
             settingsRepository.scrollableTabsFlow,
             settingsRepository.showNowLineFlow,
             settingsRepository.nowLineStyleFlow,
             settingsRepository.highContrastFlow,
-            savedStateHandle.getStateFlow<Long?>("highlightSlotId", route?.highlightSlotId),
-            ::SettingsAndHighlight
-        )
+            savedStateHandle.getStateFlow("highlightSlotId", route?.highlightSlotId),
+            settingsRepository.onboardingTooltipsEnabledFlow,
+            settingsRepository.hasSeenOptimizerTooltipFlow
+        ) { args ->
+            SettingsAndHighlight(
+                scrollable = args[0] as Boolean,
+                showNowLine = args[1] as Boolean,
+                nowLineStyle = args[2] as String,
+                highContrast = args[3] as Boolean,
+                highlightSlotId = args[4] as Long?,
+                onboardingTooltipsEnabled = args[5] as Boolean,
+                hasSeenOptimizerTooltip = args[6] as Boolean
+            )
+        }
     ) { rawSubjects, selectedTab, settings ->
         val filteredSubjects = rawSubjects.map { sWithSlots ->
             val filteredSlots = sWithSlots.slots.filter { slot ->
@@ -109,7 +124,9 @@ class ScheduleViewModel @Inject constructor(
             nowLineStyle = settings.nowLineStyle,
             highContrast = settings.highContrast,
             hasOverlaps = hasOverlaps,
-            highlightSlotId = settings.highlightSlotId ?: route?.highlightSlotId
+            highlightSlotId = settings.highlightSlotId ?: route?.highlightSlotId,
+            onboardingTooltipsEnabled = settings.onboardingTooltipsEnabled,
+            hasSeenOptimizerTooltip = settings.hasSeenOptimizerTooltip
         )
     }.stateIn(
         scope = viewModelScope,
@@ -125,6 +142,12 @@ class ScheduleViewModel @Inject constructor(
         viewModelScope.launch {
             scheduleDao.deleteSlotById(slotId)
             ScheduleWidgetUtils.updateWidget(context)
+        }
+    }
+
+    fun markOptimizerTooltipSeen() {
+        viewModelScope.launch {
+            settingsRepository.setHasSeenOptimizerTooltip(true)
         }
     }
 

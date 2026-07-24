@@ -75,6 +75,7 @@ import com.github.marcoslorcar.clementime.data.importing.model.JsonYear
 import com.github.marcoslorcar.clementime.data.importing.model.ScheduleJsonSchema
 import com.github.marcoslorcar.clementime.data.importing.model.SelectedSubject
 import com.github.marcoslorcar.clementime.ui.components.ClemenTimeTopBar
+import com.github.marcoslorcar.clementime.ui.components.OnboardingTooltip
 import com.github.marcoslorcar.clementime.ui.components.ScheduleMiniPreview
 import com.github.marcoslorcar.clementime.ui.screens.scheduleimport.model.ConflictDetail
 import com.github.marcoslorcar.clementime.ui.screens.scheduleimport.model.ConflictStatus
@@ -148,7 +149,8 @@ fun ImportScreen(
                 onDeselectAll = { viewModel.deselectAll() },
                 onUpdateSearchQuery = viewModel::updateSearchQuery,
                 onConfirmImport = { viewModel.confirmImport() },
-                onResetState = { viewModel.resetToLibrary(context) }
+                onResetState = { viewModel.resetToLibrary(context) },
+                onMarkConflictTooltipSeen = viewModel::markConflictTooltipSeen
             )
         }
         is ImportUiState.Error -> {
@@ -232,7 +234,7 @@ fun ImportLibraryContent(
                 .padding(16.dp)
         ) {
             Text(
-                text = "Select a schedule template from the library or import a custom schedule JSON file to pick subjects.",
+                text = stringResource(R.string.import_schedule_instructions),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 16.dp)
@@ -345,7 +347,8 @@ fun ImportContent(
     onDeselectAll: () -> Unit,
     onUpdateSearchQuery: (String) -> Unit,
     onConfirmImport: () -> Unit,
-    onResetState: () -> Unit
+    onResetState: () -> Unit,
+    onMarkConflictTooltipSeen: () -> Unit = {}
 ) {
     var isSearchVisible by remember { mutableStateOf(false) }
     var showConflictDialog by remember { mutableStateOf(false) }
@@ -375,12 +378,19 @@ fun ImportContent(
                             )
                         }
                         is ConflictStatus.Conflict -> {
-                            IconButton(onClick = { showConflictDialog = true }) {
-                                Icon(
-                                    imageVector = Icons.Default.Warning,
-                                    contentDescription = "Conflicts detected",
-                                    tint = MaterialTheme.colorScheme.error
-                                )
+                            OnboardingTooltip(
+                                text = stringResource(R.string.tooltip_import_conflict_desc),
+                                title = stringResource(R.string.tooltip_import_conflict_title),
+                                show = uiState.onboardingEnabled && !uiState.hasSeenConflictTooltip,
+                                onDismiss = onMarkConflictTooltipSeen
+                            ) {
+                                IconButton(onClick = { showConflictDialog = true }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Warning,
+                                        contentDescription = "Conflicts detected",
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                }
                             }
                         }
                         ConflictStatus.None -> {}

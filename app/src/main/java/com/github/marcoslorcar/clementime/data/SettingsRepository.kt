@@ -26,6 +26,12 @@ open class SettingsRepository @Inject constructor(
     private val highContrastKey = booleanPreferencesKey("high_contrast")
     private val selectedThemeKey = stringPreferencesKey("selected_theme")
     private val githubRepoBaseUrlKey = stringPreferencesKey("github_repo_base_url")
+    private val isOnboardingCompletedKey = booleanPreferencesKey("is_onboarding_completed")
+    private val onboardingTooltipsEnabledKey = booleanPreferencesKey("onboarding_tooltips_enabled")
+    private val hasSeenImportConflictTooltipKey = booleanPreferencesKey("has_seen_import_conflict_tooltip")
+    private val hasSeenOptimizerTooltipKey = booleanPreferencesKey("has_seen_optimizer_tooltip")
+    private val hasSeenResolverPrioritiesTooltipKey = booleanPreferencesKey("has_seen_resolver_priorities_tooltip")
+    private val hasSeenResolverApplyTooltipKey = booleanPreferencesKey("has_seen_resolver_apply_tooltip")
 
 
     open val themeFlow: Flow<String>
@@ -98,6 +104,66 @@ open class SettingsRepository @Inject constructor(
         }
 
 
+    open val isOnboardingCompletedFlow: Flow<Boolean>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[isOnboardingCompletedKey] ?: false
+            } ?: kotlinx.coroutines.flow.flowOf(false)
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf(false)
+        }
+
+
+    open val onboardingTooltipsEnabledFlow: Flow<Boolean>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[onboardingTooltipsEnabledKey] ?: true
+            } ?: kotlinx.coroutines.flow.flowOf(true)
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf(true)
+        }
+
+
+    open val hasSeenImportConflictTooltipFlow: Flow<Boolean>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[hasSeenImportConflictTooltipKey] ?: false
+            } ?: kotlinx.coroutines.flow.flowOf(false)
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf(false)
+        }
+
+
+    open val hasSeenOptimizerTooltipFlow: Flow<Boolean>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[hasSeenOptimizerTooltipKey] ?: false
+            } ?: kotlinx.coroutines.flow.flowOf(false)
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf(false)
+        }
+
+
+    open val hasSeenResolverPrioritiesTooltipFlow: Flow<Boolean>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[hasSeenResolverPrioritiesTooltipKey] ?: false
+            } ?: kotlinx.coroutines.flow.flowOf(false)
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf(false)
+        }
+
+
+    open val hasSeenResolverApplyTooltipFlow: Flow<Boolean>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[hasSeenResolverApplyTooltipKey] ?: false
+            } ?: kotlinx.coroutines.flow.flowOf(false)
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf(false)
+        }
+
+
     open suspend fun setThemeMode(theme: String) {
         try {
             context?.dataStore?.edit { preferences ->
@@ -156,6 +222,60 @@ open class SettingsRepository @Inject constructor(
         try {
             context?.dataStore?.edit { preferences ->
                 preferences[selectedThemeKey] = theme
+            }
+        } catch (_: Throwable) {}
+    }
+
+
+    open suspend fun setOnboardingCompleted(completed: Boolean) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[isOnboardingCompletedKey] = completed
+            }
+        } catch (_: Throwable) {}
+    }
+
+
+    open suspend fun setOnboardingTooltipsEnabled(enabled: Boolean) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[onboardingTooltipsEnabledKey] = enabled
+            }
+        } catch (_: Throwable) {}
+    }
+
+
+    open suspend fun setHasSeenImportConflictTooltip(seen: Boolean) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[hasSeenImportConflictTooltipKey] = seen
+            }
+        } catch (_: Throwable) {}
+    }
+
+
+    open suspend fun setHasSeenOptimizerTooltip(seen: Boolean) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[hasSeenOptimizerTooltipKey] = seen
+            }
+        } catch (_: Throwable) {}
+    }
+
+
+    open suspend fun setHasSeenResolverPrioritiesTooltip(seen: Boolean) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[hasSeenResolverPrioritiesTooltipKey] = seen
+            }
+        } catch (_: Throwable) {}
+    }
+
+
+    open suspend fun setHasSeenResolverApplyTooltip(seen: Boolean) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[hasSeenResolverApplyTooltipKey] = seen
             }
         } catch (_: Throwable) {}
     }

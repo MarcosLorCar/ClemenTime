@@ -49,7 +49,7 @@
     <string name="interface_header">Interfaz</string>
     <string name="language_setting_title">Idioma</string>
     <string name="theme_setting_title">Tema</string>
-    <string name="theme_system">Predeterminado</string>
+    <string name="theme_system">Sistema</string>
     <string name="theme_light">Modo Claro</string>
     <string name="theme_dark">Modo Oscuro</string>
     <string name="tab_layout_setting_title">Diseño de Pestañas</string>
@@ -209,5 +209,41 @@
     <string name="widget_description">Muestra el horario de hoy o de mañana con centrado dinamico.</string>
     <string name="widget_today_title">HOY (%1$s)</string>
     <string name="widget_tomorrow_title">MAÑANA (%1$s)</string>
+
+    <!-- Onboarding & Guidance -->
+    <string name="onboarding_got_it">Entendido</string>
+    <string name="onboarding_tooltips_setting_title">Mensajes de Ayuda</string>
+    <string name="onboarding_tooltips_setting_desc">Mostrar mensajes de ayuda para nuevas funciones y acciones discretas</string>
+    <string name="help_guidance_header">Ayuda y Guía</string>
+
+    <!-- Tooltip Contents -->
+    <string name="tooltip_import_conflict_title">Conflictos Detectados</string>
+    <string name="tooltip_import_conflict_desc">Algunas asignaturas seleccionadas tienen clases de teoría que se solapan o no tienen grupos de laboratorio compatibles. Pulsa para ver detalles.</string>
+    <string name="tooltip_optimizer_title">Optimizador de Horario</string>
+    <string name="tooltip_optimizer_desc">Tu horario tiene solapamientos. ¡Pulsa la varita mágica para encontrar la mejor combinación de laboratorios automáticamente!</string>
+    <string name="tooltip_resolver_priorities_title">Prioriza a tu Gusto</string>
+    <string name="tooltip_resolver_priorities_desc">Elige si prefieres más días libres o un horario más compacto. Los solapamientos siempre se minimizan primero.</string>
+    <string name="tooltip_resolver_apply_title">Aplicar Solución</string>
+    <string name="tooltip_resolver_apply_desc">Cuando encuentres una combinación que te guste, pulsa Aplicar para actualizar tu horario activo automáticamente.</string>
+
+    <!-- Onboarding Screen -->
+    <string name="onboarding_welcome_title">Bienvenido a ClemenTime</string>
+    <string name="onboarding_welcome_desc">Gestiona tus clases, resuelve conflictos de horario y mantente organizado.</string>
+    <string name="onboarding_language_title">Selecciona el Idioma</string>
+    <string name="onboarding_language_desc">Elige tu idioma preferido.</string>
+    <string name="onboarding_theme_title">Personaliza tu Estilo</string>
+    <string name="onboarding_theme_desc">Elige el modo de tema y la paleta de colores.</string>
+    <string name="onboarding_ready_title">¡Todo listo!</string>
+    <string name="onboarding_ready_desc">Puedes cambiar estos ajustes en cualquier momento. ¡Empecemos!</string>
+    <string name="onboarding_next">Siguiente</string>
+    <string name="onboarding_back">Atrás</string>
+    <string name="onboarding_finish">Empezar</string>
+    <string name="onboarding_skip">Omitir</string>
+
+    <!-- Additional screen strings -->
+    <string name="empty_schedule_day">¡No hay clases previstas para el %1$s hoy!</string>
+    <string name="import_schedule_instructions">Elige una plantilla de la biblioteca o importa un archivo JSON para empezar.</string>
+    <string name="day_of_week_label">Día de la semana</string>
+    <string name="no_slots_assigned">Aún no hay horarios asignados.</string>
 </resources>
 

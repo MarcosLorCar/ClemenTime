@@ -46,7 +46,9 @@ sealed interface ImportUiState {
         val searchQuery: String = "",
         val selectedFile: ImportFile,
         val conflictStatus: ConflictStatus = ConflictStatus.None,
-        val existingSubjects: List<SubjectWithSlots> = emptyList()
+        val existingSubjects: List<SubjectWithSlots> = emptyList(),
+        val onboardingEnabled: Boolean = true,
+        val hasSeenConflictTooltip: Boolean = false
     ) : ImportUiState
     object Importing : ImportUiState
     object Success : ImportUiState
@@ -63,6 +65,20 @@ class ImportViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow<ImportUiState>(ImportUiState.LoadingLibrary)
     val uiState: StateFlow<ImportUiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            kotlinx.coroutines.flow.combine(
+                settingsRepository.onboardingTooltipsEnabledFlow,
+                settingsRepository.hasSeenImportConflictTooltipFlow
+            ) { enabled, seen -> enabled to seen }.collect { (enabled, seen) ->
+                val current = _uiState.value
+                if (current is ImportUiState.Selection) {
+                    _uiState.value = current.copy(onboardingEnabled = enabled, hasSeenConflictTooltip = seen)
+                }
+            }
+        }
+    }
 
     fun loadLibrary(context: Context) {
         viewModelScope.launch {
@@ -132,6 +148,9 @@ class ImportViewModel @Inject constructor(
                 }
 
                 val existing = repository.getExistingActiveSubjects()
+                val onboardingEnabled = settingsRepository.onboardingTooltipsEnabledFlow.first()
+                val hasSeenConflictTooltip = settingsRepository.hasSeenImportConflictTooltipFlow.first()
+                
                 schemaResult.fold(
                     onSuccess = { schema ->
                         _uiState.value = ImportUiState.Selection(
@@ -139,7 +158,9 @@ class ImportViewModel @Inject constructor(
                             selectedSubjects = emptySet(),
                             selectedFile = file,
                             conflictStatus = ConflictStatus.None,
-                            existingSubjects = existing
+                            existingSubjects = existing,
+                            onboardingEnabled = onboardingEnabled,
+                            hasSeenConflictTooltip = hasSeenConflictTooltip
                         )
                     },
                     onFailure = { error ->
@@ -369,6 +390,12 @@ class ImportViewModel @Inject constructor(
         val currentState = _uiState.value
         if (currentState is ImportUiState.Selection) {
             _uiState.value = currentState.copy(searchQuery = query)
+        }
+    }
+
+    fun markConflictTooltipSeen() {
+        viewModelScope.launch {
+            settingsRepository.setHasSeenImportConflictTooltip(true)
         }
     }
 

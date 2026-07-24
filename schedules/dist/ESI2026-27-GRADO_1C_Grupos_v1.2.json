@@ -697,7 +697,7 @@
                     "dayOfWeek": "FRIDAY",
                     "startTime": "10:00",
                     "endTime": "11:30",
-                    "classroom": "LD3-Bill",
+                    "classroom": "LD3-Bill Gates",
                     "groupName": "Lab-C1",
                     "entryType": "LAB",
                     "professor": "Antonio Adan"
@@ -1208,7 +1208,7 @@
                     "dayOfWeek": "TUESDAY",
                     "startTime": "18:30",
                     "endTime": "20:00",
-                    "classroom": "LD3-Bill",
+                    "classroom": "LD3-Bill Gates",
                     "groupName": "Lab-A1",
                     "entryType": "LAB",
                     "professor": "Ruben Rodriguez"
@@ -1219,7 +1219,7 @@
                     "dayOfWeek": "TUESDAY",
                     "startTime": "20:00",
                     "endTime": "21:30",
-                    "classroom": "LD3-Bill",
+                    "classroom": "LD3-Bill Gates",
                     "groupName": "Lab-A2",
                     "entryType": "LAB",
                     "professor": "Ruben Rodriguez"
@@ -1453,7 +1453,7 @@
                     "dayOfWeek": "THURSDAY",
                     "startTime": "18:30",
                     "endTime": "20:00",
-                    "classroom": "LD3-Bill",
+                    "classroom": "LD3-Bill Gates",
                     "groupName": "Lab-BD1",
                     "entryType": "LAB",
                     "professor": "Ruben Rodriguez"
@@ -1725,7 +1725,7 @@
                     "dayOfWeek": "WEDNESDAY",
                     "startTime": "17:00",
                     "endTime": "18:30",
-                    "classroom": "LD3-Bill",
+                    "classroom": "LD3-Bill Gates",
                     "groupName": "Lab-C2",
                     "entryType": "LAB",
                     "professor": "Yoel Arroyo"
@@ -2691,7 +2691,7 @@
                   "dayOfWeek": "THURSDAY",
                   "startTime": "10:00",
                   "endTime": "11:30",
-                  "classroom": "LD3-Bill",
+                  "classroom": "LD3-Bill Gates",
                   "groupName": null,
                   "entryType": "THEORY",
                   "professor": "Luis Rodriguez"

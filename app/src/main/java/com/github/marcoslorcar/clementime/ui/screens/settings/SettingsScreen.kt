@@ -98,6 +98,7 @@ fun SettingsScreen(
         onToggleHighContrast = viewModel::setHighContrast,
         onThemeSelected = viewModel::setSelectedTheme,
         onGithubRepoUrlChanged = viewModel::setGithubRepoBaseUrl,
+        onToggleOnboardingTooltips = viewModel::setOnboardingTooltipsEnabled,
         onExportData = {
             createDocLauncher.launch("clementime_export.json")
         },
@@ -180,6 +181,7 @@ fun SettingsContent(
     onToggleHighContrast: (Boolean) -> Unit,
     onThemeSelected: (String) -> Unit,
     onGithubRepoUrlChanged: (String) -> Unit,
+    onToggleOnboardingTooltips: (Boolean) -> Unit,
     onExportData: () -> Unit,
     onImportClick: () -> Unit,
     onMenuClick: (() -> Unit)? = null
@@ -463,6 +465,23 @@ fun SettingsContent(
                     showRepoUrlDialog = true
                 }
             )
+
+            // --- Section: Help & Guidance ---
+            Text(
+                text = stringResource(R.string.help_guidance_header),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+
+            SettingItem(
+                icon = Icons.Default.Info,
+                title = stringResource(R.string.onboarding_tooltips_setting_title),
+                subtitle = stringResource(R.string.onboarding_tooltips_setting_desc),
+                trailingContent = {
+                    Switch(checked = uiState.onboardingTooltipsEnabled, onCheckedChange = onToggleOnboardingTooltips)
+                }
+            )
         }
     }
 }
@@ -480,7 +499,8 @@ fun SettingsScreenPreview() {
             onNowLineStyleChanged = {},
             onToggleHighContrast = {},
             onThemeSelected = {},
-             onGithubRepoUrlChanged = {},
+            onGithubRepoUrlChanged = {},
+            onToggleOnboardingTooltips = {},
             onExportData = {},
             onImportClick = {}
         )
