@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version tag to create (e.g. v1.0.0-alpha1)'
+        description: 'Version tag to create (e.g. v1.0.0-rc5)'
         required: true
         type: string
       release_description:
@@ -51,6 +51,7 @@ jobs:
           
           echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
           echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
+          # Use run_number for versionCode to ensure it always increases
           echo "version_code=${{ github.run_number }}" >> $GITHUB_OUTPUT
 
       # Tag the commit first if manually dispatched and tag doesn't exist
@@ -67,11 +68,22 @@ jobs:
             git push origin "$TAG_NAME"
           fi
 
-      - name: Build Release APK with Dynamic Versioning
+      - name: Decode Keystore
         run: |
-          ./gradlew assembleRelease \
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > release.jks
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+
+      - name: Build Release APK & AAB
+        run: |
+          ./gradlew assembleRelease bundleRelease \
             -PversionName="${{ steps.info.outputs.version_name }}" \
             -PversionCode="${{ steps.info.outputs.version_code }}"
+        env:
+          KEYSTORE_PATH: ../release.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Rename APK
         run: |
@@ -85,5 +97,11 @@ jobs:
           body: ${{ inputs.release_description }}
           generate_release_notes: ${{ !inputs.release_description }}
           draft: false
-          prerelease: ${{ contains(steps.info.outputs.tag_name, 'alpha') || contains(steps.info.outputs.tag_name, 'beta') }}
-          files: app/build/outputs/apk/release/ClemenTime-${{ steps.info.outputs.tag_name }}.apk
+          prerelease: ${{ contains(steps.info.outputs.tag_name, 'alpha') || contains(steps.info.outputs.tag_name, 'beta') || contains(steps.info.outputs.tag_name, 'rc') }}
+          files: |
+            app/build/outputs/apk/release/ClemenTime-${{ steps.info.outputs.tag_name }}.apk
+            app/build/outputs/bundle/release/app-release.aab
+
+      - name: Clean up Keystore
+        if: always()
+        run: rm -f release.jks

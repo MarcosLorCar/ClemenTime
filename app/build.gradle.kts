@@ -7,21 +7,36 @@ plugins {
 }
 
 android {
-    namespace = "com.github.marcoslorcar.clementime"
+    namespace = "com.marcoslorcar.clementime"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.github.marcoslorcar.clementime"
+        applicationId = "com.marcoslorcar.clementime"
         minSdk = 24
         //noinspection OldTargetApi
         targetSdk = 36
+        
+        val major = (project.findProperty("VERSION_MAJOR") as? String)?.toInt() ?: 1
+        val minor = (project.findProperty("VERSION_MINOR") as? String)?.toInt() ?: 0
+        val patch = (project.findProperty("VERSION_PATCH") as? String)?.toInt() ?: 0
+        val qualifier = (project.findProperty("VERSION_QUALIFIER") as? String) ?: ""
+
         val passedVersionName = project.findProperty("versionName") as? String
         val passedVersionCode = (project.findProperty("versionCode") as? String)?.toIntOrNull()
 
-        versionCode = passedVersionCode ?: 1
-        versionName = passedVersionName ?: "1.0"
+        versionCode = passedVersionCode ?: (major * 10000 + minor * 100 + patch)
+        versionName = passedVersionName ?: "$major.$minor.$patch$qualifier"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        create("release") {
+            storeFile = file(System.getenv("KEYSTORE_PATH") ?: "release.jks")
+            storePassword = System.getenv("KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("KEY_ALIAS")
+            keyPassword = System.getenv("KEY_PASSWORD")
+        }
     }
 
     buildTypes {
@@ -29,19 +44,18 @@ android {
             applicationIdSuffix = ".debug"
         }
         release {
-            optimization {
-                enable = true
-            }
-            signingConfig = signingConfigs.getByName("debug")
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            signingConfig = signingConfigs.getByName("release")
         }
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-        isCoreLibraryDesugaringEnabled = true
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     packaging {
         jniLibs {
