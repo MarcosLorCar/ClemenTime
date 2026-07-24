@@ -102,4 +102,10 @@ dependencies {
     // Glance Widget
     implementation(libs.androidx.glance.appwidget)
     implementation(libs.androidx.glance.material3)
+
+    // Retrofit & OkHttp
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.kotlinx.serialization)
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging)
 }

@@ -36,7 +36,7 @@ data class ConflictResolverUiState(
 @HiltViewModel
 class ConflictResolverViewModel @Inject constructor(
     private val dao: ScheduleDao,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context? = null
 ) : ViewModel() {
 
     private val _preferenceMode = MutableStateFlow(PreferenceMode.FREE_DAYS)

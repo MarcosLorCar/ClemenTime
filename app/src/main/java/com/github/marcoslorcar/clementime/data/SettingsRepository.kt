@@ -25,6 +25,7 @@ open class SettingsRepository @Inject constructor(
     private val nowLineStyleKey = stringPreferencesKey("now_line_style")
     private val highContrastKey = booleanPreferencesKey("high_contrast")
     private val selectedThemeKey = stringPreferencesKey("selected_theme")
+    private val githubRepoBaseUrlKey = stringPreferencesKey("github_repo_base_url")
 
 
     open val themeFlow: Flow<String>
@@ -87,10 +88,29 @@ open class SettingsRepository @Inject constructor(
         }
 
 
+    open val githubRepoBaseUrlFlow: Flow<String>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[githubRepoBaseUrlKey] ?: "https://raw.githubusercontent.com/MarcosLorCar/ClemenTime/master/schedules/dist/"
+            } ?: kotlinx.coroutines.flow.flowOf("https://raw.githubusercontent.com/MarcosLorCar/ClemenTime/master/schedules/dist/")
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf("https://raw.githubusercontent.com/MarcosLorCar/ClemenTime/master/schedules/dist/")
+        }
+
+
     open suspend fun setThemeMode(theme: String) {
         try {
             context?.dataStore?.edit { preferences ->
                 preferences[themeKey] = theme
+            }
+        } catch (_: Throwable) {}
+    }
+
+
+    open suspend fun setGithubRepoBaseUrl(baseUrl: String) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[githubRepoBaseUrlKey] = baseUrl
             }
         } catch (_: Throwable) {}
     }

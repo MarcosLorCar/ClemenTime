@@ -15,10 +15,13 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.security.MessageDigest
 import javax.inject.Inject
+import com.github.marcoslorcar.clementime.data.api.GitHubScheduleApiService
+import com.github.marcoslorcar.clementime.data.importing.model.RemoteScheduleSummary
 
 class ImportRepository @Inject constructor(
     private val dao: ScheduleDao,
-    private val parser: JsonScheduleParser = JsonScheduleParser()
+    private val parser: JsonScheduleParser = JsonScheduleParser(),
+    private val apiService: GitHubScheduleApiService? = null
 ) {
 
     private fun String.sha256(): String {
@@ -37,7 +40,7 @@ class ImportRepository @Inject constructor(
         // 1. Check bundled asset
         var bundledHash = ""
         try {
-            context.assets.open("primer_cuatrimestre.json").use { stream ->
+            context.assets.open("schedules/primer_cuatrimestre.json").use { stream ->
                 val jsonString = stream.bufferedReader().readText()
                 bundledHash = jsonString.sha256()
                 val schema = parser.parseJson(jsonString).getOrNull()
@@ -85,7 +88,7 @@ class ImportRepository @Inject constructor(
             // Check if it matches bundled file hash
             var bundledHash = ""
             try {
-                context.assets.open("primer_cuatrimestre.json").use { stream ->
+                context.assets.open("schedules/primer_cuatrimestre.json").use { stream ->
                     bundledHash = stream.bufferedReader().readText().sha256()
                 }
             } catch (_: Exception) {
@@ -129,18 +132,27 @@ class ImportRepository @Inject constructor(
         selectedSubjects.forEach { selected ->
             val jsonSubject = selected.subject
             
+            // Find existing subject with same code (or name) to replace it
+            val existing = existingSubjects.find { 
+                (it.subject.code.isNotBlank() && it.subject.code.equals(jsonSubject.code, ignoreCase = true)) ||
+                (it.subject.code.isBlank() && it.subject.name.equals(jsonSubject.name, ignoreCase = true))
+            }?.subject
+
             // Auto-select lab group if only one variant exists
             val labGroups = jsonSubject.labVariants.keys
-            val autoSelectedLabGroup = if (labGroups.size == 1) labGroups.first() else null
+            val autoSelectedLabGroup = if (labGroups.size == 1) labGroups.first() else existing?.selectedLabGroup
 
-            val chosenColor = when {
+            val chosenColor = existing?.color ?: when {
                 jsonSubject.color != null -> jsonSubject.color
                 availableColors.isNotEmpty() -> availableColors.removeAt(0)
                 else -> Subject.PRESET_COLORS.random()
             }
-            usedColors.add(chosenColor)
+            if (existing == null) {
+                usedColors.add(chosenColor)
+            }
 
             val subject = Subject(
+                id = existing?.id ?: 0L,
                 code = jsonSubject.code,
                 name = jsonSubject.name,
                 color = chosenColor,
@@ -171,5 +183,51 @@ class ImportRepository @Inject constructor(
 
     suspend fun getExistingActiveSubjects(): List<com.github.marcoslorcar.clementime.data.SubjectWithSlots> = withContext(Dispatchers.IO) {
         dao.getAllSubjectsWithSlots().first().filter { it.subject.isActive }
+    }
+
+    fun normalizeGitHubUrl(url: String): String {
+        var trimmed = url.trim()
+        if (trimmed.startsWith("https://github.com/")) {
+            trimmed = trimmed
+                .replace("https://github.com/", "https://raw.githubusercontent.com/")
+                .replace("/tree/", "/")
+                .replace("/blob/", "/")
+        }
+        return trimmed
+    }
+
+    suspend fun fetchRemoteSchedules(rawBaseUrl: String): Result<List<RemoteScheduleSummary>> = withContext(Dispatchers.IO) {
+        try {
+            if (apiService == null) return@withContext Result.failure(Exception("Network service unavailable"))
+            val baseUrl = normalizeGitHubUrl(rawBaseUrl)
+            val indexUrl = when {
+                baseUrl.endsWith("schedules_index.json") -> baseUrl
+                baseUrl.endsWith("/") -> "${baseUrl}schedules_index.json"
+                else -> "$baseUrl/schedules_index.json"
+            }
+            val response = apiService.getScheduleIndex(indexUrl)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to fetch remote index: ${response.code()} ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun fetchRemoteScheduleSchema(rawFullUrl: String): Result<ScheduleJsonSchema> = withContext(Dispatchers.IO) {
+        try {
+            if (apiService == null) return@withContext Result.failure(Exception("Network service unavailable"))
+            val fullUrl = normalizeGitHubUrl(rawFullUrl)
+            val response = apiService.getScheduleSchema(fullUrl)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to fetch remote schema: ${response.code()} ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }

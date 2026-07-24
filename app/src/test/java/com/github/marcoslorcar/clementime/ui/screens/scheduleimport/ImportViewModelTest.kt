@@ -48,6 +48,8 @@ class ImportViewModelTest {
         )
     )
 
+    private val fakeSettingsRepository = object : com.github.marcoslorcar.clementime.data.SettingsRepository(context = null) {}
+
     @Before
     fun setUp() {
         mockRepository = ImportRepository(dao = FakeScheduleDaoForImport())
@@ -55,7 +57,7 @@ class ImportViewModelTest {
 
     @Test
     fun selectAllSubjects_selectsAllLevels() {
-        val viewModel = ImportViewModel(mockRepository, JsonScheduleParser())
+        val viewModel = ImportViewModel(mockRepository, JsonScheduleParser(), null, fakeSettingsRepository)
 
         val stateField = ImportViewModel::class.java.getDeclaredField("_uiState")
         stateField.isAccessible = true
@@ -80,7 +82,7 @@ class ImportViewModelTest {
 
     @Test
     fun toggleSubjectSelection_togglesIndividualSelection() {
-        val viewModel = ImportViewModel(mockRepository, JsonScheduleParser())
+        val viewModel = ImportViewModel(mockRepository, JsonScheduleParser(), null, fakeSettingsRepository)
 
         val stateField = ImportViewModel::class.java.getDeclaredField("_uiState")
         stateField.isAccessible = true
@@ -106,7 +108,7 @@ class ImportViewModelTest {
 
     @Test
     fun toggleSectionSubjects_togglesAllSubjectsInSection() {
-        val viewModel = ImportViewModel(mockRepository, JsonScheduleParser())
+        val viewModel = ImportViewModel(mockRepository, JsonScheduleParser(), null, fakeSettingsRepository)
 
         val stateField = ImportViewModel::class.java.getDeclaredField("_uiState")
         stateField.isAccessible = true
@@ -136,7 +138,7 @@ class ImportViewModelTest {
 
     @Test
     fun toggleAllSubjects_togglesEntireTargetCollection() {
-        val viewModel = ImportViewModel(mockRepository, JsonScheduleParser())
+        val viewModel = ImportViewModel(mockRepository, JsonScheduleParser(), null, fakeSettingsRepository)
 
         val stateField = ImportViewModel::class.java.getDeclaredField("_uiState")
         stateField.isAccessible = true
@@ -169,7 +171,7 @@ class ImportViewModelTest {
         val s1 = JsonSubject(code = "S1", name = "Sub 1", theorySlots = listOf(theorySlot))
         val s2 = JsonSubject(code = "S2", name = "Sub 2", theorySlots = listOf(theorySlot))
         
-        val viewModel = ImportViewModel(mockRepository, JsonScheduleParser())
+        val viewModel = ImportViewModel(mockRepository, JsonScheduleParser(), null, fakeSettingsRepository)
         val stateField = ImportViewModel::class.java.getDeclaredField("_uiState")
         stateField.isAccessible = true
         @Suppress("UNCHECKED_CAST")
@@ -209,7 +211,7 @@ class ImportViewModelTest {
         )
         val existing = listOf(com.github.marcoslorcar.clementime.data.SubjectWithSlots(existingSubject, listOf(existingSlot)))
 
-        val viewModel = ImportViewModel(mockRepository, JsonScheduleParser())
+        val viewModel = ImportViewModel(mockRepository, JsonScheduleParser(), null, fakeSettingsRepository)
         val stateField = ImportViewModel::class.java.getDeclaredField("_uiState")
         stateField.isAccessible = true
         @Suppress("UNCHECKED_CAST")

@@ -91,7 +91,7 @@ data class AddEditSubjectUiState(
 class AddEditSubjectViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val scheduleDao: ScheduleDao,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AddEditSubjectUiState())

@@ -28,7 +28,8 @@ data class SettingsUiState(
     val showNowLine: Boolean = true,
     val nowLineStyle: String = "discrete",
     val highContrast: Boolean = false,
-    val selectedTheme: String = "clementine"
+    val selectedTheme: String = "clementine",
+    val githubRepoBaseUrl: String = "https://raw.githubusercontent.com/MarcosLorCar/ClemenTime/master/schedules/dist/"
 )
 
 sealed interface ExportStatus {
@@ -54,17 +55,19 @@ class SettingsViewModel @Inject constructor(
         combine(
             settingsRepository.highContrastFlow,
             settingsRepository.selectedThemeFlow,
-            ::Pair
+            settingsRepository.githubRepoBaseUrlFlow,
+            ::Triple
         )
-    ) { theme, scrollable, showNowLine, nowLineStyle, other ->
+    ) { theme, scrollable, showNowLine, nowLineStyle, (highContrast, selectedTheme, repoUrl) ->
         SettingsUiState(
             themeMode = theme,
             appLanguage = getCurrentLanguage(),
             scrollableTabs = scrollable,
             showNowLine = showNowLine,
             nowLineStyle = nowLineStyle,
-            highContrast = other.first,
-            selectedTheme = other.second
+            highContrast = highContrast,
+            selectedTheme = selectedTheme,
+            githubRepoBaseUrl = repoUrl
         )
     }.stateIn(
         scope = viewModelScope,
@@ -127,6 +130,12 @@ class SettingsViewModel @Inject constructor(
     fun setSelectedTheme(theme: String) {
         viewModelScope.launch {
             settingsRepository.setSelectedTheme(theme)
+        }
+    }
+
+    fun setGithubRepoBaseUrl(url: String) {
+        viewModelScope.launch {
+            settingsRepository.setGithubRepoBaseUrl(url)
         }
     }
 

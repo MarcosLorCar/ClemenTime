@@ -247,7 +247,7 @@ fun ImportLibraryContent(
                     .fadingEdges(libraryListState),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(files, key = { it.id }) { file ->
+                items(files, key = { "${it.sourceType.name}_${it.id}" }) { file ->
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -275,30 +275,40 @@ fun ImportLibraryContent(
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.SemiBold
                                 )
+                                if (!file.description.isNullOrBlank()) {
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = file.description,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Surface(
                                     shape = RoundedCornerShape(4.dp),
-                                    color = if (file.isBundled) {
-                                        MaterialTheme.colorScheme.secondaryContainer
-                                    } else {
-                                        MaterialTheme.colorScheme.tertiaryContainer
+                                    color = when {
+                                        file.sourceType == com.github.marcoslorcar.clementime.data.importing.model.ImportSourceType.REMOTE -> MaterialTheme.colorScheme.primaryContainer
+                                        file.isBundled -> MaterialTheme.colorScheme.secondaryContainer
+                                        else -> MaterialTheme.colorScheme.tertiaryContainer
                                     }
                                 ) {
                                     Text(
-                                        text = stringResource(
-                                            if (file.isBundled) R.string.import_bundled_label else R.string.import_custom_label
-                                        ),
+                                        text = when {
+                                            file.sourceType == com.github.marcoslorcar.clementime.data.importing.model.ImportSourceType.REMOTE -> "Online Repository"
+                                            file.isBundled -> stringResource(R.string.import_bundled_label)
+                                            else -> stringResource(R.string.import_custom_label)
+                                        },
                                         style = MaterialTheme.typography.labelSmall,
                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                        color = if (file.isBundled) {
-                                            MaterialTheme.colorScheme.onSecondaryContainer
-                                        } else {
-                                            MaterialTheme.colorScheme.onTertiaryContainer
+                                        color = when {
+                                            file.sourceType == com.github.marcoslorcar.clementime.data.importing.model.ImportSourceType.REMOTE -> MaterialTheme.colorScheme.onPrimaryContainer
+                                            file.isBundled -> MaterialTheme.colorScheme.onSecondaryContainer
+                                            else -> MaterialTheme.colorScheme.onTertiaryContainer
                                         }
                                     )
                                 }
                             }
-                            if (!file.isBundled) {
+                            if (file.sourceType == com.github.marcoslorcar.clementime.data.importing.model.ImportSourceType.CUSTOM) {
                                 IconButton(onClick = { fileToDelete = file }) {
                                     Icon(
                                         imageVector = Icons.Default.Delete,

@@ -97,6 +97,7 @@ fun SettingsScreen(
         onNowLineStyleChanged = viewModel::setNowLineStyle,
         onToggleHighContrast = viewModel::setHighContrast,
         onThemeSelected = viewModel::setSelectedTheme,
+        onGithubRepoUrlChanged = viewModel::setGithubRepoBaseUrl,
         onExportData = {
             createDocLauncher.launch("clementime_export.json")
         },
@@ -178,10 +179,48 @@ fun SettingsContent(
     onNowLineStyleChanged: (String) -> Unit,
     onToggleHighContrast: (Boolean) -> Unit,
     onThemeSelected: (String) -> Unit,
+    onGithubRepoUrlChanged: (String) -> Unit,
     onExportData: () -> Unit,
     onImportClick: () -> Unit,
     onMenuClick: (() -> Unit)? = null
 ) {
+    var showRepoUrlDialog by remember { mutableStateOf(false) }
+    var tempRepoUrl by remember { mutableStateOf(uiState.githubRepoBaseUrl) }
+
+    if (showRepoUrlDialog) {
+        AlertDialog(
+            onDismissRequest = { showRepoUrlDialog = false },
+            title = { Text("GitHub Repository URL") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Enter the GitHub raw content base URL for online schedules:", style = MaterialTheme.typography.bodyMedium)
+                    OutlinedTextField(
+                        value = tempRepoUrl,
+                        onValueChange = { tempRepoUrl = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        label = { Text("Base URL") }
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onGithubRepoUrlChanged(tempRepoUrl)
+                        showRepoUrlDialog = false
+                    }
+                ) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRepoUrlDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             ClemenTimeTopBar(
@@ -414,6 +453,16 @@ fun SettingsContent(
                 subtitle = stringResource(R.string.export_backup_desc),
                 onClick = onExportData
             )
+
+            SettingItem(
+                icon = Icons.Default.Cloud,
+                title = "Online Repository URL",
+                subtitle = uiState.githubRepoBaseUrl,
+                onClick = {
+                    tempRepoUrl = uiState.githubRepoBaseUrl
+                    showRepoUrlDialog = true
+                }
+            )
         }
     }
 }
@@ -431,9 +480,9 @@ fun SettingsScreenPreview() {
             onNowLineStyleChanged = {},
             onToggleHighContrast = {},
             onThemeSelected = {},
+             onGithubRepoUrlChanged = {},
             onExportData = {},
-            onImportClick = {},
-            onMenuClick = {}
+            onImportClick = {}
         )
     }
 }

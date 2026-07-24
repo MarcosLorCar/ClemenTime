@@ -1,0 +1,176 @@
+{
+  "version": 1,
+  "title": "ESI2026-27-GRADO 2C Grupos v1.2",
+  "matters": [
+    {
+      "code": "PruebasProgreso",
+      "name": "Pruebas de Progreso",
+      "color": null,
+      "theorySlots": [
+        {
+          "dayOfWeek": "MONDAY",
+          "startTime": "08:30",
+          "endTime": "10:00",
+          "classroom": "0.02+3-Charles",
+          "groupName": null,
+          "entryType": "THEORY",
+          "professor": null
+        },
+        {
+          "dayOfWeek": "MONDAY",
+          "startTime": "10:00",
+          "endTime": "11:30",
+          "classroom": "A1.1-John Von N",
+          "groupName": null,
+          "entryType": "THEORY",
+          "professor": "Fernando Rincon"
+        },
+        {
+          "dayOfWeek": "MONDAY",
+          "startTime": "11:30",
+          "endTime": "13:00",
+          "classroom": "A1.1-John Von N",
+          "groupName": null,
+          "entryType": "THEORY",
+          "professor": "Jose Angel Martin"
+        },
+        {
+          "dayOfWeek": "MONDAY",
+          "startTime": "13:00",
+          "endTime": "14:30",
+          "classroom": "A1.1-John Von N",
+          "groupName": null,
+          "entryType": "THEORY",
+          "professor": "Jesus Serrano"
+        },
+        {
+          "dayOfWeek": "MONDAY",
+          "startTime": "17:00",
+          "endTime": "20:00",
+          "classroom": "LD2-Dennis Ritchie",
+          "groupName": null,
+          "entryType": "THEORY",
+          "professor": "Jesus Blanco Rodriguez"
+        },
+        {
+          "dayOfWeek": "FRIDAY",
+          "startTime": "08:30",
+          "endTime": "10:00",
+          "classroom": "0.02+3-Charles",
+          "groupName": null,
+          "entryType": "THEORY",
+          "professor": null
+        },
+        {
+          "dayOfWeek": "FRIDAY",
+          "startTime": "10:00",
+          "endTime": "14:30",
+          "classroom": "A2.2-Grace Murray",
+          "groupName": null,
+          "entryType": "THEORY",
+          "professor": "Moises Rodriguez"
+        },
+        {
+          "dayOfWeek": "MONDAY",
+          "startTime": "15:30",
+          "endTime": "16:50",
+          "classroom": "A1.2-Tim Berner",
+          "groupName": null,
+          "entryType": "THEORY",
+          "professor": "Eusebio Angulo"
+        },
+        {
+          "dayOfWeek": "FRIDAY",
+          "startTime": "11:30",
+          "endTime": "14:30",
+          "classroom": "LD4-John Carmack",
+          "groupName": null,
+          "entryType": "THEORY",
+          "professor": "Miguel Angel Redondo"
+        },
+        {
+          "dayOfWeek": "MONDAY",
+          "startTime": "18:30",
+          "endTime": "21:30",
+          "classroom": "A2.2-Grace Murray",
+          "groupName": null,
+          "entryType": "THEORY",
+          "professor": "AyudanteDr.MAT"
+        },
+        {
+          "dayOfWeek": "MONDAY",
+          "startTime": "20:00",
+          "endTime": "21:30",
+          "classroom": "A2.1-George Boole",
+          "groupName": null,
+          "entryType": "THEORY",
+          "professor": "Eduardo Fernande"
+        }
+      ],
+      "labVariants": {}
+    },
+    {
+      "code": "Conferencias",
+      "name": "Conferencias",
+      "color": null,
+      "theorySlots": [
+        {
+          "dayOfWeek": "WEDNESDAY",
+          "startTime": "11:30",
+          "endTime": "13:00",
+          "classroom": "Alan Turing",
+          "groupName": null,
+          "entryType": "THEORY",
+          "professor": null
+        },
+        {
+          "dayOfWeek": "WEDNESDAY",
+          "startTime": "13:00",
+          "endTime": "14:30",
+          "classroom": "A1.1-John Von N",
+          "groupName": null,
+          "entryType": "THEORY",
+          "professor": "Xavier del Toro"
+        },
+        {
+          "dayOfWeek": "WEDNESDAY",
+          "startTime": "17:00",
+          "endTime": "20:00",
+          "classroom": "A1.1-John Von N",
+          "groupName": null,
+          "entryType": "THEORY",
+          "professor": "Arturo Peralta"
+        },
+        {
+          "dayOfWeek": "WEDNESDAY",
+          "startTime": "15:30",
+          "endTime": "16:50",
+          "classroom": "A1.2-Tim Berner",
+          "groupName": null,
+          "entryType": "THEORY",
+          "professor": null
+        },
+        {
+          "dayOfWeek": "WEDNESDAY",
+          "startTime": "18:30",
+          "endTime": "21:30",
+          "classroom": "A2.2-Grace Murray",
+          "groupName": null,
+          "entryType": "THEORY",
+          "professor": "Santiago Sanchez"
+        },
+        {
+          "dayOfWeek": "WEDNESDAY",
+          "startTime": "20:00",
+          "endTime": "21:30",
+          "classroom": "A2.1-George Boole",
+          "groupName": null,
+          "entryType": "THEORY",
+          "professor": "Francisco Ruiz"
+        }
+      ],
+      "labVariants": {}
+    }
+  ],
+  "years": []
+}

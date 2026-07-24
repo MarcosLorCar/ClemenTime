@@ -1,13 +1,23 @@
+#!/usr/bin/env python3
 import json
 import os
+import sys
 from datetime import datetime
 
-def generate_index(schedules_dir="./schedules"):
+def generate_index(dist_dir=None):
+    if dist_dir is None:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        dist_dir = os.path.abspath(os.path.join(script_dir, "..", "dist"))
+
+    if not os.path.exists(dist_dir):
+        print(f"[Info] Output directory '{dist_dir}' does not exist. Creating it.")
+        os.makedirs(dist_dir, exist_ok=True)
+
     index_entries = []
 
-    for filename in sorted(os.listdir(schedules_dir)):
+    for filename in sorted(os.listdir(dist_dir)):
         if filename.endswith(".json") and filename != "schedules_index.json":
-            file_path = os.path.join(schedules_dir, filename)
+            file_path = os.path.join(dist_dir, filename)
             try:
                 with open(file_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
@@ -25,7 +35,7 @@ def generate_index(schedules_dir="./schedules"):
             except Exception as e:
                 print(f"Skipping {filename}: {e}")
 
-    output_path = os.path.join(schedules_dir, "schedules_index.json")
+    output_path = os.path.join(dist_dir, "schedules_index.json")
 
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(index_entries, f, indent=2, ensure_ascii=False)

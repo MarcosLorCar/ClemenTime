@@ -55,7 +55,7 @@ sealed interface SubjectsUiEvent {
 class SubjectsViewModel @Inject constructor(
     private val scheduleDao: ScheduleDao,
     private val settingsRepository: com.github.marcoslorcar.clementime.data.SettingsRepository,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SubjectsUiState())

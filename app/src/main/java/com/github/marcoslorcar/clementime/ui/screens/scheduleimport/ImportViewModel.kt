@@ -29,6 +29,10 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
 
+import com.github.marcoslorcar.clementime.data.SettingsRepository
+import com.github.marcoslorcar.clementime.data.importing.model.ImportSourceType
+import kotlinx.coroutines.flow.first
+
 sealed interface ImportUiState {
     object LoadingLibrary : ImportUiState
     data class Library(
@@ -53,7 +57,8 @@ sealed interface ImportUiState {
 class ImportViewModel @Inject constructor(
     private val repository: ImportRepository,
     private val parser: JsonScheduleParser,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context? = null,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ImportUiState>(ImportUiState.LoadingLibrary)
@@ -63,8 +68,39 @@ class ImportViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = ImportUiState.LoadingLibrary
             try {
-                val files = repository.listAvailableImportFiles(context)
-                _uiState.value = ImportUiState.Library(files)
+                val localFiles = repository.listAvailableImportFiles(context)
+                val rawBaseUrl = try {
+                    settingsRepository.githubRepoBaseUrlFlow.first()
+                } catch (_: Exception) {
+                    "https://raw.githubusercontent.com/MarcosLorCar/ClemenTime/master/schedules/dist/"
+                }
+
+                val baseUrl = repository.normalizeGitHubUrl(rawBaseUrl)
+                val folderUrl = when {
+                    baseUrl.endsWith("schedules_index.json") -> baseUrl.substringBeforeLast("/") + "/"
+                    baseUrl.endsWith("/") -> baseUrl
+                    else -> "$baseUrl/"
+                }
+
+                val remoteResult = repository.fetchRemoteSchedules(baseUrl)
+                val remoteFiles = remoteResult.getOrDefault(emptyList()).map { summary ->
+                    val fullPath = when {
+                        summary.path.startsWith("http://") || summary.path.startsWith("https://") -> summary.path
+                        else -> "$folderUrl${summary.path.removePrefix("/")}"
+                    }
+                    ImportFile(
+                        id = summary.id,
+                        title = summary.title,
+                        isBundled = false,
+                        fileUri = null,
+                        sourceType = ImportSourceType.REMOTE,
+                        remotePath = fullPath,
+                        description = summary.description
+                    )
+                }
+
+                val combined = remoteFiles + localFiles
+                _uiState.value = ImportUiState.Library(combined)
             } catch (e: Exception) {
                 _uiState.value = ImportUiState.Library(emptyList(), "Failed to load library: ${e.localizedMessage}")
             }
@@ -75,21 +111,28 @@ class ImportViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = ImportUiState.Parsing
             try {
-                val jsonString = if (file.isBundled) {
-                    withContext(Dispatchers.IO) {
-                        context.assets.open("primer_cuatrimestre.json").use { stream ->
-                            stream.bufferedReader().readText()
-                        }
+                val schemaResult: Result<ScheduleJsonSchema> = when {
+                    file.sourceType == ImportSourceType.REMOTE && file.remotePath != null -> {
+                        repository.fetchRemoteScheduleSchema(file.remotePath)
                     }
-                } else {
-                    withContext(Dispatchers.IO) {
-                        File(file.fileUri!!).readText()
+                    file.isBundled -> {
+                        val jsonString = withContext(Dispatchers.IO) {
+                            context.assets.open("schedules/primer_cuatrimestre.json").use { stream ->
+                                stream.bufferedReader().readText()
+                            }
+                        }
+                        repository.parseJsonString(jsonString)
+                    }
+                    else -> {
+                        val jsonString = withContext(Dispatchers.IO) {
+                            File(file.fileUri!!).readText()
+                        }
+                        repository.parseJsonString(jsonString)
                     }
                 }
 
-                val result = repository.parseJsonString(jsonString)
                 val existing = repository.getExistingActiveSubjects()
-                result.fold(
+                schemaResult.fold(
                     onSuccess = { schema ->
                         _uiState.value = ImportUiState.Selection(
                             schema = schema,
@@ -100,11 +143,11 @@ class ImportViewModel @Inject constructor(
                         )
                     },
                     onFailure = { error ->
-                        _uiState.value = ImportUiState.Error("Invalid JSON format: ${error.localizedMessage}")
+                        _uiState.value = ImportUiState.Error("Invalid schedule format: ${error.localizedMessage}")
                     }
                 )
             } catch (e: Exception) {
-                _uiState.value = ImportUiState.Error("Failed to read file: ${e.localizedMessage}")
+                _uiState.value = ImportUiState.Error("Failed to load schedule: ${e.localizedMessage}")
             }
         }
     }

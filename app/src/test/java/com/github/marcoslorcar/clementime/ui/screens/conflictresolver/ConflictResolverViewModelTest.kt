@@ -80,7 +80,7 @@ class ConflictResolverViewModelTest {
         )
         fakeDao.subjectsFlow.value = subjects
 
-        val viewModel = ConflictResolverViewModel(fakeDao)
+        val viewModel = ConflictResolverViewModel(fakeDao, null)
         val collectJob = launch {
             viewModel.uiState.collect {}
         }
@@ -107,7 +107,7 @@ class ConflictResolverViewModelTest {
 
         fakeDao.subjectsFlow.value = listOf(SubjectWithSlots(subject1, listOf(s1Theory, s1Lab1, s1Lab2)))
 
-        val viewModel = ConflictResolverViewModel(fakeDao)
+        val viewModel = ConflictResolverViewModel(fakeDao, null)
         val collectJob = launch { viewModel.uiState.collect {} }
         var state = viewModel.uiState.value
         repeat(40) {
@@ -139,7 +139,7 @@ class ConflictResolverViewModelTest {
 
         fakeDao.subjectsFlow.value = listOf(SubjectWithSlots(subject1, listOf(s1Theory, s1Lab1, s1Lab2)))
 
-        val viewModel = ConflictResolverViewModel(fakeDao)
+        val viewModel = ConflictResolverViewModel(fakeDao, null)
         val collectJob = launch { viewModel.uiState.collect {} }
         var state = viewModel.uiState.value
         repeat(40) {
@@ -162,7 +162,7 @@ class ConflictResolverViewModelTest {
 
         fakeDao.subjectsFlow.value = listOf(SubjectWithSlots(subject1, listOf(s1Lab1, s1Lab2)))
 
-        val viewModel = ConflictResolverViewModel(fakeDao)
+        val viewModel = ConflictResolverViewModel(fakeDao, null)
         val collectJob = launch { viewModel.uiState.collect {} }
         var state = viewModel.uiState.value
         repeat(40) {
