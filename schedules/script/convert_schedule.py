@@ -384,14 +384,58 @@ class ScheduleParser:
     def _merge_and_store_slots(self, raw_slots: List[Dict[str, Any]],
                                global_matters_dict: Dict[str, Dict[str, Any]],
                                years_list: List[Dict[str, Any]]):
-        unique_raw: List[Dict[str, Any]] = []
-        seen = set()
+        # Step 1: Horizontal merge of slots at the exact same time
+        time_buckets: Dict[Tuple, List[Dict[str, Any]]] = {}
         for s in raw_slots:
-            key = (s['year'], s['group'], s['code'], s['dayOfWeek'], s['startTime'], s['endTime'],
-                   s['entryType'], s['classroom'], s['professor'], s['groupName'])
-            if key not in seen:
-                seen.add(key)
-                unique_raw.append(s)
+            tb_key = (
+                s['year'],
+                s['group'],
+                s['code'],
+                s['dayOfWeek'],
+                s['entryType'],
+                s['startTime'],
+                s['endTime']
+            )
+            time_buckets.setdefault(tb_key, []).append(s)
+
+        unique_raw: List[Dict[str, Any]] = []
+        for tb_key, slots in time_buckets.items():
+            merged_slots_for_bucket: List[Dict[str, Any]] = []
+            for s in slots:
+                merged_into_existing = False
+                for existing in merged_slots_for_bucket:
+                    # Check field compatibility
+                    classroom_compat = (
+                        existing['classroom'] is None or
+                        s['classroom'] is None or
+                        existing['classroom'] == s['classroom']
+                    )
+                    professor_compat = (
+                        existing['professor'] is None or
+                        s['professor'] is None or
+                        existing['professor'] == s['professor']
+                    )
+                    group_name_compat = (
+                        existing['groupName'] is None or
+                        s['groupName'] is None or
+                        existing['groupName'] == s['groupName']
+                    )
+
+                    if classroom_compat and professor_compat and group_name_compat:
+                        # Merge compatible fields
+                        if existing['classroom'] is None:
+                            existing['classroom'] = s['classroom']
+                        if existing['professor'] is None:
+                            existing['professor'] = s['professor']
+                        if existing['groupName'] is None:
+                            existing['groupName'] = s['groupName']
+                        merged_into_existing = True
+                        break
+                if not merged_into_existing:
+                    # Append a copy to prevent mutation of the original dicts
+                    merged_slots_for_bucket.append(dict(s))
+
+            unique_raw.extend(merged_slots_for_bucket)
 
         # Bucket slots by (year, group, code, dayOfWeek, entryType)
         buckets: Dict[Tuple, List[Dict[str, Any]]] = {}
