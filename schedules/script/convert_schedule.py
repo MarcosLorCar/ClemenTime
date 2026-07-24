@@ -35,10 +35,10 @@ def clean_group_name(yr: str, grp_raw: str) -> str:
         grp_raw = grp_raw.replace(s, '')
     grp_raw = grp_raw.strip()
 
-    if yr != '4º' and not grp_raw.startswith('Optativas'):
+    if yr not in ['3º', '4º'] and not grp_raw.startswith('Optativas'):
         if grp_raw:
             grp_raw = grp_raw.split()[0]
-    elif yr == '4º':
+    elif yr in ['3º', '4º']:
         if 'Computac' in grp_raw or ' CO' in grp_raw or grp_raw == 'CO':
             grp_raw = 'Computación'
         elif 'Computador' in grp_raw or ' IC' in grp_raw or grp_raw == 'IC':
@@ -49,6 +49,8 @@ def clean_group_name(yr: str, grp_raw: str) -> str:
             grp_raw = 'Optativas C1'
         elif 'Informac' in grp_raw or ' TI' in grp_raw or 'Tecnol' in grp_raw or grp_raw == 'TI':
             grp_raw = 'Tecnol. Información'
+        elif grp_raw:
+            grp_raw = grp_raw.split()[0]
     return grp_raw
 
 
@@ -352,8 +354,21 @@ class ScheduleParser:
         known_codes = sorted(self.mapper.matters.keys(), key=len, reverse=True)
         known_codes = [c for c in known_codes if c not in ["PruebasProgreso", "Conferencias"]]
 
-        # Build dynamic regex for known subject codes and fallback matter patterns
-        code_patterns = [re.escape(c) for c in known_codes]
+        # Expand known codes to include common Spanish accented variations
+        accent_variations = {
+            "Calculo": ["Cálculo", "Calculo"],
+            "Fisica": ["Física", "Fisica"],
+            "Lógica": ["Logica", "Lógica"],
+            "SisInt": ["SistInt", "SisInt"]
+        }
+        search_codes = list(known_codes)
+        for base_code, vars in accent_variations.items():
+            for v in vars:
+                if v not in search_codes:
+                    search_codes.append(v)
+        search_codes.sort(key=len, reverse=True)
+
+        code_patterns = [re.escape(c) for c in search_codes]
         split_pattern = r'(?=\b(?:' + '|'.join(code_patterns) + r')\b)'
         sub_chunks = re.split(split_pattern, cell_text) if code_patterns else [cell_text]
 
@@ -366,9 +381,9 @@ class ScheduleParser:
             entry_type = "LAB" if is_lab else "THEORY"
 
             code_match = None
-            for kc in known_codes:
-                if re.search(r'\b' + re.escape(kc) + r'\b', chunk):
-                    code_match = kc
+            for sc in search_codes:
+                if re.search(r'\b' + re.escape(sc) + r'\b', chunk):
+                    code_match = sc
                     break
 
             if not code_match:
@@ -578,6 +593,16 @@ class ScheduleParser:
                 target_matter["theorySlots"].append(slot_obj)
             else:
                 var_name = s['groupName'] or "Lab-1"
+                # Filter out cross-group lab variants that don't belong to target group (e.g. Lab-B1 in Group D)
+                grp_letter = grp_name.strip()
+                if grp_letter in ["A", "B", "C", "D"]:
+                    var_clean = var_name.replace("Lab-", "")
+                    # Extract single-letter or combined group tokens (e.g. B1 -> B, BD1 -> B and D)
+                    contained_letters = re.findall(r'[A-Z]', var_clean)
+                    if contained_letters and grp_letter not in contained_letters:
+                        # Skip lab variant meant for a different group
+                        continue
+
                 if var_name not in target_matter["labVariants"]:
                     target_matter["labVariants"][var_name] = []
                 target_matter["labVariants"][var_name].append(slot_obj)

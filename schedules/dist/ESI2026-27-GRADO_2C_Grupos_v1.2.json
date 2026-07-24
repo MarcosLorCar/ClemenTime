@@ -1688,17 +1688,6 @@
                     "entryType": "LAB",
                     "professor": null
                   }
-                ],
-                "Lab-BD2": [
-                  {
-                    "dayOfWeek": "TUESDAY",
-                    "startTime": "18:30",
-                    "endTime": "20:00",
-                    "classroom": "LD4-John Carmack",
-                    "groupName": "Lab-BD2",
-                    "entryType": "LAB",
-                    "professor": null
-                  }
                 ]
               }
             },
@@ -1938,41 +1927,7 @@
                   "professor": "Eusebio Angulo"
                 }
               ],
-              "labVariants": {
-                "Lab-B1": [
-                  {
-                    "dayOfWeek": "FRIDAY",
-                    "startTime": "11:30",
-                    "endTime": "13:00",
-                    "classroom": "LD4-John Carmack",
-                    "groupName": "Lab-B1",
-                    "entryType": "LAB",
-                    "professor": null
-                  }
-                ],
-                "Lab-B2": [
-                  {
-                    "dayOfWeek": "FRIDAY",
-                    "startTime": "13:00",
-                    "endTime": "14:30",
-                    "classroom": "LD4-John Carmack",
-                    "groupName": "Lab-B2",
-                    "entryType": "LAB",
-                    "professor": null
-                  }
-                ],
-                "Lab-BC1": [
-                  {
-                    "dayOfWeek": "TUESDAY",
-                    "startTime": "17:00",
-                    "endTime": "18:30",
-                    "classroom": "LD2-Dennis Ritchie",
-                    "groupName": "Lab-BC1",
-                    "entryType": "LAB",
-                    "professor": null
-                  }
-                ]
-              }
+              "labVariants": {}
             },
             {
               "code": "PCTR",
@@ -2407,7 +2362,7 @@
           ]
         },
         {
-          "name": "Ing.",
+          "name": "Ing. Computadores",
           "matters": [
             {
               "code": "DIR",
@@ -2469,24 +2424,6 @@
                   "groupName": null,
                   "entryType": "THEORY",
                   "professor": "Eduardo Fernande"
-                },
-                {
-                  "dayOfWeek": "TUESDAY",
-                  "startTime": "15:30",
-                  "endTime": "16:50",
-                  "classroom": null,
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Felix Oscar Garcia"
-                },
-                {
-                  "dayOfWeek": "WEDNESDAY",
-                  "startTime": "20:00",
-                  "endTime": "21:30",
-                  "classroom": "A2.1-George Boole",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Francisco Ruiz"
                 }
               ],
               "labVariants": {
@@ -2510,28 +2447,6 @@
                     "groupName": "Lab-IC/TI1",
                     "entryType": "LAB",
                     "professor": null
-                  }
-                ],
-                "Lab-CO/IS1": [
-                  {
-                    "dayOfWeek": "MONDAY",
-                    "startTime": "15:30",
-                    "endTime": "16:50",
-                    "classroom": "A2.1-George Boole",
-                    "groupName": "Lab-CO/IS1",
-                    "entryType": "LAB",
-                    "professor": null
-                  }
-                ],
-                "Lab-CO/IS2": [
-                  {
-                    "dayOfWeek": "TUESDAY",
-                    "startTime": "20:00",
-                    "endTime": "21:30",
-                    "classroom": "A2.1-George Boole",
-                    "groupName": "Lab-CO/IS2",
-                    "entryType": "LAB",
-                    "professor": "Maria Angeles Moraga"
                   }
                 ]
               }
@@ -2646,6 +2561,60 @@
                     "groupName": "Lab-IC",
                     "entryType": "LAB",
                     "professor": "Tobias Diaz"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ing. Software",
+          "matters": [
+            {
+              "code": "API",
+              "name": "Aspectos Profesionales de la Informática",
+              "color": null,
+              "theorySlots": [
+                {
+                  "dayOfWeek": "TUESDAY",
+                  "startTime": "15:30",
+                  "endTime": "16:50",
+                  "classroom": null,
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Felix Oscar Garcia"
+                },
+                {
+                  "dayOfWeek": "WEDNESDAY",
+                  "startTime": "20:00",
+                  "endTime": "21:30",
+                  "classroom": "A2.1-George Boole",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Francisco Ruiz"
+                }
+              ],
+              "labVariants": {
+                "Lab-CO/IS1": [
+                  {
+                    "dayOfWeek": "MONDAY",
+                    "startTime": "15:30",
+                    "endTime": "16:50",
+                    "classroom": "A2.1-George Boole",
+                    "groupName": "Lab-CO/IS1",
+                    "entryType": "LAB",
+                    "professor": null
+                  }
+                ],
+                "Lab-CO/IS2": [
+                  {
+                    "dayOfWeek": "TUESDAY",
+                    "startTime": "20:00",
+                    "endTime": "21:30",
+                    "classroom": "A2.1-George Boole",
+                    "groupName": "Lab-CO/IS2",
+                    "entryType": "LAB",
+                    "professor": "Maria Angeles Moraga"
                   }
                 ]
               }
@@ -2805,7 +2774,7 @@
           ]
         },
         {
-          "name": "Tecnol.",
+          "name": "Tecnol. Información",
           "matters": [
             {
               "code": "IntegracionSI",

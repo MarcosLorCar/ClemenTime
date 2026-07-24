@@ -88,24 +88,6 @@
                     "groupName": "Lab-A2",
                     "entryType": "LAB",
                     "professor": "Antonio Adan"
-                  },
-                  {
-                    "dayOfWeek": "TUESDAY",
-                    "startTime": "11:30",
-                    "endTime": "13:00",
-                    "classroom": "A1.1-John Von N",
-                    "groupName": "Lab-A2",
-                    "entryType": "LAB",
-                    "professor": "Maria Luz Lopez"
-                  },
-                  {
-                    "dayOfWeek": "TUESDAY",
-                    "startTime": "13:00",
-                    "endTime": "14:30",
-                    "classroom": "A1.1-John Von N",
-                    "groupName": "Lab-A2",
-                    "entryType": "LAB",
-                    "professor": "Peter Stephen Normile"
                   }
                 ],
                 "Lab-A1": [
@@ -117,6 +99,44 @@
                     "groupName": "Lab-A1",
                     "entryType": "LAB",
                     "professor": "Antonio Adan"
+                  }
+                ]
+              }
+            },
+            {
+              "code": "Calculo",
+              "name": "Calculo",
+              "color": null,
+              "theorySlots": [
+                {
+                  "dayOfWeek": "WEDNESDAY",
+                  "startTime": "08:30",
+                  "endTime": "10:00",
+                  "classroom": "A1.1-John Von N",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Maria Luz Lopez"
+                },
+                {
+                  "dayOfWeek": "TUESDAY",
+                  "startTime": "11:30",
+                  "endTime": "13:00",
+                  "classroom": "A1.1-John Von N",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Maria Luz Lopez"
+                }
+              ],
+              "labVariants": {
+                "Lab-A1/A2": [
+                  {
+                    "dayOfWeek": "MONDAY",
+                    "startTime": "11:30",
+                    "endTime": "14:30",
+                    "classroom": "A1.1-John Von N",
+                    "groupName": "Lab-A1/A2",
+                    "entryType": "LAB",
+                    "professor": "Maria Luz Lopez"
                   }
                 ]
               }
@@ -134,15 +154,6 @@
                   "groupName": null,
                   "entryType": "THEORY",
                   "professor": "Jesus Diez"
-                },
-                {
-                  "dayOfWeek": "THURSDAY",
-                  "startTime": "11:30",
-                  "endTime": "14:30",
-                  "classroom": "LD1-Ignacio",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "P.Grammatikopol"
                 }
               ],
               "labVariants": {
@@ -185,15 +196,6 @@
                   "professor": "Jesus Serrano"
                 },
                 {
-                  "dayOfWeek": "MONDAY",
-                  "startTime": "11:30",
-                  "endTime": "14:30",
-                  "classroom": "A1.1-John Von N",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Maria Luz Lopez"
-                },
-                {
                   "dayOfWeek": "WEDNESDAY",
                   "startTime": "13:00",
                   "endTime": "14:30",
@@ -227,12 +229,110 @@
                   }
                 ]
               }
+            },
+            {
+              "code": "Fisica",
+              "name": "Fisica",
+              "color": null,
+              "theorySlots": [
+                {
+                  "dayOfWeek": "WEDNESDAY",
+                  "startTime": "10:00",
+                  "endTime": "11:30",
+                  "classroom": "A1.1-John Von N",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Peter Stephen Normile"
+                },
+                {
+                  "dayOfWeek": "TUESDAY",
+                  "startTime": "13:00",
+                  "endTime": "14:30",
+                  "classroom": "A1.1-John Von N",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Peter Stephen Normile"
+                }
+              ],
+              "labVariants": {
+                "Lab-A1": [
+                  {
+                    "dayOfWeek": "FRIDAY",
+                    "startTime": "10:00",
+                    "endTime": "11:30",
+                    "classroom": "LD1-Ignacio",
+                    "groupName": "Lab-A1",
+                    "entryType": "LAB",
+                    "professor": "Peter Stephen Normile"
+                  }
+                ],
+                "Lab-A2": [
+                  {
+                    "dayOfWeek": "THURSDAY",
+                    "startTime": "11:30",
+                    "endTime": "13:00",
+                    "classroom": "LD1-Ignacio",
+                    "groupName": "Lab-A2",
+                    "entryType": "LAB",
+                    "professor": "P.Grammatikopol"
+                  }
+                ],
+                "Lab-A3": [
+                  {
+                    "dayOfWeek": "THURSDAY",
+                    "startTime": "13:00",
+                    "endTime": "14:30",
+                    "classroom": "LD1-Ignacio",
+                    "groupName": "Lab-A3",
+                    "entryType": "LAB",
+                    "professor": "P.Grammatikopol"
+                  }
+                ]
+              }
             }
           ]
         },
         {
           "name": "B",
           "matters": [
+            {
+              "code": "Calculo",
+              "name": "Calculo",
+              "color": null,
+              "theorySlots": [
+                {
+                  "dayOfWeek": "TUESDAY",
+                  "startTime": "08:30",
+                  "endTime": "10:00",
+                  "classroom": "A2.2-Grace Murray",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Maria Luz Lopez"
+                },
+                {
+                  "dayOfWeek": "MONDAY",
+                  "startTime": "10:00",
+                  "endTime": "11:30",
+                  "classroom": "A2.2-Grace Murray",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Maria Luz Lopez"
+                }
+              ],
+              "labVariants": {
+                "Lab-B1/B2": [
+                  {
+                    "dayOfWeek": "THURSDAY",
+                    "startTime": "08:30",
+                    "endTime": "11:30",
+                    "classroom": "A2.2-Grace Murray",
+                    "groupName": "Lab-B1/B2",
+                    "entryType": "LAB",
+                    "professor": "Maria Luz Lopez"
+                  }
+                ]
+              }
+            },
             {
               "code": "FunProg1",
               "name": "Fundamentos de Programacion I",
@@ -289,7 +389,58 @@
                     "groupName": "Lab-BC",
                     "entryType": "LAB",
                     "professor": "Ester Castillo"
-                  },
+                  }
+                ]
+              }
+            },
+            {
+              "code": "Fisica",
+              "name": "Fisica",
+              "color": null,
+              "theorySlots": [
+                {
+                  "dayOfWeek": "TUESDAY",
+                  "startTime": "10:00",
+                  "endTime": "11:30",
+                  "classroom": "A2.2-Grace Murray",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Peter Stephen Normile"
+                },
+                {
+                  "dayOfWeek": "MONDAY",
+                  "startTime": "11:30",
+                  "endTime": "13:00",
+                  "classroom": "A2.2-Grace Murray",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Peter Stephen Normile"
+                }
+              ],
+              "labVariants": {
+                "Lab-B1": [
+                  {
+                    "dayOfWeek": "TUESDAY",
+                    "startTime": "11:30",
+                    "endTime": "13:00",
+                    "classroom": "LD1-Ignacio",
+                    "groupName": "Lab-B1",
+                    "entryType": "LAB",
+                    "professor": "Peter Stephen Normile"
+                  }
+                ],
+                "Lab-B2": [
+                  {
+                    "dayOfWeek": "MONDAY",
+                    "startTime": "13:00",
+                    "endTime": "14:30",
+                    "classroom": "LD1-Ignacio",
+                    "groupName": "Lab-B2",
+                    "entryType": "LAB",
+                    "professor": "Peter Stephen Normile"
+                  }
+                ],
+                "Lab-BC": [
                   {
                     "dayOfWeek": "MONDAY",
                     "startTime": "15:30",
@@ -431,15 +582,6 @@
                   "professor": "Ester Castillo"
                 },
                 {
-                  "dayOfWeek": "TUESDAY",
-                  "startTime": "10:00",
-                  "endTime": "11:30",
-                  "classroom": "A1.2-Tim Berner",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Maria Luz Lopez"
-                },
-                {
                   "dayOfWeek": "MONDAY",
                   "startTime": "10:00",
                   "endTime": "11:30",
@@ -459,15 +601,6 @@
                     "groupName": "Lab-C1",
                     "entryType": "LAB",
                     "professor": "Ester Castillo"
-                  },
-                  {
-                    "dayOfWeek": "WEDNESDAY",
-                    "startTime": "10:00",
-                    "endTime": "11:30",
-                    "classroom": "LD1-Ignacio",
-                    "groupName": "Lab-C1",
-                    "entryType": "LAB",
-                    "professor": "Fernando Teran"
                   }
                 ],
                 "Lab-C2": [
@@ -490,15 +623,6 @@
                     "groupName": "Lab-BC",
                     "entryType": "LAB",
                     "professor": "Ester Castillo"
-                  },
-                  {
-                    "dayOfWeek": "MONDAY",
-                    "startTime": "15:30",
-                    "endTime": "17:00",
-                    "classroom": "LD1-Ignacio",
-                    "groupName": "Lab-BC",
-                    "entryType": "LAB",
-                    "professor": "Fernando Teran"
                   }
                 ]
               }
@@ -516,33 +640,6 @@
                   "groupName": null,
                   "entryType": "THEORY",
                   "professor": "Juan Carlos Lopez"
-                },
-                {
-                  "dayOfWeek": "THURSDAY",
-                  "startTime": "10:00",
-                  "endTime": "11:30",
-                  "classroom": "LD1-Ignacio",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Victoriano Fernandez"
-                },
-                {
-                  "dayOfWeek": "THURSDAY",
-                  "startTime": "11:30",
-                  "endTime": "13:00",
-                  "classroom": "A1.2-Tim Berner",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Victoriano Fernandez"
-                },
-                {
-                  "dayOfWeek": "THURSDAY",
-                  "startTime": "13:00",
-                  "endTime": "14:30",
-                  "classroom": "A1.2-Tim Berner",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Maria Luz Lopez"
                 },
                 {
                   "dayOfWeek": "WEDNESDAY",
@@ -591,6 +688,104 @@
               }
             },
             {
+              "code": "Calculo",
+              "name": "Calculo",
+              "color": null,
+              "theorySlots": [
+                {
+                  "dayOfWeek": "TUESDAY",
+                  "startTime": "10:00",
+                  "endTime": "11:30",
+                  "classroom": "A1.2-Tim Berner",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Maria Luz Lopez"
+                },
+                {
+                  "dayOfWeek": "THURSDAY",
+                  "startTime": "13:00",
+                  "endTime": "14:30",
+                  "classroom": "A1.2-Tim Berner",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Maria Luz Lopez"
+                }
+              ],
+              "labVariants": {
+                "Lab-C1/C2": [
+                  {
+                    "dayOfWeek": "TUESDAY",
+                    "startTime": "17:00",
+                    "endTime": "20:00",
+                    "classroom": "0.07-Claude Shannon",
+                    "groupName": "Lab-C1/C2",
+                    "entryType": "LAB",
+                    "professor": null
+                  }
+                ]
+              }
+            },
+            {
+              "code": "Fisica",
+              "name": "Fisica",
+              "color": null,
+              "theorySlots": [
+                {
+                  "dayOfWeek": "THURSDAY",
+                  "startTime": "11:30",
+                  "endTime": "13:00",
+                  "classroom": "A1.2-Tim Berner",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Victoriano Fernandez"
+                },
+                {
+                  "dayOfWeek": "TUESDAY",
+                  "startTime": "13:00",
+                  "endTime": "14:30",
+                  "classroom": "A1.2-Tim Berner",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Victoriano Fernandez"
+                }
+              ],
+              "labVariants": {
+                "Lab-C2": [
+                  {
+                    "dayOfWeek": "WEDNESDAY",
+                    "startTime": "10:00",
+                    "endTime": "11:30",
+                    "classroom": "LD1-Ignacio",
+                    "groupName": "Lab-C2",
+                    "entryType": "LAB",
+                    "professor": "Fernando Teran"
+                  }
+                ],
+                "Lab-C1": [
+                  {
+                    "dayOfWeek": "THURSDAY",
+                    "startTime": "10:00",
+                    "endTime": "11:30",
+                    "classroom": "LD1-Ignacio",
+                    "groupName": "Lab-C1",
+                    "entryType": "LAB",
+                    "professor": "Victoriano Fernandez"
+                  }
+                ],
+                "Lab-BC": [
+                  {
+                    "dayOfWeek": "MONDAY",
+                    "startTime": "15:30",
+                    "endTime": "17:00",
+                    "classroom": "LD1-Ignacio",
+                    "groupName": "Lab-BC",
+                    "entryType": "LAB",
+                    "professor": "Fernando Teran"
+                  }
+                ]
+              }
+            },
+            {
               "code": "FunGesEmpr",
               "name": "Fundamentos de Gestion Empresarial",
               "color": null,
@@ -624,24 +819,6 @@
                     "groupName": "Lab-BC",
                     "entryType": "LAB",
                     "professor": "Isidro Peña"
-                  },
-                  {
-                    "dayOfWeek": "TUESDAY",
-                    "startTime": "13:00",
-                    "endTime": "14:30",
-                    "classroom": "A1.2-Tim Berner",
-                    "groupName": "Lab-BC",
-                    "entryType": "LAB",
-                    "professor": "Victoriano Fernandez"
-                  },
-                  {
-                    "dayOfWeek": "TUESDAY",
-                    "startTime": "17:00",
-                    "endTime": "20:00",
-                    "classroom": "0.07-Claude Shannon",
-                    "groupName": "Lab-BC",
-                    "entryType": "LAB",
-                    "professor": "Victoriano Fernandez"
                   }
                 ]
               }
@@ -651,6 +828,55 @@
         {
           "name": "D",
           "matters": [
+            {
+              "code": "Fisica",
+              "name": "Fisica",
+              "color": null,
+              "theorySlots": [
+                {
+                  "dayOfWeek": "MONDAY",
+                  "startTime": "17:00",
+                  "endTime": "18:30",
+                  "classroom": "A1.2-Tim Berner",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Fernando Teran"
+                },
+                {
+                  "dayOfWeek": "TUESDAY",
+                  "startTime": "17:00",
+                  "endTime": "18:30",
+                  "classroom": "A1.2-Tim Berner",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Fernando Teran"
+                }
+              ],
+              "labVariants": {
+                "Lab-D2": [
+                  {
+                    "dayOfWeek": "TUESDAY",
+                    "startTime": "10:00",
+                    "endTime": "11:30",
+                    "classroom": "LD1-Ignacio",
+                    "groupName": "Lab-D2",
+                    "entryType": "LAB",
+                    "professor": "Fernando Teran"
+                  }
+                ],
+                "Lab-D1": [
+                  {
+                    "dayOfWeek": "TUESDAY",
+                    "startTime": "13:00",
+                    "endTime": "14:30",
+                    "classroom": "LD1-Ignacio",
+                    "groupName": "Lab-D1",
+                    "entryType": "LAB",
+                    "professor": "Fernando Teran"
+                  }
+                ]
+              }
+            },
             {
               "code": "FunGesEmpr",
               "name": "Fundamentos de Gestion Empresarial",
@@ -666,15 +892,6 @@
                   "professor": "Isidro Peña"
                 },
                 {
-                  "dayOfWeek": "MONDAY",
-                  "startTime": "17:00",
-                  "endTime": "21:30",
-                  "classroom": "A1.2-Tim Berner",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Fernando Teran"
-                },
-                {
                   "dayOfWeek": "TUESDAY",
                   "startTime": "15:30",
                   "endTime": "17:00",
@@ -682,15 +899,6 @@
                   "groupName": null,
                   "entryType": "THEORY",
                   "professor": "Andres Javier Prado"
-                },
-                {
-                  "dayOfWeek": "TUESDAY",
-                  "startTime": "17:00",
-                  "endTime": "18:30",
-                  "classroom": "A1.2-Tim Berner",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Fernando Teran"
                 }
               ],
               "labVariants": {
@@ -757,6 +965,44 @@
               }
             },
             {
+              "code": "Calculo",
+              "name": "Calculo",
+              "color": null,
+              "theorySlots": [
+                {
+                  "dayOfWeek": "THURSDAY",
+                  "startTime": "15:30",
+                  "endTime": "17:00",
+                  "classroom": "A1.2-Tim Berner",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Jose Angel Martin"
+                },
+                {
+                  "dayOfWeek": "WEDNESDAY",
+                  "startTime": "20:00",
+                  "endTime": "21:30",
+                  "classroom": "A1.2-Tim Berner",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Jose Angel Martin"
+                }
+              ],
+              "labVariants": {
+                "Lab-D1/D2": [
+                  {
+                    "dayOfWeek": "MONDAY",
+                    "startTime": "18:30",
+                    "endTime": "21:30",
+                    "classroom": "A1.2-Tim Berner",
+                    "groupName": "Lab-D1/D2",
+                    "entryType": "LAB",
+                    "professor": null
+                  }
+                ]
+              }
+            },
+            {
               "code": "TeCo",
               "name": "Tecnologia de Computadores",
               "color": null,
@@ -769,15 +1015,6 @@
                   "groupName": null,
                   "entryType": "THEORY",
                   "professor": "Inocente Sanchez"
-                },
-                {
-                  "dayOfWeek": "WEDNESDAY",
-                  "startTime": "20:00",
-                  "endTime": "21:30",
-                  "classroom": "A1.2-Tim Berner",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Jose Angel Martin"
                 },
                 {
                   "dayOfWeek": "THURSDAY",
@@ -1724,28 +1961,6 @@
                 }
               ],
               "labVariants": {
-                "Lab-B2": [
-                  {
-                    "dayOfWeek": "FRIDAY",
-                    "startTime": "11:30",
-                    "endTime": "13:00",
-                    "classroom": "0.07-Claude Shannon",
-                    "groupName": "Lab-B2",
-                    "entryType": "LAB",
-                    "professor": "Andres Montoro"
-                  }
-                ],
-                "Lab-B1": [
-                  {
-                    "dayOfWeek": "FRIDAY",
-                    "startTime": "13:00",
-                    "endTime": "14:30",
-                    "classroom": "0.07-Claude Shannon",
-                    "groupName": "Lab-B1",
-                    "entryType": "LAB",
-                    "professor": "Andres Montoro"
-                  }
-                ],
                 "Lab-BD2": [
                   {
                     "dayOfWeek": "THURSDAY",
@@ -1844,17 +2059,6 @@
                 }
               ],
               "labVariants": {
-                "Lab-B2": [
-                  {
-                    "dayOfWeek": "MONDAY",
-                    "startTime": "11:30",
-                    "endTime": "13:00",
-                    "classroom": null,
-                    "groupName": "Lab-B2",
-                    "entryType": "LAB",
-                    "professor": "Crescencio Bravo"
-                  }
-                ],
                 "Lab-BD2": [
                   {
                     "dayOfWeek": "MONDAY",
@@ -1864,17 +2068,6 @@
                     "groupName": "Lab-BD2",
                     "entryType": "LAB",
                     "professor": "Jared David"
-                  }
-                ],
-                "Lab-B1": [
-                  {
-                    "dayOfWeek": "TUESDAY",
-                    "startTime": "11:30",
-                    "endTime": "13:00",
-                    "classroom": null,
-                    "groupName": "Lab-B1",
-                    "entryType": "LAB",
-                    "professor": "Crescencio Bravo"
                   }
                 ],
                 "Lab-BD1": [
@@ -1924,28 +2117,6 @@
                     "groupName": "Lab-BD1",
                     "entryType": "LAB",
                     "professor": null
-                  }
-                ],
-                "Lab-B1": [
-                  {
-                    "dayOfWeek": "FRIDAY",
-                    "startTime": "13:00",
-                    "endTime": "14:30",
-                    "classroom": null,
-                    "groupName": "Lab-B1",
-                    "entryType": "LAB",
-                    "professor": "Maria Angeles Moraga"
-                  }
-                ],
-                "Lab-B2": [
-                  {
-                    "dayOfWeek": "THURSDAY",
-                    "startTime": "13:00",
-                    "endTime": "14:30",
-                    "classroom": null,
-                    "groupName": "Lab-B2",
-                    "entryType": "LAB",
-                    "professor": "Felix Oscar Garcia"
                   }
                 ]
               }
