@@ -23,11 +23,11 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.ui.res.stringResource
-import com.github.marcoslorcar.clementime.R
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -38,11 +38,13 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.github.marcoslorcar.clementime.R
 import com.github.marcoslorcar.clementime.data.ClassSlot
 import com.github.marcoslorcar.clementime.data.EntryType
 import com.github.marcoslorcar.clementime.data.Subject
@@ -102,17 +104,21 @@ fun ScheduleTimeline(
     val isToday = dayOfWeek == java.time.LocalDate.now().dayOfWeek
     val isWithinTimeRange = currentTime in DAY_START_TIME..DAY_END_TIME
 
-    var viewportHeightPx by remember { mutableStateOf(0) }
+    var viewportHeightPx by remember { mutableIntStateOf(0) }
     var hasAutoScrolled by remember { mutableStateOf(false) }
 
-    val isNearNow = remember(scrollState.value, viewportHeightPx, currentTime, isToday, isWithinTimeRange) {
-        if (viewportHeightPx == 0 || !isToday || !isWithinTimeRange) false
-        else {
-            val nowMinutes = Duration.between(DAY_START_TIME, currentTime).toMinutes().toInt()
-            val nowLinePosPx = with(density) { (MINUTE_HEIGHT * nowMinutes).toPx() + TOP_TIMELINE_PADDING.toPx() }
-            val centeredPosPx = nowLinePosPx - (viewportHeightPx / 2)
-            val diff = abs(scrollState.value - centeredPosPx)
-            diff < (viewportHeightPx * 0.15f) // 15% threshold for better feel
+    val isNearNow by remember {
+        derivedStateOf {
+            if (viewportHeightPx == 0 || !isToday || !isWithinTimeRange) {
+                false
+            } else {
+                val nowMinutes = Duration.between(DAY_START_TIME, currentTime).toMinutes().toInt()
+                val nowLinePosPx = with(density) { (MINUTE_HEIGHT * nowMinutes).toPx() + TOP_TIMELINE_PADDING.toPx() }
+                val centeredPosPx = nowLinePosPx - (viewportHeightPx / 2)
+                val diff = abs(scrollState.value - centeredPosPx)
+
+                diff < (viewportHeightPx * 0.15f) // 15% threshold for better feel
+            }
         }
     }
 
@@ -245,13 +251,13 @@ fun ScheduleTimeline(
                                 .fillMaxHeight()
                         ) {
                             ClassSlotRow(
+                                modifier = Modifier.fillMaxHeight(),
                                 subject = subject,
                                 slot = slot,
                                 highContrastEnabled = highContrastEnabled,
                                 isHighlighted = slot.id == highlightSlotId,
                                 onClickSubject = { onClickSubject(subject.id, slot.id) },
                                 onLongClickSubject = { onLongClickSubject(subject.id, slot.id) },
-                                modifier = Modifier.fillMaxHeight(),
                                 isSingle = cluster.items.size == 1
                             )
                         }
@@ -261,9 +267,9 @@ fun ScheduleTimeline(
 
             if (showNowLine && isToday && isWithinTimeRange) {
                 NowLine(
+                    modifier = Modifier.fillMaxWidth(),
                     currentTime = currentTime,
-                    style = nowLineStyle,
-                    modifier = Modifier.fillMaxWidth()
+                    style = nowLineStyle
                 )
             }
         }
@@ -272,9 +278,9 @@ fun ScheduleTimeline(
 
 @Composable
 fun NowLine(
+    modifier: Modifier = Modifier,
     currentTime: LocalTime,
-    style: String,
-    modifier: Modifier = Modifier
+    style: String
 ) {
     val density = LocalDensity.current
     val nowMinutes = Duration.between(DAY_START_TIME, currentTime).toMinutes().toInt()
@@ -313,13 +319,13 @@ fun NowLine(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ClassSlotRow(
+    modifier: Modifier = Modifier,
     subject: Subject,
     slot: ClassSlot,
     highContrastEnabled: Boolean = false,
     isHighlighted: Boolean = false,
     onClickSubject: () -> Unit,
     onLongClickSubject: () -> Unit = {},
-    modifier: Modifier = Modifier,
     isSingle: Boolean = true
 ) {
     val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")

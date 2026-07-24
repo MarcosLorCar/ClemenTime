@@ -30,7 +30,7 @@ android {
         }
         release {
             optimization {
-                enable = false
+                enable = true
             }
             signingConfig = signingConfigs.getByName("debug")
         }

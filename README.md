@@ -1,32 +1,42 @@
 # ClemenTime
 
-ClemenTime is a schedule and tasks planner app for Android.
+ClemenTime is a schedules and tasks planner app for Android, built with Jetpack Compose. It allows you to import, view, and manage your timetables and tasks on a clean, modern interface.
+
+## Download
+
+You can download the latest APK from the **[Releases](https://github.com/MarcosLorCar/ClemenTime/releases/latest)** page.
 
 ## Features
 
-* Schedule management and timetables
-* Matter and subject tracking
-* Material 3 UI with dark and light mode support
-* Localization support
-* Data import and export for backups
+- **Timetable Management**: View and coordinate daily and weekly schedules.
+- **Adaptive Layout**: Responsive UI supporting phones, tablets, and foldables.
+- **Material 3 UI**: Clean look with support for light and dark themes, plus dynamic color styling.
+- **Home Screen Widget**: A reactive widget showing current and upcoming events at a glance.
+- **Local Cache & Updates**: Download schedule files from online repositories with automatic update checking.
+- **Conflict Resolution**: Highlight and resolve overlapping schedule slots upon import.
+- **Data Portability**: Backup and restore data using import/export features.
+- **Privacy First**: Fully offline operation with no account registration or analytics tracking.
 
-## Building Locally
+## Development
 
-You can compile the app using the Gradle Wrapper:
+You can build the app locally using the Gradle Wrapper.
+
+### Prerequisites
+
+- Android SDK (API 34+)
+- JDK 17 or higher
+
+### Building the APK
+
+Run the following command in your terminal:
 
 ```bash
 ./gradlew assembleDebug
 ```
 
-The generated APK will be at:
+The compiled debug APK will be generated at:
 `app/build/outputs/apk/debug/app-debug.apk`
-
-## CI/CD
-
-* CI: Runs tests and compiles the debug app on PRs and pushes to main.
-* Release: Triggered by tags starting with v (e.g., v1.0.0). Builds the release APK and uploads it to GitHub Releases.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
