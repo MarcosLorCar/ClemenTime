@@ -354,18 +354,29 @@ class ScheduleParser:
         known_codes = sorted(self.mapper.matters.keys(), key=len, reverse=True)
         known_codes = [c for c in known_codes if c not in ["PruebasProgreso", "Conferencias"]]
 
-        # Expand known codes to include common Spanish accented variations
-        accent_variations = {
-            "Calculo": ["Cálculo", "Calculo"],
-            "Fisica": ["Física", "Fisica"],
-            "Lógica": ["Logica", "Lógica"],
-            "SisInt": ["SistInt", "SisInt"]
+        # Canonical code alias dictionary
+        code_aliases = {
+            "Álgebra": "Algebra",
+            "Estadística": "Estadistica",
+            "AuditoríaSI": "AuditoriaSI",
+            "DiseñoSW": "DisenoSW",
+            "TeoríaAC": "TeoriaAC",
+            "FunGesEmp": "FunGesEmpr",
+            "Cálculo": "Calculo",
+            "Física": "Fisica",
+            "Logica": "Lógica",
+            "SistInt": "SisInt"
         }
+
+        # Normalize cell_text aliases first with word boundaries
+        for alias, canonical in code_aliases.items():
+            cell_text = re.sub(r'\b' + re.escape(alias) + r'\b', canonical, cell_text)
+
+        # Expand known codes to include search variants
         search_codes = list(known_codes)
-        for base_code, vars in accent_variations.items():
-            for v in vars:
-                if v not in search_codes:
-                    search_codes.append(v)
+        for alias in code_aliases.keys():
+            if alias not in search_codes:
+                search_codes.append(alias)
         search_codes.sort(key=len, reverse=True)
 
         code_patterns = [re.escape(c) for c in search_codes]
@@ -404,16 +415,7 @@ class ScheduleParser:
             if not code_match:
                 continue
 
-            code = code_match
-            # Normalize common variants
-            code_aliases = {
-                "FunGesEmp": "FunGesEmpr",
-                "Cálculo": "Calculo",
-                "Física": "Fisica",
-                "Logica": "Lógica",
-                "SistInt": "SisInt"
-            }
-            code = code_aliases.get(code, code)
+            code = code_aliases.get(code_match, code_match)
 
             lab_match = re.search(r'\b(Lab-[\w\/]+|Lab-B[CD]\d*)\b', chunk)
             group_name = lab_match.group(1) if lab_match else None

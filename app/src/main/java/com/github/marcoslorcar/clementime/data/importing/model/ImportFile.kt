@@ -14,5 +14,6 @@ data class ImportFile(
     val sourceType: ImportSourceType = if (isBundled) ImportSourceType.BUNDLED else ImportSourceType.CUSTOM,
     val remotePath: String? = null,
     val description: String? = null,
-    val isCached: Boolean = false
+    val isCached: Boolean = false,
+    val isUpdateAvailable: Boolean = false
 )

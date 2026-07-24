@@ -64,6 +64,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -135,11 +136,13 @@ fun ImportScreen(
         is ImportUiState.Library -> {
             ImportLibraryContent(
                 files = state.files,
+                searchQuery = state.searchQuery,
                 error = state.error,
                 onNavigateBack = onNavigateBack,
                 onFileClick = { file -> viewModel.loadFile(context, file) },
                 onDeleteFileClick = { file -> viewModel.deleteFile(context, file) },
-                onSelectNewFileClick = { filePickerLauncher.launch("application/json") }
+                onSelectNewFileClick = { filePickerLauncher.launch("application/json") },
+                onUpdateSearchQuery = viewModel::updateSearchQuery
             )
         }
         is ImportUiState.Selection -> {
@@ -190,13 +193,28 @@ fun ImportScreen(
 @Composable
 fun ImportLibraryContent(
     files: List<ImportFile>,
+    searchQuery: String,
     error: String? = null,
     onNavigateBack: () -> Unit,
     onFileClick: (ImportFile) -> Unit,
     onDeleteFileClick: (ImportFile) -> Unit,
-    onSelectNewFileClick: () -> Unit
+    onSelectNewFileClick: () -> Unit,
+    onUpdateSearchQuery: (String) -> Unit
 ) {
     var fileToDelete by remember { mutableStateOf<ImportFile?>(null) }
+    var isSearchVisible by remember { mutableStateOf(false) }
+
+    val filteredFiles = remember(files, searchQuery) {
+        if (searchQuery.isBlank()) files
+        else files.filter { 
+            it.title.contains(searchQuery, ignoreCase = true) || 
+            (it.description?.contains(searchQuery, ignoreCase = true) == true)
+        }
+    }
+
+    val groupedFiles = remember(filteredFiles) {
+        filteredFiles.groupBy { it.sourceType }
+    }
 
     fileToDelete?.let { file ->
         AlertDialog(
@@ -225,7 +243,22 @@ fun ImportLibraryContent(
         topBar = {
             ClemenTimeTopBar(
                 title = stringResource(R.string.import_schedule_title),
-                onNavigateBack = onNavigateBack
+                onNavigateBack = onNavigateBack,
+                actions = {
+                    IconButton(
+                        onClick = {
+                            isSearchVisible = !isSearchVisible
+                            if (!isSearchVisible) {
+                                onUpdateSearchQuery("")
+                            }
+                        }
+                    ) {
+                        Icon(
+                            imageVector = if (isSearchVisible) Icons.Default.Close else Icons.Default.Search,
+                            contentDescription = if (isSearchVisible) "Close search" else "Search schedules"
+                        )
+                    }
+                }
             )
         }
     ) { paddingValues ->
@@ -235,12 +268,26 @@ fun ImportLibraryContent(
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            Text(
-                text = stringResource(R.string.import_schedule_instructions),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
+            AnimatedVisibility(visible = isSearchVisible) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = onUpdateSearchQuery,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    placeholder = { Text(stringResource(R.string.search_schedules_placeholder)) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { onUpdateSearchQuery("") }) {
+                                Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                            }
+                        }
+                    },
+                    singleLine = true,
+                    shape = CircleShape
+                )
+            }
 
             if (!error.isNullOrBlank()) {
                 Surface(
@@ -261,7 +308,9 @@ fun ImportLibraryContent(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = error,
+                            text = if (files.isEmpty() && error.contains("unreachable", ignoreCase = true)) 
+                                stringResource(R.string.import_library_online_unreachable) 
+                                else error,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onErrorContainer
                         )
@@ -269,101 +318,130 @@ fun ImportLibraryContent(
                 }
             }
 
-            val libraryListState = rememberLazyListState()
+            if (files.isEmpty() && error.isNullOrBlank()) {
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else if (filteredFiles.isEmpty() && files.isNotEmpty()) {
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    Text(
+                        text = stringResource(R.string.import_library_no_results),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            } else {
+                val libraryListState = rememberLazyListState()
 
-            LazyColumn(
-                state = libraryListState,
-                modifier = Modifier
-                    .weight(1f)
-                    .fadingEdges(libraryListState),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(files, key = { "${it.sourceType.name}_${it.id}" }) { file ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onFileClick(file) },
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Description,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(36.dp)
-                            )
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column(modifier = Modifier.weight(1f)) {
+                LazyColumn(
+                    state = libraryListState,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fadingEdges(libraryListState),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    groupedFiles.forEach { (sourceType, typeFiles) ->
+                        item(key = "header_${sourceType.name}") {
+                            Surface(
+                                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 8.dp, bottom = 4.dp),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
                                 Text(
-                                    text = file.title,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.SemiBold
+                                    text = when (sourceType) {
+                                        com.github.marcoslorcar.clementime.data.importing.model.ImportSourceType.REMOTE -> "Online Repository"
+                                        com.github.marcoslorcar.clementime.data.importing.model.ImportSourceType.BUNDLED -> stringResource(R.string.import_bundled_label)
+                                        com.github.marcoslorcar.clementime.data.importing.model.ImportSourceType.CUSTOM -> stringResource(R.string.import_custom_label)
+                                    },
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                                 )
-                                if (!file.description.isNullOrBlank()) {
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(
-                                        text = file.description,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                                Spacer(modifier = Modifier.height(4.dp))
+                            }
+                        }
+
+                        items(typeFiles, key = { it.id }) { file ->
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onFileClick(file) },
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                )
+                            ) {
                                 Row(
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Surface(
-                                        shape = RoundedCornerShape(4.dp),
-                                        color = when {
-                                            file.sourceType == com.github.marcoslorcar.clementime.data.importing.model.ImportSourceType.REMOTE -> MaterialTheme.colorScheme.primaryContainer
-                                            file.isBundled -> MaterialTheme.colorScheme.secondaryContainer
-                                            else -> MaterialTheme.colorScheme.tertiaryContainer
-                                        }
-                                    ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Description,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(36.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(16.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = when {
-                                                file.sourceType == com.github.marcoslorcar.clementime.data.importing.model.ImportSourceType.REMOTE -> "Online Repository"
-                                                file.isBundled -> stringResource(R.string.import_bundled_label)
-                                                else -> stringResource(R.string.import_custom_label)
-                                            },
-                                            style = MaterialTheme.typography.labelSmall,
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                            color = when {
-                                                file.sourceType == com.github.marcoslorcar.clementime.data.importing.model.ImportSourceType.REMOTE -> MaterialTheme.colorScheme.onPrimaryContainer
-                                                file.isBundled -> MaterialTheme.colorScheme.onSecondaryContainer
-                                                else -> MaterialTheme.colorScheme.onTertiaryContainer
-                                            }
+                                            text = file.title,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.SemiBold
                                         )
-                                    }
-                                    if (file.isCached) {
-                                        Surface(
-                                            shape = RoundedCornerShape(4.dp),
-                                            color = Color(0xFFC8E6C9)
-                                        ) {
+                                        if (!file.description.isNullOrBlank()) {
+                                            Spacer(modifier = Modifier.height(2.dp))
                                             Text(
-                                                text = "Saved",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                                color = Color(0xFF2E7D32)
+                                                text = file.description,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            if (file.isCached) {
+                                                Surface(
+                                                    shape = RoundedCornerShape(4.dp),
+                                                    color = Color(0xFFC8E6C9)
+                                                ) {
+                                                    Text(
+                                                        text = stringResource(R.string.import_cached_label),
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                                        color = Color(0xFF2E7D32)
+                                                    )
+                                                }
+                                            }
+                                            if (file.isUpdateAvailable) {
+                                                Surface(
+                                                    shape = RoundedCornerShape(4.dp),
+                                                    color = MaterialTheme.colorScheme.errorContainer
+                                                ) {
+                                                    Text(
+                                                        text = stringResource(R.string.import_update_available_label),
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                                        color = MaterialTheme.colorScheme.onErrorContainer
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                    if (file.sourceType == com.github.marcoslorcar.clementime.data.importing.model.ImportSourceType.CUSTOM) {
+                                        IconButton(onClick = { fileToDelete = file }) {
+                                            Icon(
+                                                imageVector = Icons.Default.Delete,
+                                                contentDescription = "Delete custom file",
+                                                tint = MaterialTheme.colorScheme.error
                                             )
                                         }
                                     }
-                                }
-                            }
-                            if (file.sourceType == com.github.marcoslorcar.clementime.data.importing.model.ImportSourceType.CUSTOM) {
-                                IconButton(onClick = { fileToDelete = file }) {
-                                    Icon(
-                                        imageVector = Icons.Default.Delete,
-                                        contentDescription = "Delete custom file",
-                                        tint = MaterialTheme.colorScheme.error
-                                    )
                                 }
                             }
                         }

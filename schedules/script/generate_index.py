@@ -2,7 +2,15 @@
 import json
 import os
 import sys
+import hashlib
 from datetime import datetime
+
+def get_file_hash(file_path):
+    sha256_hash = hashlib.sha256()
+    with open(file_path, "rb") as f:
+        for byte_block in iter(lambda: f.read(4096), b""):
+            sha256_hash.update(byte_block)
+    return sha256_hash.hexdigest()
 
 def generate_index(dist_dir=None):
     if dist_dir is None:
@@ -24,12 +32,14 @@ def generate_index(dist_dir=None):
 
                 schedule_id = os.path.splitext(filename)[0]
                 title = data.get("title", filename)
+                file_hash = get_file_hash(file_path)
 
                 index_entries.append({
                     "id": schedule_id,
                     "title": title,
                     "description": "Horario oficial",
                     "path": filename,
+                    "hash": file_hash,
                     "updatedTime": datetime.now().strftime("%Y-%m-%d")
                 })
             except Exception as e:

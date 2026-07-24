@@ -94,6 +94,8 @@
 
     <string name="export_error_prefix">Error al exportar: %1$s</string>
     <string name="import_library_title">Biblioteca de Importación</string>
+    <string name="import_cached_label">Guardado</string>
+    <string name="import_update_available_label">Actualización Disponible</string>
     <string name="import_select_file_device">Importar JSON desde el dispositivo</string>
     <string name="import_bundled_label">Incluido</string>
     <string name="import_custom_label">Personalizado</string>
@@ -242,6 +244,9 @@
 
     <!-- Additional screen strings -->
     <string name="empty_schedule_day">¡No hay clases previstas para el %1$s hoy!</string>
+    <string name="import_library_no_results">Ningún horario coincide con tu búsqueda.</string>
+    <string name="import_library_online_unreachable">Biblioteca online no disponible. Comprueba tu conexión o inténtalo más tarde.</string>
+    <string name="search_schedules_placeholder">Buscar horarios…</string>
     <string name="import_schedule_instructions">Elige una plantilla de la biblioteca o importa un archivo JSON para empezar.</string>
     <string name="day_of_week_label">Día de la semana</string>
     <string name="no_slots_assigned">Aún no hay horarios asignados.</string>

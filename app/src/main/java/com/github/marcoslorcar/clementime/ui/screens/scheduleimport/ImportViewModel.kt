@@ -37,7 +37,8 @@ sealed interface ImportUiState {
     object LoadingLibrary : ImportUiState
     data class Library(
         val files: List<ImportFile>,
-        val error: String? = null
+        val error: String? = null,
+        val searchQuery: String = ""
     ) : ImportUiState
     object Parsing : ImportUiState
     data class Selection(
@@ -109,8 +110,14 @@ class ImportViewModel @Inject constructor(
                                 summary.path.startsWith("http://") || summary.path.startsWith("https://") -> summary.path
                                 else -> "$folderUrl${summary.path.removePrefix("/")}"
                             }
-                            val isCached = cacheMetadata.any { it.id == summary.id } && 
+                            val cachedEntry = cacheMetadata.find { it.id == summary.id }
+                            val isCached = cachedEntry != null && 
+                                           cachedEntry.hash == summary.hash &&
                                            File(cacheDir, "cache_${summary.id}.json").exists()
+                            val isUpdateAvailable = cachedEntry != null && 
+                                                    summary.hash != null && 
+                                                    cachedEntry.hash != summary.hash &&
+                                                    File(cacheDir, "cache_${summary.id}.json").exists()
                             ImportFile(
                                 id = summary.id,
                                 title = summary.title,
@@ -119,7 +126,8 @@ class ImportViewModel @Inject constructor(
                                 sourceType = ImportSourceType.REMOTE,
                                 remotePath = fullPath,
                                 description = summary.description,
-                                isCached = isCached
+                                isCached = isCached,
+                                isUpdateAvailable = isUpdateAvailable
                             )
                         }
                     },
@@ -145,7 +153,7 @@ class ImportViewModel @Inject constructor(
                 val errorMsg = if (remoteResult.isFailure && remoteFiles.isNotEmpty()) {
                     "Offline: showing cached schedules"
                 } else if (remoteResult.isFailure) {
-                    "Failed to load remote schedules: ${remoteResult.exceptionOrNull()?.localizedMessage}"
+                    "Online library unreachable. Check your connection."
                 } else {
                     null
                 }
@@ -423,6 +431,8 @@ class ImportViewModel @Inject constructor(
     fun updateSearchQuery(query: String) {
         val currentState = _uiState.value
         if (currentState is ImportUiState.Selection) {
+            _uiState.value = currentState.copy(searchQuery = query)
+        } else if (currentState is ImportUiState.Library) {
             _uiState.value = currentState.copy(searchQuery = query)
         }
     }

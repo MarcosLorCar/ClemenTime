@@ -90,6 +90,8 @@
 
     <string name="export_error_prefix">Export failed: %1$s</string>
     <string name="import_library_title">Import Library</string>
+    <string name="import_cached_label">Saved</string>
+    <string name="import_update_available_label">Update Available</string>
     <string name="import_select_file_device">Import JSON from device</string>
     <string name="import_bundled_label">Bundled</string>
     <string name="import_custom_label">Custom</string>
@@ -238,6 +240,9 @@
 
     <!-- Additional screen strings -->
     <string name="empty_schedule_day">Nothing scheduled for %1$s today!</string>
+    <string name="import_library_no_results">No schedules match your search.</string>
+    <string name="import_library_online_unreachable">Online library unreachable. Check your connection or try again later.</string>
+    <string name="search_schedules_placeholder">Search schedules…</string>
     <string name="import_schedule_instructions">Choose a template from the library or import a custom schedule JSON file to get started.</string>
     <string name="day_of_week_label">Day of the week</string>
     <string name="no_slots_assigned">No slots added yet.</string>

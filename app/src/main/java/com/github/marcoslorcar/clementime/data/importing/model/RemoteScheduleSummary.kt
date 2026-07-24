@@ -11,5 +11,6 @@ data class RemoteScheduleSummary(
     val title: String,
     val description: String? = null,
     val path: String,
+    val hash: String? = null,
     val updatedTime: String? = null
 )

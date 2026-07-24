@@ -4,6 +4,7 @@
     "title": "ESI2026-27-GRADO 1C Grupos v1.2",
     "description": "Horario oficial",
     "path": "ESI2026-27-GRADO_1C_Grupos_v1.2.json",
+    "hash": "34c5e401ba8db9a66b18ff7c92d4cadc56ac05d15bcd2519d25c12890f885ef5",
     "updatedTime": "2026-07-24"
   },
   {
@@ -11,6 +12,7 @@
     "title": "ESI2026-27-GRADO 2C Grupos v1.2",
     "description": "Horario oficial",
     "path": "ESI2026-27-GRADO_2C_Grupos_v1.2.json",
+    "hash": "69fc6a664f9a52364d3aed78b5e57900e5e5dcc993a463074d120799ea91ec1d",
     "updatedTime": "2026-07-24"
   }
 ]
