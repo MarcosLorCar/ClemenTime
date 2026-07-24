@@ -97,7 +97,7 @@ jobs:
           body: ${{ inputs.release_description }}
           generate_release_notes: ${{ !inputs.release_description }}
           draft: false
-          prerelease: ${{ contains(steps.info.outputs.tag_name, 'alpha') || contains(steps.info.outputs.tag_name, 'beta') || contains(steps.info.outputs.tag_name, 'rc') }}
+          prerelease: ${{ contains(steps.info.outputs.tag_name, 'alpha') || contains(steps.info.outputs.tag_name, 'beta') }}
           files: |
             app/build/outputs/apk/release/ClemenTime-${{ steps.info.outputs.tag_name }}.apk
             app/build/outputs/bundle/release/app-release.aab
