@@ -31,7 +31,7 @@ PROF_REGEX = r'\b([A-Za-zÁÉÍÓÚáéíóúñ][A-Za-z0-9áéíóúñÁÉÍÓÚ
 def clean_group_name(yr: str, grp_raw: str) -> str:
     """Normalizes raw group header text into clean group name."""
     grp_raw = re.sub(r'^[1234]º\s*', '', grp_raw)
-    for s in ['Ciudad Real', 'Esc. Superior de Informatica', 'Bilingüe', 'MUFPS', 'ESI']:
+    for s in ['Ciudad Real', 'Esc. Superior de Informatica', 'Esc. Superior de Informática', 'Bilingüe', 'MUFPS', 'ESI']:
         grp_raw = grp_raw.replace(s, '')
     grp_raw = grp_raw.strip()
 
@@ -175,7 +175,7 @@ class ScheduleParser:
         for line in lines:
             line_str = line.strip()
             
-            # Detect standalone Year / Group headers
+            # Detect standalone Year / Group headers (e.g. "1º A", "3º CO", "3º Computación Ciudad Real")
             header_match = re.match(r'^(1º|2º|3º|4º)\s+([A-Za-z0-9ÁÉÍÓÚáéíóúñ\.\s]+)$', line_str)
             if header_match and not line_str.startswith('|'):
                 flush_table()
@@ -201,16 +201,25 @@ class ScheduleParser:
             return
 
         header_idx = 0
-        # Check if row 0 contains embedded group header (e.g. "| 1º D | 1º D | ... |")
-        row0_cols = [c.strip() for c in table_lines[0].split('|')[1:-1]]
-        row0_text = " ".join(row0_cols)
-        hdr_match = re.search(r'\b([1234]º)\s+([A-Za-z0-9ÁÉÍÓÚáéíóúñ\.\s]+)', row0_text)
-        if hdr_match:
-            year = hdr_match.group(1)
-            group = clean_group_name(year, hdr_match.group(2))
-            header_idx = 1
-            if header_idx < len(table_lines) and table_lines[header_idx].startswith('|--'):
-                header_idx += 1
+        # Search all non-divider lines before main table rows for embedded headers or day header row
+        for idx, tline in enumerate(table_lines):
+            if tline.startswith('|--') or tline.startswith('|:--'):
+                continue
+            cols = [c.strip() for c in tline.split('|')[1:-1]]
+            text_combined = " ".join(cols)
+            
+            # Check for embedded year/group header
+            hdr_match = re.search(r'\b([1234]º)\s+([A-Za-z0-9ÁÉÍÓÚáéíóúñ\.\s]+)', text_combined)
+            if hdr_match and not any(day_k in text_combined.lower() for day_k in DAY_MAP):
+                year = hdr_match.group(1)
+                group = clean_group_name(year, hdr_match.group(2))
+                continue
+
+            # Check if this line contains days of the week (Header row)
+            valid_days = [c for c in cols if any(dk in c.lower() for dk in DAY_MAP)]
+            if valid_days:
+                header_idx = idx
+                break
 
         if header_idx >= len(table_lines):
             return
@@ -241,13 +250,12 @@ class ScheduleParser:
                     col_days.append(default_days[-1])
 
         raw_slots: List[Dict[str, Any]] = []
-
-        # Keep track of preceding row's entry by (col_idx, day) to handle multi-row merged PDF cells
         prev_row_entries: Dict[Tuple[int, str], Dict[str, Any]] = {}
 
         for line in table_lines[header_idx + 1:]:
             if line.startswith('|--') or line.startswith('|:--'):
                 continue
+
             cols = [c.strip() for c in line.split('|')[1:-1]]
             if not cols:
                 continue
@@ -341,7 +349,14 @@ class ScheduleParser:
             })
             return entries
 
-        sub_chunks = re.split(r'(?=\b(?:FunProg1|Calculo|Cálculo|Fisica|Física|TeCo|FunGesEmpr|FunGesEmp|OrCo|SSOO1|EstDatos|IngSw1|IngSw2|Lógica|Logica|ArCo|SistDistr|SisInt|SistInt|IPO1|ApDistInt|ComerElect|CompAvanz|DisSInterac|GesPrySw|IngNeg|MinerDat|Multim|ProcLeng|ProcesIS|QSistSw|SegRed|SegSisInf|SegSisSw|SisEmpot|SisMultAg|TecApAut|TecSWeb)\b)', cell_text)
+        # Dynamic subject code extraction using mappings.json keys combined with regex pattern
+        known_codes = sorted(self.mapper.matters.keys(), key=len, reverse=True)
+        known_codes = [c for c in known_codes if c not in ["PruebasProgreso", "Conferencias"]]
+
+        # Build dynamic regex for known subject codes and fallback matter patterns
+        code_patterns = [re.escape(c) for c in known_codes]
+        split_pattern = r'(?=\b(?:' + '|'.join(code_patterns) + r')\b)'
+        sub_chunks = re.split(split_pattern, cell_text) if code_patterns else [cell_text]
 
         for chunk in sub_chunks:
             chunk = chunk.strip()
@@ -351,17 +366,40 @@ class ScheduleParser:
             is_lab = "-L" in chunk or "Lab-" in chunk or "Lab " in chunk
             entry_type = "LAB" if is_lab else "THEORY"
 
-            code_match = re.search(r'\b(FunProg1|Calculo|Cálculo|Fisica|Física|TeCo|FunGesEmpr|FunGesEmp|OrCo|SSOO1|EstDatos|IngSw1|IngSw2|Lógica|Logica|ArCo|SistDistr|SisInt|SistInt|IPO1|ApDistInt|ComerElect|CompAvanz|DisSInterac|GesPrySw|IngNeg|MinerDat|Multim|ProcLeng|ProcesIS|QSistSw|SegRed|SegSisInf|SegSisSw|SisEmpot|SisMultAg|TecApAut|TecSWeb)\b', chunk)
+            code_match = None
+            for kc in known_codes:
+                if re.search(r'\b' + re.escape(kc) + r'\b', chunk):
+                    code_match = kc
+                    break
+
+            if not code_match:
+                # Fallback check for unmapped code patterns (avoiding common classroom/prof/school words)
+                m = re.search(r'\b([A-Z][a-zA-Z0-9]{2,10})\b', chunk)
+                if m:
+                    cand = m.group(1)
+                    stop_list = [
+                        "John", "Von", "Neuman", "Grace", "Murray", "Hopper", "Tim", "Berners",
+                        "Charles", "Babbage", "Alan", "Turing", "Edsger", "Dijkstra", "Dennis",
+                        "Ritchie", "Bill", "Gates", "Claude", "Shannon", "ESI", "Esc", "Superior",
+                        "Informatica", "Informática", "Ciudad", "Real", "George", "Boole", "Bab",
+                        "Jesus", "JoseL", "LD1", "LD2", "LD3", "LD4", "MUFPS", "Universidad", "Xavier"
+                    ]
+                    if cand not in stop_list:
+                        code_match = cand
+
             if not code_match:
                 continue
 
-            raw_code = code_match.group(1)
-            code = raw_code
-            if code == "FunGesEmp": code = "FunGesEmpr"
-            if code == "Cálculo": code = "Calculo"
-            if code == "Física": code = "Fisica"
-            if code == "Logica": code = "Lógica"
-            if code == "SistInt": code = "SisInt"
+            code = code_match
+            # Normalize common variants
+            code_aliases = {
+                "FunGesEmp": "FunGesEmpr",
+                "Cálculo": "Calculo",
+                "Física": "Fisica",
+                "Logica": "Lógica",
+                "SistInt": "SisInt"
+            }
+            code = code_aliases.get(code, code)
 
             lab_match = re.search(r'\b(Lab-[\w\/]+|Lab-B[CD]\d*)\b', chunk)
             group_name = lab_match.group(1) if lab_match else None
@@ -493,8 +531,12 @@ class ScheduleParser:
                         "labVariants": {}
                     }
                 existing = global_matters_dict[code]["theorySlots"]
-                if not any(e['dayOfWeek'] == slot_obj['dayOfWeek'] and e['startTime'] == slot_obj['startTime'] for e in existing):
-                    existing.append(slot_obj)
+                # Enforce rule of thumb: PruebasProgreso only Mon/Fri 08:30-10:00, Conferencias only Wed 11:30-13:00
+                is_valid_pruebas = (code == "PruebasProgreso" and slot_obj['dayOfWeek'] in ["MONDAY", "FRIDAY"] and slot_obj['startTime'] == "08:30" and slot_obj['endTime'] == "10:00")
+                is_valid_conf = (code == "Conferencias" and slot_obj['dayOfWeek'] == "WEDNESDAY" and slot_obj['startTime'] == "11:30" and slot_obj['endTime'] == "13:00")
+                if is_valid_pruebas or is_valid_conf:
+                    if not any(e['dayOfWeek'] == slot_obj['dayOfWeek'] and e['startTime'] == slot_obj['startTime'] for e in existing):
+                        existing.append(slot_obj)
                 continue
 
             yr_name = s['year'] or "1º"
