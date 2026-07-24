@@ -4,9 +4,10 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.Preferences
@@ -61,7 +62,6 @@ import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
-import kotlinx.coroutines.flow.first
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalTime
@@ -99,20 +99,31 @@ class ScheduleWidget : GlanceAppWidget() {
     override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val entryPoint = EntryPointAccessors.fromApplication(
-            context.applicationContext,
-            ScheduleWidgetEntryPoint::class.java
-        )
-        val dao = entryPoint.scheduleDao()
-        val settingsRepo = entryPoint.settingsRepository()
-
-        val subjectsWithSlots = dao.getActiveSubjectsWithSlots().first()
-        val showNowLine = settingsRepo.showNowLineFlow.first()
-        val highContrast = settingsRepo.highContrastFlow.first()
+        val entryPoint = try {
+            EntryPointAccessors.fromApplication(
+                context.applicationContext,
+                ScheduleWidgetEntryPoint::class.java
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
 
         provideContent {
             val prefs = currentState<Preferences>()
             val isTomorrowSelected = prefs[IS_TOMORROW_KEY] ?: false
+
+            val subjectsWithSlots by remember(entryPoint) {
+                entryPoint?.scheduleDao()?.getActiveSubjectsWithSlots() ?: kotlinx.coroutines.flow.flowOf(emptyList())
+            }.collectAsState(initial = emptyList())
+
+            val showNowLine by remember(entryPoint) {
+                entryPoint?.settingsRepository()?.showNowLineFlow ?: kotlinx.coroutines.flow.flowOf(true)
+            }.collectAsState(initial = true)
+
+            val highContrast by remember(entryPoint) {
+                entryPoint?.settingsRepository()?.highContrastFlow ?: kotlinx.coroutines.flow.flowOf(false)
+            }.collectAsState(initial = false)
 
             GlanceTheme {
                 ScheduleWidgetContent(
@@ -162,7 +173,8 @@ private fun ScheduleWidgetContent(
         todayDate
     }
     val targetDayOfWeek = targetDate.dayOfWeek
-    val locale = LocalLocale.current.platformLocale
+    val locale =
+        context.resources.configuration.locales[0]
     val currentTime = LocalTime.now()
 
     val rawDayName = targetDayOfWeek.getDisplayName(JavaTextStyle.SHORT, locale)
@@ -273,30 +285,60 @@ private fun ScheduleWidgetContent(
             }
         }
 
-        // Timeline Segment LazyColumn
-        LazyColumn(
-            modifier = GlanceModifier.fillMaxSize()
-        ) {
-            timelineSegments.forEach { segment ->
-                val isNowInSegment = shouldShowNowLine && (currentTime >= segment.startTime && currentTime < segment.endTime)
-                item {
-                    when (segment) {
-                        is WidgetTimelineSegment.ClusterSegment -> {
-                            ClusterSegmentRow(
-                                cluster = segment.cluster,
-                                currentTime = currentTime,
-                                isNowInSegment = isNowInSegment,
-                                highContrast = highContrast,
-                                launchAppAction = launchAppAction
-                            )
-                        }
-                        is WidgetTimelineSegment.EmptySegment -> {
-                            EmptySegmentRow(
-                                segment = segment,
-                                currentTime = currentTime,
-                                isNowInSegment = isNowInSegment,
-                                launchAppAction = launchAppAction
-                            )
+        // Timeline Segment LazyColumn or Empty State
+        if (daySlots.isEmpty()) {
+            val dayOfWeekName = targetDayOfWeek.getDisplayName(JavaTextStyle.FULL, locale)
+            val emptyText = context.getString(R.string.empty_schedule_day, dayOfWeekName)
+            Box(
+                modifier = GlanceModifier
+                    .fillMaxSize()
+                    .clickable(launchAppAction),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = GlanceModifier.padding(horizontal = 24.dp)
+                ) {
+                    Image(
+                        provider = ImageProvider(R.drawable.ic_app_logo),
+                        contentDescription = null,
+                        modifier = GlanceModifier.size(48.dp)
+                    )
+                    Spacer(modifier = GlanceModifier.height(12.dp))
+                    Text(
+                        text = emptyText,
+                        style = TextStyle(
+                            color = ColorProvider(Color(0x99E5E5EA)),
+                            fontWeight = FontWeight.Medium
+                        )
+                    )
+                }
+            }
+        } else {
+            LazyColumn(
+                modifier = GlanceModifier.fillMaxSize()
+            ) {
+                timelineSegments.forEach { segment ->
+                    val isNowInSegment = shouldShowNowLine && (currentTime >= segment.startTime && currentTime < segment.endTime)
+                    item {
+                        when (segment) {
+                            is WidgetTimelineSegment.ClusterSegment -> {
+                                ClusterSegmentRow(
+                                    cluster = segment.cluster,
+                                    currentTime = currentTime,
+                                    isNowInSegment = isNowInSegment,
+                                    highContrast = highContrast,
+                                    launchAppAction = launchAppAction
+                                )
+                            }
+                            is WidgetTimelineSegment.EmptySegment -> {
+                                EmptySegmentRow(
+                                    segment = segment,
+                                    currentTime = currentTime,
+                                    isNowInSegment = isNowInSegment,
+                                    launchAppAction = launchAppAction
+                                )
+                            }
                         }
                     }
                 }

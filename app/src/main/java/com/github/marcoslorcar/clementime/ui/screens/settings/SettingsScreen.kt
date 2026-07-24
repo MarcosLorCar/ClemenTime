@@ -192,7 +192,7 @@ fun SettingsContent(
     if (showRepoUrlDialog) {
         AlertDialog(
             onDismissRequest = { showRepoUrlDialog = false },
-            title = { Text("GitHub Repository URL") },
+            title = { Text(stringResource(R.string.github_repository_url_dialog_title)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Enter the GitHub raw content base URL for online schedules:", style = MaterialTheme.typography.bodyMedium)
@@ -458,7 +458,7 @@ fun SettingsContent(
 
             SettingItem(
                 icon = Icons.Default.Cloud,
-                title = "Online Repository URL",
+                title = stringResource(R.string.online_repository_url_setting_title),
                 subtitle = uiState.githubRepoBaseUrl,
                 onClick = {
                     tempRepoUrl = uiState.githubRepoBaseUrl

@@ -352,7 +352,7 @@ fun ImportLibraryContent(
                             ) {
                                 Text(
                                     text = when (sourceType) {
-                                        com.github.marcoslorcar.clementime.data.importing.model.ImportSourceType.REMOTE -> "Online Repository"
+                                        com.github.marcoslorcar.clementime.data.importing.model.ImportSourceType.REMOTE -> stringResource(R.string.online_repository_title)
                                         com.github.marcoslorcar.clementime.data.importing.model.ImportSourceType.BUNDLED -> stringResource(R.string.import_bundled_label)
                                         com.github.marcoslorcar.clementime.data.importing.model.ImportSourceType.CUSTOM -> stringResource(R.string.import_custom_label)
                                     },

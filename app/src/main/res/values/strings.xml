@@ -246,4 +246,7 @@
     <string name="import_schedule_instructions">Choose a template from the library or import a custom schedule JSON file to get started.</string>
     <string name="day_of_week_label">Day of the week</string>
     <string name="no_slots_assigned">No slots added yet.</string>
+    <string name="online_repository_title">Online Repository</string>
+    <string name="online_repository_url_setting_title">Online Repository URL</string>
+    <string name="github_repository_url_dialog_title">GitHub Repository URL</string>
 </resources>

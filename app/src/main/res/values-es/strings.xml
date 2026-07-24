@@ -250,5 +250,8 @@
     <string name="import_schedule_instructions">Elige una plantilla de la biblioteca o importa un archivo JSON para empezar.</string>
     <string name="day_of_week_label">Día de la semana</string>
     <string name="no_slots_assigned">Aún no hay horarios asignados.</string>
+    <string name="online_repository_title">Repositorio en línea</string>
+    <string name="online_repository_url_setting_title">URL del repositorio en línea</string>
+    <string name="github_repository_url_dialog_title">URL del repositorio de GitHub</string>
 </resources>
 
