@@ -810,6 +810,17 @@
                 }
               ],
               "labVariants": {
+                "Lab-C1": [
+                  {
+                    "dayOfWeek": "MONDAY",
+                    "startTime": "11:30",
+                    "endTime": "13:00",
+                    "classroom": null,
+                    "groupName": "Lab-C1",
+                    "entryType": "LAB",
+                    "professor": "Isidro Peña"
+                  }
+                ],
                 "Lab-BC": [
                   {
                     "dayOfWeek": "TUESDAY",
