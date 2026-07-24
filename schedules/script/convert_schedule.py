@@ -200,29 +200,28 @@ class ScheduleParser:
         if len(table_lines) < 2:
             return
 
-        header_idx = 0
-        # Search all non-divider lines before main table rows for embedded headers or day header row
+        header_idx = None
+        # Search for day header row, updating year/group if an embedded title row is encountered
         for idx, tline in enumerate(table_lines):
             if tline.startswith('|--') or tline.startswith('|:--'):
                 continue
             cols = [c.strip() for c in tline.split('|')[1:-1]]
             text_combined = " ".join(cols)
             
-            # Check for embedded year/group header
+            # Check for embedded year/group header (e.g. "| 2º C | 2º C | ... |" or "| 3º A | 3º A Bilingüe Lunes | ... |")
             hdr_match = re.search(r'\b([1234]º)\s+([A-Za-z0-9ÁÉÍÓÚáéíóúñ\.\s]+)', text_combined)
-            if hdr_match and not any(day_k in text_combined.lower() for day_k in DAY_MAP):
+            valid_days = [c for c in cols if any(dk in c.lower() for dk in DAY_MAP)]
+
+            if hdr_match:
                 year = hdr_match.group(1)
                 group = clean_group_name(year, hdr_match.group(2))
-                continue
 
-            # Check if this line contains days of the week (Header row)
-            valid_days = [c for c in cols if any(dk in c.lower() for dk in DAY_MAP)]
-            if valid_days:
+            if valid_days and len(valid_days) >= 3:
                 header_idx = idx
                 break
 
-        if header_idx >= len(table_lines):
-            return
+        if header_idx is None:
+            header_idx = 0
 
         # Parse header row for days of the week
         headers = [h.strip() for h in table_lines[header_idx].split('|')[1:-1]]

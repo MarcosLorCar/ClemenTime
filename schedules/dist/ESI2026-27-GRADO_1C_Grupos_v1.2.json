@@ -1086,24 +1086,6 @@
                   "groupName": null,
                   "entryType": "THEORY",
                   "professor": "Miguel Angel Redondo"
-                },
-                {
-                  "dayOfWeek": "WEDNESDAY",
-                  "startTime": "15:30",
-                  "endTime": "17:00",
-                  "classroom": "A2.2-Grace Murray",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Yoel Arroyo"
-                },
-                {
-                  "dayOfWeek": "MONDAY",
-                  "startTime": "17:00",
-                  "endTime": "18:30",
-                  "classroom": "A2.2-Grace Murray",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Yoel Arroyo"
                 }
               ],
               "labVariants": {
@@ -1139,37 +1121,6 @@
                     "entryType": "LAB",
                     "professor": "Jose Luis Ruiz"
                   }
-                ],
-                "Lab-C2": [
-                  {
-                    "dayOfWeek": "WEDNESDAY",
-                    "startTime": "17:00",
-                    "endTime": "18:30",
-                    "classroom": "LD3-Bill Gates",
-                    "groupName": "Lab-C2",
-                    "entryType": "LAB",
-                    "professor": "Yoel Arroyo"
-                  }
-                ],
-                "Lab-C1": [
-                  {
-                    "dayOfWeek": "FRIDAY",
-                    "startTime": "17:00",
-                    "endTime": "18:30",
-                    "classroom": "LD2-Dennis Ritchie",
-                    "groupName": "Lab-C1",
-                    "entryType": "LAB",
-                    "professor": "Yoel Arroyo"
-                  },
-                  {
-                    "dayOfWeek": "FRIDAY",
-                    "startTime": "20:00",
-                    "endTime": "21:30",
-                    "classroom": "LD2-Dennis Ritchie",
-                    "groupName": "Lab-C1",
-                    "entryType": "LAB",
-                    "professor": "Ruben Rodriguez"
-                  }
                 ]
               }
             },
@@ -1195,24 +1146,6 @@
                   "groupName": null,
                   "entryType": "THEORY",
                   "professor": "Jose Angel Olivas"
-                },
-                {
-                  "dayOfWeek": "TUESDAY",
-                  "startTime": "17:00",
-                  "endTime": "18:30",
-                  "classroom": "A2.2-Grace Murray",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Pascual Julian"
-                },
-                {
-                  "dayOfWeek": "THURSDAY",
-                  "startTime": "18:30",
-                  "endTime": "20:00",
-                  "classroom": "A2.2-Grace Murray",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Pascual Julian"
                 }
               ],
               "labVariants": {
@@ -1259,28 +1192,6 @@
                     "entryType": "LAB",
                     "professor": "Ruben Rodriguez"
                   }
-                ],
-                "Lab-C1": [
-                  {
-                    "dayOfWeek": "WEDNESDAY",
-                    "startTime": "20:00",
-                    "endTime": "21:30",
-                    "classroom": "LD3-Bill",
-                    "groupName": "Lab-C1",
-                    "entryType": "LAB",
-                    "professor": "Ruben Rodriguez"
-                  }
-                ],
-                "Lab-C2": [
-                  {
-                    "dayOfWeek": "THURSDAY",
-                    "startTime": "20:00",
-                    "endTime": "21:30",
-                    "classroom": "LD3-Bill",
-                    "groupName": "Lab-C2",
-                    "entryType": "LAB",
-                    "professor": null
-                  }
                 ]
               }
             },
@@ -1306,24 +1217,6 @@
                   "groupName": null,
                   "entryType": "THEORY",
                   "professor": "Julian Caba"
-                },
-                {
-                  "dayOfWeek": "MONDAY",
-                  "startTime": "18:30",
-                  "endTime": "20:00",
-                  "classroom": "A2.2-Grace Murray",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Santiago Garcia"
-                },
-                {
-                  "dayOfWeek": "WEDNESDAY",
-                  "startTime": "18:30",
-                  "endTime": "20:00",
-                  "classroom": "A2.2-Grace Murray",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Santiago Garcia"
                 }
               ],
               "labVariants": {
@@ -1345,28 +1238,6 @@
                     "endTime": "18:30",
                     "classroom": "LD4-John Carmack",
                     "groupName": "Lab-B2",
-                    "entryType": "LAB",
-                    "professor": "Santiago Garcia"
-                  }
-                ],
-                "Lab-C1": [
-                  {
-                    "dayOfWeek": "MONDAY",
-                    "startTime": "20:00",
-                    "endTime": "21:30",
-                    "classroom": "A2.2-Grace Murray",
-                    "groupName": "Lab-C1",
-                    "entryType": "LAB",
-                    "professor": "Santiago Garcia"
-                  }
-                ],
-                "Lab-C2": [
-                  {
-                    "dayOfWeek": "WEDNESDAY",
-                    "startTime": "20:00",
-                    "endTime": "21:30",
-                    "classroom": "A2.2-Grace Murray",
-                    "groupName": "Lab-C2",
                     "entryType": "LAB",
                     "professor": "Santiago Garcia"
                   }
@@ -1395,24 +1266,6 @@
                   "groupName": null,
                   "entryType": "THEORY",
                   "professor": "Eduardo Fernandez"
-                },
-                {
-                  "dayOfWeek": "THURSDAY",
-                  "startTime": "15:30",
-                  "endTime": "17:00",
-                  "classroom": "A2.2-Grace Murray",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Crescencio Bravo"
-                },
-                {
-                  "dayOfWeek": "TUESDAY",
-                  "startTime": "18:30",
-                  "endTime": "20:00",
-                  "classroom": "A2.2-Grace Murray",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Crescencio Bravo"
                 }
               ],
               "labVariants": {
@@ -1459,28 +1312,6 @@
                     "entryType": "LAB",
                     "professor": "Jared David"
                   }
-                ],
-                "Lab-C2": [
-                  {
-                    "dayOfWeek": "THURSDAY",
-                    "startTime": "17:00",
-                    "endTime": "18:30",
-                    "classroom": "A2.2-Grace Murray",
-                    "groupName": "Lab-C2",
-                    "entryType": "LAB",
-                    "professor": "Crescencio Bravo"
-                  }
-                ],
-                "Lab-C1": [
-                  {
-                    "dayOfWeek": "TUESDAY",
-                    "startTime": "20:00",
-                    "endTime": "21:30",
-                    "classroom": "A2.2-Grace Murray",
-                    "groupName": "Lab-C1",
-                    "entryType": "LAB",
-                    "professor": "Crescencio Bravo"
-                  }
                 ]
               }
             },
@@ -1506,24 +1337,6 @@
                   "groupName": null,
                   "entryType": "THEORY",
                   "professor": "Felix Oscar Garcia"
-                },
-                {
-                  "dayOfWeek": "MONDAY",
-                  "startTime": "15:30",
-                  "endTime": "17:00",
-                  "classroom": "A2.2-Grace Murray",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Ignacio Garcia Rodriguez"
-                },
-                {
-                  "dayOfWeek": "TUESDAY",
-                  "startTime": "15:30",
-                  "endTime": "17:00",
-                  "classroom": "A2.2-Grace Murray",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Ignacio Garcia Rodriguez"
                 }
               ],
               "labVariants": {
@@ -1559,7 +1372,39 @@
                     "entryType": "LAB",
                     "professor": "Felix Oscar Garcia"
                   }
-                ],
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "C",
+          "matters": [
+            {
+              "code": "IngSw1",
+              "name": "Ingenieria del Software I",
+              "color": null,
+              "theorySlots": [
+                {
+                  "dayOfWeek": "MONDAY",
+                  "startTime": "15:30",
+                  "endTime": "17:00",
+                  "classroom": "A2.2-Grace Murray",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Ignacio Garcia Rodriguez"
+                },
+                {
+                  "dayOfWeek": "TUESDAY",
+                  "startTime": "15:30",
+                  "endTime": "17:00",
+                  "classroom": "A2.2-Grace Murray",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Ignacio Garcia Rodriguez"
+                }
+              ],
+              "labVariants": {
                 "Lab-C1": [
                   {
                     "dayOfWeek": "FRIDAY",
@@ -1580,6 +1425,211 @@
                     "groupName": "Lab-C2",
                     "entryType": "LAB",
                     "professor": null
+                  }
+                ]
+              }
+            },
+            {
+              "code": "SSOO1",
+              "name": "Sistemas Operativos I",
+              "color": null,
+              "theorySlots": [
+                {
+                  "dayOfWeek": "WEDNESDAY",
+                  "startTime": "15:30",
+                  "endTime": "17:00",
+                  "classroom": "A2.2-Grace Murray",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Yoel Arroyo"
+                },
+                {
+                  "dayOfWeek": "MONDAY",
+                  "startTime": "17:00",
+                  "endTime": "18:30",
+                  "classroom": "A2.2-Grace Murray",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Yoel Arroyo"
+                }
+              ],
+              "labVariants": {
+                "Lab-C2": [
+                  {
+                    "dayOfWeek": "WEDNESDAY",
+                    "startTime": "17:00",
+                    "endTime": "18:30",
+                    "classroom": "LD3-Bill Gates",
+                    "groupName": "Lab-C2",
+                    "entryType": "LAB",
+                    "professor": "Yoel Arroyo"
+                  }
+                ],
+                "Lab-C1": [
+                  {
+                    "dayOfWeek": "FRIDAY",
+                    "startTime": "17:00",
+                    "endTime": "18:30",
+                    "classroom": "LD2-Dennis Ritchie",
+                    "groupName": "Lab-C1",
+                    "entryType": "LAB",
+                    "professor": "Yoel Arroyo"
+                  },
+                  {
+                    "dayOfWeek": "FRIDAY",
+                    "startTime": "20:00",
+                    "endTime": "21:30",
+                    "classroom": "LD2-Dennis Ritchie",
+                    "groupName": "Lab-C1",
+                    "entryType": "LAB",
+                    "professor": "Ruben Rodriguez"
+                  }
+                ]
+              }
+            },
+            {
+              "code": "EstDatos",
+              "name": "Estructura de Datos",
+              "color": null,
+              "theorySlots": [
+                {
+                  "dayOfWeek": "THURSDAY",
+                  "startTime": "15:30",
+                  "endTime": "17:00",
+                  "classroom": "A2.2-Grace Murray",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Crescencio Bravo"
+                },
+                {
+                  "dayOfWeek": "TUESDAY",
+                  "startTime": "18:30",
+                  "endTime": "20:00",
+                  "classroom": "A2.2-Grace Murray",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Crescencio Bravo"
+                }
+              ],
+              "labVariants": {
+                "Lab-C2": [
+                  {
+                    "dayOfWeek": "THURSDAY",
+                    "startTime": "17:00",
+                    "endTime": "18:30",
+                    "classroom": "A2.2-Grace Murray",
+                    "groupName": "Lab-C2",
+                    "entryType": "LAB",
+                    "professor": "Crescencio Bravo"
+                  }
+                ],
+                "Lab-C1": [
+                  {
+                    "dayOfWeek": "TUESDAY",
+                    "startTime": "20:00",
+                    "endTime": "21:30",
+                    "classroom": "A2.2-Grace Murray",
+                    "groupName": "Lab-C1",
+                    "entryType": "LAB",
+                    "professor": "Crescencio Bravo"
+                  }
+                ]
+              }
+            },
+            {
+              "code": "Lógica",
+              "name": "Logica",
+              "color": null,
+              "theorySlots": [
+                {
+                  "dayOfWeek": "TUESDAY",
+                  "startTime": "17:00",
+                  "endTime": "18:30",
+                  "classroom": "A2.2-Grace Murray",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Pascual Julian"
+                },
+                {
+                  "dayOfWeek": "THURSDAY",
+                  "startTime": "18:30",
+                  "endTime": "20:00",
+                  "classroom": "A2.2-Grace Murray",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Pascual Julian"
+                }
+              ],
+              "labVariants": {
+                "Lab-C1": [
+                  {
+                    "dayOfWeek": "WEDNESDAY",
+                    "startTime": "20:00",
+                    "endTime": "21:30",
+                    "classroom": "LD3-Bill",
+                    "groupName": "Lab-C1",
+                    "entryType": "LAB",
+                    "professor": "Ruben Rodriguez"
+                  }
+                ],
+                "Lab-C2": [
+                  {
+                    "dayOfWeek": "THURSDAY",
+                    "startTime": "20:00",
+                    "endTime": "21:30",
+                    "classroom": "LD3-Bill",
+                    "groupName": "Lab-C2",
+                    "entryType": "LAB",
+                    "professor": null
+                  }
+                ]
+              }
+            },
+            {
+              "code": "OrCo",
+              "name": "Organizacion de Computadores",
+              "color": null,
+              "theorySlots": [
+                {
+                  "dayOfWeek": "MONDAY",
+                  "startTime": "18:30",
+                  "endTime": "20:00",
+                  "classroom": "A2.2-Grace Murray",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Santiago Garcia"
+                },
+                {
+                  "dayOfWeek": "WEDNESDAY",
+                  "startTime": "18:30",
+                  "endTime": "20:00",
+                  "classroom": "A2.2-Grace Murray",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Santiago Garcia"
+                }
+              ],
+              "labVariants": {
+                "Lab-C1": [
+                  {
+                    "dayOfWeek": "MONDAY",
+                    "startTime": "20:00",
+                    "endTime": "21:30",
+                    "classroom": "A2.2-Grace Murray",
+                    "groupName": "Lab-C1",
+                    "entryType": "LAB",
+                    "professor": "Santiago Garcia"
+                  }
+                ],
+                "Lab-C2": [
+                  {
+                    "dayOfWeek": "WEDNESDAY",
+                    "startTime": "20:00",
+                    "endTime": "21:30",
+                    "classroom": "A2.2-Grace Murray",
+                    "groupName": "Lab-C2",
+                    "entryType": "LAB",
+                    "professor": "Santiago Garcia"
                   }
                 ]
               }
@@ -1899,7 +1949,18 @@
                   }
                 ]
               }
-            },
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3º",
+      "matters": [],
+      "groups": [
+        {
+          "name": "A",
+          "matters": [
             {
               "code": "IPO1",
               "name": "Interaccion Persona-Ordenador",
@@ -2102,13 +2163,7 @@
               }
             }
           ]
-        }
-      ]
-    },
-    {
-      "name": "3º",
-      "matters": [],
-      "groups": [
+        },
         {
           "name": "B",
           "matters": [
