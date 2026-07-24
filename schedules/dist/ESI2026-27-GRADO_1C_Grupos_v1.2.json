@@ -41,15 +41,6 @@
           "groupName": null,
           "entryType": "THEORY",
           "professor": null
-        },
-        {
-          "dayOfWeek": "WEDNESDAY",
-          "startTime": "13:00",
-          "endTime": "14:30",
-          "classroom": "LD3-Bill",
-          "groupName": null,
-          "entryType": "THEORY",
-          "professor": "Luis Rodriguez"
         }
       ],
       "labVariants": {}
@@ -2385,15 +2376,6 @@
                   "professor": null
                 },
                 {
-                  "dayOfWeek": "WEDNESDAY",
-                  "startTime": "20:00",
-                  "endTime": "21:30",
-                  "classroom": "LD4-John Carmack",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": null
-                },
-                {
                   "dayOfWeek": "THURSDAY",
                   "startTime": "18:30",
                   "endTime": "20:00",
@@ -2401,18 +2383,32 @@
                   "groupName": null,
                   "entryType": "THEORY",
                   "professor": null
-                },
-                {
-                  "dayOfWeek": "THURSDAY",
-                  "startTime": "20:00",
-                  "endTime": "21:30",
-                  "classroom": "LD2-Dennis Ritchie",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": null
                 }
               ],
-              "labVariants": {}
+              "labVariants": {
+                "Lab-A2": [
+                  {
+                    "dayOfWeek": "WEDNESDAY",
+                    "startTime": "20:00",
+                    "endTime": "21:30",
+                    "classroom": "LD4-John Carmack",
+                    "groupName": "Lab-A2",
+                    "entryType": "LAB",
+                    "professor": null
+                  }
+                ],
+                "Lab-A1": [
+                  {
+                    "dayOfWeek": "THURSDAY",
+                    "startTime": "20:00",
+                    "endTime": "21:30",
+                    "classroom": "LD2-Dennis Ritchie",
+                    "groupName": "Lab-A1",
+                    "entryType": "LAB",
+                    "professor": null
+                  }
+                ]
+              }
             }
           ]
         },
@@ -2443,7 +2439,41 @@
                   "professor": "Luis Jimenez"
                 }
               ],
-              "labVariants": {}
+              "labVariants": {
+                "Lab-BC": [
+                  {
+                    "dayOfWeek": "THURSDAY",
+                    "startTime": "11:30",
+                    "endTime": "13:00",
+                    "classroom": "LD3-Bill Gates",
+                    "groupName": "Lab-BC",
+                    "entryType": "LAB",
+                    "professor": "Luis Jimenez"
+                  }
+                ],
+                "Lab-B1": [
+                  {
+                    "dayOfWeek": "MONDAY",
+                    "startTime": "20:00",
+                    "endTime": "21:30",
+                    "classroom": null,
+                    "groupName": "Lab-B1",
+                    "entryType": "LAB",
+                    "professor": null
+                  }
+                ],
+                "Lab-B2": [
+                  {
+                    "dayOfWeek": "TUESDAY",
+                    "startTime": "20:00",
+                    "endTime": "21:30",
+                    "classroom": "LD2-Dennis Ritchie",
+                    "groupName": "Lab-B2",
+                    "entryType": "LAB",
+                    "professor": "Luis Jimenez"
+                  }
+                ]
+              }
             },
             {
               "code": "ArCo",
@@ -2528,15 +2558,6 @@
                     "groupName": "Lab-B1",
                     "entryType": "LAB",
                     "professor": "David Villa"
-                  },
-                  {
-                    "dayOfWeek": "TUESDAY",
-                    "startTime": "20:00",
-                    "endTime": "21:30",
-                    "classroom": "LD2-Dennis Ritchie",
-                    "groupName": "Lab-B1",
-                    "entryType": "LAB",
-                    "professor": "Luis Jimenez"
                   }
                 ],
                 "Lab-B2": [
@@ -2677,24 +2698,6 @@
                   "groupName": null,
                   "entryType": "THEORY",
                   "professor": "Jose Antonio de la Torre"
-                },
-                {
-                  "dayOfWeek": "THURSDAY",
-                  "startTime": "10:00",
-                  "endTime": "11:30",
-                  "classroom": "LD3-Bill Gates",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Luis Rodriguez"
-                },
-                {
-                  "dayOfWeek": "THURSDAY",
-                  "startTime": "11:30",
-                  "endTime": "13:00",
-                  "classroom": "LD3-Bill",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Luis Jimenez"
                 }
               ],
               "labVariants": {
@@ -2821,6 +2824,66 @@
               }
             },
             {
+              "code": "SisInt",
+              "name": "Sistemas Inteligentes",
+              "color": null,
+              "theorySlots": [
+                {
+                  "dayOfWeek": "MONDAY",
+                  "startTime": "13:00",
+                  "endTime": "14:30",
+                  "classroom": "A2.1-George Boole",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Luis Jimenez"
+                },
+                {
+                  "dayOfWeek": "THURSDAY",
+                  "startTime": "13:00",
+                  "endTime": "14:30",
+                  "classroom": "A2.1-George Boole",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Luis Jimenez"
+                }
+              ],
+              "labVariants": {
+                "Lab-C1": [
+                  {
+                    "dayOfWeek": "THURSDAY",
+                    "startTime": "10:00",
+                    "endTime": "11:30",
+                    "classroom": "LD3-Bill Gates",
+                    "groupName": "Lab-C1",
+                    "entryType": "LAB",
+                    "professor": "Luis Rodriguez"
+                  }
+                ],
+                "Lab-BC": [
+                  {
+                    "dayOfWeek": "THURSDAY",
+                    "startTime": "11:30",
+                    "endTime": "13:00",
+                    "classroom": "LD3-Bill",
+                    "groupName": "Lab-BC",
+                    "entryType": "LAB",
+                    "professor": "Luis Jimenez"
+                  }
+                ],
+                "Lab-C2": [
+                  {
+                    "dayOfWeek": "WEDNESDAY",
+                    "startTime": "13:00",
+                    "endTime": "14:30",
+                    "classroom": "LD3-Bill",
+                    "groupName": "Lab-C2",
+                    "entryType": "LAB",
+                    "professor": "Luis Rodriguez"
+                  }
+                ]
+              }
+            },
+            {
               "code": "IPO1",
               "name": "Interaccion Persona-Ordenador",
               "color": null,
@@ -2868,32 +2931,6 @@
                   }
                 ]
               }
-            },
-            {
-              "code": "SisInt",
-              "name": "Sistemas Inteligentes",
-              "color": null,
-              "theorySlots": [
-                {
-                  "dayOfWeek": "MONDAY",
-                  "startTime": "13:00",
-                  "endTime": "14:30",
-                  "classroom": "A2.1-George Boole",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Luis Jimenez"
-                },
-                {
-                  "dayOfWeek": "THURSDAY",
-                  "startTime": "13:00",
-                  "endTime": "14:30",
-                  "classroom": "A2.1-George Boole",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Luis Jimenez"
-                }
-              ],
-              "labVariants": {}
             }
           ]
         }

@@ -341,7 +341,7 @@ class ScheduleParser:
             })
             return entries
 
-        sub_chunks = re.split(r'(?=\b(?:FunProg1|Calculo|Cálculo|Fisica|Física|TeCo|FunGesEmpr|FunGesEmp|OrCo|SSOO1|EstDatos|IngSw1|IngSw2|Lógica|Logica|ArCo|SistDistr|SisInt|IPO1|ApDistInt|ComerElect|CompAvanz|DisSInterac|GesPrySw|IngNeg|MinerDat|Multim|ProcLeng|ProcesIS|QSistSw|SegRed|SegSisInf|SegSisSw|SisEmpot|SisMultAg|TecApAut|TecSWeb)\b)', cell_text)
+        sub_chunks = re.split(r'(?=\b(?:FunProg1|Calculo|Cálculo|Fisica|Física|TeCo|FunGesEmpr|FunGesEmp|OrCo|SSOO1|EstDatos|IngSw1|IngSw2|Lógica|Logica|ArCo|SistDistr|SisInt|SistInt|IPO1|ApDistInt|ComerElect|CompAvanz|DisSInterac|GesPrySw|IngNeg|MinerDat|Multim|ProcLeng|ProcesIS|QSistSw|SegRed|SegSisInf|SegSisSw|SisEmpot|SisMultAg|TecApAut|TecSWeb)\b)', cell_text)
 
         for chunk in sub_chunks:
             chunk = chunk.strip()
@@ -351,7 +351,7 @@ class ScheduleParser:
             is_lab = "-L" in chunk or "Lab-" in chunk or "Lab " in chunk
             entry_type = "LAB" if is_lab else "THEORY"
 
-            code_match = re.search(r'\b(FunProg1|Calculo|Cálculo|Fisica|Física|TeCo|FunGesEmpr|FunGesEmp|OrCo|SSOO1|EstDatos|IngSw1|IngSw2|Lógica|Logica|ArCo|SistDistr|SisInt|IPO1|ApDistInt|ComerElect|CompAvanz|DisSInterac|GesPrySw|IngNeg|MinerDat|Multim|ProcLeng|ProcesIS|QSistSw|SegRed|SegSisInf|SegSisSw|SisEmpot|SisMultAg|TecApAut|TecSWeb)\b', chunk)
+            code_match = re.search(r'\b(FunProg1|Calculo|Cálculo|Fisica|Física|TeCo|FunGesEmpr|FunGesEmp|OrCo|SSOO1|EstDatos|IngSw1|IngSw2|Lógica|Logica|ArCo|SistDistr|SisInt|SistInt|IPO1|ApDistInt|ComerElect|CompAvanz|DisSInterac|GesPrySw|IngNeg|MinerDat|Multim|ProcLeng|ProcesIS|QSistSw|SegRed|SegSisInf|SegSisSw|SisEmpot|SisMultAg|TecApAut|TecSWeb)\b', chunk)
             if not code_match:
                 continue
 
@@ -361,6 +361,7 @@ class ScheduleParser:
             if code == "Cálculo": code = "Calculo"
             if code == "Física": code = "Fisica"
             if code == "Logica": code = "Lógica"
+            if code == "SistInt": code = "SisInt"
 
             lab_match = re.search(r'\b(Lab-[\w\/]+|Lab-B[CD]\d*)\b', chunk)
             group_name = lab_match.group(1) if lab_match else None
