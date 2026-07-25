@@ -47,6 +47,7 @@
     <!-- Settings Screen strings -->
     <string name="data_storage_header">Datos y Almacenamiento</string>
     <string name="interface_header">Interfaz</string>
+    <string name="about_header">Acerca de</string>
     <string name="language_setting_title">Idioma</string>
     <string name="theme_setting_title">Tema</string>
     <string name="theme_system">Sistema</string>
@@ -252,6 +253,17 @@
     <string name="no_slots_assigned">Aún no hay horarios asignados.</string>
     <string name="online_repository_title">Repositorio en línea</string>
     <string name="online_repository_url_setting_title">URL del repositorio en línea</string>
+    <string name="github_repository_url_description">Introduce la URL base de contenido raw de GitHub para horarios en línea:</string>
     <string name="github_repository_url_dialog_title">URL del repositorio de GitHub</string>
+    <string name="version_label">Versión %1$s</string>
+    <string name="about_app_description">ClemenTime para Android</string>
+    <string name="privacy_policy_label">Política de Privacidad</string>
+
+    <string name="widget_loading">Cargando…</string>
+    <string name="widget_error">Error al cargar el horario</string>
+    <string name="widget_today_pill">Hoy • %1$s</string>
+    <string name="widget_tomorrow_pill">Mañana • %1$s</string>
+    <string name="widget_toggle_today">← Hoy</string>
+    <string name="widget_toggle_tomorrow">Mañana →</string>
 </resources>
 

@@ -3,6 +3,7 @@ package com.marcoslorcar.clementime.ui.screens.settings
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.core.net.toUri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -10,7 +11,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -102,8 +102,6 @@ fun SettingsScreen(
         onThemeSelected = viewModel::setSelectedTheme,
         onGithubRepoUrlChanged = viewModel::setGithubRepoBaseUrl,
         onToggleOnboardingTooltips = viewModel::setOnboardingTooltipsEnabled,
-        onCheckForUpdates = viewModel::checkForUpdates,
-        onDismissUpdateDialog = viewModel::dismissUpdateDialog,
         onExportData = {
             createDocLauncher.launch("clementime_export.json")
         },
@@ -187,8 +185,6 @@ fun SettingsContent(
     onThemeSelected: (String) -> Unit,
     onGithubRepoUrlChanged: (String) -> Unit,
     onToggleOnboardingTooltips: (Boolean) -> Unit,
-    onCheckForUpdates: () -> Unit,
-    onDismissUpdateDialog: () -> Unit,
     onExportData: () -> Unit,
     onImportClick: () -> Unit,
     onMenuClick: (() -> Unit)? = null
@@ -203,13 +199,13 @@ fun SettingsContent(
             title = { Text(stringResource(R.string.github_repository_url_dialog_title)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Enter the GitHub raw content base URL for online schedules:", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.github_repository_url_description), style = MaterialTheme.typography.bodyMedium)
                     OutlinedTextField(
                         value = tempRepoUrl,
                         onValueChange = { tempRepoUrl = it },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
-                        label = { Text("Base URL") }
+                        label = { Text(stringResource(R.string.online_repository_url_setting_title)) }
                     )
                 }
             },
@@ -220,66 +216,15 @@ fun SettingsContent(
                         showRepoUrlDialog = false
                     }
                 ) {
-                    Text("Save")
+                    Text(stringResource(R.string.save_button))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showRepoUrlDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
-    }
-
-    // --- Update Dialogs ---
-    when (val state = uiState.updateState) {
-        is UpdateState.UpdateAvailable -> {
-            AlertDialog(
-                onDismissRequest = onDismissUpdateDialog,
-                title = { Text("Update Available") },
-                text = {
-                    Column {
-                        Text("A new version (${state.release.tag_name}) is available.")
-                        if (state.release.body.isNotEmpty()) {
-                            Spacer(modifier = Modifier.size(8.dp))
-                            Text(
-                                text = state.release.body,
-                                style = MaterialTheme.typography.bodySmall,
-                                maxLines = 5,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-                },
-                confirmButton = {
-                    TextButton(onClick = {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(state.release.html_url))
-                        context.startActivity(intent)
-                        onDismissUpdateDialog()
-                    }) {
-                        Text("Download")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = onDismissUpdateDialog) {
-                        Text("Later")
-                    }
-                }
-            )
-        }
-        is UpdateState.UpToDate -> {
-            LaunchedEffect(Unit) {
-                Toast.makeText(context, "App is up to date", Toast.LENGTH_SHORT).show()
-                onDismissUpdateDialog()
-            }
-        }
-        is UpdateState.Error -> {
-            LaunchedEffect(Unit) {
-                Toast.makeText(context, "Update check failed: ${state.message}", Toast.LENGTH_LONG).show()
-                onDismissUpdateDialog()
-            }
-        }
-        else -> {}
     }
 
     Scaffold(
@@ -544,24 +489,25 @@ fun SettingsContent(
 
             // --- Section: About ---
             Text(
-                text = "About",
+                text = stringResource(R.string.about_header),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(top = 4.dp)
             )
 
             SettingItem(
-                icon = Icons.Default.NewReleases,
-                title = "Version ${BuildConfig.VERSION_NAME}",
-                subtitle = "Check for app updates",
-                trailingContent = {
-                    if (uiState.updateState is UpdateState.Checking) {
-                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                    } else {
-                        TextButton(onClick = onCheckForUpdates) {
-                            Text("Check")
-                        }
-                    }
+                icon = Icons.Default.Tag,
+                title = stringResource(R.string.version_label, BuildConfig.VERSION_NAME),
+                subtitle = stringResource(R.string.about_app_description)
+            )
+
+            val privacyPolicyUrl = stringResource(R.string.privacy_policy_url)
+            SettingItem(
+                icon = Icons.Default.Policy,
+                title = stringResource(R.string.privacy_policy_label),
+                onClick = {
+                    val intent = Intent(Intent.ACTION_VIEW, privacyPolicyUrl.toUri())
+                    context.startActivity(intent)
                 }
             )
         }
@@ -583,8 +529,6 @@ fun SettingsScreenPreview() {
             onThemeSelected = {},
             onGithubRepoUrlChanged = {},
             onToggleOnboardingTooltips = {},
-            onCheckForUpdates = {},
-            onDismissUpdateDialog = {},
             onExportData = {},
             onImportClick = {}
         )

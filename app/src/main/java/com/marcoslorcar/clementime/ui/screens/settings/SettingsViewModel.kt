@@ -6,15 +6,14 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.marcoslorcar.clementime.BuildConfig
+import com.marcoslorcar.clementime.R
 import com.marcoslorcar.clementime.data.ScheduleDao
 import com.marcoslorcar.clementime.data.SettingsRepository
-import com.marcoslorcar.clementime.data.api.GitHubRelease
-import com.marcoslorcar.clementime.data.api.UpdateApiService
 import com.marcoslorcar.clementime.data.importing.parser.JsonScheduleParser
 import com.marcoslorcar.clementime.ui.widget.ScheduleWidgetUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -33,17 +32,8 @@ data class SettingsUiState(
     val highContrast: Boolean = false,
     val selectedTheme: String = "clementine",
     val githubRepoBaseUrl: String = "https://raw.githubusercontent.com/MarcosLorCar/ClemenTime/master/schedules/dist/",
-    val onboardingTooltipsEnabled: Boolean = true,
-    val updateState: UpdateState = UpdateState.Idle
+    val onboardingTooltipsEnabled: Boolean = true
 )
-
-sealed interface UpdateState {
-    object Idle : UpdateState
-    object Checking : UpdateState
-    data class UpdateAvailable(val release: GitHubRelease) : UpdateState
-    object UpToDate : UpdateState
-    data class Error(val message: String) : UpdateState
-}
 
 sealed interface ExportStatus {
     object Idle : ExportStatus
@@ -57,11 +47,10 @@ class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val scheduleDao: ScheduleDao,
     private val jsonScheduleParser: JsonScheduleParser,
-    private val updateApiService: UpdateApiService,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
-    private val _updateState = kotlinx.coroutines.flow.MutableStateFlow<UpdateState>(UpdateState.Idle)
+    private val _appLanguage = MutableStateFlow(getCurrentLanguage())
 
     val uiState: StateFlow<SettingsUiState> = combine<Any?, SettingsUiState>(
         settingsRepository.themeFlow,
@@ -72,7 +61,7 @@ class SettingsViewModel @Inject constructor(
         settingsRepository.selectedThemeFlow,
         settingsRepository.githubRepoBaseUrlFlow,
         settingsRepository.onboardingTooltipsEnabledFlow,
-        _updateState
+        _appLanguage
     ) { args: Array<Any?> ->
         SettingsUiState(
             themeMode = args[0] as String,
@@ -83,8 +72,7 @@ class SettingsViewModel @Inject constructor(
             selectedTheme = args[5] as String,
             githubRepoBaseUrl = args[6] as String,
             onboardingTooltipsEnabled = args[7] as Boolean,
-            updateState = args[8] as UpdateState,
-            appLanguage = getCurrentLanguage()
+            appLanguage = args[8] as String
         )
     }.stateIn(
         scope = viewModelScope,
@@ -111,6 +99,7 @@ class SettingsViewModel @Inject constructor(
     fun setAppLanguage(lang: String) {
         val localeList = LocaleListCompat.forLanguageTags(lang)
         AppCompatDelegate.setApplicationLocales(localeList)
+        _appLanguage.value = lang
     }
 
     fun setScrollableTabs(scrollable: Boolean) {
@@ -162,53 +151,6 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun checkForUpdates() {
-        viewModelScope.launch {
-            _updateState.value = UpdateState.Checking
-            try {
-                val response = updateApiService.getLatestRelease()
-                if (response.isSuccessful) {
-                    val release = response.body()
-                    if (release != null) {
-                        val currentVersion = BuildConfig.VERSION_NAME
-                        val latestVersion = release.tag_name.removePrefix("v")
-                        if (isNewer(latestVersion, currentVersion)) {
-                            _updateState.value = UpdateState.UpdateAvailable(release)
-                        } else {
-                            _updateState.value = UpdateState.UpToDate
-                        }
-                    } else {
-                        _updateState.value = UpdateState.Error("Empty response body")
-                    }
-                } else {
-                    _updateState.value = UpdateState.Error("Error: ${response.code()}")
-                }
-            } catch (e: Exception) {
-                _updateState.value = UpdateState.Error(e.localizedMessage ?: "Unknown error")
-            }
-        }
-    }
-
-    private fun isNewer(latest: String, current: String): Boolean {
-        // Simple comparison for semantic versioning or tag names
-        // Ideally use a proper semver library or robust parsing
-        val latestClean = latest.split("-")[0]
-        val currentClean = current.split("-")[0]
-        
-        val latestParts = latestClean.split(".").mapNotNull { it.toIntOrNull() }
-        val currentParts = currentClean.split(".").mapNotNull { it.toIntOrNull() }
-        
-        for (i in 0 until minOf(latestParts.size, currentParts.size)) {
-            if (latestParts[i] > currentParts[i]) return true
-            if (latestParts[i] < currentParts[i]) return false
-        }
-        return latestParts.size > currentParts.size
-    }
-
-    fun dismissUpdateDialog() {
-        _updateState.value = UpdateState.Idle
-    }
-
     fun exportData(context: Context, customUri: Uri, onResult: (ExportStatus) -> Unit) {
         viewModelScope.launch {
             onResult(ExportStatus.Exporting)
@@ -219,9 +161,9 @@ class SettingsViewModel @Inject constructor(
                 context.contentResolver.openOutputStream(customUri)?.use { out ->
                     out.write(jsonString.toByteArray())
                 }
-                onResult(ExportStatus.Success("Backup saved successfully"))
+                onResult(ExportStatus.Success(context.getString(R.string.export_success_local)))
             } catch (e: Exception) {
-                onResult(ExportStatus.Error("Export failed: ${e.localizedMessage}"))
+                onResult(ExportStatus.Error(context.getString(R.string.export_error_prefix, e.localizedMessage)))
             }
         }
     }

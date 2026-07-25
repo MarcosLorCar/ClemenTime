@@ -16,6 +16,7 @@ import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
+import androidx.glance.LocalContext
 import androidx.glance.action.Action
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
@@ -45,7 +46,7 @@ import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
-import androidx.glance.unit.ColorProvider
+import androidx.glance.color.ColorProvider
 import com.marcoslorcar.clementime.MainActivity
 import com.marcoslorcar.clementime.R
 import com.marcoslorcar.clementime.data.ClassSlot
@@ -66,6 +67,7 @@ import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 import java.time.format.TextStyle as JavaTextStyle
 
 private val BLOCK_HEIGHT: Dp = 18.dp
@@ -104,8 +106,7 @@ class ScheduleWidget : GlanceAppWidget() {
                 context.applicationContext,
                 ScheduleWidgetEntryPoint::class.java
             )
-        } catch (e: Exception) {
-            e.printStackTrace()
+        } catch (_: Throwable) {
             null
         }
 
@@ -114,8 +115,8 @@ class ScheduleWidget : GlanceAppWidget() {
             val isTomorrowSelected = prefs[IS_TOMORROW_KEY] ?: false
 
             val subjectsWithSlots by remember(entryPoint) {
-                entryPoint?.scheduleDao()?.getActiveSubjectsWithSlots() ?: kotlinx.coroutines.flow.flowOf(emptyList())
-            }.collectAsState(initial = emptyList())
+                entryPoint?.scheduleDao()?.getActiveSubjectsWithSlots() ?: kotlinx.coroutines.flow.flowOf(null)
+            }.collectAsState(initial = null)
 
             val showNowLine by remember(entryPoint) {
                 entryPoint?.settingsRepository()?.showNowLineFlow ?: kotlinx.coroutines.flow.flowOf(true)
@@ -126,13 +127,19 @@ class ScheduleWidget : GlanceAppWidget() {
             }.collectAsState(initial = false)
 
             GlanceTheme {
-                ScheduleWidgetContent(
-                    context = context,
-                    isTomorrow = isTomorrowSelected,
-                    subjectsWithSlots = subjectsWithSlots,
-                    showNowLine = showNowLine,
-                    highContrast = highContrast
-                )
+                if (entryPoint == null) {
+                    WidgetErrorState()
+                } else {
+                    when (val data = subjectsWithSlots) {
+                        null -> WidgetLoadingState()
+                        else -> ScheduleWidgetContent(
+                            isTomorrow = isTomorrowSelected,
+                            subjectsWithSlots = data,
+                            showNowLine = showNowLine,
+                            highContrast = highContrast
+                        )
+                    }
+                }
             }
         }
     }
@@ -152,16 +159,44 @@ class ScheduleWidget : GlanceAppWidget() {
     }
 }
 
+@Composable
+private fun WidgetLoadingState() {
+    val context = LocalContext.current
+    Box(
+        modifier = GlanceModifier.fillMaxSize().background(Color(0xFF141416)),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = context.getString(R.string.widget_loading),
+            style = TextStyle(color = ColorProvider(day = Color.White, night = Color.White))
+        )
+    }
+}
+
+@Composable
+private fun WidgetErrorState() {
+    val context = LocalContext.current
+    Box(
+        modifier = GlanceModifier.fillMaxSize().background(Color(0xFF141416)),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = context.getString(R.string.widget_error),
+            style = TextStyle(color = ColorProvider(day = Color.White, night = Color.White))
+        )
+    }
+}
+
 val REFRESH_KEY = androidx.datastore.preferences.core.intPreferencesKey("refresh_count")
 
 @Composable
 private fun ScheduleWidgetContent(
-    context: Context,
     isTomorrow: Boolean,
     subjectsWithSlots: List<SubjectWithSlots>,
     showNowLine: Boolean,
     highContrast: Boolean
 ) {
+    val context = LocalContext.current
     val todayDate = LocalDate.now()
     val targetDate = if (isTomorrow) {
         when (todayDate.dayOfWeek) {
@@ -173,14 +208,29 @@ private fun ScheduleWidgetContent(
         todayDate
     }
     val targetDayOfWeek = targetDate.dayOfWeek
-    val locale =
-        context.resources.configuration.locales[0]
+    
+    val locale = remember(context) {
+        try {
+            context.resources.configuration.locales[0]
+        } catch (_: Exception) {
+            Locale.getDefault()
+        }
+    }
+    
     val currentTime = LocalTime.now()
 
     val rawDayName = targetDayOfWeek.getDisplayName(JavaTextStyle.SHORT, locale)
     val dayName = rawDayName.replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
-    val dayPillText = if (isTomorrow) "Tomorrow • $dayName" else "Today • $dayName"
-    val toggleBtnText = if (isTomorrow) "← Today" else "Tomorrow →"
+    val dayPillText = if (isTomorrow) {
+        context.getString(R.string.widget_tomorrow_pill, dayName)
+    } else {
+        context.getString(R.string.widget_today_pill, dayName)
+    }
+    val toggleBtnText = if (isTomorrow) {
+        context.getString(R.string.widget_toggle_today)
+    } else {
+        context.getString(R.string.widget_toggle_tomorrow)
+    }
 
     // Gather active slots for target day
     val daySlots = remember(subjectsWithSlots, targetDayOfWeek) {
@@ -221,20 +271,20 @@ private fun ScheduleWidgetContent(
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
-            .background(ColorProvider(Color(0xFF141416)))
+            .background(Color(0xFF141416))
     ) {
         // Sleek Minimalist Header Bar
         Row(
             modifier = GlanceModifier
                 .fillMaxWidth()
-                .background(ColorProvider(Color(0xFF1E1E22)))
+                .background(Color(0xFF1E1E22))
                 .padding(horizontal = 10.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Day Pill Badge (Tap opens app)
             Box(
                 modifier = GlanceModifier
-                    .background(ColorProvider(Color(0xFF2C2C34)))
+                    .background(Color(0xFF2C2C34))
                     .cornerRadius(12.dp)
                     .padding(horizontal = 8.dp, vertical = 4.dp)
                     .clickable(launchAppAction)
@@ -243,7 +293,7 @@ private fun ScheduleWidgetContent(
                     text = dayPillText,
                     style = TextStyle(
                         fontWeight = FontWeight.Bold,
-                        color = ColorProvider(Color(0xFFFF9F0A))
+                        color = ColorProvider(day = Color(0xFFFF9F0A), night = Color(0xFFFF9F0A))
                     )
                 )
             }
@@ -253,7 +303,7 @@ private fun ScheduleWidgetContent(
             // Day Toggle Button (Tap switches Today/Tomorrow)
             Box(
                 modifier = GlanceModifier
-                    .background(ColorProvider(Color(0xFF3A3A44)))
+                    .background(Color(0xFF3A3A44))
                     .cornerRadius(12.dp)
                     .padding(horizontal = 8.dp, vertical = 4.dp)
                     .clickable(actionRunCallback<ToggleWidgetDayAction>())
@@ -262,7 +312,7 @@ private fun ScheduleWidgetContent(
                     text = toggleBtnText,
                     style = TextStyle(
                         fontWeight = FontWeight.Bold,
-                        color = ColorProvider(Color(0xFFE5E5EA))
+                        color = ColorProvider(day = Color(0xFFE5E5EA), night = Color(0xFFE5E5EA))
                     )
                 )
             }
@@ -272,7 +322,7 @@ private fun ScheduleWidgetContent(
             // Manual Refresh Button
             Box(
                 modifier = GlanceModifier
-                    .background(ColorProvider(Color(0xFF3A3A44)))
+                    .background(Color(0xFF3A3A44))
                     .cornerRadius(12.dp)
                     .padding(6.dp)
                     .clickable(actionRunCallback<RefreshAction>())
@@ -308,7 +358,7 @@ private fun ScheduleWidgetContent(
                     Text(
                         text = emptyText,
                         style = TextStyle(
-                            color = ColorProvider(Color(0x99E5E5EA)),
+                            color = ColorProvider(day = Color(0x99E5E5EA), night = Color(0x99E5E5EA)),
                             fontWeight = FontWeight.Medium
                         )
                     )
@@ -408,7 +458,7 @@ private fun ClusterSegmentRow(
                     modifier = GlanceModifier
                         .defaultWeight()
                         .fillMaxHeight()
-                        .background(ColorProvider(cardBgColor))
+                        .background(cardBgColor)
                         .cornerRadius(12.dp)
                         .clickable(launchAppAction)
                 ) {
@@ -423,7 +473,7 @@ private fun ClusterSegmentRow(
                             modifier = GlanceModifier
                                 .width(4.dp)
                                 .fillMaxHeight()
-                                .background(ColorProvider(rawColor))
+                                .background(rawColor)
                         ) {}
 
                         Spacer(modifier = GlanceModifier.width(6.dp))
@@ -435,14 +485,14 @@ private fun ClusterSegmentRow(
                                 text = subject.code.ifEmpty { subject.name },
                                 style = TextStyle(
                                     fontWeight = FontWeight.Bold,
-                                    color = ColorProvider(Color.White)
+                                    color = ColorProvider(day = Color.White, night = Color.White)
                                 )
                             )
                             val labText = if (!slot.labGroupName.isNullOrEmpty()) " (${slot.labGroupName})" else ""
                             Text(
                                 text = "${slot.startTime.format(timeFormatter)} - ${slot.endTime.format(timeFormatter)}$labText",
                                 style = TextStyle(
-                                    color = ColorProvider(Color(0xFFE5E5EA))
+                                    color = ColorProvider(day = Color(0xFFE5E5EA), night = Color(0xFFE5E5EA))
                                 )
                             )
                         }
@@ -464,14 +514,14 @@ private fun ClusterSegmentRow(
                     modifier = GlanceModifier
                         .width(6.dp)
                         .height(6.dp)
-                        .background(ColorProvider(Color(0xFFFF3B30)))
+                        .background(Color(0xFFFF3B30))
                         .cornerRadius(3.dp)
                 ) {}
                 Box(
                     modifier = GlanceModifier
                         .defaultWeight()
                         .height(2.dp)
-                        .background(ColorProvider(Color(0xFFFF3B30)))
+                        .background(Color(0xFFFF3B30))
                 ) {}
             }
         }
@@ -511,9 +561,7 @@ private fun EmptySegmentRow(
                         .fillMaxWidth()
                         .height(1.dp)
                         .background(
-                            ColorProvider(
                                 if (isHourMark) Color(0xFF3A3A3C) else Color(0xFF222224)
-                            )
                         )
                 ) {}
 
@@ -530,14 +578,14 @@ private fun EmptySegmentRow(
                             modifier = GlanceModifier
                                 .width(6.dp)
                                 .height(6.dp)
-                                .background(ColorProvider(Color(0xFFFF3B30)))
+                                .background(Color(0xFFFF3B30))
                                 .cornerRadius(3.dp)
                         ) {}
                         Box(
                             modifier = GlanceModifier
                                 .defaultWeight()
                                 .height(2.dp)
-                                .background(ColorProvider(Color(0xFFFF3B30)))
+                                .background(Color(0xFFFF3B30))
                         ) {}
                     }
                 }
@@ -547,4 +595,3 @@ private fun EmptySegmentRow(
         }
     }
 }
-

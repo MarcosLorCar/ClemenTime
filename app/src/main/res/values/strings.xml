@@ -43,6 +43,7 @@
     <!-- Settings Screen strings -->
     <string name="data_storage_header">Data &amp; Storage</string>
     <string name="interface_header">Interface</string>
+    <string name="about_header">About</string>
     <string name="language_setting_title">Language</string>
     <string name="theme_setting_title">Theme</string>
     <string name="theme_system">System</string>
@@ -248,5 +249,17 @@
     <string name="no_slots_assigned">No slots added yet.</string>
     <string name="online_repository_title">Online Repository</string>
     <string name="online_repository_url_setting_title">Online Repository URL</string>
+    <string name="github_repository_url_description">Enter the GitHub raw content base URL for online schedules:</string>
     <string name="github_repository_url_dialog_title">GitHub Repository URL</string>
+    <string name="version_label">Version %1$s</string>
+    <string name="about_app_description">ClemenTime for Android</string>
+    <string name="privacy_policy_label">Privacy Policy</string>
+    <string name="privacy_policy_url" translatable="false">https://marcoslorcar.github.io/ClemenTime/PRIVACY_POLICY</string>
+
+    <string name="widget_loading">Loading…</string>
+    <string name="widget_error">Error loading schedule</string>
+    <string name="widget_today_pill">Today • %1$s</string>
+    <string name="widget_tomorrow_pill">Tomorrow • %1$s</string>
+    <string name="widget_toggle_today">← Today</string>
+    <string name="widget_toggle_tomorrow">Tomorrow →</string>
 </resources>

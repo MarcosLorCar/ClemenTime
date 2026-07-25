@@ -1,7 +1,6 @@
 package com.marcoslorcar.clementime.di
 
 import com.marcoslorcar.clementime.data.api.GitHubScheduleApiService
-import com.marcoslorcar.clementime.data.api.UpdateApiService
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import dagger.Module
 import dagger.Provides
@@ -49,17 +48,5 @@ object NetworkModule {
             .addConverterFactory(json.asConverterFactory(contentType))
             .build()
             .create(GitHubScheduleApiService::class.java)
-    }
-
-    @Provides
-    @Singleton
-    fun provideUpdateApiService(okHttpClient: OkHttpClient, json: Json): UpdateApiService {
-        val contentType = "application/json".toMediaType()
-        return Retrofit.Builder()
-            .baseUrl("https://api.github.com/")
-            .client(okHttpClient)
-            .addConverterFactory(json.asConverterFactory(contentType))
-            .build()
-            .create(UpdateApiService::class.java)
     }
 }
