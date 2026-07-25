@@ -1,10 +1,13 @@
 package com.marcoslorcar.clementime.ui.screens.subject
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -33,6 +36,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FilterList
@@ -49,6 +53,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonMenu
+import androidx.compose.material3.FloatingActionButtonMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -60,6 +66,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.ToggleFloatingActionButton
 import androidx.compose.material3.TriStateCheckbox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -69,6 +76,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.state.ToggleableState
@@ -87,6 +95,7 @@ import com.marcoslorcar.clementime.data.SubjectWithSlots
 import com.marcoslorcar.clementime.data.cardColor
 import com.marcoslorcar.clementime.ui.components.ClemenTimeTopBar
 import com.marcoslorcar.clementime.ui.components.EmptyStateContent
+import com.marcoslorcar.clementime.ui.components.SemesterSwitcher
 import com.marcoslorcar.clementime.ui.theme.ClemenTimeTheme
 import com.marcoslorcar.clementime.utils.fadingEdges
 import java.time.DayOfWeek
@@ -125,6 +134,7 @@ fun SubjectsContent(
 ) {
     var subjectToDelete by remember { mutableStateOf<Subject?>(null) }
     var showNukeDialog by remember { mutableStateOf(false) }
+    var isFabExpanded by remember { mutableStateOf(false) }
 
     subjectToDelete?.let { subject ->
         AlertDialog(
@@ -206,8 +216,6 @@ fun SubjectsContent(
         )
     }
 
-    var isSearchVisible by remember { mutableStateOf(false) }
-    var isFilterVisible by remember { mutableStateOf(false) }
     var selectedGroupFilter by remember { mutableStateOf<String?>(null) }
     val subjectsListState = rememberLazyListState()
 
@@ -233,120 +241,130 @@ fun SubjectsContent(
 
     Scaffold(
         topBar = {
-            if (uiState.isInSelectionMode)
-                ClemenTimeTopBar(
-                    title = pluralStringResource(R.plurals.selected_count_simple, uiState.selectedSubjectIds.size, uiState.selectedSubjectIds.size),
-                    onNavigateBack = { onEvent(SubjectsUiEvent.ClearSelection) },
-                    actions = {
-                        if (uiState.selectedSubjectIds.isNotEmpty()) {
-                            IconButton(onClick = { onEvent(SubjectsUiEvent.DisableSelectedSubjects) }) {
+            Column {
+                if (uiState.isInSelectionMode)
+                    ClemenTimeTopBar(
+                        title = pluralStringResource(R.plurals.selected_count_simple, uiState.selectedSubjectIds.size, uiState.selectedSubjectIds.size),
+                        onNavigateBack = { onEvent(SubjectsUiEvent.ClearSelection) },
+                        actions = {
+                            if (uiState.selectedSubjectIds.isNotEmpty()) {
+                                IconButton(onClick = { onEvent(SubjectsUiEvent.DisableSelectedSubjects) }) {
+                                    Icon(
+                                        imageVector = Icons.Default.VisibilityOff,
+                                        contentDescription = "Disable selected subjects",
+                                        tint = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            }
+                            IconButton(
+                                onClick = { onEvent(SubjectsUiEvent.ToggleTools) }
+                            ) {
                                 Icon(
-                                    imageVector = Icons.Default.VisibilityOff,
-                                    contentDescription = "Disable selected subjects",
-                                    tint = MaterialTheme.colorScheme.onSurface
+                                    imageVector = Icons.Default.FilterList,
+                                    contentDescription = "Tools",
+                                    tint = if (uiState.isToolsVisible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                                 )
                             }
-                        }
-                        IconButton(
-                            onClick = {
-                                isFilterVisible = !isFilterVisible
-                                if (!isFilterVisible) {
-                                    selectedGroupFilter = null
+                            if (uiState.selectedSubjectIds.isNotEmpty()) {
+                                IconButton(onClick = { showDeleteSelectedDialog = true }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Delete selected subjects",
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
                                 }
                             }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.FilterList,
-                                contentDescription = "Filter subjects",
-                                tint = if (isFilterVisible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                            )
                         }
-                        IconButton(
-                            onClick = {
-                                isSearchVisible = !isSearchVisible
-                                if (!isSearchVisible) {
-                                    onEvent(SubjectsUiEvent.SearchQueryChanged(""))
-                                }
+                    )
+                else
+                    ClemenTimeTopBar(
+                        title = stringResource(R.string.subjects_screen_title),
+                        onMenuClick = onMenuClick,
+                        actions = actions@{
+                            if (uiState.subjects.isEmpty()) {
+                                return@actions
                             }
-                        ) {
-                            Icon(
-                                imageVector = if (isSearchVisible) Icons.Default.Close else Icons.Default.Search,
-                                contentDescription = if (isSearchVisible) "Close search" else "Search subjects"
-                            )
-                        }
-                        if (uiState.selectedSubjectIds.isNotEmpty()) {
-                            IconButton(onClick = { showDeleteSelectedDialog = true }) {
+
+                            IconButton(onClick = { onEvent(SubjectsUiEvent.ToggleSemesterSwitcher) }) {
+                                Icon(
+                                    imageVector = Icons.Default.DateRange,
+                                    contentDescription = "Toggle Semester Switcher",
+                                    tint = if (uiState.isSemesterSwitcherVisible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            IconButton(
+                                onClick = { onEvent(SubjectsUiEvent.ToggleTools) }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.FilterList,
+                                    contentDescription = "Tools",
+                                    tint = if (uiState.isToolsVisible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            IconButton(onClick = { showNukeDialog = true }) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
-                                    contentDescription = "Delete selected subjects",
+                                    contentDescription = "Nuke all subjects",
                                     tint = MaterialTheme.colorScheme.error
                                 )
                             }
                         }
-                    }
-                )
-            else
-                ClemenTimeTopBar(
-                    title = stringResource(R.string.subjects_screen_title),
-                    onMenuClick = onMenuClick,
-                    actions = actions@{
-                        if (uiState.subjects.isEmpty()) {
-                            return@actions
-                        }
-
-                        IconButton(
-                            onClick = {
-                                onEvent(SubjectsUiEvent.EnterSelectionMode)
-                            }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = "Enter selection mode"
-                            )
-                        }
-                        IconButton(
-                            onClick = {
-                                isFilterVisible = !isFilterVisible
-                                if (!isFilterVisible) {
-                                    selectedGroupFilter = null
-                                }
-                            }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.FilterList,
-                                contentDescription = "Filter subjects",
-                                tint = if (isFilterVisible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                        IconButton(
-                            onClick = {
-                                isSearchVisible = !isSearchVisible
-                                if (!isSearchVisible) {
-                                    onEvent(SubjectsUiEvent.SearchQueryChanged(""))
-                                }
-                            }
-                        ) {
-                            Icon(
-                                imageVector = if (isSearchVisible) Icons.Default.Close else Icons.Default.Search,
-                                contentDescription = if (isSearchVisible) "Close search" else "Search subjects"
-                            )
-                        }
-                        IconButton(onClick = { showNukeDialog = true }) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = "Nuke all subjects",
-                                tint = MaterialTheme.colorScheme.error
-                            )
-                        }
-                    }
-                )
+                    )
+                
+                AnimatedVisibility(
+                    visible = uiState.isSemesterSwitcherVisible,
+                    enter = expandVertically(),
+                    exit = shrinkVertically()
+                ) {
+                    SemesterSwitcher(
+                        selectedSemester = uiState.selectedSemester,
+                        onSemesterSelected = { onEvent(SubjectsUiEvent.SemesterChanged(it)) }
+                    )
+                }
+            }
         },
         floatingActionButton = floatingActionButton@{
             if (uiState.isInSelectionMode) {
                 return@floatingActionButton
             }
-            FloatingActionButton(onClick = { onNavigateToAddEditSubject(null) }) {
-                Icon(Icons.Default.Add, contentDescription = "Add Subject")
+            if (uiState.subjects.size >= 2) {
+                FloatingActionButtonMenu(
+                    expanded = isFabExpanded,
+                    button = {
+                        ToggleFloatingActionButton(
+                            checked = isFabExpanded,
+                            onCheckedChange = { isFabExpanded = it }
+                        ) {
+                            val progress by animateFloatAsState(if (isFabExpanded) 1f else 0f, label = "fabProgress")
+                            Icon(
+                                imageVector = if (isFabExpanded) Icons.Default.Close else Icons.Default.Add,
+                                contentDescription = if (isFabExpanded) "Close actions" else "Open actions",
+                                modifier = Modifier.graphicsLayer { rotationZ = progress * 90f }
+                            )
+                        }
+                    }
+                ) {
+                    FloatingActionButtonMenuItem(
+                        onClick = {
+                            isFabExpanded = false
+                            onNavigateToAddEditSubject(null)
+                        },
+                        icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                        text = { Text(stringResource(R.string.add_subject_title)) }
+                    )
+                    FloatingActionButtonMenuItem(
+                        onClick = {
+                            isFabExpanded = false
+                            onEvent(SubjectsUiEvent.EnterSelectionMode)
+                        },
+                        icon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                        text = { Text(stringResource(R.string.edit_subject)) }
+                    )
+                }
+            } else {
+                FloatingActionButton(onClick = { onNavigateToAddEditSubject(null) }) {
+                    Icon(Icons.Default.Add, contentDescription = "Add Subject")
+                }
             }
         }
     ) { innerPadding ->
@@ -373,43 +391,51 @@ fun SubjectsContent(
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
-                AnimatedVisibility(visible = isSearchVisible) {
-                    OutlinedTextField(
-                        value = uiState.searchQuery,
-                        onValueChange = { onEvent(SubjectsUiEvent.SearchQueryChanged(it)) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        placeholder = { Text(stringResource(R.string.search_subjects_placeholder)) },
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                        trailingIcon = {
-                            if (uiState.searchQuery.isNotEmpty()) {
-                                IconButton(onClick = { onEvent(SubjectsUiEvent.SearchQueryChanged("")) }) {
-                                    Icon(Icons.Default.Clear, contentDescription = "Clear search")
-                                }
-                            }
-                        },
-                        singleLine = true,
-                        shape = CircleShape
-                    )
-                }
-
-                AnimatedVisibility(visible = isFilterVisible) {
-                    if (availableFilters.isNotEmpty()) {
-                        FlowRow(
+                AnimatedVisibility(
+                    visible = uiState.isToolsVisible,
+                    enter = expandVertically(),
+                    exit = shrinkVertically()
+                ) {
+                    Column {
+                        OutlinedTextField(
+                            value = uiState.searchQuery,
+                            onValueChange = { onEvent(SubjectsUiEvent.SearchQueryChanged(it)) },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp, vertical = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            availableFilters.forEach { filter ->
-                                FilterChip(
-                                    selected = selectedGroupFilter == filter,
-                                    onClick = { selectedGroupFilter = if (selectedGroupFilter == filter) null else filter },
-                                    label = { Text(filter) }
-                                )
+                            placeholder = { Text(stringResource(R.string.search_subjects_placeholder)) },
+                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                            trailingIcon = {
+                                if (uiState.searchQuery.isNotEmpty()) {
+                                    IconButton(onClick = { onEvent(SubjectsUiEvent.SearchQueryChanged("")) }) {
+                                        Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                                    }
+                                }
+                            },
+                            singleLine = true,
+                            shape = CircleShape
+                        )
+
+                        if (availableFilters.isNotEmpty()) {
+                            FlowRow(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                availableFilters.forEach { filter ->
+                                    FilterChip(
+                                        selected = selectedGroupFilter == filter,
+                                        onClick = {
+                                            selectedGroupFilter =
+                                                if (selectedGroupFilter == filter) null else filter
+                                        },
+                                        label = { Text(filter) }
+                                    )
+                                }
                             }
                         }
+                        HorizontalDivider(modifier = Modifier.padding(top = 4.dp))
                     }
                 }
 

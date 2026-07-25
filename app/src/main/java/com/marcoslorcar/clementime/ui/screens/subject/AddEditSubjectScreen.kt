@@ -93,6 +93,7 @@ import com.marcoslorcar.clementime.data.Subject
 import com.marcoslorcar.clementime.ui.components.ClassSlotItemCard
 import com.marcoslorcar.clementime.ui.components.ClemenTimeTopBar
 import com.marcoslorcar.clementime.ui.components.OnboardingTooltip
+import com.marcoslorcar.clementime.ui.components.SemesterSwitcher
 import com.marcoslorcar.clementime.ui.theme.ClemenTimeTheme
 import com.marcoslorcar.clementime.utils.fadingEdges
 import java.io.File
@@ -129,6 +130,7 @@ fun AddEditSubjectScreen(
         onUpdateCode = viewModel::updateCode,
         onUpdateName = viewModel::updateName,
         onUpdateColor = viewModel::updateColor,
+        onUpdateSemester = viewModel::updateSemester,
         onUpdateNotesText = viewModel::updateNotesText,
         onAddAttachedFile = viewModel::addAttachedFile,
         onRemoveAttachedFile = viewModel::removeAttachedFile,
@@ -152,6 +154,7 @@ fun AddEditSubjectContent(
     onUpdateCode: (String) -> Unit,
     onUpdateName: (String) -> Unit,
     onUpdateColor: (Int) -> Unit,
+    onUpdateSemester: (Int) -> Unit,
     onUpdateNotesText: (String) -> Unit,
     onAddAttachedFile: (String, String, String) -> Unit,
     onRemoveAttachedFile: (String) -> Unit,
@@ -283,10 +286,12 @@ fun AddEditSubjectContent(
                         code = uiState.code,
                         name = uiState.name,
                         selectedColor = uiState.color,
+                        selectedSemester = uiState.semester,
                         isEditMode = uiState.isEditMode,
                         onUpdateCode = onUpdateCode,
                         onUpdateName = onUpdateName,
-                        onUpdateColor = onUpdateColor
+                        onUpdateColor = onUpdateColor,
+                        onUpdateSemester = onUpdateSemester
                     )
                 }
 
@@ -423,10 +428,12 @@ private fun SubjectBasicDetailsCard(
     code: String,
     name: String,
     selectedColor: Int,
+    selectedSemester: Int,
     isEditMode: Boolean,
     onUpdateCode: (String) -> Unit,
     onUpdateName: (String) -> Unit,
-    onUpdateColor: (Int) -> Unit
+    onUpdateColor: (Int) -> Unit,
+    onUpdateSemester: (Int) -> Unit
 ) {
     if (!isEditMode) {
         Card(
@@ -452,9 +459,19 @@ private fun SubjectBasicDetailsCard(
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
-                    if (code.isNotBlank()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        if (code.isNotBlank()) {
+                            Text(
+                                text = "Code: $code",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                         Text(
-                            text = "Code: $code",
+                            text = stringResource(if (selectedSemester == 1) R.string.semester_1_label else R.string.semester_2_label),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -527,6 +544,12 @@ private fun SubjectBasicDetailsCard(
                     modifier = Modifier.weight(0.65f)
                 )
             }
+
+            SemesterSwitcher(
+                selectedSemester = selectedSemester,
+                onSemesterSelected = onUpdateSemester,
+                modifier = Modifier.padding(horizontal = 0.dp)
+            )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -1039,6 +1062,7 @@ private fun AddEditSubjectContentPreview() {
             onUpdateCode = {},
             onUpdateName = {},
             onUpdateColor = {},
+            onUpdateSemester = {},
             onUpdateNotesText = {},
             onAddAttachedFile = { _, _, _ -> },
             onRemoveAttachedFile = {},

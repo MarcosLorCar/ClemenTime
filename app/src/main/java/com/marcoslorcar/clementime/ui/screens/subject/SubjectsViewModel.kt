@@ -17,24 +17,26 @@ import javax.inject.Inject
 
 data class SubjectsUiState(
     val subjects: List<SubjectWithSlots> = emptyList(),
+    val selectedSemester: Int = 1,
     val searchQuery: String = "",
     val isLoading: Boolean = false,
     val selectedSubjectIds: Set<Long> = emptySet(),
     val isSelectionModeForced: Boolean = false,
-    val highContrast: Boolean = false
+    val highContrast: Boolean = false,
+    val isSemesterSwitcherVisible: Boolean = false,
+    val isToolsVisible: Boolean = false
 ) {
     val isInSelectionMode: Boolean
         get() = isSelectionModeForced || selectedSubjectIds.isNotEmpty()
 
     val filteredSubjects: List<SubjectWithSlots>
-        get() = if (searchQuery.isBlank()) {
-            subjects
-        } else {
-            subjects.filter {
+        get() = subjects
+            .filter { it.subject.semester == selectedSemester }
+            .filter {
+                searchQuery.isBlank() ||
                 it.subject.name.contains(searchQuery, ignoreCase = true) ||
-                        it.subject.code.contains(searchQuery, ignoreCase = true)
+                it.subject.code.contains(searchQuery, ignoreCase = true)
             }
-        }
 }
 
 sealed interface SubjectsUiEvent {
@@ -48,6 +50,9 @@ sealed interface SubjectsUiEvent {
     object EnterSelectionMode : SubjectsUiEvent
     data class ToggleGroupSelection(val subjectIds: List<Long>) : SubjectsUiEvent
     object DisableSelectedSubjects : SubjectsUiEvent
+    data class SemesterChanged(val semester: Int) : SubjectsUiEvent
+    object ToggleSemesterSwitcher : SubjectsUiEvent
+    object ToggleTools : SubjectsUiEvent
 
 }
 
@@ -70,6 +75,11 @@ class SubjectsViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.highContrastFlow.collect { hc ->
                 _uiState.update { it.copy(highContrast = hc) }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.currentSemesterFlow.collect { semester ->
+                _uiState.update { it.copy(selectedSemester = semester) }
             }
         }
     }
@@ -150,6 +160,23 @@ class SubjectsViewModel @Inject constructor(
                     scheduleDao.updateSubjectsActiveStatus(idsToDisable, false)
                     ScheduleWidgetUtils.updateWidget(context)
                     _uiState.update { it.copy(selectedSubjectIds = emptySet(), isSelectionModeForced = false) }
+                }
+            }
+            is SubjectsUiEvent.SemesterChanged -> {
+                viewModelScope.launch {
+                    settingsRepository.setCurrentSemester(event.semester)
+                }
+            }
+            is SubjectsUiEvent.ToggleSemesterSwitcher -> {
+                _uiState.update { it.copy(isSemesterSwitcherVisible = !it.isSemesterSwitcherVisible) }
+            }
+            is SubjectsUiEvent.ToggleTools -> {
+                _uiState.update { state ->
+                    val nextVisible = !state.isToolsVisible
+                    state.copy(
+                        isToolsVisible = nextVisible,
+                        searchQuery = if (!nextVisible) "" else state.searchQuery
+                    )
                 }
             }
 

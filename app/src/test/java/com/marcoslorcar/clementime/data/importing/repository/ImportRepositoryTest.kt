@@ -32,7 +32,7 @@ class ImportRepositoryTest {
         )
         val selected = SelectedSubject(newJsonSubject, "1º A")
 
-        repository.importSubjects(listOf(selected))
+        repository.importSubjects(listOf(selected), 1)
 
         assertEquals(1, fakeDao.upsertedSubjects.size)
         val (upsertedSubject, _) = fakeDao.upsertedSubjects[0]
@@ -51,7 +51,7 @@ class FakeScheduleDaoForRepositoryTest(
     val upsertedSubjects = mutableListOf<Pair<Subject, List<ClassSlot>>>()
 
     override fun getAllSubjectsWithSlots() = subjectsFlow
-    override fun getActiveSubjectsWithSlots() = subjectsFlow
+    override fun getActiveSubjectsWithSlotsBySemester(semester: Int) = subjectsFlow
     override fun getSubjectWithSlotsById(subjectId: Long) = MutableStateFlow(null)
     override suspend fun updateSubjectActiveStatus(subjectId: Long, isActive: Boolean) {}
     override suspend fun updateSelectedLabGroup(subjectId: Long, labGroup: String?) {}

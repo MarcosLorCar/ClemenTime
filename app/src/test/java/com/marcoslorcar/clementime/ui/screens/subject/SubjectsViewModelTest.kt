@@ -28,7 +28,9 @@ class SubjectsViewModelTestFakeDao : ScheduleDao {
 
     override fun getAllSubjectsWithSlots(): Flow<List<SubjectWithSlots>> = subjectsFlow
 
-    override fun getActiveSubjectsWithSlots(): Flow<List<SubjectWithSlots>> = flowOf(emptyList())
+    override fun getAllSubjectsWithSlotsBySemester(semester: Int): Flow<List<SubjectWithSlots>> = subjectsFlow
+
+    override fun getActiveSubjectsWithSlotsBySemester(semester: Int): Flow<List<SubjectWithSlots>> = flowOf(emptyList())
 
     override fun getSubjectWithSlotsById(subjectId: Long): Flow<SubjectWithSlots?> = flowOf(null)
 

@@ -24,7 +24,7 @@ class FakeScheduleDao : ScheduleDao {
     val subjects = mutableListOf<Subject>()
     val slots = mutableListOf<ClassSlot>()
 
-    override fun getActiveSubjectsWithSlots(): Flow<List<SubjectWithSlots>> = flowOf(emptyList())
+    override fun getActiveSubjectsWithSlotsBySemester(semester: Int): Flow<List<SubjectWithSlots>> = flowOf(emptyList())
 
     override suspend fun updateSubjectActiveStatus(subjectId: Long, isActive: Boolean) {}
 
@@ -42,6 +42,8 @@ class FakeScheduleDao : ScheduleDao {
     }
 
     override fun getAllSubjectsWithSlots(): Flow<List<SubjectWithSlots>> = flowOf(emptyList())
+
+    override fun getAllSubjectsWithSlotsBySemester(semester: Int): Flow<List<SubjectWithSlots>> = flowOf(emptyList())
 
     override fun getSubjectWithSlotsById(subjectId: Long): Flow<SubjectWithSlots?> {
         val m = subjects.find { it.id == subjectId }

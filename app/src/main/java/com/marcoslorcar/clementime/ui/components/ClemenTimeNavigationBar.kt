@@ -8,10 +8,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.automirrored.outlined.LibraryBooks
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.outlined.CalendarMonth
-import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -71,8 +68,8 @@ fun ClemenTimeNavigationBar(
     val items = listOf(
         NavigationItem(
             labelResId = R.string.schedule_screen_title,
-            selectedIcon = Icons.Filled.CalendarMonth,
-            unselectedIcon = Icons.Outlined.CalendarMonth,
+            selectedIcon = ViewWeekFilled,
+            unselectedIcon = ViewWeekOutlined,
             route = ScheduleListRoute(),
             routeClass = ScheduleListRoute::class
         ),
@@ -85,8 +82,8 @@ fun ClemenTimeNavigationBar(
         ),
         NavigationItem(
             labelResId = R.string.more_screen_title,
-            selectedIcon = Icons.Filled.MoreHoriz,
-            unselectedIcon = Icons.Outlined.MoreHoriz,
+            selectedIcon = PageInfoFilled,
+            unselectedIcon = PageInfoOutlined,
             route = MoreRoute,
             routeClass = MoreRoute::class
         )

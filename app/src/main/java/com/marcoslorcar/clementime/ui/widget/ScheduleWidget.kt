@@ -69,6 +69,8 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.time.format.TextStyle as JavaTextStyle
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flatMapLatest
 
 private val BLOCK_HEIGHT: Dp = 18.dp
 
@@ -100,6 +102,7 @@ class ScheduleWidget : GlanceAppWidget() {
 
     override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val entryPoint = try {
             EntryPointAccessors.fromApplication(
@@ -115,7 +118,9 @@ class ScheduleWidget : GlanceAppWidget() {
             val isTomorrowSelected = prefs[IS_TOMORROW_KEY] ?: false
 
             val subjectsWithSlots by remember(entryPoint) {
-                entryPoint?.scheduleDao()?.getActiveSubjectsWithSlots() ?: kotlinx.coroutines.flow.flowOf(null)
+                entryPoint?.settingsRepository()?.currentSemesterFlow?.flatMapLatest { semester ->
+                    entryPoint.scheduleDao().getActiveSubjectsWithSlotsBySemester(semester)
+                } ?: kotlinx.coroutines.flow.flowOf(null)
             }.collectAsState(initial = null)
 
             val showNowLine by remember(entryPoint) {

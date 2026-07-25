@@ -78,6 +78,7 @@ data class AddEditSubjectUiState(
     val code: String = "",
     val name: String = "",
     val color: Int = Subject.PRESET_COLORS.first(),
+    val semester: Int = 1,
     val defaultDurationMinutes: Int = 90,
     val notesText: String = "",
     val attachedFiles: List<AttachedFileItem> = emptyList(),
@@ -123,6 +124,11 @@ class AddEditSubjectViewModel @Inject constructor(
                 _uiState.update { it.copy(hasSeenAddSlotTooltip = seen) }
             }
         }
+        viewModelScope.launch {
+            settingsRepository.currentSemesterFlow.firstOrNull()?.let { semester ->
+                _uiState.update { it.copy(semester = semester) }
+            }
+        }
     }
 
     private fun loadSubject(subjectId: Long, highlightSlotId: Long? = null) {
@@ -137,6 +143,7 @@ class AddEditSubjectViewModel @Inject constructor(
                         code = subject.code,
                         name = subject.name,
                         color = subject.color,
+                        semester = subject.semester,
                         defaultDurationMinutes = subject.defaultDurationMinutes ?: 90,
                         notesText = subject.notes,
                         attachedFiles = subject.attachedFiles,
@@ -183,6 +190,10 @@ class AddEditSubjectViewModel @Inject constructor(
 
     fun updateColor(color: Int) {
         _uiState.update { it.copy(color = color) }
+    }
+
+    fun updateSemester(semester: Int) {
+        _uiState.update { it.copy(semester = semester) }
     }
 
     fun updateDefaultDuration(durationMinutes: Int) {
@@ -332,7 +343,8 @@ class AddEditSubjectViewModel @Inject constructor(
                 defaultDurationMinutes = state.defaultDurationMinutes,
                 notes = state.notesText,
                 attachedFiles = state.attachedFiles,
-                selectedLabGroup = state.selectedLabGroup
+                selectedLabGroup = state.selectedLabGroup,
+                semester = state.semester
             )
 
             val validEntities = state.slots.mapNotNull { it.toEntity(subjectToSave.id) }

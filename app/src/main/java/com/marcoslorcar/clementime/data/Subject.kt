@@ -16,6 +16,7 @@ data class Subject(
     val notes: String = "",
     val attachedFiles: List<AttachedFileItem> = emptyList(),
     val selectedLabGroup: String? = null,
+    val semester: Int = 1,
     val isDummy: Boolean = false
 ) {
     companion object {

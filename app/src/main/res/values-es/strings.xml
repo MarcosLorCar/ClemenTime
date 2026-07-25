@@ -279,5 +279,8 @@
     <string name="widget_tomorrow_pill">Mañana • %1$s</string>
     <string name="widget_toggle_today">← Hoy</string>
     <string name="widget_toggle_tomorrow">Mañana →</string>
+    <string name="semester_1_label">1º Cuatrimestre</string>
+    <string name="semester_2_label">2º Cuatrimestre</string>
+    <string name="semester_label">Cuatrimestre</string>
 </resources>
 

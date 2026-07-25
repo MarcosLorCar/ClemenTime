@@ -140,7 +140,7 @@ class ImportRepository @Inject constructor(
         }
     }
 
-    suspend fun importSubjects(selectedSubjects: List<SelectedSubject>) {
+    suspend fun importSubjects(selectedSubjects: List<SelectedSubject>, targetSemester: Int) {
         val existingSubjects = dao.getAllSubjectsWithSlots().first()
         val usedColors = existingSubjects.map { it.subject.color }.toMutableSet()
         
@@ -177,6 +177,7 @@ class ImportRepository @Inject constructor(
                 courseGroup = selected.courseGroup,
                 isActive = true,
                 selectedLabGroup = autoSelectedLabGroup,
+                semester = jsonSubject.semester ?: targetSemester,
                 isDummy = jsonSubject.isDummy
             )
 
@@ -199,8 +200,8 @@ class ImportRepository @Inject constructor(
         }
      }
 
-    suspend fun getExistingActiveSubjects(): List<com.marcoslorcar.clementime.data.SubjectWithSlots> = withContext(Dispatchers.IO) {
-        dao.getAllSubjectsWithSlots().first().filter { it.subject.isActive }
+    suspend fun getExistingActiveSubjects(semester: Int): List<com.marcoslorcar.clementime.data.SubjectWithSlots> = withContext(Dispatchers.IO) {
+        dao.getAllSubjectsWithSlotsBySemester(semester).first().filter { it.subject.isActive }
     }
 
     fun normalizeGitHubUrl(url: String): String {

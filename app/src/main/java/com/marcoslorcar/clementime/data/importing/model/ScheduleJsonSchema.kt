@@ -10,6 +10,7 @@ import kotlinx.serialization.Serializable
 data class ScheduleJsonSchema(
     val version: Int = 1,                 // Schema version for future-proofing compatibility
     val title: String? = null,            // Descriptive name of the schedule (e.g. "First Semester 2026/27")
+    val semester: Int? = null,
     @SerialName("matters") val subjects: List<JsonSubject> = emptyList(), // Root subjects (Common for everyone)
     val years: List<JsonYear> = emptyList()
 )
@@ -41,6 +42,7 @@ data class JsonSubject(
     val code: String,                     // Unique subject identifier (e.g. "SO")
     val name: String,                     // Full name of the subject (e.g. "Sistemas Operativos")
     val color: Int? = null,               // Color represented as ARGB Int (e.g. 0xFF4CAF50)
+    val semester: Int? = null,
     val theorySlots: List<JsonTimeSlot> = emptyList(),
     val labVariants: Map<String, List<JsonTimeSlot>> = emptyMap(), // Map of lab variants, keyed by group name (e.g. "Lab-A1")
     val isDummy: Boolean = false

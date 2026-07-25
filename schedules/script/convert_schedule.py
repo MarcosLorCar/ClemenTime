@@ -638,7 +638,7 @@ def convert_pdf_to_md(pdf_path: str, md_cache_path: str, force_pdf: bool = False
 
 
 def process_single_file(pdf_path: Optional[str], md_path: str, output_json_path: str,
-                        mapper: InteractiveMapper, force_pdf: bool = False, md_only: bool = False) -> bool:
+                        mapper: InteractiveMapper, semester: Optional[int] = None, force_pdf: bool = False, md_only: bool = False) -> bool:
     """Processes a single PDF or MD file into JSON schedule."""
     if md_only or not pdf_path or not os.path.exists(pdf_path):
         if not os.path.exists(md_path):
@@ -658,6 +658,7 @@ def process_single_file(pdf_path: Optional[str], md_path: str, output_json_path:
     final_json = {
         "version": 1,
         "title": title,
+        "semester": semester,
         "matters": global_matters,
         "years": years_list
     }
@@ -706,7 +707,18 @@ def main():
         md_path = args.md_file or os.path.join(args.md_dir, base_name + ".md")
         out_path = args.output or os.path.join(args.dist_dir, base_name + ".json")
 
-        success = process_single_file(args.pdf_path, md_path, out_path, mapper, force_pdf=args.force_pdf, md_only=args.md_only)
+        semester = None
+        if "1C" in base_name.upper():
+            semester = 1
+        elif "2C" in base_name.upper():
+            semester = 2
+
+        if semester is None and not args.non_interactive:
+            print(f"\n[CLI Prompt] Semester could not be detected for '{base_name}'.")
+            val = input("  --> Enter semester (1 or 2) [1]: ").strip()
+            semester = int(val) if val in ["1", "2"] else 1
+
+        success = process_single_file(args.pdf_path, md_path, out_path, mapper, semester=semester, force_pdf=args.force_pdf, md_only=args.md_only)
         if not success:
             sys.exit(1)
     else:
@@ -740,7 +752,18 @@ def main():
             if not os.path.exists(pdf_path):
                 pdf_path = None
 
-            process_single_file(pdf_path, md_path, out_path, mapper, force_pdf=args.force_pdf, md_only=args.md_only)
+            semester = None
+            if "1C" in base_name.upper():
+                semester = 1
+            elif "2C" in base_name.upper():
+                semester = 2
+
+            if semester is None and not args.non_interactive:
+                print(f"\n[CLI Prompt] Semester could not be detected for '{base_name}'.")
+                val = input("  --> Enter semester (1 or 2) [1]: ").strip()
+                semester = int(val) if val in ["1", "2"] else 1
+
+            process_single_file(pdf_path, md_path, out_path, mapper, semester=semester, force_pdf=args.force_pdf, md_only=args.md_only)
 
     if (args.strict or args.non_interactive) and (mapper.missing_matters or mapper.missing_professors or mapper.missing_classrooms):
         print("\n[ERROR] Unmapped symbols encountered during conversion:")

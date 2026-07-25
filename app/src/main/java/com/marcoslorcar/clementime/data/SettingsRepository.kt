@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -33,6 +34,7 @@ open class SettingsRepository @Inject constructor(
     private val hasSeenResolverPrioritiesTooltipKey = booleanPreferencesKey("has_seen_resolver_priorities_tooltip")
     private val hasSeenResolverApplyTooltipKey = booleanPreferencesKey("has_seen_resolver_apply_tooltip")
     private val hasSeenAddSlotTooltipKey = booleanPreferencesKey("has_seen_add_slot_tooltip")
+    private val currentSemesterKey = intPreferencesKey("current_semester")
 
 
     open val themeFlow: Flow<String>
@@ -175,6 +177,16 @@ open class SettingsRepository @Inject constructor(
         }
 
 
+    open val currentSemesterFlow: Flow<Int>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[currentSemesterKey] ?: 1
+            } ?: kotlinx.coroutines.flow.flowOf(1)
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf(1)
+        }
+
+
     open suspend fun setThemeMode(theme: String) {
         try {
             context?.dataStore?.edit { preferences ->
@@ -296,6 +308,15 @@ open class SettingsRepository @Inject constructor(
         try {
             context?.dataStore?.edit { preferences ->
                 preferences[hasSeenAddSlotTooltipKey] = seen
+            }
+        } catch (_: Throwable) {}
+    }
+
+
+    open suspend fun setCurrentSemester(semester: Int) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[currentSemesterKey] = semester
             }
         } catch (_: Throwable) {}
     }

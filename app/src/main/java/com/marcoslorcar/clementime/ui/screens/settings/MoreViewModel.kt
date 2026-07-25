@@ -36,7 +36,6 @@ data class MoreUiState(
 )
 
 sealed interface ExportStatus {
-    object Idle : ExportStatus
     object Exporting : ExportStatus
     data class Success(val message: String) : ExportStatus
     data class Error(val error: String) : ExportStatus

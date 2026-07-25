@@ -1,6 +1,9 @@
 package com.marcoslorcar.clementime.ui.screens.schedule
 
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -15,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -62,6 +66,7 @@ import com.marcoslorcar.clementime.ui.components.ClemenTimeTopBar
 import com.marcoslorcar.clementime.ui.components.EmptyStateContent
 import com.marcoslorcar.clementime.ui.components.OnboardingTooltip
 import com.marcoslorcar.clementime.ui.components.ScheduleTimeline
+import com.marcoslorcar.clementime.ui.components.SemesterSwitcher
 import com.marcoslorcar.clementime.ui.screens.subject.ClassSlotUiModel
 import com.marcoslorcar.clementime.ui.screens.subject.toUiModel
 import com.marcoslorcar.clementime.ui.theme.ClemenTimeTheme
@@ -103,6 +108,8 @@ fun ScheduleScreen(
         uiState = uiState,
         overrideHighlightSlotId = targetHighlightSlotId,
         onChangeTab = viewModel::changeTab,
+        onSemesterSelected = viewModel::changeSemester,
+        onToggleSemesterSwitcher = viewModel::toggleSemesterSwitcher,
         onNavigateToImport = onNavigateToImport,
         onNavigateToConflictResolver = onNavigateToConflictResolver,
         onMenuClick = onMenuClick,
@@ -118,6 +125,8 @@ fun ScheduleContent(
     uiState: ScheduleUiState,
     overrideHighlightSlotId: Long? = null,
     onChangeTab: (ScheduleTab) -> Unit,
+    onSemesterSelected: (Int) -> Unit = {},
+    onToggleSemesterSwitcher: () -> Unit = {},
     onNavigateToImport: () -> Unit,
     onNavigateToConflictResolver: () -> Unit,
     onMenuClick: (() -> Unit)? = null,
@@ -173,6 +182,13 @@ fun ScheduleContent(
                     onMenuClick = onMenuClick,
                     title = stringResource(R.string.schedule_screen_title),
                     actions = {
+                        IconButton(onClick = onToggleSemesterSwitcher) {
+                            Icon(
+                                imageVector = Icons.Default.DateRange,
+                                contentDescription = "Toggle Semester Switcher",
+                                tint = if (uiState.isSemesterSwitcherVisible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                         if (uiState.subjectsWithSlots.isNotEmpty()) {
                             OnboardingTooltip(
                                 text = stringResource(R.string.tooltip_optimizer_desc),
@@ -205,6 +221,17 @@ fun ScheduleContent(
                         }
                     }
                 )
+
+                AnimatedVisibility(
+                    visible = uiState.isSemesterSwitcherVisible,
+                    enter = expandVertically(),
+                    exit = shrinkVertically()
+                ) {
+                    SemesterSwitcher(
+                        selectedSemester = uiState.selectedSemester,
+                        onSemesterSelected = onSemesterSelected
+                    )
+                }
 
                 if (uiState.subjectsWithSlots.isEmpty()) return@Column
 

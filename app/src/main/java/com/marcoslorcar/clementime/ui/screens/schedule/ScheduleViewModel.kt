@@ -17,14 +17,17 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import javax.inject.Inject
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 data class ScheduleUiState(
     val isLoading: Boolean = true,
     val selectedTab: ScheduleTab = ScheduleTab.MONDAY,
+    val selectedSemester: Int = 1,
     val subjectsWithSlots: List<SubjectWithSlots> = emptyList(),
     val scrollableTabs: Boolean = false,
     val showNowLine: Boolean = true,
@@ -32,6 +35,7 @@ data class ScheduleUiState(
     val highContrast: Boolean = false,
     val hasOverlaps: Boolean = false,
     val highlightSlotId: Long? = null,
+    val isSemesterSwitcherVisible: Boolean = false,
     val onboardingTooltipsEnabled: Boolean = true,
     val hasSeenOptimizerTooltip: Boolean = false
 )
@@ -43,9 +47,11 @@ private data class SettingsAndHighlight(
     val highContrast: Boolean,
     val highlightSlotId: Long?,
     val onboardingTooltipsEnabled: Boolean,
-    val hasSeenOptimizerTooltip: Boolean
+    val hasSeenOptimizerTooltip: Boolean,
+    val selectedSemester: Int
 )
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class ScheduleViewModel @Inject constructor(
     private val scheduleDao: ScheduleDao,
@@ -67,6 +73,7 @@ class ScheduleViewModel @Inject constructor(
     }
 
     private val _selectedTab = MutableStateFlow(initialTab)
+    private val _isSemesterSwitcherVisible = MutableStateFlow(false)
 
     init {
         viewModelScope.launch {
@@ -82,8 +89,11 @@ class ScheduleViewModel @Inject constructor(
     }
 
     val uiState: StateFlow<ScheduleUiState> = combine(
-        scheduleDao.getActiveSubjectsWithSlots(),
+        settingsRepository.currentSemesterFlow.flatMapLatest { semester ->
+            scheduleDao.getActiveSubjectsWithSlotsBySemester(semester)
+        },
         _selectedTab,
+        _isSemesterSwitcherVisible,
         combine<Any?, SettingsAndHighlight>(
             settingsRepository.scrollableTabsFlow,
             settingsRepository.showNowLineFlow,
@@ -91,7 +101,8 @@ class ScheduleViewModel @Inject constructor(
             settingsRepository.highContrastFlow,
             savedStateHandle.getStateFlow("highlightSlotId", route?.highlightSlotId),
             settingsRepository.onboardingTooltipsEnabledFlow,
-            settingsRepository.hasSeenOptimizerTooltipFlow
+            settingsRepository.hasSeenOptimizerTooltipFlow,
+            settingsRepository.currentSemesterFlow
         ) { args ->
             SettingsAndHighlight(
                 scrollable = args[0] as Boolean,
@@ -100,10 +111,11 @@ class ScheduleViewModel @Inject constructor(
                 highContrast = args[3] as Boolean,
                 highlightSlotId = args[4] as Long?,
                 onboardingTooltipsEnabled = args[5] as Boolean,
-                hasSeenOptimizerTooltip = args[6] as Boolean
+                hasSeenOptimizerTooltip = args[6] as Boolean,
+                selectedSemester = args[7] as Int
             )
         }
-    ) { rawSubjects, selectedTab, settings ->
+    ) { rawSubjects, selectedTab, isSwitcherVisible, settings ->
         val filteredSubjects = rawSubjects.map { sWithSlots ->
             val filteredSlots = sWithSlots.slots.filter { slot ->
                 slot.entryType == EntryType.THEORY || 
@@ -118,13 +130,15 @@ class ScheduleViewModel @Inject constructor(
         ScheduleUiState(
             isLoading = false,
             selectedTab = selectedTab,
+            selectedSemester = settings.selectedSemester,
             subjectsWithSlots = filteredSubjects,
             scrollableTabs = settings.scrollable,
             showNowLine = settings.showNowLine,
             nowLineStyle = settings.nowLineStyle,
             highContrast = settings.highContrast,
             hasOverlaps = hasOverlaps,
-            highlightSlotId = settings.highlightSlotId ?: route?.highlightSlotId,
+            highlightSlotId = settings.highlightSlotId,
+            isSemesterSwitcherVisible = isSwitcherVisible,
             onboardingTooltipsEnabled = settings.onboardingTooltipsEnabled,
             hasSeenOptimizerTooltip = settings.hasSeenOptimizerTooltip
         )
@@ -136,6 +150,16 @@ class ScheduleViewModel @Inject constructor(
 
     fun changeTab(tab: ScheduleTab) {
         _selectedTab.value = tab
+    }
+
+    fun changeSemester(semester: Int) {
+        viewModelScope.launch {
+            settingsRepository.setCurrentSemester(semester)
+        }
+    }
+
+    fun toggleSemesterSwitcher() {
+        _isSemesterSwitcherVisible.value = !_isSemesterSwitcherVisible.value
     }
 
     fun deleteSlot(slotId: Long) {

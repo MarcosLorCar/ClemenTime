@@ -16,10 +16,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 enum class PreferenceMode {
     FREE_DAYS,
@@ -37,6 +39,7 @@ data class ConflictResolverUiState(
     val hasSeenApplyTooltip: Boolean = false
 )
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class ConflictResolverViewModel @Inject constructor(
     private val dao: ScheduleDao,
@@ -48,7 +51,9 @@ class ConflictResolverViewModel @Inject constructor(
     private var lastAppliedLabSelections: Map<Long, String?>? = null
 
     val uiState: StateFlow<ConflictResolverUiState> = combine(
-        dao.getAllSubjectsWithSlots(),
+        settingsRepository.currentSemesterFlow.flatMapLatest { semester ->
+            dao.getAllSubjectsWithSlotsBySemester(semester)
+        },
         _preferenceMode,
         settingsRepository.onboardingTooltipsEnabledFlow,
         settingsRepository.hasSeenResolverPrioritiesTooltipFlow,

@@ -29,7 +29,8 @@ class ConflictResolverViewModelTestFakeDao : ScheduleDao {
     var updateSelectedLabGroupsCalledWith: Map<Long, String?>? = null
 
     override fun getAllSubjectsWithSlots(): Flow<List<SubjectWithSlots>> = subjectsFlow
-    override fun getActiveSubjectsWithSlots(): Flow<List<SubjectWithSlots>> = flowOf(emptyList())
+    override fun getAllSubjectsWithSlotsBySemester(semester: Int): Flow<List<SubjectWithSlots>> = subjectsFlow
+    override fun getActiveSubjectsWithSlotsBySemester(semester: Int): Flow<List<SubjectWithSlots>> = flowOf(emptyList())
     override fun getSubjectWithSlotsById(subjectId: Long): Flow<SubjectWithSlots?> = flowOf(null)
     override suspend fun updateSubjectActiveStatus(subjectId: Long, isActive: Boolean) {}
     override suspend fun updateSelectedLabGroup(subjectId: Long, labGroup: String?) {}

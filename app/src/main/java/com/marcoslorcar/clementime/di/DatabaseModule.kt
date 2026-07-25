@@ -22,7 +22,7 @@ object DatabaseModule {
                 context,
                 AppDatabase::class.java,
                 "clementime_database"
-            ).fallbackToDestructiveMigration(true)
+            ).addMigrations(AppDatabase.MIGRATION_1_2)
             .build()
     }
 

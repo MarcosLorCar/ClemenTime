@@ -4,13 +4,15 @@ import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.automirrored.filled.LibraryBooks
+import androidx.compose.material.icons.automirrored.outlined.LibraryBooks
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.School
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -23,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.NavDestination.Companion.hasRoute
@@ -33,6 +36,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.marcoslorcar.clementime.data.SettingsRepository
+import com.marcoslorcar.clementime.ui.components.PageInfoFilled
+import com.marcoslorcar.clementime.ui.components.PageInfoOutlined
+import com.marcoslorcar.clementime.ui.components.ViewWeekFilled
+import com.marcoslorcar.clementime.ui.components.ViewWeekOutlined
 import com.marcoslorcar.clementime.ui.navigation.AddEditSubjectRoute
 import com.marcoslorcar.clementime.ui.navigation.ConflictResolverRoute
 import com.marcoslorcar.clementime.ui.navigation.ImportRoute
@@ -50,6 +57,7 @@ import com.marcoslorcar.clementime.ui.screens.subject.SubjectsScreen
 import com.marcoslorcar.clementime.ui.theme.ClemenTimeTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlin.reflect.KClass
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -89,6 +97,13 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
+private data class NavigationSuiteItem(
+    val label: String,
+    val selectedIcon: ImageVector,
+    val unselectedIcon: ImageVector,
+    val routeClass: KClass<*>
+)
+
 @Composable
 fun ClemenTimeApp(isOnboardingCompleted: Boolean) {
     val navController = rememberNavController()
@@ -109,20 +124,36 @@ fun ClemenTimeApp(isOnboardingCompleted: Boolean) {
     }
 
     val items = listOf(
-        Triple(stringResource(R.string.schedule_screen_title), Icons.Default.CalendarMonth, ScheduleListRoute::class),
-        Triple(stringResource(R.string.subjects_screen_title), Icons.Default.School, SubjectsRoute::class),
-        Triple(stringResource(R.string.more_screen_title), Icons.Default.MoreHoriz, MoreRoute::class)
+        NavigationSuiteItem(
+            label = stringResource(R.string.schedule_screen_title),
+            selectedIcon = ViewWeekFilled,
+            unselectedIcon = ViewWeekOutlined,
+            routeClass = ScheduleListRoute::class
+        ),
+        NavigationSuiteItem(
+            label = stringResource(R.string.subjects_screen_title),
+            selectedIcon = Icons.AutoMirrored.Filled.LibraryBooks,
+            unselectedIcon = Icons.AutoMirrored.Outlined.LibraryBooks,
+            routeClass = SubjectsRoute::class
+        ),
+        NavigationSuiteItem(
+            label = stringResource(R.string.more_screen_title),
+            selectedIcon = PageInfoFilled,
+            unselectedIcon = PageInfoOutlined,
+            routeClass = MoreRoute::class
+        )
     )
 
     NavigationSuiteScaffold(
         layoutType = layoutType,
         navigationSuiteItems = {
             if (isOnboardingCompleted) {
-                items.forEach { (label, icon, routeClass) ->
+                items.forEach { item ->
+                    val isSelected = currentDestination?.hasRoute(item.routeClass) == true
                     item(
-                        selected = currentDestination?.hasRoute(routeClass) == true,
+                        selected = isSelected,
                         onClick = {
-                            val route = when (routeClass) {
+                            val route = when (item.routeClass) {
                                 ScheduleListRoute::class -> ScheduleListRoute()
                                 SubjectsRoute::class -> SubjectsRoute
                                 MoreRoute::class -> MoreRoute
@@ -136,8 +167,18 @@ fun ClemenTimeApp(isOnboardingCompleted: Boolean) {
                                 restoreState = true
                             }
                         },
-                        icon = { Icon(icon, contentDescription = null) },
-                        label = { Text(label) }
+                        icon = {
+                            AnimatedContent(
+                                targetState = isSelected,
+                                label = "navIcon"
+                            ) { selected ->
+                                Icon(
+                                    imageVector = if (selected) item.selectedIcon else item.unselectedIcon,
+                                    contentDescription = null
+                                )
+                            }
+                        },
+                        label = { Text(item.label) }
                     )
                 }
             }

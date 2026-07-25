@@ -277,4 +277,7 @@
     <string name="widget_tomorrow_pill">Tomorrow • %1$s</string>
     <string name="widget_toggle_today">← Today</string>
     <string name="widget_toggle_tomorrow">Tomorrow →</string>
+    <string name="semester_1_label">1st Semester</string>
+    <string name="semester_2_label">2nd Semester</string>
+    <string name="semester_label">Semester</string>
 </resources>

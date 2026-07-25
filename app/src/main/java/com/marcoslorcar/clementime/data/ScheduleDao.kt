@@ -16,8 +16,8 @@ interface ScheduleDao {
 
     // Main schedule view: Only loads active slots (Theory + Selected Lab)
     @Transaction
-    @Query("SELECT * FROM subjects WHERE isActive = 1 ORDER BY name ASC")
-    fun getActiveSubjectsWithSlots(): Flow<List<SubjectWithSlots>>
+    @Query("SELECT * FROM subjects WHERE isActive = 1 AND semester = :semester ORDER BY name ASC")
+    fun getActiveSubjectsWithSlotsBySemester(semester: Int): Flow<List<SubjectWithSlots>>
 
     @Query("UPDATE subjects SET isActive = :isActive WHERE id = :subjectId")
     suspend fun updateSubjectActiveStatus(subjectId: Long, isActive: Boolean)
@@ -31,6 +31,10 @@ interface ScheduleDao {
             updateSelectedLabGroup(id, group)
         }
     }
+
+    @Transaction
+    @Query("SELECT * FROM subjects WHERE semester = :semester ORDER BY name ASC")
+    fun getAllSubjectsWithSlotsBySemester(semester: Int): Flow<List<SubjectWithSlots>>
 
     @Transaction
     @Query("SELECT * FROM subjects ORDER BY name ASC")

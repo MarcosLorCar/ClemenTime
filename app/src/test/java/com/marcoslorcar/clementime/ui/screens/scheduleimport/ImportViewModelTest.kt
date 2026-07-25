@@ -236,7 +236,8 @@ class ImportViewModelTest {
 
 class FakeScheduleDaoForImport : com.marcoslorcar.clementime.data.ScheduleDao {
     override fun getAllSubjectsWithSlots() = kotlinx.coroutines.flow.flowOf(emptyList<com.marcoslorcar.clementime.data.SubjectWithSlots>())
-    override fun getActiveSubjectsWithSlots() = kotlinx.coroutines.flow.flowOf(emptyList<com.marcoslorcar.clementime.data.SubjectWithSlots>())
+    override fun getAllSubjectsWithSlotsBySemester(semester: Int) = kotlinx.coroutines.flow.flowOf(emptyList<com.marcoslorcar.clementime.data.SubjectWithSlots>())
+    override fun getActiveSubjectsWithSlotsBySemester(semester: Int) = kotlinx.coroutines.flow.flowOf(emptyList<com.marcoslorcar.clementime.data.SubjectWithSlots>())
     override fun getSubjectWithSlotsById(subjectId: Long) = kotlinx.coroutines.flow.flowOf(null)
     override suspend fun updateSubjectActiveStatus(subjectId: Long, isActive: Boolean) {}
     override suspend fun updateSelectedLabGroup(subjectId: Long, labGroup: String?) {}
