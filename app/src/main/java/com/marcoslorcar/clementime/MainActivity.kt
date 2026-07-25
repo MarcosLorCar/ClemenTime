@@ -8,6 +8,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
@@ -35,12 +36,12 @@ import com.marcoslorcar.clementime.data.SettingsRepository
 import com.marcoslorcar.clementime.ui.navigation.AddEditSubjectRoute
 import com.marcoslorcar.clementime.ui.navigation.ConflictResolverRoute
 import com.marcoslorcar.clementime.ui.navigation.ImportRoute
+import com.marcoslorcar.clementime.ui.navigation.MoreRoute
 import com.marcoslorcar.clementime.ui.navigation.OnboardingRoute
 import com.marcoslorcar.clementime.ui.navigation.ScheduleListRoute
-import com.marcoslorcar.clementime.ui.navigation.SettingsRoute
 import com.marcoslorcar.clementime.ui.navigation.SubjectsRoute
 import com.marcoslorcar.clementime.ui.screens.schedule.ScheduleScreen
-import com.marcoslorcar.clementime.ui.screens.settings.SettingsScreen
+import com.marcoslorcar.clementime.ui.screens.settings.MoreScreen
 import com.marcoslorcar.clementime.ui.screens.conflictresolver.ConflictResolverScreen
 import com.marcoslorcar.clementime.ui.screens.onboarding.OnboardingScreen
 import com.marcoslorcar.clementime.ui.screens.scheduleimport.ImportScreen
@@ -97,7 +98,7 @@ fun ClemenTimeApp(isOnboardingCompleted: Boolean) {
     val isNavVisible = currentDestination?.let { dest ->
         (dest.hasRoute(ScheduleListRoute::class) || 
         dest.hasRoute(SubjectsRoute::class) || 
-        dest.hasRoute(SettingsRoute::class)) && !dest.hasRoute(OnboardingRoute::class)
+        dest.hasRoute(MoreRoute::class)) && !dest.hasRoute(OnboardingRoute::class)
     } ?: true
 
     val adaptiveInfo = currentWindowAdaptiveInfo()
@@ -110,7 +111,7 @@ fun ClemenTimeApp(isOnboardingCompleted: Boolean) {
     val items = listOf(
         Triple(stringResource(R.string.schedule_screen_title), Icons.Default.CalendarMonth, ScheduleListRoute::class),
         Triple(stringResource(R.string.subjects_screen_title), Icons.Default.School, SubjectsRoute::class),
-        Triple(stringResource(R.string.settings_screen_title), Icons.Default.Settings, SettingsRoute::class)
+        Triple(stringResource(R.string.more_screen_title), Icons.Default.MoreHoriz, MoreRoute::class)
     )
 
     NavigationSuiteScaffold(
@@ -124,7 +125,7 @@ fun ClemenTimeApp(isOnboardingCompleted: Boolean) {
                             val route = when (routeClass) {
                                 ScheduleListRoute::class -> ScheduleListRoute()
                                 SubjectsRoute::class -> SubjectsRoute
-                                SettingsRoute::class -> SettingsRoute
+                                MoreRoute::class -> MoreRoute
                                 else -> return@item
                             }
                             navController.navigate(route) {
@@ -188,8 +189,8 @@ fun ClemenTimeApp(isOnboardingCompleted: Boolean) {
                 )
             }
 
-            composable<SettingsRoute> {
-                SettingsScreen(
+            composable<MoreRoute> {
+                MoreScreen(
                     onNavigateToImport = {
                         navController.navigate(ImportRoute)
                     }

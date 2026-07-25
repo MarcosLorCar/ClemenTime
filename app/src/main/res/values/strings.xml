@@ -2,6 +2,7 @@
     <string name="app_name">ClemenTime</string>
     <string name="schedule_screen_title">Schedule</string>
     <string name="settings_screen_title">Settings</string>
+    <string name="more_screen_title">More</string>
     <string name="import_schedule_title">Import Schedule</string>
     <string name="subjects_screen_title">Subjects</string>
     <string name="search_subjects_placeholder">Search by name or code…</string>
@@ -11,6 +12,7 @@
     <string name="cancel">Cancel</string>
     <string name="no_subjects_title">No subjects added yet</string>
     <string name="no_subjects_subtitle">Import a schedule or tap + to create one.</string>
+    <string name="add_subject_manually_button">Create Manually</string>
     <string name="no_search_results">No subjects match your search.</string>
     <plurals name="slots_count">
         <item quantity="one">%1$d slot</item>
@@ -68,6 +70,7 @@
     <string name="theme_espresso">Espresso</string>
     <string name="theme_grape">Grape</string>
 
+    <string name="featured_section_title">Featured</string>
     <string name="export_backup_setting_title">Export Schedule</string>
     <string name="export_backup_desc">Save schedule and subjects to JSON file</string>
 
@@ -79,7 +82,12 @@
     <string name="subject_notes_placeholder">Add notes, syllabus links, exam dates, or reminders…</string>
     <string name="linked_files_label" tools:ignore="PluralsCandidate">Linked Files (%1$d)</string>
     <string name="link_file_button">Link File</string>
-    
+    <string name="add_note_button">Add note</string>
+    <string name="notes_and_files_summary_title">Notes &amp; Attachments</string>
+    <string name="notes_and_files_empty_hint">No notes or files attached</string>
+    <string name="notes_and_files_summary_files">%1$d files</string>
+    <string name="notes_and_files_summary_notes">Has notes</string>
+
     <!-- Toast & Dialog strings -->
     <string name="file_not_found_message">File not found</string>
     <string name="attachment_failed_message">Failed to attach file: %1$s</string>
@@ -88,6 +96,9 @@
     <string name="theme_selector_label">Select Theme</string>
 
     <string name="export_success_local">Backup saved successfully</string>
+    <string name="setup_widget_title">Set up Home Screen Widget</string>
+    <string name="setup_widget_desc">Add the schedule timeline widget to your home screen for quick access.</string>
+    <string name="github_repo_url" translatable="false">https://github.com/MarcosLorCar/ClemenTime</string>
 
     <string name="export_error_prefix">Export failed: %1$s</string>
     <string name="import_library_title">Import Library</string>
@@ -224,6 +235,8 @@
     <string name="tooltip_resolver_priorities_desc">Choose if you prefer more free days or a more compact schedule. Overlaps are always minimized first.</string>
     <string name="tooltip_resolver_apply_title">Apply Solution</string>
     <string name="tooltip_resolver_apply_desc">Once you find a combination you like, tap Apply to update your active schedule automatically.</string>
+    <string name="tooltip_add_slot_title">Add Your First Class</string>
+    <string name="tooltip_add_slot_desc">Tap here to add a class slot to this subject. You can set the time, room, and professor.</string>
 
     <!-- Onboarding Screen -->
     <string name="onboarding_welcome_title">Welcome to ClemenTime</string>
@@ -240,13 +253,15 @@
     <string name="onboarding_skip">Skip</string>
 
     <!-- Additional screen strings -->
-    <string name="empty_schedule_day">Nothing scheduled for %1$s today!</string>
+    <string name="empty_schedule_day">Nothing scheduled for %1$s</string>
+    <string name="empty_schedule_today">Nothing scheduled for today</string>
     <string name="import_library_no_results">No schedules match your search.</string>
     <string name="import_library_online_unreachable">Online library unreachable. Check your connection or try again later.</string>
     <string name="search_schedules_placeholder">Search schedules…</string>
     <string name="import_schedule_instructions">Choose a template from the library or import a custom schedule JSON file to get started.</string>
     <string name="day_of_week_label">Day of the week</string>
     <string name="no_slots_assigned">No slots added yet.</string>
+    <string name="no_slots_preview_placeholder">Add a class slot first to see the preview</string>
     <string name="online_repository_title">Online Repository</string>
     <string name="online_repository_url_setting_title">Online Repository URL</string>
     <string name="github_repository_url_description">Enter the GitHub raw content base URL for online schedules:</string>

@@ -9,7 +9,7 @@ data class ScheduleListRoute(
 )
 
 @Serializable
-object SettingsRoute
+object MoreRoute
 
 @Serializable
 object ImportRoute

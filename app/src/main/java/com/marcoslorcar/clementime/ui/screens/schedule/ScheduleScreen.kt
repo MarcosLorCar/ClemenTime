@@ -59,6 +59,7 @@ import com.marcoslorcar.clementime.data.Subject
 import com.marcoslorcar.clementime.data.SubjectWithSlots
 import com.marcoslorcar.clementime.ui.components.ClassSlotItemCard
 import com.marcoslorcar.clementime.ui.components.ClemenTimeTopBar
+import com.marcoslorcar.clementime.ui.components.EmptyStateContent
 import com.marcoslorcar.clementime.ui.components.OnboardingTooltip
 import com.marcoslorcar.clementime.ui.components.ScheduleTimeline
 import com.marcoslorcar.clementime.ui.screens.subject.ClassSlotUiModel
@@ -81,7 +82,7 @@ import kotlin.time.Duration.Companion.milliseconds
 fun ScheduleScreen(
     targetDayOfWeek: String? = null,
     targetHighlightSlotId: Long? = null,
-    onClickSubject: (Long, Long) -> Unit,
+    onClickSubject: (Long, Long?) -> Unit,
     onNavigateToImport: () -> Unit,
     onNavigateToConflictResolver: () -> Unit,
     viewModel: ScheduleViewModel = hiltViewModel(),
@@ -120,7 +121,7 @@ fun ScheduleContent(
     onNavigateToImport: () -> Unit,
     onNavigateToConflictResolver: () -> Unit,
     onMenuClick: (() -> Unit)? = null,
-    onClickSubject: (Long, Long) -> Unit = { _, _ -> },
+    onClickSubject: (Long, Long?) -> Unit = { _, _ -> },
     onDeleteSlot: (Long) -> Unit = { _ -> },
     onMarkOptimizerTooltipSeen: () -> Unit = {}
 ) {
@@ -315,43 +316,13 @@ fun ScheduleContent(
                 CircularProgressIndicator()
             }
         } else if (uiState.subjectsWithSlots.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(32.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Schedule,
-                        contentDescription = null,
-                        modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = stringResource(R.string.no_schedule_data),
-                        style = MaterialTheme.typography.titleMedium,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = stringResource(R.string.no_schedule_data_subtitle),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Button(onClick = onNavigateToImport) {
-                        Icon(imageVector = Icons.Default.CloudUpload, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.import_schedule_title))
-                    }
-                }
-            }
+            EmptyStateContent(
+                icon = Icons.Default.Schedule,
+                title = stringResource(R.string.no_schedule_data),
+                subtitle = stringResource(R.string.no_schedule_data_subtitle),
+                onImportClick = onNavigateToImport,
+                onAddManuallyClick = { onClickSubject(0L, null) }
+            )
         } else {
             HorizontalPager(
                 state = pagerState,

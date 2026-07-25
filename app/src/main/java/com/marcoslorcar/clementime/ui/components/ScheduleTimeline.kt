@@ -205,9 +205,14 @@ fun ScheduleTimeline(
                 .height(totalHeight)
         ) {
             if (clusters.isEmpty()) {
-                val dayName = dayOfWeek?.getDisplayName(TextStyle.FULL, Locale.getDefault()) ?: ""
+                val text = if (isToday) {
+                    stringResource(R.string.empty_schedule_today)
+                } else {
+                    val dayName = dayOfWeek?.getDisplayName(TextStyle.FULL, Locale.getDefault()) ?: ""
+                    stringResource(R.string.empty_schedule_day, dayName)
+                }
                 Text(
-                    text = stringResource(R.string.empty_schedule_day, dayName),
+                    text = text,
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                     modifier = Modifier

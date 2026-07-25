@@ -337,8 +337,12 @@ private fun ScheduleWidgetContent(
 
         // Timeline Segment LazyColumn or Empty State
         if (daySlots.isEmpty()) {
-            val dayOfWeekName = targetDayOfWeek.getDisplayName(JavaTextStyle.FULL, locale)
-            val emptyText = context.getString(R.string.empty_schedule_day, dayOfWeekName)
+            val emptyText = if (!isTomorrow) {
+                context.getString(R.string.empty_schedule_today)
+            } else {
+                val dayOfWeekName = targetDayOfWeek.getDisplayName(JavaTextStyle.FULL, locale)
+                context.getString(R.string.empty_schedule_day, dayOfWeekName)
+            }
             Box(
                 modifier = GlanceModifier
                     .fillMaxSize()

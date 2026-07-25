@@ -3,6 +3,7 @@
     <string name="app_name">ClemenTime</string>
     <string name="schedule_screen_title">Horario</string>
     <string name="settings_screen_title">Ajustes</string>
+    <string name="more_screen_title">Más</string>
     <string name="import_schedule_title">Importar Horario</string>
     <string name="subjects_screen_title">Asignaturas</string>
     <string name="search_subjects_placeholder">Buscar por nombre o código…</string>
@@ -12,6 +13,7 @@
     <string name="cancel">Cancelar</string>
     <string name="no_subjects_title">Aún no hay asignaturas</string>
     <string name="no_subjects_subtitle">Importa un horario o toca + para crear uno.</string>
+    <string name="add_subject_manually_button">Crear Manualmente</string>
     <string name="no_search_results">Ninguna asignatura coincide con tu búsqueda.</string>
     <plurals name="slots_count">
         <item quantity="one">%1$d clase</item>
@@ -72,6 +74,7 @@
     <string name="theme_espresso">Espresso</string>
     <string name="theme_grape">Uva</string>
 
+    <string name="featured_section_title">Destacado</string>
     <string name="export_backup_setting_title">Exportar Horario</string>
     <string name="export_backup_desc">Guardar horario y asignaturas como archivo JSON</string>
 
@@ -83,7 +86,12 @@
     <string name="subject_notes_placeholder">Añade notas, enlaces al plan de estudios, fechas de exámenes o recordatorios…</string>
     <string name="linked_files_label" tools:ignore="PluralsCandidate">Archivos Enlazados (%1$d)</string>
     <string name="link_file_button">Enlazar Archivo</string>
-    
+    <string name="add_note_button">Añadir nota</string>
+    <string name="notes_and_files_summary_title">Notas y Archivos</string>
+    <string name="notes_and_files_empty_hint">Sin notas ni archivos adjuntos</string>
+    <string name="notes_and_files_summary_files">%1$d archivos</string>
+    <string name="notes_and_files_summary_notes">Tiene notas</string>
+
     <!-- Toast & Dialog strings -->
     <string name="file_not_found_message">Archivo no encontrado</string>
     <string name="attachment_failed_message">Error al adjuntar el archivo: %1$s</string>
@@ -92,6 +100,8 @@
     <string name="theme_selector_label">Seleccionar Tema</string>
 
     <string name="export_success_local">Copia de seguridad guardada con éxito</string>
+    <string name="setup_widget_title">Configurar Widget</string>
+    <string name="setup_widget_desc">Añade el widget de horario a tu pantalla de inicio para un acceso rápido.</string>
 
     <string name="export_error_prefix">Error al exportar: %1$s</string>
     <string name="import_library_title">Biblioteca de Importación</string>
@@ -228,6 +238,8 @@
     <string name="tooltip_resolver_priorities_desc">Elige si prefieres más días libres o un horario más compacto. Los solapamientos siempre se minimizan primero.</string>
     <string name="tooltip_resolver_apply_title">Aplicar Solución</string>
     <string name="tooltip_resolver_apply_desc">Cuando encuentres una combinación que te guste, pulsa Aplicar para actualizar tu horario activo automáticamente.</string>
+    <string name="tooltip_add_slot_title">Añade Tu Primera Clase</string>
+    <string name="tooltip_add_slot_desc">Pulsa aquí para añadir un horario a esta asignatura. Podrás configurar la hora, el aula y el profesor.</string>
 
     <!-- Onboarding Screen -->
     <string name="onboarding_welcome_title">Bienvenido a ClemenTime</string>
@@ -244,13 +256,15 @@
     <string name="onboarding_skip">Omitir</string>
 
     <!-- Additional screen strings -->
-    <string name="empty_schedule_day">¡No hay clases previstas para el %1$s hoy!</string>
+    <string name="empty_schedule_day">No hay clases previstas para el %1$s</string>
+    <string name="empty_schedule_today">No hay clases previstas para hoy</string>
     <string name="import_library_no_results">Ningún horario coincide con tu búsqueda.</string>
     <string name="import_library_online_unreachable">Biblioteca online no disponible. Comprueba tu conexión o inténtalo más tarde.</string>
     <string name="search_schedules_placeholder">Buscar horarios…</string>
     <string name="import_schedule_instructions">Elige una plantilla de la biblioteca o importa un archivo JSON para empezar.</string>
     <string name="day_of_week_label">Día de la semana</string>
     <string name="no_slots_assigned">Aún no hay horarios asignados.</string>
+    <string name="no_slots_preview_placeholder">Añade un horario para ver la previsualización</string>
     <string name="online_repository_title">Repositorio en línea</string>
     <string name="online_repository_url_setting_title">URL del repositorio en línea</string>
     <string name="github_repository_url_description">Introduce la URL base de contenido raw de GitHub para horarios en línea:</string>

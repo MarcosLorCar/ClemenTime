@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
 import java.util.Locale
 import javax.inject.Inject
 
-data class SettingsUiState(
+data class MoreUiState(
     val themeMode: String = "system",
     val appLanguage: String = "en",
     val scrollableTabs: Boolean = false,
@@ -43,7 +43,7 @@ sealed interface ExportStatus {
 }
 
 @HiltViewModel
-class SettingsViewModel @Inject constructor(
+class MoreViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val scheduleDao: ScheduleDao,
     private val jsonScheduleParser: JsonScheduleParser,
@@ -52,7 +52,7 @@ class SettingsViewModel @Inject constructor(
 
     private val _appLanguage = MutableStateFlow(getCurrentLanguage())
 
-    val uiState: StateFlow<SettingsUiState> = combine<Any?, SettingsUiState>(
+    val uiState: StateFlow<MoreUiState> = combine<Any?, MoreUiState>(
         settingsRepository.themeFlow,
         settingsRepository.scrollableTabsFlow,
         settingsRepository.showNowLineFlow,
@@ -63,7 +63,7 @@ class SettingsViewModel @Inject constructor(
         settingsRepository.onboardingTooltipsEnabledFlow,
         _appLanguage
     ) { args: Array<Any?> ->
-        SettingsUiState(
+        MoreUiState(
             themeMode = args[0] as String,
             scrollableTabs = args[1] as Boolean,
             showNowLine = args[2] as Boolean,
@@ -77,7 +77,7 @@ class SettingsViewModel @Inject constructor(
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = SettingsUiState(appLanguage = getCurrentLanguage())
+        initialValue = MoreUiState(appLanguage = getCurrentLanguage())
     )
 
     private fun getCurrentLanguage(): String {

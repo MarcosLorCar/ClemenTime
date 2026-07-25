@@ -9,9 +9,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.automirrored.outlined.LibraryBooks
 import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.outlined.CalendarMonth
-import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -30,8 +30,8 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.marcoslorcar.clementime.R
+import com.marcoslorcar.clementime.ui.navigation.MoreRoute
 import com.marcoslorcar.clementime.ui.navigation.ScheduleListRoute
-import com.marcoslorcar.clementime.ui.navigation.SettingsRoute
 import com.marcoslorcar.clementime.ui.navigation.SubjectsRoute
 import com.marcoslorcar.clementime.ui.theme.ClemenTimeTheme
 import kotlin.reflect.KClass
@@ -84,11 +84,11 @@ fun ClemenTimeNavigationBar(
             routeClass = SubjectsRoute::class
         ),
         NavigationItem(
-            labelResId = R.string.settings_screen_title,
-            selectedIcon = Icons.Filled.Settings,
-            unselectedIcon = Icons.Outlined.Settings,
-            route = SettingsRoute,
-            routeClass = SettingsRoute::class
+            labelResId = R.string.more_screen_title,
+            selectedIcon = Icons.Filled.MoreHoriz,
+            unselectedIcon = Icons.Outlined.MoreHoriz,
+            route = MoreRoute,
+            routeClass = MoreRoute::class
         )
     )
 

@@ -9,6 +9,7 @@ import com.marcoslorcar.clementime.data.AttachedFileItem
 import com.marcoslorcar.clementime.data.ClassSlot
 import com.marcoslorcar.clementime.data.EntryType
 import com.marcoslorcar.clementime.data.ScheduleDao
+import com.marcoslorcar.clementime.data.SettingsRepository
 import com.marcoslorcar.clementime.data.Subject
 import com.marcoslorcar.clementime.ui.navigation.AddEditSubjectRoute
 import com.marcoslorcar.clementime.ui.widget.ScheduleWidgetUtils
@@ -82,6 +83,8 @@ data class AddEditSubjectUiState(
     val attachedFiles: List<AttachedFileItem> = emptyList(),
     val slots: List<ClassSlotUiModel> = emptyList(),
     val selectedLabGroup: String? = null,
+    val onboardingTooltipsEnabled: Boolean = true,
+    val hasSeenAddSlotTooltip: Boolean = false,
     val isLoading: Boolean = false,
     val isSaved: Boolean = false,
     val errorMessage: String? = null
@@ -91,6 +94,7 @@ data class AddEditSubjectUiState(
 class AddEditSubjectViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val scheduleDao: ScheduleDao,
+    private val settingsRepository: SettingsRepository,
     @ApplicationContext private val context: Context? = null
 ) : ViewModel() {
 
@@ -107,6 +111,17 @@ class AddEditSubjectViewModel @Inject constructor(
             loadSubject(routeSubjectId, highlightSlotId)
         } else {
             _uiState.update { it.copy(isEditMode = true) }
+        }
+
+        viewModelScope.launch {
+            settingsRepository.onboardingTooltipsEnabledFlow.collect { enabled ->
+                _uiState.update { it.copy(onboardingTooltipsEnabled = enabled) }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.hasSeenAddSlotTooltipFlow.collect { seen ->
+                _uiState.update { it.copy(hasSeenAddSlotTooltip = seen) }
+            }
         }
     }
 
@@ -178,6 +193,12 @@ class AddEditSubjectViewModel @Inject constructor(
 
     fun updateNotesText(notes: String) {
         _uiState.update { it.copy(notesText = notes) }
+    }
+
+    fun markAddSlotTooltipSeen() {
+        viewModelScope.launch {
+            settingsRepository.setHasSeenAddSlotTooltip(true)
+        }
     }
 
     fun addAttachedFile(name: String, fileType: String, uriString: String) {

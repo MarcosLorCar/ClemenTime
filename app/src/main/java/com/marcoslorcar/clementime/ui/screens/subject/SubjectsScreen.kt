@@ -86,6 +86,7 @@ import com.marcoslorcar.clementime.data.Subject
 import com.marcoslorcar.clementime.data.SubjectWithSlots
 import com.marcoslorcar.clementime.data.cardColor
 import com.marcoslorcar.clementime.ui.components.ClemenTimeTopBar
+import com.marcoslorcar.clementime.ui.components.EmptyStateContent
 import com.marcoslorcar.clementime.ui.theme.ClemenTimeTheme
 import com.marcoslorcar.clementime.utils.fadingEdges
 import java.time.DayOfWeek
@@ -359,43 +360,13 @@ fun SubjectsContent(
                 CircularProgressIndicator()
             }
         } else if (uiState.subjects.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(32.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.MenuBook,
-                        contentDescription = null,
-                        modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = stringResource(R.string.no_subjects_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = stringResource(R.string.no_subjects_subtitle),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Button(onClick = onNavigateToImport) {
-                        Icon(imageVector = Icons.Default.CloudUpload, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.import_schedule_title))
-                    }
-                }
-            }
+            EmptyStateContent(
+                icon = Icons.AutoMirrored.Filled.MenuBook,
+                title = stringResource(R.string.no_subjects_title),
+                subtitle = stringResource(R.string.no_subjects_subtitle),
+                onImportClick = onNavigateToImport,
+                onAddManuallyClick = { onNavigateToAddEditSubject(null) }
+            )
         } else {
             Column(
                 modifier = Modifier

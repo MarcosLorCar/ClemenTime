@@ -419,6 +419,7 @@ class ImportViewModel @Inject constructor(
                 _uiState.value = ImportUiState.Importing
                 try {
                     repository.importSubjects(currentState.selectedSubjects.toList())
+                    settingsRepository.setHasSeenAddSlotTooltip(true)
                     ScheduleWidgetUtils.updateWidget(context)
                     _uiState.value = ImportUiState.Success
                 } catch (e: Exception) {

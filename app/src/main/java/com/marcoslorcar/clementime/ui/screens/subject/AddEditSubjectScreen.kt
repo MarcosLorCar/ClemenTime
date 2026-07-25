@@ -15,6 +15,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -34,13 +36,17 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Note
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -49,6 +55,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
@@ -85,6 +92,7 @@ import com.marcoslorcar.clementime.data.AttachedFileItem
 import com.marcoslorcar.clementime.data.Subject
 import com.marcoslorcar.clementime.ui.components.ClassSlotItemCard
 import com.marcoslorcar.clementime.ui.components.ClemenTimeTopBar
+import com.marcoslorcar.clementime.ui.components.OnboardingTooltip
 import com.marcoslorcar.clementime.ui.theme.ClemenTimeTheme
 import com.marcoslorcar.clementime.utils.fadingEdges
 import java.io.File
@@ -130,6 +138,7 @@ fun AddEditSubjectScreen(
         onOpenSlotEditor = viewModel::openSlotEditor,
         onCloseSlotEditor = viewModel::closeSlotEditor,
         onSaveSlotFromEditor = viewModel::saveSlotFromEditor,
+        onDismissAddSlotTooltip = viewModel::markAddSlotTooltipSeen,
         onSave = viewModel::saveSubject
     )
 }
@@ -152,11 +161,13 @@ fun AddEditSubjectContent(
     onOpenSlotEditor: (Int?) -> Unit = {},
     onCloseSlotEditor: () -> Unit = {},
     onSaveSlotFromEditor: (ClassSlotUiModel) -> Unit = {},
+    onDismissAddSlotTooltip: () -> Unit = {},
     onSave: () -> Unit = {}
 ) {
     val lazyListState = rememberLazyListState()
     var hasScrolled by remember { mutableStateOf(false) }
     var activeHighlightSlotId by remember(uiState.highlightSlotId) { mutableStateOf(uiState.highlightSlotId) }
+    var isNotesSheetOpen by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.highlightSlotId) {
         if (uiState.highlightSlotId != null) {
@@ -298,13 +309,10 @@ fun AddEditSubjectContent(
                 }
 
                 item {
-                    SubjectNotesAndLinksCard(
+                    SubjectNotesAndFilesSummary(
                         notesText = uiState.notesText,
                         attachedFiles = uiState.attachedFiles,
-                        isEditMode = uiState.isEditMode,
-                        onUpdateNotesText = onUpdateNotesText,
-                        onRemoveAttachedFile = onRemoveAttachedFile,
-                        onAddFileClick = { filePickerLauncher.launch("*/*") }
+                        onClick = { isNotesSheetOpen = true }
                     )
                 }
 
@@ -320,10 +328,17 @@ fun AddEditSubjectContent(
                             fontWeight = FontWeight.Bold
                         )
                         if (uiState.isEditMode) {
-                            Button(onClick = { onOpenSlotEditor(null) }) {
-                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(Modifier.width(4.dp))
-                                Text(stringResource(R.string.add_slot_button))
+                            OnboardingTooltip(
+                                text = stringResource(R.string.tooltip_add_slot_desc),
+                                title = stringResource(R.string.tooltip_add_slot_title),
+                                show = uiState.onboardingTooltipsEnabled && !uiState.hasSeenAddSlotTooltip && uiState.slots.isEmpty(),
+                                onDismiss = onDismissAddSlotTooltip
+                            ) {
+                                Button(onClick = { onOpenSlotEditor(null) }) {
+                                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text(stringResource(R.string.add_slot_button))
+                                }
                             }
                         }
                     }
@@ -390,7 +405,17 @@ fun AddEditSubjectContent(
         )
     }
 
-
+    if (isNotesSheetOpen) {
+        NotesAndFilesBottomSheet(
+            notesText = uiState.notesText,
+            attachedFiles = uiState.attachedFiles,
+            isEditMode = uiState.isEditMode,
+            onUpdateNotesText = onUpdateNotesText,
+            onRemoveAttachedFile = onRemoveAttachedFile,
+            onAddFileClick = { filePickerLauncher.launch("*/*") },
+            onDismiss = { isNotesSheetOpen = false }
+        )
+    }
 }
 
 @Composable
@@ -475,12 +500,6 @@ private fun SubjectBasicDetailsCard(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Text(
-                text = stringResource(R.string.edit_subject_title),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -611,6 +630,93 @@ private fun SubjectBasicDetailsCard(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun SubjectNotesAndFilesSummary(
+    notesText: String,
+    attachedFiles: List<AttachedFileItem>,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.notes_and_files_summary_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                if (notesText.isBlank() && attachedFiles.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.notes_and_files_empty_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (notesText.isNotBlank()) {
+                            AssistChip(
+                                onClick = {},
+                                label = { Text(stringResource(R.string.notes_and_files_summary_notes)) },
+                                leadingIcon = { Icon(Icons.AutoMirrored.Filled.Note, contentDescription = null, modifier = Modifier.size(14.dp)) }
+                            )
+                        }
+                        if (attachedFiles.isNotEmpty()) {
+                            AssistChip(
+                                onClick = {},
+                                label = { Text(stringResource(R.string.notes_and_files_summary_files, attachedFiles.size)) },
+                                leadingIcon = { Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(14.dp)) }
+                            )
+                        }
+                    }
+                }
+            }
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun NotesAndFilesBottomSheet(
+    notesText: String,
+    attachedFiles: List<AttachedFileItem>,
+    isEditMode: Boolean,
+    onUpdateNotesText: (String) -> Unit,
+    onRemoveAttachedFile: (String) -> Unit,
+    onAddFileClick: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        dragHandle = { BottomSheetDefaults.DragHandle() }
+    ) {
+        Box(modifier = Modifier.padding(bottom = 32.dp)) {
+            SubjectNotesAndLinksCard(
+                notesText = notesText,
+                attachedFiles = attachedFiles,
+                isEditMode = isEditMode,
+                onUpdateNotesText = onUpdateNotesText,
+                onRemoveAttachedFile = onRemoveAttachedFile,
+                onAddFileClick = onAddFileClick
+            )
+        }
+    }
+}
+
 @Composable
 private fun SubjectNotesAndLinksCard(
     notesText: String,
@@ -666,7 +772,7 @@ private fun SubjectNotesAndLinksCard(
                     TextButton(onClick = { isInputExpanded = true }) {
                         Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("Add note")
+                        Text(stringResource(R.string.add_note_button))
                     }
                 }
             } else if (notesText.isNotBlank()) {

@@ -32,6 +32,7 @@ open class SettingsRepository @Inject constructor(
     private val hasSeenOptimizerTooltipKey = booleanPreferencesKey("has_seen_optimizer_tooltip")
     private val hasSeenResolverPrioritiesTooltipKey = booleanPreferencesKey("has_seen_resolver_priorities_tooltip")
     private val hasSeenResolverApplyTooltipKey = booleanPreferencesKey("has_seen_resolver_apply_tooltip")
+    private val hasSeenAddSlotTooltipKey = booleanPreferencesKey("has_seen_add_slot_tooltip")
 
 
     open val themeFlow: Flow<String>
@@ -164,6 +165,16 @@ open class SettingsRepository @Inject constructor(
         }
 
 
+    open val hasSeenAddSlotTooltipFlow: Flow<Boolean>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[hasSeenAddSlotTooltipKey] ?: false
+            } ?: kotlinx.coroutines.flow.flowOf(false)
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf(false)
+        }
+
+
     open suspend fun setThemeMode(theme: String) {
         try {
             context?.dataStore?.edit { preferences ->
@@ -276,6 +287,15 @@ open class SettingsRepository @Inject constructor(
         try {
             context?.dataStore?.edit { preferences ->
                 preferences[hasSeenResolverApplyTooltipKey] = seen
+            }
+        } catch (_: Throwable) {}
+    }
+
+
+    open suspend fun setHasSeenAddSlotTooltip(seen: Boolean) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[hasSeenAddSlotTooltipKey] = seen
             }
         } catch (_: Throwable) {}
     }
