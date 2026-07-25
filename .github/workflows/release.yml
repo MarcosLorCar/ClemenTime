@@ -33,7 +33,7 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # Determine tags and names
+      # Determine tags and names for logging/uploading
       - name: Get Versioning Info
         id: info
         run: |
@@ -42,13 +42,7 @@ jobs:
           else
             TAG_NAME="${{ github.ref_name }}"
           fi
-          # Strip 'v' prefix if present for versionName
-          VERSION_NAME=$(echo "$TAG_NAME" | sed 's/^v//')
-          
           echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
-          echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
-          # Use run_number for versionCode to ensure it always increases
-          echo "version_code=${{ github.run_number }}" >> $GITHUB_OUTPUT
 
       # Tag the commit first if manually dispatched and tag doesn't exist
       - name: Create Git Tag (manual dispatch only)
@@ -72,9 +66,7 @@ jobs:
 
       - name: Build Release APK & AAB
         run: |
-          ./gradlew assembleRelease bundleRelease \
-            -PversionName="${{ steps.info.outputs.version_name }}" \
-            -PversionCode="${{ steps.info.outputs.version_code }}"
+          ./gradlew assembleRelease bundleRelease
         env:
           KEYSTORE_PATH: ../release.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}

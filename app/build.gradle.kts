@@ -16,16 +16,23 @@ android {
         //noinspection OldTargetApi
         targetSdk = 36
         
-        val major = (project.findProperty("VERSION_MAJOR") as? String)?.toInt() ?: 1
-        val minor = (project.findProperty("VERSION_MINOR") as? String)?.toInt() ?: 0
-        val patch = (project.findProperty("VERSION_PATCH") as? String)?.toInt() ?: 0
-        val qualifier = (project.findProperty("VERSION_QUALIFIER") as? String) ?: ""
+        // Git-based versioning: Single Source of Truth
+        val gitVersionName = providers.exec {
+            commandLine("git", "describe", "--tags", "--always", "--dirty")
+            isIgnoreExitValue = true
+        }.standardOutput.asText.map { it.trim().removePrefix("v") }.getOrElse("0.1.0-dev")
+
+        val gitCommitCount = providers.exec {
+            commandLine("git", "rev-list", "--count", "HEAD")
+            isIgnoreExitValue = true
+        }.standardOutput.asText.map { it.trim().toIntOrNull() ?: 0 }.getOrElse(0)
 
         val passedVersionName = project.findProperty("versionName") as? String
         val passedVersionCode = (project.findProperty("versionCode") as? String)?.toIntOrNull()
 
-        versionCode = passedVersionCode ?: (major * 10000 + minor * 100 + patch)
-        versionName = passedVersionName ?: "$major.$minor.$patch$qualifier"
+        // Starting from 1000 to ensure it's higher than previous manual versions
+        versionCode = passedVersionCode ?: (1000 + gitCommitCount)
+        versionName = passedVersionName ?: gitVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
