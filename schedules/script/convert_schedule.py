@@ -653,6 +653,17 @@ def process_single_file(pdf_path: Optional[str], md_path: str, output_json_path:
     parser_engine = ScheduleParser(mapper=mapper)
     global_matters, years_list = parser_engine.parse_markdown(md_content)
 
+    # Apply semester to each subject if provided
+    if semester is not None:
+        for m in global_matters:
+            m["semester"] = semester
+        for y in years_list:
+            for m in y.get("matters", []):
+                m["semester"] = semester
+            for g in y.get("groups", []):
+                for m in g.get("matters", []):
+                    m["semester"] = semester
+
     title = os.path.splitext(os.path.basename(output_json_path))[0].replace("_", " ")
 
     final_json = {

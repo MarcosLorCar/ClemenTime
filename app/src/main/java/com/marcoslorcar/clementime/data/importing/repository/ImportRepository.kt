@@ -27,7 +27,8 @@ data class CacheMetadata(
     val description: String?,
     val remotePath: String,
     val lastUsed: Long,
-    val hash: String
+    val hash: String,
+    val updatedTime: String? = null
 )
 
 @Serializable
@@ -140,7 +141,7 @@ class ImportRepository @Inject constructor(
         }
     }
 
-    suspend fun importSubjects(selectedSubjects: List<SelectedSubject>, targetSemester: Int) {
+    suspend fun importSubjects(selectedSubjects: List<SelectedSubject>) {
         val existingSubjects = dao.getAllSubjectsWithSlots().first()
         val usedColors = existingSubjects.map { it.subject.color }.toMutableSet()
         
@@ -177,7 +178,7 @@ class ImportRepository @Inject constructor(
                 courseGroup = selected.courseGroup,
                 isActive = true,
                 selectedLabGroup = autoSelectedLabGroup,
-                semester = jsonSubject.semester ?: targetSemester,
+                semester = jsonSubject.semester ?: 1,
                 isDummy = jsonSubject.isDummy
             )
 
@@ -296,7 +297,8 @@ class ImportRepository @Inject constructor(
                     description = file.description,
                     remotePath = file.remotePath,
                     lastUsed = System.currentTimeMillis(),
-                    hash = newHash
+                    hash = newHash,
+                    updatedTime = file.updatedTime
                 )
 
                 if (existingEntry == null || existingEntry.hash != newHash || !cacheFile.exists()) {

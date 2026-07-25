@@ -67,8 +67,14 @@ class JsonScheduleParser @Inject constructor() {
             )
         }.sortedBy { it.name }
 
+        // If all subjects have the same semester, use it at the root level
+        val commonSemester = subjectsWithSlots.map { it.subject.semester }.distinct().let {
+            if (it.size == 1) it.first() else null
+        }
+
         val schema = ScheduleJsonSchema(
             title = title,
+            semester = commonSemester,
             subjects = rootSubjects,
             years = jsonYears
         )
@@ -91,6 +97,7 @@ class JsonScheduleParser @Inject constructor() {
             code = subject.code,
             name = subject.name,
             color = subject.color,
+            semester = subject.semester,
             theorySlots = theorySlots,
             labVariants = labVariants,
             isDummy = subject.isDummy

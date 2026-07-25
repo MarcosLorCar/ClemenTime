@@ -1,6 +1,7 @@
 {
   "version": 1,
   "title": "ESI2026-27-GRADO 2C Grupos v1.2",
+  "semester": 2,
   "matters": [
     {
       "code": "PruebasProgreso",
@@ -26,7 +27,8 @@
           "professor": null
         }
       ],
-      "labVariants": {}
+      "labVariants": {},
+      "semester": 2
     },
     {
       "code": "Conferencias",
@@ -43,7 +45,8 @@
           "professor": null
         }
       ],
-      "labVariants": {}
+      "labVariants": {},
+      "semester": 2
     }
   ],
   "years": [
@@ -110,7 +113,8 @@
                     "professor": "Xavier del Toro"
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "SistInf",
@@ -159,7 +163,8 @@
                     "professor": null
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "Redes I",
@@ -208,7 +213,8 @@
                     "professor": "Jesus Blanco Rodriguez"
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "FPII",
@@ -257,7 +263,8 @@
                     "professor": null
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "Eco",
@@ -306,7 +313,8 @@
                     "professor": null
                   }
                 ]
-              }
+              },
+              "semester": 2
             }
           ]
         },
@@ -371,7 +379,8 @@
                     "professor": null
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "Eco",
@@ -420,7 +429,8 @@
                     "professor": null
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "Algebra",
@@ -469,7 +479,8 @@
                     "professor": null
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "Redes I",
@@ -518,7 +529,8 @@
                     "professor": null
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "SistInf",
@@ -567,7 +579,8 @@
                     "professor": null
                   }
                 ]
-              }
+              },
+              "semester": 2
             }
           ]
         },
@@ -622,7 +635,8 @@
                     "professor": null
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "Eco",
@@ -672,7 +686,8 @@
                     "professor": null
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "Redes I",
@@ -722,7 +737,8 @@
                     "professor": null
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "SistInf",
@@ -772,7 +788,8 @@
                     "professor": null
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "Algebra",
@@ -822,7 +839,8 @@
                     "professor": null
                   }
                 ]
-              }
+              },
+              "semester": 2
             }
           ]
         },
@@ -877,7 +895,8 @@
                     "professor": null
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "FPII",
@@ -938,7 +957,8 @@
                     "professor": null
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "Eco",
@@ -977,7 +997,8 @@
                     "professor": null
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "SistInf",
@@ -1016,7 +1037,8 @@
                     "professor": null
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "Redes I",
@@ -1055,7 +1077,8 @@
                     "professor": "Inocente Sanchez"
                   }
                 ]
-              }
+              },
+              "semester": 2
             }
           ]
         }
@@ -1115,7 +1138,8 @@
                     "professor": null
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "BBDD",
@@ -1164,7 +1188,8 @@
                     "professor": "Luis Rodriguez"
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "Redes II",
@@ -1202,7 +1227,8 @@
                     "professor": "Angel Suarez"
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "PCTR",
@@ -1251,7 +1277,8 @@
                     "professor": null
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "Estadistica",
@@ -1289,7 +1316,8 @@
                     "professor": "Irene Garcia"
                   }
                 ]
-              }
+              },
+              "semester": 2
             }
           ]
         },
@@ -1354,7 +1382,8 @@
                     "professor": null
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "PCTR",
@@ -1425,7 +1454,8 @@
                     "professor": "Tobias Diaz"
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "Redes II",
@@ -1474,7 +1504,8 @@
                     "professor": null
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "MetodProg",
@@ -1534,7 +1565,8 @@
                     "professor": null
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "BBDD",
@@ -1583,7 +1615,8 @@
                     "professor": "Jose Luis Ruiz Catalan"
                   }
                 ]
-              }
+              },
+              "semester": 2
             }
           ]
         },
@@ -1659,7 +1692,8 @@
                     "professor": null
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "MetodProg",
@@ -1708,7 +1742,8 @@
                     "professor": null
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "BBDD",
@@ -1757,7 +1792,8 @@
                     "professor": null
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "Estadistica",
@@ -1806,7 +1842,8 @@
                     "professor": "AyudanteDr.MAT"
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "Redes II",
@@ -1866,7 +1903,8 @@
                     "professor": null
                   }
                 ]
-              }
+              },
+              "semester": 2
             }
           ]
         },
@@ -1897,7 +1935,8 @@
                   "professor": "Eusebio Angulo"
                 }
               ],
-              "labVariants": {}
+              "labVariants": {},
+              "semester": 2
             },
             {
               "code": "PCTR",
@@ -1957,7 +1996,8 @@
                     "professor": null
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "Redes II",
@@ -2006,7 +2046,8 @@
                     "professor": null
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "MetodProg",
@@ -2066,7 +2107,8 @@
                     "professor": null
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "BBDD",
@@ -2115,7 +2157,8 @@
                     "professor": "Jose Luis Ruiz Catalan"
                   }
                 ]
-              }
+              },
+              "semester": 2
             }
           ]
         }
@@ -2175,7 +2218,8 @@
                     "professor": "Maria Angeles Moraga"
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "ProgDeclarativa",
@@ -2213,7 +2257,8 @@
                     "professor": "Pascual Julian"
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "DisAlgoritmos",
@@ -2251,7 +2296,8 @@
                     "professor": "Julian Ruiz"
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "TeoriaAC",
@@ -2289,7 +2335,8 @@
                     "professor": "Ester Castillo"
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "SistConocimiento",
@@ -2327,7 +2374,8 @@
                     "professor": "Jose Angel Olivas"
                   }
                 ]
-              }
+              },
+              "semester": 2
             }
           ]
         },
@@ -2370,7 +2418,8 @@
                     "professor": "Soledad Escolar"
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "API",
@@ -2419,7 +2468,8 @@
                     "professor": null
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "SSOOII",
@@ -2457,7 +2507,8 @@
                     "professor": "Santiago Sanchez"
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "DSBmicro",
@@ -2495,7 +2546,8 @@
                     "professor": "Xavier del Toro"
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "GyARedes",
@@ -2533,7 +2585,8 @@
                     "professor": "Tobias Diaz"
                   }
                 ]
-              }
+              },
+              "semester": 2
             }
           ]
         },
@@ -2587,7 +2640,8 @@
                     "professor": "Maria Angeles Moraga"
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "DisenoSW",
@@ -2625,7 +2679,8 @@
                     "professor": "Macario Polo"
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "SIEmpresariales",
@@ -2663,7 +2718,8 @@
                     "professor": "Luis Enrique Sanchez"
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "IngRequisitos",
@@ -2701,7 +2757,8 @@
                     "professor": "Jose Luis Ruiz Catalan"
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "DesarrolloBBDD",
@@ -2739,7 +2796,8 @@
                     "professor": "David Garcia Rosado"
                   }
                 ]
-              }
+              },
+              "semester": 2
             }
           ]
         },
@@ -2782,7 +2840,8 @@
                     "professor": "Felix Jesus Villanueva"
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "API",
@@ -2831,7 +2890,8 @@
                     "professor": "Felix Oscar Garcia"
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "GestionSI",
@@ -2869,7 +2929,8 @@
                     "professor": "Julian Ruiz"
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "IPOII",
@@ -2907,7 +2968,8 @@
                     "professor": "Ramon Hervas"
                   }
                 ]
-              }
+              },
+              "semester": 2
             },
             {
               "code": "DyGRedes",
@@ -2945,7 +3007,8 @@
                     "professor": "Sebastian Reyes"
                   }
                 ]
-              }
+              },
+              "semester": 2
             }
           ]
         }
@@ -2982,7 +3045,8 @@
                   "professor": "David Garcia Rosado"
                 }
               ],
-              "labVariants": {}
+              "labVariants": {},
+              "semester": 2
             },
             {
               "code": "AuditoriaSI",
@@ -3008,7 +3072,8 @@
                   "professor": "Ignacio Garcia Rodriguez"
                 }
               ],
-              "labVariants": {}
+              "labVariants": {},
+              "semester": 2
             },
             {
               "code": "DesSistWeb",
@@ -3034,7 +3099,8 @@
                   "professor": "Manuel Angel Serrano"
                 }
               ],
-              "labVariants": {}
+              "labVariants": {},
+              "semester": 2
             },
             {
               "code": "BBDDAvanzadas",
@@ -3060,7 +3126,8 @@
                   "professor": "Julian Ruiz"
                 }
               ],
-              "labVariants": {}
+              "labVariants": {},
+              "semester": 2
             },
             {
               "code": "RySM",
@@ -3086,7 +3153,8 @@
                   "professor": null
                 }
               ],
-              "labVariants": {}
+              "labVariants": {},
+              "semester": 2
             },
             {
               "code": "UnivMayores",
@@ -3112,7 +3180,8 @@
                   "professor": "Coordinador UnivMayores"
                 }
               ],
-              "labVariants": {}
+              "labVariants": {},
+              "semester": 2
             }
           ]
         }

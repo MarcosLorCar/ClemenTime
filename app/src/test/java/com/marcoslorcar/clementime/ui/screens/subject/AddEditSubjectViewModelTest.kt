@@ -126,11 +126,13 @@ class AddEditSubjectViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var fakeDao: FakeScheduleDao
+    private lateinit var fakeSettingsRepository: com.marcoslorcar.clementime.data.SettingsRepository
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         fakeDao = FakeScheduleDao()
+        fakeSettingsRepository = com.marcoslorcar.clementime.data.SettingsRepository(context = null)
     }
 
     @After
@@ -141,7 +143,7 @@ class AddEditSubjectViewModelTest {
     @Test
     fun addSlot_initializesUnsetTimesAndAutofillsDetails() {
         val savedStateHandle = SavedStateHandle()
-        val viewModel = AddEditSubjectViewModel(savedStateHandle, fakeDao, null)
+        val viewModel = AddEditSubjectViewModel(savedStateHandle, fakeDao, fakeSettingsRepository)
 
         viewModel.addSlot()
         val slot1 = viewModel.uiState.value.slots.first()
@@ -152,7 +154,7 @@ class AddEditSubjectViewModelTest {
     @Test
     fun addSlot_autofillsFromPreviousSlot() {
         val savedStateHandle = SavedStateHandle()
-        val viewModel = AddEditSubjectViewModel(savedStateHandle, fakeDao, null)
+        val viewModel = AddEditSubjectViewModel(savedStateHandle, fakeDao, fakeSettingsRepository)
 
         viewModel.addSlot()
         val slot1 = viewModel.uiState.value.slots.first()
@@ -180,7 +182,7 @@ class AddEditSubjectViewModelTest {
     @Test
     fun duplicateSlot_clonesExactDetails() {
         val savedStateHandle = SavedStateHandle()
-        val viewModel = AddEditSubjectViewModel(savedStateHandle, fakeDao, null)
+        val viewModel = AddEditSubjectViewModel(savedStateHandle, fakeDao, fakeSettingsRepository)
 
         viewModel.addSlot()
         val slot1 = viewModel.uiState.value.slots.first().copy(
@@ -200,7 +202,7 @@ class AddEditSubjectViewModelTest {
     @Test
     fun startTimeSelection_autoFillsEndTimeUsingDefaultDuration() {
         val savedStateHandle = SavedStateHandle()
-        val viewModel = AddEditSubjectViewModel(savedStateHandle, fakeDao, null)
+        val viewModel = AddEditSubjectViewModel(savedStateHandle, fakeDao, fakeSettingsRepository)
 
         viewModel.updateDefaultDuration(90)
         viewModel.addSlot()
@@ -216,7 +218,7 @@ class AddEditSubjectViewModelTest {
     @Test
     fun endTimeSelectionFirst_autoFillsStartTimeUsingDefaultDuration() {
         val savedStateHandle = SavedStateHandle()
-        val viewModel = AddEditSubjectViewModel(savedStateHandle, fakeDao, null)
+        val viewModel = AddEditSubjectViewModel(savedStateHandle, fakeDao, fakeSettingsRepository)
 
         viewModel.updateDefaultDuration(90)
         viewModel.addSlot()
@@ -232,7 +234,7 @@ class AddEditSubjectViewModelTest {
     @Test
     fun saveSubject_persistsIgnoredStatus() {
         val savedStateHandle = SavedStateHandle()
-        val viewModel = AddEditSubjectViewModel(savedStateHandle, fakeDao, null)
+        val viewModel = AddEditSubjectViewModel(savedStateHandle, fakeDao, fakeSettingsRepository)
         
         viewModel.updateCode("TEST")
         viewModel.updateName("Test Subject")

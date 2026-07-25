@@ -44,7 +44,6 @@ sealed interface ImportUiState {
     data class Selection(
         val schema: ScheduleJsonSchema,
         val selectedSubjects: Set<SelectedSubject>,
-        val targetSemester: Int = 1,
         val searchQuery: String = "",
         val selectedFile: ImportFile,
         val conflictStatus: ConflictStatus = ConflictStatus.None,
@@ -128,7 +127,8 @@ class ImportViewModel @Inject constructor(
                                 remotePath = fullPath,
                                 description = summary.description,
                                 isCached = isCached,
-                                isUpdateAvailable = isUpdateAvailable
+                                isUpdateAvailable = isUpdateAvailable,
+                                updatedTime = summary.updatedTime
                             )
                         }
                     },
@@ -144,7 +144,8 @@ class ImportViewModel @Inject constructor(
                                 sourceType = ImportSourceType.REMOTE,
                                 remotePath = entry.remotePath,
                                 description = entry.description,
-                                isCached = true
+                                isCached = true,
+                                updatedTime = entry.updatedTime
                             )
                         }
                     }
@@ -196,11 +197,9 @@ class ImportViewModel @Inject constructor(
                 
                 schemaResult.fold(
                     onSuccess = { schema ->
-                        val defaultSemester = schema.semester ?: 1
                         _uiState.value = ImportUiState.Selection(
                             schema = schema,
                             selectedSubjects = emptySet(),
-                            targetSemester = defaultSemester,
                             selectedFile = file,
                             conflictStatus = ConflictStatus.None,
                             existingSubjects = existing,
@@ -421,7 +420,7 @@ class ImportViewModel @Inject constructor(
             viewModelScope.launch {
                 _uiState.value = ImportUiState.Importing
                 try {
-                    repository.importSubjects(currentState.selectedSubjects.toList(), currentState.targetSemester)
+                    repository.importSubjects(currentState.selectedSubjects.toList())
                     settingsRepository.setHasSeenAddSlotTooltip(true)
                     ScheduleWidgetUtils.updateWidget(context)
                     _uiState.value = ImportUiState.Success
@@ -438,20 +437,6 @@ class ImportViewModel @Inject constructor(
             _uiState.value = currentState.copy(searchQuery = query)
         } else if (currentState is ImportUiState.Library) {
             _uiState.value = currentState.copy(searchQuery = query)
-        }
-    }
-
-    fun setTargetSemester(semester: Int) {
-        val currentState = _uiState.value
-        if (currentState is ImportUiState.Selection) {
-            viewModelScope.launch {
-                val existing = repository.getExistingActiveSubjects(semester)
-                _uiState.value = currentState.copy(
-                    targetSemester = semester,
-                    existingSubjects = existing,
-                    conflictStatus = calculateConflictStatus(currentState.selectedSubjects, existing)
-                )
-            }
         }
     }
 

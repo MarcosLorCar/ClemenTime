@@ -78,7 +78,6 @@ import com.marcoslorcar.clementime.data.importing.model.SelectedSubject
 import com.marcoslorcar.clementime.ui.components.ClemenTimeTopBar
 import com.marcoslorcar.clementime.ui.components.OnboardingTooltip
 import com.marcoslorcar.clementime.ui.components.ScheduleMiniPreview
-import com.marcoslorcar.clementime.ui.components.SemesterSwitcher
 import com.marcoslorcar.clementime.ui.screens.scheduleimport.model.ConflictDetail
 import com.marcoslorcar.clementime.ui.screens.scheduleimport.model.ConflictStatus
 import com.marcoslorcar.clementime.ui.theme.ClemenTimeTheme
@@ -153,7 +152,6 @@ fun ImportScreen(
                 onToggleSection = { subjects -> viewModel.toggleSectionSubjects(subjects) },
                 onDeselectAll = { viewModel.deselectAll() },
                 onUpdateSearchQuery = viewModel::updateSearchQuery,
-                onTargetSemesterChanged = viewModel::setTargetSemester,
                 onConfirmImport = { viewModel.confirmImport() },
                 onResetState = { viewModel.resetToLibrary(context) },
                 onMarkConflictTooltipSeen = viewModel::markConflictTooltipSeen
@@ -433,6 +431,13 @@ fun ImportLibraryContent(
                                                     )
                                                 }
                                             }
+                                            if (!file.updatedTime.isNullOrBlank()) {
+                                                Text(
+                                                    text = "• ${file.updatedTime}",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                                )
+                                            }
                                         }
                                     }
                                     if (file.sourceType == com.marcoslorcar.clementime.data.importing.model.ImportSourceType.CUSTOM) {
@@ -473,7 +478,6 @@ fun ImportContent(
     onToggleSection: (Collection<SelectedSubject>) -> Unit,
     onDeselectAll: () -> Unit,
     onUpdateSearchQuery: (String) -> Unit,
-    onTargetSemesterChanged: (Int) -> Unit,
     onConfirmImport: () -> Unit,
     onResetState: () -> Unit,
     onMarkConflictTooltipSeen: () -> Unit = {}
@@ -592,15 +596,6 @@ fun ImportContent(
             }
 
             Column(modifier = Modifier.fillMaxSize()) {
-                if (uiState.schema.semester == null) {
-                    SemesterSwitcher(
-                        selectedSemester = uiState.targetSemester,
-                        onSemesterSelected = onTargetSemesterChanged,
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(bottom = 16.dp))
-                }
-
                 Text(
                     text = stringResource(R.string.import_screen_prompt),
                     style = MaterialTheme.typography.titleMedium,
@@ -871,7 +866,6 @@ private fun ImportContentPreview() {
             onToggleSection = { _ -> },
             onDeselectAll = {},
             onUpdateSearchQuery = {},
-            onTargetSemesterChanged = {},
             onConfirmImport = {},
             onResetState = {}
         )

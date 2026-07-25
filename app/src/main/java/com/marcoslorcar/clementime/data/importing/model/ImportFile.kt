@@ -15,5 +15,6 @@ data class ImportFile(
     val remotePath: String? = null,
     val description: String? = null,
     val isCached: Boolean = false,
-    val isUpdateAvailable: Boolean = false
+    val isUpdateAvailable: Boolean = false,
+    val updatedTime: String? = null
 )
