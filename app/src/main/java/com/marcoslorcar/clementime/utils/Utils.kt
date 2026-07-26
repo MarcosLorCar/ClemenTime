@@ -48,13 +48,15 @@ fun DayOfWeek.shortName(locale: Locale): String =
 
 /**
  * Represents a horizontal row/bucket in the timeline that contains
- * one or more overlapping class slots.
+ * one or more overlapping class slots, organized into columns to minimize width.
  */
 data class TimelineCluster(
     val startTime: LocalTime,
     val endTime: LocalTime,
-    val items: List<Pair<Subject, ClassSlot>>
-)
+    val columns: List<List<Pair<Subject, ClassSlot>>>
+) {
+    val items: List<Pair<Subject, ClassSlot>> get() = columns.flatten()
+}
 
 fun groupSlotsIntoClusters(
     slots: List<Pair<Subject, ClassSlot>>
@@ -80,13 +82,42 @@ fun groupSlotsIntoClusters(
             }
         } else {
             // No overlap: finalize current cluster and start a new one
-            clusters.add(TimelineCluster(clusterStart, clusterEnd, currentClusterItems))
+            clusters.add(packCluster(clusterStart, clusterEnd, currentClusterItems))
             currentClusterItems = mutableListOf(item)
             clusterStart = slot.startTime
             clusterEnd = slot.endTime
         }
     }
 
-    clusters.add(TimelineCluster(clusterStart, clusterEnd, currentClusterItems))
+    clusters.add(packCluster(clusterStart, clusterEnd, currentClusterItems))
     return clusters
+}
+
+/**
+ * Packs cluster items into the minimum number of columns using a greedy interval scheduling approach.
+ */
+private fun packCluster(
+    start: LocalTime,
+    end: LocalTime,
+    items: List<Pair<Subject, ClassSlot>>
+): TimelineCluster {
+    val sortedItems = items.sortedWith(compareBy({ it.second.startTime }, { it.second.endTime }))
+    val columns = mutableListOf<MutableList<Pair<Subject, ClassSlot>>>()
+
+    for (item in sortedItems) {
+        var placed = false
+        for (column in columns) {
+            // Check if this item fits in the current column (no overlap with the last item in column)
+            if (column.last().second.endTime <= item.second.startTime) {
+                column.add(item)
+                placed = true
+                break
+            }
+        }
+        if (!placed) {
+            columns.add(mutableListOf(item))
+        }
+    }
+
+    return TimelineCluster(start, end, columns)
 }

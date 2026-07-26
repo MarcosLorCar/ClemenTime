@@ -4,24 +4,39 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.EventBusy
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetValue
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberBottomSheetState
@@ -39,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.marcoslorcar.clementime.R
 import com.marcoslorcar.clementime.data.EntryType
+import com.marcoslorcar.clementime.ui.model.ClassSlotUiModel
 import com.marcoslorcar.clementime.ui.screens.schedule.ScheduleTab
 import com.marcoslorcar.clementime.utils.shortName
 import java.time.LocalTime
@@ -49,25 +65,34 @@ import java.time.format.DateTimeFormatter
 fun SlotEditBottomSheet(
     initialSlot: ClassSlotUiModel,
     onDismiss: () -> Unit,
-    onSaveSlot: (ClassSlotUiModel) -> Unit
+    onSaveSlot: (ClassSlotUiModel) -> Unit,
+    onDelete: (() -> Unit)? = null
 ) {
     var editedSlot by remember(initialSlot) { mutableStateOf(initialSlot) }
     var showStartPicker by remember { mutableStateOf(false) }
     var showEndPicker by remember { mutableStateOf(false) }
+    var showIgnoreHelp by remember { mutableStateOf(false) }
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
 
     val locale = LocalConfiguration.current.locales[0]
     val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
 
+    val sheetState = rememberBottomSheetState(
+        initialValue = SheetValue.Hidden,
+        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
+    )
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = rememberBottomSheetState(
-            initialValue = SheetValue.Hidden,
-            enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
-        )
+        sheetState = sheetState,
+        dragHandle = { BottomSheetDefaults.DragHandle() },
+        contentWindowInsets = { BottomSheetDefaults.modalWindowInsets.union(WindowInsets.ime) }
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .imePadding()
                 .padding(horizontal = 24.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -137,7 +162,7 @@ fun SlotEditBottomSheet(
                     Text(
                         text = if (editedSlot.startTime != null) {
                             stringResource(R.string.start_time_label, editedSlot.startTime!!.format(timeFormatter))
-                        } else "Start: --:--"
+                        } else stringResource(R.string.start_time_empty)
                     )
                 }
 
@@ -154,7 +179,7 @@ fun SlotEditBottomSheet(
                     Text(
                         text = if (editedSlot.endTime != null) {
                             stringResource(R.string.end_time_label, editedSlot.endTime!!.format(timeFormatter))
-                        } else "End: --:--"
+                        } else stringResource(R.string.end_time_empty)
                     )
                 }
             }
@@ -194,27 +219,108 @@ fun SlotEditBottomSheet(
                 )
             }
 
+            if (editedSlot.id != 0L) {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.EventBusy,
+                            contentDescription = null,
+                            tint = if (editedSlot.isIgnored) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Text(
+                            text = stringResource(R.string.ignore_label),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                        IconButton(
+                            onClick = { showIgnoreHelp = true },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.HelpOutline,
+                                contentDescription = stringResource(R.string.content_description_help),
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                    Switch(
+                        checked = editedSlot.isIgnored,
+                        onCheckedChange = { editedSlot = editedSlot.copy(isIgnored = it) }
+                    )
+                }
+            }
+
             Spacer(modifier = Modifier.height(8.dp))
 
             // Action Buttons
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                TextButton(onClick = onDismiss) {
-                    Text(stringResource(R.string.cancel))
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Button(
-                    onClick = {
-                        onSaveSlot(editedSlot)
+                if (onDelete != null && editedSlot.id != 0L) {
+                    IconButton(onClick = { showDeleteConfirmation = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = stringResource(R.string.delete_slot_label),
+                            tint = MaterialTheme.colorScheme.error
+                        )
                     }
-                ) {
-                    Text(stringResource(R.string.save_button))
+                } else {
+                    Spacer(Modifier.width(48.dp))
+                }
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = onDismiss) {
+                        Text(stringResource(R.string.cancel))
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Button(
+                        onClick = {
+                            onSaveSlot(editedSlot)
+                        }
+                    ) {
+                        Text(stringResource(R.string.save_button))
+                    }
                 }
             }
         }
+    }
+
+    if (showDeleteConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmation = false },
+            title = { Text(stringResource(R.string.delete_slot_label)) },
+            text = { Text(stringResource(R.string.delete_slot_confirmation)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDelete?.invoke()
+                        showDeleteConfirmation = false
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(stringResource(R.string.delete_subject_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirmation = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
     }
 
     if (showStartPicker) {
@@ -243,6 +349,19 @@ fun SlotEditBottomSheet(
                 } else start
                 editedSlot = editedSlot.copy(startTime = newStart, endTime = selectedTime)
                 showEndPicker = false
+            }
+        )
+    }
+
+    if (showIgnoreHelp) {
+        AlertDialog(
+            onDismissRequest = { showIgnoreHelp = false },
+            title = { Text(stringResource(R.string.ignore_help_title)) },
+            text = { Text(stringResource(R.string.ignore_help_desc)) },
+            confirmButton = {
+                TextButton(onClick = { showIgnoreHelp = false }) {
+                    Text(stringResource(android.R.string.ok))
+                }
             }
         )
     }

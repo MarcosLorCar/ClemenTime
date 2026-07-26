@@ -169,7 +169,7 @@ fun LanguagePage(
         SingleChoiceSegmentedButtonRow(
             modifier = Modifier.fillMaxWidth()
         ) {
-            val languages = listOf("en" to "English", "es" to "Español")
+            val languages = listOf("en" to stringResource(R.string.lang_en), "es" to stringResource(R.string.lang_es))
             languages.forEachIndexed { index, (code, label) ->
                 SegmentedButton(
                     selected = selectedLanguage == code,

@@ -34,7 +34,10 @@ open class SettingsRepository @Inject constructor(
     private val hasSeenResolverPrioritiesTooltipKey = booleanPreferencesKey("has_seen_resolver_priorities_tooltip")
     private val hasSeenResolverApplyTooltipKey = booleanPreferencesKey("has_seen_resolver_apply_tooltip")
     private val hasSeenAddSlotTooltipKey = booleanPreferencesKey("has_seen_add_slot_tooltip")
+    private val hasSeenImportPreviewTooltipKey = booleanPreferencesKey("has_seen_import_preview_tooltip")
     private val currentSemesterKey = intPreferencesKey("current_semester")
+    private val hasManuallyChangedSemesterKey = booleanPreferencesKey("has_manually_changed_semester")
+    private val wasSemesterAutoChangedKey = booleanPreferencesKey("was_semester_auto_changed")
 
 
     open val themeFlow: Flow<String>
@@ -100,10 +103,10 @@ open class SettingsRepository @Inject constructor(
     open val githubRepoBaseUrlFlow: Flow<String>
         get() = try {
             context?.dataStore?.data?.map { preferences ->
-                preferences[githubRepoBaseUrlKey] ?: "https://raw.githubusercontent.com/MarcosLorCar/ClemenTime/master/schedules/dist/"
-            } ?: kotlinx.coroutines.flow.flowOf("https://raw.githubusercontent.com/MarcosLorCar/ClemenTime/master/schedules/dist/")
+                preferences[githubRepoBaseUrlKey] ?: DEFAULT_GITHUB_REPO_BASE_URL
+            } ?: kotlinx.coroutines.flow.flowOf(DEFAULT_GITHUB_REPO_BASE_URL)
         } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf("https://raw.githubusercontent.com/MarcosLorCar/ClemenTime/master/schedules/dist/")
+            kotlinx.coroutines.flow.flowOf(DEFAULT_GITHUB_REPO_BASE_URL)
         }
 
 
@@ -176,6 +179,14 @@ open class SettingsRepository @Inject constructor(
             kotlinx.coroutines.flow.flowOf(false)
         }
 
+    open val hasSeenImportPreviewTooltipFlow: Flow<Boolean>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[hasSeenImportPreviewTooltipKey] ?: false
+            } ?: kotlinx.coroutines.flow.flowOf(false)
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf(false)
+        }
 
     open val currentSemesterFlow: Flow<Int>
         get() = try {
@@ -184,6 +195,24 @@ open class SettingsRepository @Inject constructor(
             } ?: kotlinx.coroutines.flow.flowOf(1)
         } catch (_: Throwable) {
             kotlinx.coroutines.flow.flowOf(1)
+        }
+
+    open val hasManuallyChangedSemesterFlow: Flow<Boolean>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[hasManuallyChangedSemesterKey] ?: false
+            } ?: kotlinx.coroutines.flow.flowOf(false)
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf(false)
+        }
+
+    open val wasSemesterAutoChangedFlow: Flow<Boolean>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[wasSemesterAutoChangedKey] ?: false
+            } ?: kotlinx.coroutines.flow.flowOf(false)
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf(false)
         }
 
 
@@ -312,6 +341,13 @@ open class SettingsRepository @Inject constructor(
         } catch (_: Throwable) {}
     }
 
+    open suspend fun setHasSeenImportPreviewTooltip(seen: Boolean) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[hasSeenImportPreviewTooltipKey] = seen
+            }
+        } catch (_: Throwable) {}
+    }
 
     open suspend fun setCurrentSemester(semester: Int) {
         try {
@@ -319,6 +355,26 @@ open class SettingsRepository @Inject constructor(
                 preferences[currentSemesterKey] = semester
             }
         } catch (_: Throwable) {}
+    }
+
+    open suspend fun setHasManuallyChangedSemester(hasChanged: Boolean) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[hasManuallyChangedSemesterKey] = hasChanged
+            }
+        } catch (_: Throwable) {}
+    }
+
+    open suspend fun setWasSemesterAutoChanged(autoChanged: Boolean) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[wasSemesterAutoChangedKey] = autoChanged
+            }
+        } catch (_: Throwable) {}
+    }
+
+    companion object {
+        const val DEFAULT_GITHUB_REPO_BASE_URL = "https://raw.githubusercontent.com/MarcosLorCar/ClemenTime/master/schedules/dist/"
     }
 }
 

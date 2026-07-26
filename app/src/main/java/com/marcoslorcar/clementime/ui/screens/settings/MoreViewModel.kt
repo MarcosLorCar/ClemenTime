@@ -7,10 +7,12 @@ import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.marcoslorcar.clementime.R
+import com.marcoslorcar.clementime.data.EntryType
 import com.marcoslorcar.clementime.data.ScheduleDao
 import com.marcoslorcar.clementime.data.SettingsRepository
 import com.marcoslorcar.clementime.data.importing.parser.JsonScheduleParser
 import com.marcoslorcar.clementime.ui.widget.ScheduleWidgetUtils
+import com.marcoslorcar.clementime.utils.IcsExporter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +22,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import java.util.Locale
 import javax.inject.Inject
 
@@ -31,7 +34,7 @@ data class MoreUiState(
     val nowLineStyle: String = "discrete",
     val highContrast: Boolean = false,
     val selectedTheme: String = "clementine",
-    val githubRepoBaseUrl: String = "https://raw.githubusercontent.com/MarcosLorCar/ClemenTime/master/schedules/dist/",
+    val githubRepoBaseUrl: String = SettingsRepository.DEFAULT_GITHUB_REPO_BASE_URL,
     val onboardingTooltipsEnabled: Boolean = true
 )
 
@@ -159,6 +162,51 @@ class MoreViewModel @Inject constructor(
                 
                 context.contentResolver.openOutputStream(customUri)?.use { out ->
                     out.write(jsonString.toByteArray())
+                }
+                onResult(ExportStatus.Success(context.getString(R.string.export_success_local)))
+            } catch (e: Exception) {
+                onResult(ExportStatus.Error(context.getString(R.string.export_error_prefix, e.localizedMessage)))
+            }
+        }
+    }
+
+    fun exportFullYearToIcs(
+        context: Context,
+        customUri: Uri,
+        s1Start: LocalDate,
+        s1End: LocalDate,
+        s2Start: LocalDate,
+        s2End: LocalDate,
+        onResult: (ExportStatus) -> Unit
+    ) {
+        viewModelScope.launch {
+            onResult(ExportStatus.Exporting)
+            try {
+                val s1Subjects = scheduleDao.getActiveSubjectsWithSlotsBySemester(1).first()
+                val s2Subjects = scheduleDao.getActiveSubjectsWithSlotsBySemester(2).first()
+
+                fun filterSlots(subjects: List<com.marcoslorcar.clementime.data.SubjectWithSlots>): List<com.marcoslorcar.clementime.data.SubjectWithSlots> {
+                    return subjects.map { sws ->
+                        sws.copy(
+                            slots = sws.slots.filter { slot ->
+                                !slot.isIgnored && (
+                                    slot.entryType == EntryType.THEORY || 
+                                    slot.labGroupName == sws.subject.selectedLabGroup
+                                )
+                            }
+                        )
+                    }
+                }
+
+                val semesters = listOf(
+                    IcsExporter.SemesterExportData(filterSlots(s1Subjects), s1Start, s1End),
+                    IcsExporter.SemesterExportData(filterSlots(s2Subjects), s2Start, s2End)
+                )
+
+                val icsString = IcsExporter.generateIcsContent(semesters)
+                
+                context.contentResolver.openOutputStream(customUri)?.use { out ->
+                    out.write(icsString.toByteArray())
                 }
                 onResult(ExportStatus.Success(context.getString(R.string.export_success_local)))
             } catch (e: Exception) {

@@ -9,10 +9,13 @@ import com.marcoslorcar.clementime.data.EntryType
 import com.marcoslorcar.clementime.data.ScheduleDao
 import com.marcoslorcar.clementime.data.SettingsRepository
 import com.marcoslorcar.clementime.data.SubjectWithSlots
+import com.marcoslorcar.clementime.ui.model.ClassSlotUiModel
+import com.marcoslorcar.clementime.ui.model.toEntity
 import com.marcoslorcar.clementime.ui.navigation.ScheduleListRoute
 import com.marcoslorcar.clementime.ui.widget.ScheduleWidgetUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +25,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import javax.inject.Inject
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 data class ScheduleUiState(
     val isLoading: Boolean = true,
@@ -37,7 +39,8 @@ data class ScheduleUiState(
     val highlightSlotId: Long? = null,
     val isSemesterSwitcherVisible: Boolean = false,
     val onboardingTooltipsEnabled: Boolean = true,
-    val hasSeenOptimizerTooltip: Boolean = false
+    val hasSeenOptimizerTooltip: Boolean = false,
+    val showAutoChangeTooltip: Boolean = false
 )
 
 private data class SettingsAndHighlight(
@@ -48,7 +51,8 @@ private data class SettingsAndHighlight(
     val highlightSlotId: Long?,
     val onboardingTooltipsEnabled: Boolean,
     val hasSeenOptimizerTooltip: Boolean,
-    val selectedSemester: Int
+    val selectedSemester: Int,
+    val wasSemesterAutoChanged: Boolean
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -56,7 +60,7 @@ private data class SettingsAndHighlight(
 class ScheduleViewModel @Inject constructor(
     private val scheduleDao: ScheduleDao,
     private val settingsRepository: SettingsRepository,
-    savedStateHandle: SavedStateHandle,
+    private val savedStateHandle: SavedStateHandle,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -102,7 +106,8 @@ class ScheduleViewModel @Inject constructor(
             savedStateHandle.getStateFlow("highlightSlotId", route?.highlightSlotId),
             settingsRepository.onboardingTooltipsEnabledFlow,
             settingsRepository.hasSeenOptimizerTooltipFlow,
-            settingsRepository.currentSemesterFlow
+            settingsRepository.currentSemesterFlow,
+            settingsRepository.wasSemesterAutoChangedFlow
         ) { args ->
             SettingsAndHighlight(
                 scrollable = args[0] as Boolean,
@@ -112,7 +117,8 @@ class ScheduleViewModel @Inject constructor(
                 highlightSlotId = args[4] as Long?,
                 onboardingTooltipsEnabled = args[5] as Boolean,
                 hasSeenOptimizerTooltip = args[6] as Boolean,
-                selectedSemester = args[7] as Int
+                selectedSemester = args[7] as Int,
+                wasSemesterAutoChanged = args[8] as Boolean
             )
         }
     ) { rawSubjects, selectedTab, isSwitcherVisible, settings ->
@@ -140,7 +146,8 @@ class ScheduleViewModel @Inject constructor(
             highlightSlotId = settings.highlightSlotId,
             isSemesterSwitcherVisible = isSwitcherVisible,
             onboardingTooltipsEnabled = settings.onboardingTooltipsEnabled,
-            hasSeenOptimizerTooltip = settings.hasSeenOptimizerTooltip
+            hasSeenOptimizerTooltip = settings.hasSeenOptimizerTooltip,
+            showAutoChangeTooltip = settings.wasSemesterAutoChanged
         )
     }.stateIn(
         scope = viewModelScope,
@@ -155,11 +162,38 @@ class ScheduleViewModel @Inject constructor(
     fun changeSemester(semester: Int) {
         viewModelScope.launch {
             settingsRepository.setCurrentSemester(semester)
+            settingsRepository.setHasManuallyChangedSemester(true)
+            settingsRepository.setWasSemesterAutoChanged(false)
+        }
+    }
+
+    fun onHighlightConsumed() {
+        savedStateHandle["highlightSlotId"] = null
+        savedStateHandle["dayOfWeek"] = null
+    }
+
+    fun saveSlot(slot: ClassSlotUiModel) {
+        viewModelScope.launch {
+            val entity = slot.toEntity(slot.subjectId)
+            if (entity != null) {
+                scheduleDao.updateSlot(entity)
+                ScheduleWidgetUtils.updateWidget(context)
+            }
         }
     }
 
     fun toggleSemesterSwitcher() {
         _isSemesterSwitcherVisible.value = !_isSemesterSwitcherVisible.value
+        if (_isSemesterSwitcherVisible.value) {
+            viewModelScope.launch {
+                settingsRepository.setHasManuallyChangedSemester(true)
+                settingsRepository.setWasSemesterAutoChanged(false)
+            }
+        }
+    }
+
+    fun closeSemesterSwitcher() {
+        _isSemesterSwitcherVisible.value = false
     }
 
     fun deleteSlot(slotId: Long) {
@@ -172,6 +206,12 @@ class ScheduleViewModel @Inject constructor(
     fun markOptimizerTooltipSeen() {
         viewModelScope.launch {
             settingsRepository.setHasSeenOptimizerTooltip(true)
+        }
+    }
+
+    fun markAutoSemesterChangeTooltipSeen() {
+        viewModelScope.launch {
+            settingsRepository.setWasSemesterAutoChanged(false)
         }
     }
 

@@ -112,6 +112,9 @@
     <string name="no_schedule_data">No schedule data</string>
     <string name="no_schedule_data_subtitle">Import a schedule or add subjects to get started.</string>
     <string name="import_screen_prompt">Select subjects to import</string>
+    <string name="import_preview_tooltip_title">Subject Preview</string>
+    <string name="import_preview_tooltip_desc">Long press any subject to see how its classes fit into your current schedule.</string>
+    <string name="import_preview_header">Schedule Preview (Cumulative)</string>
 
     <!-- Import Conflict strings -->
     <string name="import_conflict_dialog_title">Schedule Conflicts</string>
@@ -197,6 +200,9 @@
     <string name="room_label">Room</string>
     <string name="professor_label">Professor</string>
     <string name="lab_group_label">Lab Group</string>
+    <string name="ignore_label">Ignore</string>
+    <string name="ignore_help_title">Ignore Conflicts</string>
+    <string name="ignore_help_desc">Checking this excludes this class from overlap checks. Use it for classes you don\'t plan on attending or don\'t care about overlapping with others.</string>
     <string name="delete_slot_label">Delete Slot</string>
     <string name="duplicate_slot_label">Duplicate Slot</string>
     <string name="show_in_schedule_label">Show in Schedule</string>
@@ -237,6 +243,8 @@
     <string name="tooltip_resolver_apply_desc">Once you find a combination you like, tap Apply to update your active schedule automatically.</string>
     <string name="tooltip_add_slot_title">Add Your First Class</string>
     <string name="tooltip_add_slot_desc">Tap here to add a class slot to this subject. You can set the time, room, and professor.</string>
+    <string name="tooltip_auto_semester_title">Semester Changed</string>
+    <string name="tooltip_auto_semester_desc">We\'ve automatically switched the semester to match your imported subjects. Tap here to change it back manually.</string>
 
     <!-- Onboarding Screen -->
     <string name="onboarding_welcome_title">Welcome to ClemenTime</string>
@@ -266,6 +274,7 @@
     <string name="online_repository_url_setting_title">Online Repository URL</string>
     <string name="github_repository_url_description">Enter the GitHub raw content base URL for online schedules:</string>
     <string name="github_repository_url_dialog_title">GitHub Repository URL</string>
+    <string name="reset_to_default">Reset to Default</string>
     <string name="version_label">Version %1$s</string>
     <string name="about_app_description">ClemenTime for Android</string>
     <string name="privacy_policy_label">Privacy Policy</string>
@@ -280,4 +289,52 @@
     <string name="semester_1_label">1st Semester</string>
     <string name="semester_2_label">2nd Semester</string>
     <string name="semester_label">Semester</string>
+
+    <string name="export_ics_setting_title">Export to Calendar (.ics)</string>
+    <string name="export_ics_desc">Add schedule to Google Calendar, Outlook, or Apple Calendar</string>
+    <string name="export_ics_range_picker_title">Select Semester Duration</string>
+    <string name="export_ics_s1_picker_title">Select 1st Semester Duration</string>
+    <string name="export_ics_s2_picker_title">Select 2nd Semester Duration</string>
+    <string name="export_ics_step_course_start">Course Start Date</string>
+    <string name="export_ics_step_s2_start">2nd Semester Start Date</string>
+    <string name="export_ics_step_course_end">Course End Date</string>
+    <string name="export_ics_step_indicator">Step %1$d of 3</string>
+
+    <string name="delete_slot_confirmation">Are you sure you want to delete this class slot?</string>
+    <string name="room_prefix">Room: %1$s</string>
+    <string name="group_prefix">Group: %1$s</string>
+    <string name="prof_prefix">Prof: %1$s</string>
+    <string name="room_prefix_simple">Room %1$s</string>
+    <string name="color_red">Red: %1$d</string>
+    <string name="color_green">Green: %1$d</string>
+    <string name="color_blue">Blue: %1$d</string>
+    <string name="start_time_empty">Start: —:—</string>
+    <string name="end_time_empty">End: —:—</string>
+    <string name="action_undo">UNDO</string>
+    <string name="lang_en">English</string>
+    <string name="lang_es">Español</string>
+    <string name="bullet_point"> • %1$s</string>
+    <string name="bullet_point_with_ampersand"> • %1$s &amp; %2$s</string>
+
+    <string name="content_description_back">Back</string>
+    <string name="content_description_open_navigation">Open Navigation</string>
+    <string name="content_description_close_search">Close search</string>
+    <string name="content_description_search_schedules">Search schedules</string>
+    <string name="content_description_search_subjects">Search subjects</string>
+    <string name="content_description_clear_search">Clear search</string>
+    <string name="content_description_warning">Warning</string>
+    <string name="content_description_delete_custom_file">Delete custom file</string>
+    <string name="content_description_no_conflicts">No conflicts</string>
+    <string name="content_description_conflicts_detected">Conflicts detected</string>
+    <string name="content_description_help">Help</string>
+    <string name="content_description_toggle_active">Toggle active</string>
+    <string name="content_description_delete_selected">Delete selected</string>
+    <string name="content_description_tools">Tools</string>
+    <string name="content_description_toggle_semester_switcher">Toggle Semester Switcher</string>
+    <string name="content_description_nuke_all">Nuke all</string>
+    <string name="content_description_close_actions">Close actions</string>
+    <string name="content_description_open_actions">Open actions</string>
+    <string name="content_description_add_subject">Add Subject</string>
+    <string name="content_description_undo">Undo</string>
+    <string name="content_description_ignored">Ignored</string>
 </resources>

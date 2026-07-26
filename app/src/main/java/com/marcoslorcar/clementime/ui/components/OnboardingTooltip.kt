@@ -11,6 +11,7 @@ import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -23,6 +24,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupPositionProvider
 import com.marcoslorcar.clementime.R
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,6 +36,7 @@ fun OnboardingTooltip(
     content: @Composable () -> Unit
 ) {
     val tooltipState = rememberTooltipState(isPersistent = true)
+    val scope = rememberCoroutineScope()
     val density = LocalDensity.current
     val positionProvider = remember(density) {
         OnboardingTooltipPositionProvider(padding = 16.dp, density = density)
@@ -55,7 +58,10 @@ fun OnboardingTooltip(
                 title = title?.let { { Text(text = it, fontWeight = FontWeight.Bold) } },
                 action = {
                     TextButton(
-                        onClick = onDismiss
+                        onClick = {
+                            scope.launch { tooltipState.dismiss() }
+                            onDismiss()
+                        }
                     ) {
                         Text(
                             text = stringResource(R.string.onboarding_got_it),

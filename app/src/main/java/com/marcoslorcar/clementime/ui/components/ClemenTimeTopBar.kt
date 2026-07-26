@@ -13,7 +13,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import com.marcoslorcar.clementime.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,11 +38,11 @@ fun ClemenTimeTopBar(
         navigationIcon = {
             if (onNavigateBack != null) {
                 IconButton(onClick = onNavigateBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.content_description_back))
                 }
             } else if (onMenuClick != null) {
                 IconButton(onClick = onMenuClick) {
-                    Icon(Icons.Default.Menu, contentDescription = "Open Navigation")
+                    Icon(Icons.Default.Menu, contentDescription = stringResource(R.string.content_description_open_navigation))
                 }
             }
         },

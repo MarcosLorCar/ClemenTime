@@ -22,7 +22,9 @@ data class ConflictDetail(
     val selectedSubjects: List<SelectedSubject>,
     val theoryOverlaps: List<TheoryOverlap>,
     val hasLabCombinationWithZeroOverlaps: Boolean,
-    val theoryOverlappingSlots: List<Pair<Subject, ClassSlot>> = emptyList()
+    val theoryOverlappingSlots: List<Pair<Subject, ClassSlot>> = emptyList(),
+    val labOverlappingSlots: List<Pair<Subject, ClassSlot>> = emptyList(),
+    val labOverlappingSlotIds: Set<Long> = emptySet()
 )
 
 data class TheoryOverlap(

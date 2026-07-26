@@ -6,11 +6,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import com.marcoslorcar.clementime.data.AttachedFileItem
-import com.marcoslorcar.clementime.data.ClassSlot
 import com.marcoslorcar.clementime.data.EntryType
 import com.marcoslorcar.clementime.data.ScheduleDao
 import com.marcoslorcar.clementime.data.SettingsRepository
 import com.marcoslorcar.clementime.data.Subject
+import com.marcoslorcar.clementime.ui.model.ClassSlotUiModel
+import com.marcoslorcar.clementime.ui.model.toEntity
+import com.marcoslorcar.clementime.ui.model.toUiModel
 import com.marcoslorcar.clementime.ui.navigation.AddEditSubjectRoute
 import com.marcoslorcar.clementime.ui.widget.ScheduleWidgetUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,49 +28,6 @@ import java.time.Duration
 import java.time.LocalTime
 import javax.inject.Inject
 
-data class ClassSlotUiModel(
-    val id: Long = 0L,
-    val subjectId: Long = 0L,
-    val dayOfWeek: DayOfWeek = DayOfWeek.MONDAY,
-    val startTime: LocalTime? = null,
-    val endTime: LocalTime? = null,
-    val classroom: String? = null,
-    val labGroupName: String? = null,
-    val entryType: EntryType = EntryType.THEORY,
-    val professor: String? = null,
-    val isIgnored: Boolean = false
-)
-
-fun ClassSlot.toUiModel(): ClassSlotUiModel = ClassSlotUiModel(
-    id = id,
-    subjectId = subjectId,
-    dayOfWeek = dayOfWeek,
-    startTime = startTime,
-    endTime = endTime,
-    classroom = classroom,
-    labGroupName = labGroupName,
-    entryType = entryType,
-    professor = professor,
-    isIgnored = isIgnored
-)
-
-fun ClassSlotUiModel.toEntity(subjectId: Long): ClassSlot? {
-    val start = startTime ?: return null
-    val end = endTime ?: return null
-    return ClassSlot(
-        id = id,
-        subjectId = subjectId,
-        dayOfWeek = dayOfWeek,
-        startTime = start,
-        endTime = end,
-        classroom = classroom,
-        labGroupName = labGroupName,
-        entryType = entryType,
-        professor = professor,
-        isIgnored = isIgnored
-    )
-}
-
 data class AddEditSubjectUiState(
     val subjectId: Long? = null,
     val highlightSlotId: Long? = null,
@@ -79,6 +38,7 @@ data class AddEditSubjectUiState(
     val name: String = "",
     val color: Int = Subject.PRESET_COLORS.first(),
     val semester: Int = 1,
+    val isActive: Boolean = true,
     val defaultDurationMinutes: Int = 90,
     val notesText: String = "",
     val attachedFiles: List<AttachedFileItem> = emptyList(),
@@ -144,6 +104,7 @@ class AddEditSubjectViewModel @Inject constructor(
                         name = subject.name,
                         color = subject.color,
                         semester = subject.semester,
+                        isActive = subject.isActive,
                         defaultDurationMinutes = subject.defaultDurationMinutes ?: 90,
                         notesText = subject.notes,
                         attachedFiles = subject.attachedFiles,
@@ -196,6 +157,10 @@ class AddEditSubjectViewModel @Inject constructor(
         _uiState.update { it.copy(semester = semester) }
     }
 
+    fun updateActive(isActive: Boolean) {
+        _uiState.update { it.copy(isActive = isActive) }
+    }
+
     fun updateDefaultDuration(durationMinutes: Int) {
         if (durationMinutes > 0) {
             _uiState.update { it.copy(defaultDurationMinutes = durationMinutes) }
@@ -204,12 +169,6 @@ class AddEditSubjectViewModel @Inject constructor(
 
     fun updateNotesText(notes: String) {
         _uiState.update { it.copy(notesText = notes) }
-    }
-
-    fun markAddSlotTooltipSeen() {
-        viewModelScope.launch {
-            settingsRepository.setHasSeenAddSlotTooltip(true)
-        }
     }
 
     fun addAttachedFile(name: String, fileType: String, uriString: String) {
@@ -339,7 +298,7 @@ class AddEditSubjectViewModel @Inject constructor(
                 name = state.name.trim(),
                 color = state.color,
                 courseGroup = existingSubject?.courseGroup,
-                isActive = existingSubject?.isActive ?: true,
+                isActive = state.isActive,
                 defaultDurationMinutes = state.defaultDurationMinutes,
                 notes = state.notesText,
                 attachedFiles = state.attachedFiles,

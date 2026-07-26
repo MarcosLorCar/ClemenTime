@@ -115,6 +115,9 @@
     <string name="no_schedule_data">Sin datos de horario</string>
     <string name="no_schedule_data_subtitle">Importa un horario o añade asignaturas para empezar.</string>
     <string name="import_screen_prompt">Selecciona qué asignaturas importar</string>
+    <string name="import_preview_tooltip_title">Vista Previa</string>
+    <string name="import_preview_tooltip_desc">Mantén pulsada cualquier asignatura para ver cómo encajan sus clases en tu horario actual.</string>
+    <string name="import_preview_header">Vista Previa (Acumulativa)</string>
 
     <!-- Import Conflict strings -->
     <string name="import_conflict_dialog_title">Conflictos de Horario</string>
@@ -202,6 +205,9 @@
     <string name="room_label">Aula</string>
     <string name="professor_label">Profesor</string>
     <string name="lab_group_label">Grupo de Lab</string>
+    <string name="ignore_label">Ignorar</string>
+    <string name="ignore_help_title">Ignorar Conflictos</string>
+    <string name="ignore_help_desc">Marcar esta opción excluye esta clase de los cálculos de solapamientos. Úsala para clases a las que no planees asistir o no te importe que coincidan con otras.</string>
     <string name="delete_slot_label">Eliminar Horario</string>
     <string name="duplicate_slot_label">Duplicar Horario</string>
     <string name="show_in_schedule_label">Mostrar en Horario</string>
@@ -240,6 +246,8 @@
     <string name="tooltip_resolver_apply_desc">Cuando encuentres una combinación que te guste, pulsa Aplicar para actualizar tu horario activo automáticamente.</string>
     <string name="tooltip_add_slot_title">Añade Tu Primera Clase</string>
     <string name="tooltip_add_slot_desc">Pulsa aquí para añadir un horario a esta asignatura. Podrás configurar la hora, el aula y el profesor.</string>
+    <string name="tooltip_auto_semester_title">Cuatrimestre Cambiado</string>
+    <string name="tooltip_auto_semester_desc">Hemos cambiado automáticamente el cuatrimestre para que coincida con tus asignaturas importadas. Pulsa aquí para cambiarlo manualmente.</string>
 
     <!-- Onboarding Screen -->
     <string name="onboarding_welcome_title">Bienvenido a ClemenTime</string>
@@ -269,6 +277,7 @@
     <string name="online_repository_url_setting_title">URL del repositorio en línea</string>
     <string name="github_repository_url_description">Introduce la URL base de contenido raw de GitHub para horarios en línea:</string>
     <string name="github_repository_url_dialog_title">URL del repositorio de GitHub</string>
+    <string name="reset_to_default">Restablecer por defecto</string>
     <string name="version_label">Versión %1$s</string>
     <string name="about_app_description">ClemenTime para Android</string>
     <string name="privacy_policy_label">Política de Privacidad</string>
@@ -282,5 +291,53 @@
     <string name="semester_1_label">1º Cuatrimestre</string>
     <string name="semester_2_label">2º Cuatrimestre</string>
     <string name="semester_label">Cuatrimestre</string>
+
+    <string name="export_ics_setting_title">Exportar al Calendario (.ics)</string>
+    <string name="export_ics_desc">Añadir horario a Google Calendar, Outlook o Apple Calendar</string>
+    <string name="export_ics_range_picker_title">Seleccionar Duración del Semestre</string>
+    <string name="export_ics_s1_picker_title">Duración del 1er Cuatrimestre</string>
+    <string name="export_ics_s2_picker_title">Duración del 2º Cuatrimestre</string>
+    <string name="export_ics_step_course_start">Inicio de Curso</string>
+    <string name="export_ics_step_s2_start">Inicio 2º Cuatrimestre</string>
+    <string name="export_ics_step_course_end">Fin de Curso</string>
+    <string name="export_ics_step_indicator">Paso %1$d de 3</string>
+
+    <string name="delete_slot_confirmation">¿Estás seguro de que deseas eliminar este horario de clase?</string>
+    <string name="room_prefix">Aula: %1$s</string>
+    <string name="group_prefix">Grupo: %1$s</string>
+    <string name="prof_prefix">Prof: %1$s</string>
+    <string name="room_prefix_simple">Aula %1$s</string>
+    <string name="color_red">Rojo: %1$d</string>
+    <string name="color_green">Verde: %1$d</string>
+    <string name="color_blue">Azul: %1$d</string>
+    <string name="start_time_empty">Inicio: —:—</string>
+    <string name="end_time_empty">Fin: —:—</string>
+    <string name="action_undo">DESHACER</string>
+    <string name="lang_en">English</string>
+    <string name="lang_es">Español</string>
+    <string name="bullet_point"> • %1$s</string>
+    <string name="bullet_point_with_ampersand"> • %1$s y %2$s</string>
+
+    <string name="content_description_back">Atrás</string>
+    <string name="content_description_open_navigation">Abrir Navegación</string>
+    <string name="content_description_close_search">Cerrar búsqueda</string>
+    <string name="content_description_search_schedules">Buscar horarios</string>
+    <string name="content_description_search_subjects">Buscar asignaturas</string>
+    <string name="content_description_clear_search">Limpiar búsqueda</string>
+    <string name="content_description_warning">Advertencia</string>
+    <string name="content_description_delete_custom_file">Eliminar archivo personalizado</string>
+    <string name="content_description_no_conflicts">Sin conflictos</string>
+    <string name="content_description_conflicts_detected">Conflictos detectados</string>
+    <string name="content_description_help">Ayuda</string>
+    <string name="content_description_toggle_active">Cambiar estado activo</string>
+    <string name="content_description_delete_selected">Eliminar seleccionadas</string>
+    <string name="content_description_tools">Herramientas</string>
+    <string name="content_description_toggle_semester_switcher">Cambiar selector de cuatrimestre</string>
+    <string name="content_description_nuke_all">Borrar todo</string>
+    <string name="content_description_close_actions">Cerrar acciones</string>
+    <string name="content_description_open_actions">Abrir acciones</string>
+    <string name="content_description_add_subject">Añadir Asignatura</string>
+    <string name="content_description_undo">Deshacer</string>
+    <string name="content_description_ignored">Ignorado</string>
 </resources>
 
