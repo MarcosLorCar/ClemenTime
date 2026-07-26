@@ -78,7 +78,7 @@ fun ScheduleMiniPreview(
 
             BoxWithConstraints(modifier = Modifier
                 .fillMaxWidth()
-                .height(120.dp)
+                .weight(1f)
                 .drawBehind {
                     val strokeColor = Color.LightGray.copy(alpha = 0.25f)
                     val strokeWidth = 0.75.dp.toPx()
@@ -153,8 +153,7 @@ fun ScheduleMiniPreview(
                                                 val itemTopOffset = clusterHeight * (Duration.between(cluster.startTime, slot.startTime).toMinutes().toFloat() / durationMinutes)
 
                                                 val verticalGap = 0.5.dp
-                                                val baseAlpha = if (slot.isIgnored) 0.3f else 1f
-                                                val backgroundAlpha = if (isLab) baseAlpha * 0.65f else baseAlpha
+                                                val backgroundAlpha = if (slot.isIgnored) 0.3f else 1f
 
                                                 Box(
                                                     modifier = Modifier
@@ -170,24 +169,19 @@ fun ScheduleMiniPreview(
                                                                     BorderStroke(1.dp, MaterialTheme.colorScheme.error),
                                                                     RoundedCornerShape(1.dp)
                                                                 )
-                                                            } else if (isLab) {
-                                                                Modifier.border(
-                                                                    BorderStroke(0.5.dp, subject.uiColor.copy(alpha = 0.8f)),
-                                                                    RoundedCornerShape(1.dp)
-                                                                )
                                                             } else Modifier
                                                         ),
                                                     contentAlignment = Alignment.Center
                                                 ) {
                                                     if (clusterHeight > 10.dp) {
                                                         Text(
-                                                            text = if (isLab) "L:${subject.code}" else subject.code,
+                                                            text = if (isLab) "${subject.code}-L" else subject.code,
                                                             style = MaterialTheme.typography.labelSmall.copy(
                                                                 fontSize = 5.sp,
                                                                 lineHeight = 5.sp,
                                                                 fontWeight = FontWeight.Black
                                                             ),
-                                                            color = if (isLab) subject.uiColor else Color.White,
+                                                            color = Color.White,
                                                             textAlign = TextAlign.Center,
                                                             maxLines = 1
                                                         )

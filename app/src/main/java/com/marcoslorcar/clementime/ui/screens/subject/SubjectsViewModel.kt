@@ -29,9 +29,11 @@ data class SubjectsUiState(
     val isInSelectionMode: Boolean
         get() = isSelectionModeForced || selectedSubjectIds.isNotEmpty()
 
+    val subjectsInSelectedSemester: List<SubjectWithSlots>
+        get() = subjects.filter { it.subject.semester == selectedSemester }
+
     val filteredSubjects: List<SubjectWithSlots>
-        get() = subjects
-            .filter { it.subject.semester == selectedSemester }
+        get() = subjectsInSelectedSemester
             .filter {
                 searchQuery.isBlank() ||
                 it.subject.name.contains(searchQuery, ignoreCase = true) ||

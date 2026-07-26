@@ -61,7 +61,7 @@ android {
                 "proguard-rules.pro"
             )
             ndk {
-                debugSymbolLevel = "SYMBOL_TABLE"
+                debugSymbolLevel = "FULL"
             }
             // Use release signing if env vars are present, fallback to debug signing for local testing
             signingConfig = if (System.getenv("KEYSTORE_PASSWORD") != null) {

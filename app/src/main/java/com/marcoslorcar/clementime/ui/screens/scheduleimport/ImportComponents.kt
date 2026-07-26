@@ -776,7 +776,7 @@ fun ImportPreviewDialog(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(350.dp)
+                    .height(280.dp)
             ) {
                 ScheduleMiniPreview(
                     modifier = Modifier.fillMaxSize(),

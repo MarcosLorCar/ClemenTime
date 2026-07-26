@@ -112,8 +112,8 @@ fun SubjectsContent(
     
     val subjectsListState = rememberLazyListState()
 
-    val availableFilters = remember(uiState.subjects) {
-        val groups = uiState.subjects.mapNotNull { it.subject.courseGroup }.filter { it.isNotBlank() }.distinct().sorted()
+    val availableFilters = remember(uiState.subjectsInSelectedSemester) {
+        val groups = uiState.subjectsInSelectedSemester.mapNotNull { it.subject.courseGroup }.filter { it.isNotBlank() }.distinct().sorted()
         val filters = mutableListOf<String>()
         filters.addAll(groups)
         filters.add("Inactive")
@@ -362,7 +362,7 @@ fun SubjectsContent(
                             textAlign = TextAlign.Center,
                             modifier = Modifier.padding(32.dp)
                         )
-                    } else if (uiState.subjects.isEmpty()) {
+                    } else if (uiState.subjectsInSelectedSemester.isEmpty()) {
                         EmptyStateContent(
                             title = stringResource(R.string.no_subjects_title),
                             subtitle = stringResource(R.string.no_subjects_subtitle),
