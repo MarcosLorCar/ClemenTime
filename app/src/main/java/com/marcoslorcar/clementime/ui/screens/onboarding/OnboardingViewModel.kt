@@ -72,9 +72,7 @@ class OnboardingViewModel @Inject constructor(
         AppCompatDelegate.setApplicationLocales(localeList)
     }
 
-    fun completeOnboarding() {
-        viewModelScope.launch {
-            settingsRepository.setOnboardingCompleted(true)
-        }
+    suspend fun completeOnboarding() {
+        settingsRepository.setOnboardingCompleted(true)
     }
 }

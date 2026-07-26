@@ -104,8 +104,10 @@ fun OnboardingScreen(
                             pagerState.animateScrollToPage(pagerState.currentPage + 1)
                         }
                     } else {
-                        viewModel.completeOnboarding()
-                        onFinish()
+                        coroutineScope.launch {
+                            viewModel.completeOnboarding()
+                            onFinish()
+                        }
                     }
                 },
                 onBack = {
@@ -114,8 +116,10 @@ fun OnboardingScreen(
                     }
                 },
                 onSkip = {
-                    viewModel.completeOnboarding()
-                    onFinish()
+                    coroutineScope.launch {
+                        viewModel.completeOnboarding()
+                        onFinish()
+                    }
                 }
             )
         }

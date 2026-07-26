@@ -366,7 +366,8 @@ fun ScheduleContent(
                 title = stringResource(R.string.no_schedule_data),
                 subtitle = stringResource(R.string.no_schedule_data_subtitle),
                 onImportClick = onNavigateToImport,
-                onAddManuallyClick = { onClickSubject(0L, null) }
+                onAddManuallyClick = { onClickSubject(0L, null) },
+                modifier = Modifier.padding(paddingValues)
             )
         } else {
             HorizontalPager(

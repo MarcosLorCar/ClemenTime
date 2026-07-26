@@ -350,8 +350,7 @@ fun SubjectsContent(
             if (filteredSubjects.isEmpty()) {
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
+                        .fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     if (uiState.searchQuery.isNotEmpty() || selectedGroupFilter != null) {

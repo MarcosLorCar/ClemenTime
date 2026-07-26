@@ -25,6 +25,7 @@ import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -91,7 +92,9 @@ class MainActivity : AppCompatActivity() {
                     color = MaterialTheme.colorScheme.background,
                 ) {
                     if (isOnboardingCompleted != null) {
-                        ClemenTimeApp(isOnboardingCompleted!!)
+                        key(isOnboardingCompleted) {
+                            ClemenTimeApp(isOnboardingCompleted!!)
+                        }
                     }
                 }
             }

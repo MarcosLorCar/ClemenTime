@@ -1,0 +1,38 @@
+name: Update Schedules Index
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'schedules/dist/**'
+      - '!schedules/dist/schedules_index.json'
+
+jobs:
+  update-index:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Generate Index
+        run: python3 schedules/script/generate_index.py
+
+      - name: Commit and Push Changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add schedules/dist/schedules_index.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: update schedules index [skip ci]"
+            git push
+          fi
