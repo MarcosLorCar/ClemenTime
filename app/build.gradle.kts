@@ -60,6 +60,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            ndk {
+                debugSymbolLevel = "SYMBOL_TABLE"
+            }
             // Use release signing if env vars are present, fallback to debug signing for local testing
             signingConfig = if (System.getenv("KEYSTORE_PASSWORD") != null) {
                 signingConfigs.getByName("release")

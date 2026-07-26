@@ -10,7 +10,7 @@ ClemenTime is a schedules and tasks planner app for Android, built with Jetpack 
 - **Home Screen Widget**: A reactive widget showing current and upcoming events at a glance.
 - **Local Cache**: Download schedule files from online repositories for offline use.
 - **Conflict Resolution**: Highlight and resolve overlapping schedule slots upon import.
-- **Data Portability**: Backup and restore data using import/export features.
+- **Data Portability**: Backup and restore data using import/export features, including calendar export to ICS format.
 - **Privacy First**: Fully offline operation with no account registration or analytics tracking.
 
 ## Development
