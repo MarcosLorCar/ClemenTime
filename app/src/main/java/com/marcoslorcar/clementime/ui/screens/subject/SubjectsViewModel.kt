@@ -50,8 +50,10 @@ sealed interface SubjectsUiEvent {
     object EnterSelectionMode : SubjectsUiEvent
     data class ToggleGroupSelection(val subjectIds: List<Long>) : SubjectsUiEvent
     object DisableSelectedSubjects : SubjectsUiEvent
+    object ToggleSelectedSubjectsActive : SubjectsUiEvent
     data class SemesterChanged(val semester: Int) : SubjectsUiEvent
     object ToggleSemesterSwitcher : SubjectsUiEvent
+    object CloseSemesterSwitcher : SubjectsUiEvent
     object ToggleTools : SubjectsUiEvent
 
 }
@@ -162,13 +164,38 @@ class SubjectsViewModel @Inject constructor(
                     _uiState.update { it.copy(selectedSubjectIds = emptySet(), isSelectionModeForced = false) }
                 }
             }
+            is SubjectsUiEvent.ToggleSelectedSubjectsActive -> {
+                viewModelScope.launch {
+                    val selectedIds = _uiState.value.selectedSubjectIds.toList()
+                    val selectedSubjects = _uiState.value.subjects.filter { selectedIds.contains(it.subject.id) }
+                    val allActive = selectedSubjects.all { it.subject.isActive }
+                    
+                    scheduleDao.updateSubjectsActiveStatus(selectedIds, !allActive)
+                    ScheduleWidgetUtils.updateWidget(context)
+                    _uiState.update { it.copy(selectedSubjectIds = emptySet(), isSelectionModeForced = false) }
+                }
+            }
             is SubjectsUiEvent.SemesterChanged -> {
                 viewModelScope.launch {
                     settingsRepository.setCurrentSemester(event.semester)
+                    settingsRepository.setHasManuallyChangedSemester(true)
+                    settingsRepository.setWasSemesterAutoChanged(false)
                 }
             }
             is SubjectsUiEvent.ToggleSemesterSwitcher -> {
-                _uiState.update { it.copy(isSemesterSwitcherVisible = !it.isSemesterSwitcherVisible) }
+                _uiState.update { state ->
+                    val nextVisible = !state.isSemesterSwitcherVisible
+                    if (nextVisible) {
+                        viewModelScope.launch {
+                            settingsRepository.setHasManuallyChangedSemester(true)
+                            settingsRepository.setWasSemesterAutoChanged(false)
+                        }
+                    }
+                    state.copy(isSemesterSwitcherVisible = nextVisible)
+                }
+            }
+            is SubjectsUiEvent.CloseSemesterSwitcher -> {
+                _uiState.update { it.copy(isSemesterSwitcherVisible = false) }
             }
             is SubjectsUiEvent.ToggleTools -> {
                 _uiState.update { state ->

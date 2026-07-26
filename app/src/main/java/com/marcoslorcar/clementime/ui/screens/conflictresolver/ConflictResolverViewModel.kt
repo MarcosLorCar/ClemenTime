@@ -12,6 +12,7 @@ import com.marcoslorcar.clementime.utils.ScheduleSolution
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -21,7 +22,6 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 enum class PreferenceMode {
     FREE_DAYS,
@@ -72,12 +72,14 @@ class ConflictResolverViewModel @Inject constructor(
             val sortedSolutions = when (prefMode) {
                 PreferenceMode.FREE_DAYS -> mappedSolutions.sortedWith(
                     compareByDescending<ScheduleSolution> { it.isCurrent }
+                        .thenBy { it.overlappingSlotIds.size }
                         .thenBy { it.overlapsCount }
                         .thenByDescending { it.freeDaysCount }
                         .thenByDescending { it.compactnessScore }
                 )
                 PreferenceMode.COMPACTNESS -> mappedSolutions.sortedWith(
                     compareByDescending<ScheduleSolution> { it.isCurrent }
+                        .thenBy { it.overlappingSlotIds.size }
                         .thenBy { it.overlapsCount }
                         .thenByDescending { it.compactnessScore }
                         .thenByDescending { it.freeDaysCount }

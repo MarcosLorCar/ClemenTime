@@ -1,5 +1,8 @@
 package com.marcoslorcar.clementime.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -14,12 +17,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.EventBusy
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -41,6 +48,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -52,6 +60,7 @@ import com.marcoslorcar.clementime.data.cardColor
 import com.marcoslorcar.clementime.utils.DAY_END_TIME
 import com.marcoslorcar.clementime.utils.DAY_START_TIME
 import com.marcoslorcar.clementime.utils.TimelineCluster
+import com.marcoslorcar.clementime.utils.groupSlotsIntoClusters
 import kotlinx.coroutines.delay
 import java.time.DayOfWeek
 import java.time.Duration
@@ -249,22 +258,32 @@ fun ScheduleTimeline(
                         .padding(horizontal = 4.dp),
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    cluster.items.forEach { (subject, slot) ->
+                    cluster.columns.forEach { columnItems ->
                         Box(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight()
                         ) {
-                            ClassSlotRow(
-                                modifier = Modifier.fillMaxHeight(),
-                                subject = subject,
-                                slot = slot,
-                                highContrastEnabled = highContrastEnabled,
-                                isHighlighted = slot.id == highlightSlotId,
-                                onClickSubject = { onClickSubject(subject.id, slot.id) },
-                                onLongClickSubject = { onLongClickSubject(subject.id, slot.id) },
-                                isSingle = cluster.items.size == 1
-                            )
+                            columnItems.forEach { (subject, slot) ->
+                                val itemStartMinutes = Duration.between(cluster.startTime, slot.startTime).toMinutes().toInt()
+                                val itemDurationMinutes = Duration.between(slot.startTime, slot.endTime).toMinutes().toInt()
+
+                                val itemTopOffsetPx = (minuteHeightPx * itemStartMinutes).roundToInt()
+                                val itemHeightPx = (minuteHeightPx * itemDurationMinutes).roundToInt() - gapPx * 2
+
+                                ClassSlotRow(
+                                    modifier = Modifier
+                                        .offset { IntOffset(x = 0, y = itemTopOffsetPx) }
+                                        .height(with(density) { itemHeightPx.toDp() }),
+                                    subject = subject,
+                                    slot = slot,
+                                    highContrastEnabled = highContrastEnabled,
+                                    isHighlighted = slot.id == highlightSlotId,
+                                    onClickSubject = { onClickSubject(subject.id, slot.id) },
+                                    onLongClickSubject = { onLongClickSubject(subject.id, slot.id) },
+                                    isSingle = cluster.items.size == 1
+                                )
+                            }
                         }
                     }
                 }
@@ -333,7 +352,17 @@ fun ClassSlotRow(
     onLongClickSubject: () -> Unit = {},
     isSingle: Boolean = true
 ) {
-    val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        visible = true
+    }
+
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(animationSpec = tween(500)),
+        modifier = modifier
+    ) {
+        val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
     
     val baseColor = subject.cardColor
     val cardBgColor = if (highContrastEnabled) {
@@ -367,10 +396,10 @@ fun ClassSlotRow(
     }
 
     Card(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
             .fillMaxHeight()
-            .alpha(if (slot.isIgnored) 0.6f else 1f)
+            .alpha(if (slot.isIgnored) 0.45f else 1f)
             .combinedClickable(
                 onClick = onClickSubject,
                 onLongClick = onLongClickSubject
@@ -385,69 +414,84 @@ fun ClassSlotRow(
             color = cardBgColor,
             contentColor = contentColor
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp),
-                verticalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+            Box(modifier = Modifier.fillMaxSize()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    verticalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    if (slot.entryType == EntryType.LAB) {
-                        Surface(
-                            color = contentColor.copy(alpha = 0.15f),
-                            shape = MaterialTheme.shapes.extraSmall,
-                        ) {
-                            Text(
-                                text = "LAB",
-                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = contentColor
-                            )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        if (slot.entryType == EntryType.LAB) {
+                            Surface(
+                                color = contentColor.copy(alpha = 0.15f),
+                                shape = MaterialTheme.shapes.extraSmall,
+                            ) {
+                                Text(
+                                    text = "LAB",
+                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = contentColor
+                                )
+                            }
                         }
+
+                        Text(
+                            text = subject.name,
+                            modifier = Modifier.weight(1f),
+                            style = titleStyle,
+                            overflow = TextOverflow.Ellipsis,
+                            maxLines = 3,
+                            color = contentColor
+                        )
                     }
 
-                    Text(
-                        text = subject.name,
-                        modifier = Modifier.weight(1f),
-                        style = titleStyle,
-                        overflow = TextOverflow.Ellipsis,
-                        maxLines = 3,
-                        color = contentColor
-                    )
+                    Column {
+                        val codeAndGroup = listOfNotNull(
+                            subject.code,
+                            slot.labGroupName?.takeIf { it.isNotBlank() }
+                        ).joinToString(" • ")
+
+                        val timeRange = listOfNotNull(
+                            "${slot.startTime.format(timeFormatter)} - ${slot.endTime.format(timeFormatter)}",
+                            slot.classroom
+                        ).joinToString(" • ")
+
+                        Text(
+                            text = codeAndGroup,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = contentColor
+                        )
+
+                        Text(
+                            text = timeRange,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = secondaryContentColor,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
 
-                Column {
-                    val codeAndGroup = listOfNotNull(
-                        subject.code,
-                        slot.labGroupName?.takeIf { it.isNotBlank() }
-                    ).joinToString(" • ")
-
-                    val timeRange = listOfNotNull(
-                        "${slot.startTime.format(timeFormatter)} - ${slot.endTime.format(timeFormatter)}",
-                        slot.classroom
-                    ).joinToString(" • ")
-
-                    Text(
-                        text = codeAndGroup,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = contentColor
-                    )
-
-                    Text(
-                        text = timeRange,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = secondaryContentColor,
-                        softWrap = false,
-                        overflow = TextOverflow.Ellipsis
+                if (slot.isIgnored) {
+                    Icon(
+                        imageVector = Icons.Default.EventBusy,
+                        contentDescription = stringResource(R.string.content_description_ignored),
+                        tint = contentColor.copy(alpha = 0.6f),
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                            .size(18.dp)
                     )
                 }
             }
         }
     }
+}
 }
 
 @Composable
@@ -496,5 +540,39 @@ private fun HourGridBackground(
             }
             currentTime = currentTime.plusMinutes(30)
         }
+    }
+}
+
+@Preview(showBackground = true, widthDp = 400, heightDp = 700)
+@Composable
+fun ScheduleTimelineClusterPreview() {
+    val subject = Subject(
+        id = 1,
+        code = "PROG",
+        name = "Programming",
+        color = 0xFF2196F3.toInt(),
+        isActive = true
+    )
+
+    val slots = listOf(
+        // Slot 1: 09:00 - 10:30 (Theory)
+        Pair(subject, ClassSlot(id = 1, subjectId = 1, dayOfWeek = DayOfWeek.MONDAY, startTime = LocalTime.of(9, 0), endTime = LocalTime.of(10, 30))),
+        // Slot 2: 09:00 - 10:30 (Lab)
+        Pair(subject, ClassSlot(id = 2, subjectId = 1, dayOfWeek = DayOfWeek.MONDAY, startTime = LocalTime.of(9, 0), endTime = LocalTime.of(10, 30), entryType = EntryType.LAB, labGroupName = "L1")),
+        // Slot 3: 10:30 - 12:00 (Theory)
+        Pair(subject, ClassSlot(id = 3, subjectId = 1, dayOfWeek = DayOfWeek.MONDAY, startTime = LocalTime.of(10, 30), endTime = LocalTime.of(12, 0))),
+        // Slot 4: 10:30 - 12:00 (Lab)
+        Pair(subject, ClassSlot(id = 4, subjectId = 1, dayOfWeek = DayOfWeek.MONDAY, startTime = LocalTime.of(10, 30), endTime = LocalTime.of(12, 0), entryType = EntryType.LAB, labGroupName = "L2")),
+        // Slot 5: 09:00 - 12:00 (Overlapping all others)
+        Pair(subject, ClassSlot(id = 5, subjectId = 1, dayOfWeek = DayOfWeek.MONDAY, startTime = LocalTime.of(9, 0), endTime = LocalTime.of(12, 0), classroom = "Main Hall"))
+    )
+
+    val clusters = groupSlotsIntoClusters(slots)
+
+    MaterialTheme {
+        ScheduleTimeline(
+            clusters = clusters,
+            onClickSubject = { _, _ -> }
+        )
     }
 }

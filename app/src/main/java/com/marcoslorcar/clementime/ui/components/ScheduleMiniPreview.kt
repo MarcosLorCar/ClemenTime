@@ -32,6 +32,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.marcoslorcar.clementime.data.ClassSlot
+import com.marcoslorcar.clementime.data.EntryType
 import com.marcoslorcar.clementime.data.Subject
 import com.marcoslorcar.clementime.data.uiColor
 import com.marcoslorcar.clementime.utils.getNarrowLabel
@@ -138,44 +139,60 @@ fun ScheduleMiniPreview(
                                         .offset(y = topOffset),
                                     horizontalArrangement = Arrangement.spacedBy(0.5.dp)
                                 ) {
-                                    cluster.items.forEach { (subject, slot) ->
-                                        val isOverlapping = overlappingSlotIds.contains(slot.id)
-                                        val itemDuration = Duration.between(slot.startTime, slot.endTime).toMinutes().toInt().coerceAtLeast(1)
-                                        val itemHeight = clusterHeight * (itemDuration.toFloat() / durationMinutes)
-                                        val itemTopOffset = clusterHeight * (Duration.between(cluster.startTime, slot.startTime).toMinutes().toFloat() / durationMinutes)
-
-                                        val verticalGap = 0.5.dp
-
+                                    cluster.columns.forEach { columnItems ->
                                         Box(
                                             modifier = Modifier
                                                 .weight(1f)
-                                                .height((itemHeight - verticalGap * 2).coerceAtLeast(1.dp))
-                                                .offset(y = itemTopOffset + verticalGap)
-                                                .padding(horizontal = 0.2.dp)
-                                                .clip(RoundedCornerShape(1.dp))
-                                                .background(subject.uiColor.copy(alpha = if (slot.isIgnored) 0.3f else 1f))
-                                                .then(
-                                                    if (isOverlapping) {
-                                                        Modifier.border(
-                                                            BorderStroke(1.dp, MaterialTheme.colorScheme.error),
-                                                            RoundedCornerShape(1.dp)
-                                                        )
-                                                    } else Modifier
-                                                ),
-                                            contentAlignment = Alignment.Center
+                                                .fillMaxHeight()
                                         ) {
-                                            if (clusterHeight > 10.dp) {
-                                                Text(
-                                                    text = subject.code,
-                                                    style = MaterialTheme.typography.labelSmall.copy(
-                                                        fontSize = 5.sp,
-                                                        lineHeight = 5.sp,
-                                                        fontWeight = FontWeight.Black
-                                                    ),
-                                                    color = Color.White,
-                                                    textAlign = TextAlign.Center,
-                                                    maxLines = 1
-                                                )
+                                            columnItems.forEach { (subject, slot) ->
+                                                val isOverlapping = overlappingSlotIds.contains(slot.id)
+                                                val isLab = slot.entryType == EntryType.LAB
+                                                val itemDuration = Duration.between(slot.startTime, slot.endTime).toMinutes().toInt().coerceAtLeast(1)
+                                                val itemHeight = clusterHeight * (itemDuration.toFloat() / durationMinutes)
+                                                val itemTopOffset = clusterHeight * (Duration.between(cluster.startTime, slot.startTime).toMinutes().toFloat() / durationMinutes)
+
+                                                val verticalGap = 0.5.dp
+                                                val baseAlpha = if (slot.isIgnored) 0.3f else 1f
+                                                val backgroundAlpha = if (isLab) baseAlpha * 0.65f else baseAlpha
+
+                                                Box(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .height((itemHeight - verticalGap * 2).coerceAtLeast(1.dp))
+                                                        .offset(y = itemTopOffset + verticalGap)
+                                                        .padding(horizontal = 0.2.dp)
+                                                        .clip(RoundedCornerShape(1.dp))
+                                                        .background(subject.uiColor.copy(alpha = backgroundAlpha))
+                                                        .then(
+                                                            if (isOverlapping) {
+                                                                Modifier.border(
+                                                                    BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+                                                                    RoundedCornerShape(1.dp)
+                                                                )
+                                                            } else if (isLab) {
+                                                                Modifier.border(
+                                                                    BorderStroke(0.5.dp, subject.uiColor.copy(alpha = 0.8f)),
+                                                                    RoundedCornerShape(1.dp)
+                                                                )
+                                                            } else Modifier
+                                                        ),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    if (clusterHeight > 10.dp) {
+                                                        Text(
+                                                            text = if (isLab) "L:${subject.code}" else subject.code,
+                                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                                fontSize = 5.sp,
+                                                                lineHeight = 5.sp,
+                                                                fontWeight = FontWeight.Black
+                                                            ),
+                                                            color = if (isLab) subject.uiColor else Color.White,
+                                                            textAlign = TextAlign.Center,
+                                                            maxLines = 1
+                                                        )
+                                                    }
+                                                }
                                             }
                                         }
                                     }

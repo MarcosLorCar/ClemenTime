@@ -4,12 +4,16 @@ import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.LibraryBooks
-import androidx.compose.material.icons.automirrored.outlined.LibraryBooks
+import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.outlined.School
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -25,13 +29,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.toRoute
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.marcoslorcar.clementime.data.SettingsRepository
 import com.marcoslorcar.clementime.ui.components.PageInfoFilled
 import com.marcoslorcar.clementime.ui.components.PageInfoOutlined
@@ -44,11 +49,11 @@ import com.marcoslorcar.clementime.ui.navigation.MoreRoute
 import com.marcoslorcar.clementime.ui.navigation.OnboardingRoute
 import com.marcoslorcar.clementime.ui.navigation.ScheduleListRoute
 import com.marcoslorcar.clementime.ui.navigation.SubjectsRoute
-import com.marcoslorcar.clementime.ui.screens.schedule.ScheduleScreen
-import com.marcoslorcar.clementime.ui.screens.settings.MoreScreen
 import com.marcoslorcar.clementime.ui.screens.conflictresolver.ConflictResolverScreen
 import com.marcoslorcar.clementime.ui.screens.onboarding.OnboardingScreen
+import com.marcoslorcar.clementime.ui.screens.schedule.ScheduleScreen
 import com.marcoslorcar.clementime.ui.screens.scheduleimport.ImportScreen
+import com.marcoslorcar.clementime.ui.screens.settings.MoreScreen
 import com.marcoslorcar.clementime.ui.screens.subject.AddEditSubjectScreen
 import com.marcoslorcar.clementime.ui.screens.subject.SubjectsScreen
 import com.marcoslorcar.clementime.ui.theme.ClemenTimeTheme
@@ -101,6 +106,18 @@ private data class NavigationSuiteItem(
     val routeClass: KClass<*>
 )
 
+private val TabRoutes = listOf(
+    ScheduleListRoute::class,
+    SubjectsRoute::class,
+    MoreRoute::class
+)
+
+private fun getTabIndex(entry: NavBackStackEntry?): Int {
+    return entry?.destination?.let { dest ->
+        TabRoutes.indexOfFirst { dest.hasRoute(it) }
+    } ?: -1
+}
+
 @Composable
 fun ClemenTimeApp(isOnboardingCompleted: Boolean) {
     val navController = rememberNavController()
@@ -129,8 +146,8 @@ fun ClemenTimeApp(isOnboardingCompleted: Boolean) {
         ),
         NavigationSuiteItem(
             label = stringResource(R.string.subjects_screen_title),
-            selectedIcon = Icons.AutoMirrored.Filled.LibraryBooks,
-            unselectedIcon = Icons.AutoMirrored.Outlined.LibraryBooks,
+            selectedIcon = Icons.Filled.School,
+            unselectedIcon = Icons.Outlined.School,
             routeClass = SubjectsRoute::class
         ),
         NavigationSuiteItem(
@@ -165,15 +182,10 @@ fun ClemenTimeApp(isOnboardingCompleted: Boolean) {
                             }
                         },
                         icon = {
-                            AnimatedContent(
-                                targetState = isSelected,
-                                label = "navIcon"
-                            ) { selected ->
-                                Icon(
-                                    imageVector = if (selected) item.selectedIcon else item.unselectedIcon,
-                                    contentDescription = null
-                                )
-                            }
+                            Icon(
+                                imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
+                                contentDescription = null
+                            )
                         },
                         label = { Text(item.label) }
                     )
@@ -184,7 +196,63 @@ fun ClemenTimeApp(isOnboardingCompleted: Boolean) {
         NavHost(
             navController = navController,
             startDestination = if (isOnboardingCompleted) ScheduleListRoute() else OnboardingRoute,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
+            enterTransition = {
+                val fromIndex = getTabIndex(initialState)
+                val toIndex = getTabIndex(targetState)
+                
+                if (fromIndex != -1 && toIndex != -1 && fromIndex != toIndex) {
+                    if (toIndex > fromIndex) {
+                        fadeIn(tween(300)) + slideInHorizontally(tween(300)) { it / 3 }
+                    } else {
+                        fadeIn(tween(300)) + slideInHorizontally(tween(300)) { -it / 3 }
+                    }
+                } else {
+                    fadeIn(tween(300)) + slideInHorizontally(tween(300)) { it / 3 }
+                }
+            },
+            exitTransition = {
+                val fromIndex = getTabIndex(initialState)
+                val toIndex = getTabIndex(targetState)
+                
+                if (fromIndex != -1 && toIndex != -1 && fromIndex != toIndex) {
+                    if (toIndex > fromIndex) {
+                        fadeOut(tween(300)) + slideOutHorizontally(tween(300)) { -it / 3 }
+                    } else {
+                        fadeOut(tween(300)) + slideOutHorizontally(tween(300)) { it / 3 }
+                    }
+                } else {
+                    fadeOut(tween(300)) + slideOutHorizontally(tween(300)) { -it / 3 }
+                }
+            },
+            popEnterTransition = {
+                val fromIndex = getTabIndex(initialState)
+                val toIndex = getTabIndex(targetState)
+                
+                if (fromIndex != -1 && toIndex != -1 && fromIndex != toIndex) {
+                    if (toIndex > fromIndex) {
+                        fadeIn(tween(300)) + slideInHorizontally(tween(300)) { it / 3 }
+                    } else {
+                        fadeIn(tween(300)) + slideInHorizontally(tween(300)) { -it / 3 }
+                    }
+                } else {
+                    fadeIn(tween(300)) + slideInHorizontally(tween(300)) { -it / 3 }
+                }
+            },
+            popExitTransition = {
+                val fromIndex = getTabIndex(initialState)
+                val toIndex = getTabIndex(targetState)
+                
+                if (fromIndex != -1 && toIndex != -1 && fromIndex != toIndex) {
+                    if (toIndex > fromIndex) {
+                        fadeOut(tween(300)) + slideOutHorizontally(tween(300)) { -it / 3 }
+                    } else {
+                        fadeOut(tween(300)) + slideOutHorizontally(tween(300)) { it / 3 }
+                    }
+                } else {
+                    fadeOut(tween(300)) + slideOutHorizontally(tween(300)) { it / 3 }
+                }
+            }
         ) {
             composable<OnboardingRoute> {
                 OnboardingScreen(
@@ -215,7 +283,7 @@ fun ClemenTimeApp(isOnboardingCompleted: Boolean) {
 
             composable<ConflictResolverRoute> {
                 ConflictResolverScreen(
-                    onNavigateBack = { navController.popBackStack() }
+                    onBack = { navController.popBackStack() }
                 )
             }
 
@@ -223,6 +291,14 @@ fun ClemenTimeApp(isOnboardingCompleted: Boolean) {
                 ImportScreen(
                     onNavigateBack = {
                         navController.popBackStack()
+                    },
+                    onImportSuccess = {
+                        navController.navigate(SubjectsRoute) {
+                            popUpTo(ScheduleListRoute()) {
+                                inclusive = false
+                            }
+                            launchSingleTop = true
+                        }
                     }
                 )
             }
@@ -237,7 +313,7 @@ fun ClemenTimeApp(isOnboardingCompleted: Boolean) {
 
             composable<SubjectsRoute> {
                 SubjectsScreen(
-                    onNavigateToAddEditSubject = { subjectId ->
+                    onNavigateToSubject = { subjectId: Long? ->
                         navController.navigate(AddEditSubjectRoute(subjectId))
                     },
                     onNavigateToSchedule = { dayOfWeek, slotId ->
@@ -256,8 +332,8 @@ fun ClemenTimeApp(isOnboardingCompleted: Boolean) {
 
             composable<AddEditSubjectRoute> {
                 AddEditSubjectScreen(
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateToSchedule = { dayOfWeek, slotId ->
+                    onBack = { navController.popBackStack() },
+                    onNavigateToSchedule = { dayOfWeek: java.time.DayOfWeek, slotId: Long? ->
                         navController.navigate(ScheduleListRoute(dayOfWeek = dayOfWeek.name, highlightSlotId = slotId)) {
                             popUpTo(navController.graph.findStartDestination().id) {
                                 saveState = false

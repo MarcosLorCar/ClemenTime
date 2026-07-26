@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.EventBusy
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
@@ -41,7 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.marcoslorcar.clementime.R
 import com.marcoslorcar.clementime.data.EntryType
-import com.marcoslorcar.clementime.ui.screens.subject.ClassSlotUiModel
+import com.marcoslorcar.clementime.ui.model.ClassSlotUiModel
 import com.marcoslorcar.clementime.utils.shortName
 import java.time.DayOfWeek
 import java.time.format.DateTimeFormatter
@@ -72,12 +73,14 @@ fun ClassSlotItemCard(
         } else {
             BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
         },
-        colors = if (isHighlighted) {
-            CardDefaults.cardColors(
+        colors = when {
+            isHighlighted -> CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
             )
-        } else {
-            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            slot.isIgnored -> CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            )
+            else -> CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         },
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -117,17 +120,18 @@ fun ClassSlotItemCard(
 
                         if (slot.isIgnored) {
                             Spacer(Modifier.width(8.dp))
-                            Surface(
-                                color = MaterialTheme.colorScheme.surfaceVariant,
-                                shape = RoundedCornerShape(4.dp)
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.conflict_resolver_ignored_badge),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                            Icon(
+                                imageVector = Icons.Default.EventBusy,
+                                contentDescription = stringResource(R.string.conflict_resolver_ignored_badge),
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                text = stringResource(R.string.conflict_resolver_ignored_badge),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
                         }
                     }
 
@@ -143,7 +147,7 @@ fun ClassSlotItemCard(
                         color = MaterialTheme.colorScheme.onSurface
                     )
 
-                    val roomAndProf = listOfNotNull(slot.classroom?.let { "Room $it" }, slot.professor).joinToString(" • ")
+                    val roomAndProf = listOfNotNull(slot.classroom?.let { stringResource(R.string.room_prefix_simple, it) }, slot.professor).joinToString(" • ")
                     if (roomAndProf.isNotBlank()) {
                         Text(
                             text = roomAndProf,
@@ -193,7 +197,7 @@ fun ClassSlotItemCard(
         AlertDialog(
             onDismissRequest = { showDeleteConfirmation = false },
             title = { Text(stringResource(R.string.delete_slot_label)) },
-            text = { Text("Are you sure you want to delete this class slot?") },
+            text = { Text(stringResource(R.string.delete_slot_confirmation)) },
             confirmButton = {
                 TextButton(
                     onClick = {

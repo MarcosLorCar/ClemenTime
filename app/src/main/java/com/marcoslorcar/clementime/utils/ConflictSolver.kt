@@ -102,9 +102,10 @@ object ConflictSolver {
             evaluateSolution(labSelections, totalSlots)
         }
 
-        // 4. Rank solutions: ALWAYS overlapsCount ascending first
+        // 4. Rank solutions: ALWAYS total overlaps (prioritizing fixing labs) ascending first
         return solutions.sortedWith(
-            compareBy<ScheduleSolution> { it.overlapsCount }
+            compareBy<ScheduleSolution> { it.overlappingSlotIds.size }
+                .thenBy { it.overlapsCount }
                 .thenByDescending { it.freeDaysCount }
                 .thenByDescending { it.compactnessScore }
         )
@@ -135,7 +136,9 @@ object ConflictSolver {
                     val s1 = pair1.second
                     val s2 = pair2.second
                     
-                    if (!s1.isIgnored && !s2.isIgnored && s1.startTime < s2.endTime && s2.startTime < s1.endTime) {
+                    if (!s1.isIgnored && !s2.isIgnored && 
+                        pair1.first.semester == pair2.first.semester &&
+                        s1.startTime < s2.endTime && s2.startTime < s1.endTime) {
                         val isTheoryTheory = s1.entryType == EntryType.THEORY && s2.entryType == EntryType.THEORY
                         if (isTheoryTheory) {
                             theoryOverlapsCount++

@@ -8,6 +8,12 @@ import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,10 +33,40 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.InvertColors
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Policy
+import androidx.compose.material.icons.filled.SaveAlt
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Tag
+import androidx.compose.material.icons.filled.ViewCompact
+import androidx.compose.material.icons.filled.Widgets
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -49,12 +85,16 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import com.marcoslorcar.clementime.BuildConfig
 import com.marcoslorcar.clementime.R
+import com.marcoslorcar.clementime.data.SettingsRepository
 import com.marcoslorcar.clementime.ui.components.AppSkeletonPreview
 import com.marcoslorcar.clementime.ui.components.ClemenTimeTopBar
 import com.marcoslorcar.clementime.ui.theme.ClemenTimeTheme
 import com.marcoslorcar.clementime.ui.theme.getThemeColorScheme
 import com.marcoslorcar.clementime.ui.widget.ScheduleWidgetReceiver
 import com.marcoslorcar.clementime.utils.fadingEdges
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 
 @Composable
 fun MoreScreen(
@@ -82,11 +122,13 @@ fun MoreScreen(
         onGithubRepoUrlChanged = viewModel::setGithubRepoBaseUrl,
         onToggleOnboardingTooltips = viewModel::setOnboardingTooltipsEnabled,
         onExportData = viewModel::exportData,
+        onExportIcs = viewModel::exportFullYearToIcs,
         onImportClick = onNavigateToImport,
         onMenuClick = onMenuClick
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MoreContent(
     uiState: MoreUiState,
@@ -100,12 +142,18 @@ fun MoreContent(
     onGithubRepoUrlChanged: (String) -> Unit,
     onToggleOnboardingTooltips: (Boolean) -> Unit,
     onExportData: (android.content.Context, Uri, (ExportStatus) -> Unit) -> Unit,
+    onExportIcs: (android.content.Context, Uri, LocalDate, LocalDate, LocalDate, LocalDate, (ExportStatus) -> Unit) -> Unit,
     onImportClick: () -> Unit,
     onMenuClick: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     var showRepoUrlDialog by remember { mutableStateOf(false) }
     var tempRepoUrl by remember { mutableStateOf(uiState.githubRepoBaseUrl) }
+
+    var icsExportStep by remember { mutableIntStateOf(0) } // 0: Idle, 1: Course Start, 2: S2 Start, 3: Course End
+    var courseStartDate by remember { mutableStateOf<LocalDate?>(null) }
+    var s2StartDate by remember { mutableStateOf<LocalDate?>(null) }
+    var courseEndDate by remember { mutableStateOf<LocalDate?>(null) }
 
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
@@ -117,6 +165,101 @@ fun MoreContent(
                     is ExportStatus.Error -> Toast.makeText(context, status.error, Toast.LENGTH_SHORT).show()
                     else -> {}
                 }
+            }
+        }
+    }
+
+    val icsExportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/calendar")
+    ) { uri ->
+        if (uri != null && (courseStartDate != null) && (s2StartDate != null) && (courseEndDate != null)) {
+            val s1EndDate = s2StartDate!!.minusDays(1)
+            onExportIcs(context, uri, courseStartDate!!, s1EndDate, s2StartDate!!, courseEndDate!!) { status ->
+                when (status) {
+                    is ExportStatus.Success -> Toast.makeText(context, status.message, Toast.LENGTH_SHORT).show()
+                    is ExportStatus.Error -> Toast.makeText(context, status.error, Toast.LENGTH_SHORT).show()
+                    else -> {}
+                }
+            }
+        }
+    }
+
+    if (icsExportStep > 0) {
+        key(icsExportStep) {
+            val datePickerState = rememberDatePickerState()
+            DatePickerDialog(
+                onDismissRequest = { icsExportStep = 0 },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            val millis = datePickerState.selectedDateMillis
+                            if (millis != null) {
+                                val date = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
+
+                                when (icsExportStep) {
+                                    1 -> {
+                                        courseStartDate = date
+                                        icsExportStep = 2
+                                    }
+                                    2 -> {
+                                        s2StartDate = date
+                                        icsExportStep = 3
+                                    }
+                                    3 -> {
+                                        courseEndDate = date
+                                        icsExportStep = 0
+                                        icsExportLauncher.launch("ClemenTime_Full_Schedule.ics")
+                                    }
+                                }
+                            }
+                        },
+                        enabled = datePickerState.selectedDateMillis != null
+                    ) {
+                        Text(if (icsExportStep < 3) stringResource(R.string.onboarding_next) else stringResource(R.string.save_button))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { icsExportStep = 0 }) {
+                        Text(stringResource(R.string.cancel))
+                    }
+                }
+            ) {
+                DatePicker(
+                    state = datePickerState,
+                    title = {
+                        AnimatedContent(
+                            targetState = icsExportStep,
+                            transitionSpec = {
+                                (fadeIn() + slideInVertically { it }).togetherWith(fadeOut() + slideOutVertically { -it })
+                            },
+                            label = "icsStepAnimation"
+                        ) { step ->
+                            Column(
+                                modifier = Modifier
+                                    .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 8.dp)
+                                    .fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.export_ics_step_indicator, step).uppercase(),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                val titleRes = when (step) {
+                                    1 -> R.string.export_ics_step_course_start
+                                    2 -> R.string.export_ics_step_s2_start
+                                    else -> R.string.export_ics_step_course_end
+                                }
+                                Text(
+                                    text = stringResource(titleRes),
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    fontWeight = FontWeight.Black
+                                )
+                            }
+                        }
+                    },
+                    showModeToggle = false
+                )
             }
         }
     }
@@ -135,6 +278,12 @@ fun MoreContent(
                         singleLine = true,
                         label = { Text(stringResource(R.string.online_repository_url_setting_title)) }
                     )
+                    TextButton(
+                        onClick = { tempRepoUrl = SettingsRepository.DEFAULT_GITHUB_REPO_BASE_URL },
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Text(stringResource(R.string.reset_to_default))
+                    }
                 }
             },
             confirmButton = {
@@ -304,7 +453,7 @@ fun MoreContent(
 
                 // Language Setting
                 var showLangMenu by remember { mutableStateOf(false) }
-                val selectedLangLabel = if (uiState.appLanguage == "es") "Español" else "English"
+                val selectedLangLabel = if (uiState.appLanguage == "es") stringResource(R.string.lang_es) else stringResource(R.string.lang_en)
 
                 SettingItem(
                     icon = Icons.Default.Language,
@@ -322,8 +471,8 @@ fun MoreContent(
                                 expanded = showLangMenu,
                                 onDismissRequest = { showLangMenu = false }
                             ) {
-                                DropdownMenuItem(text = { Text("English") }, onClick = { onLanguageChanged("en"); showLangMenu = false })
-                                DropdownMenuItem(text = { Text("Español") }, onClick = { onLanguageChanged("es"); showLangMenu = false })
+                                DropdownMenuItem(text = { Text(stringResource(R.string.lang_en)) }, onClick = { onLanguageChanged("en"); showLangMenu = false })
+                                DropdownMenuItem(text = { Text(stringResource(R.string.lang_es)) }, onClick = { onLanguageChanged("es"); showLangMenu = false })
                             }
                         }
                     }
@@ -410,6 +559,13 @@ fun MoreContent(
                     title = stringResource(R.string.export_backup_setting_title),
                     subtitle = stringResource(R.string.export_backup_desc),
                     onClick = { exportLauncher.launch("ClemenTime_Backup_${System.currentTimeMillis()}.json") }
+                )
+
+                SettingItem(
+                    icon = Icons.Default.CalendarMonth,
+                    title = stringResource(R.string.export_ics_setting_title),
+                    subtitle = stringResource(R.string.export_ics_desc),
+                    onClick = { icsExportStep = 1 }
                 )
 
                 SettingItem(
@@ -546,6 +702,7 @@ fun MoreScreenPreview() {
             onGithubRepoUrlChanged = {},
             onToggleOnboardingTooltips = {},
             onExportData = { _, _, _ -> },
+            onExportIcs = { _, _, _, _, _, _, _ -> },
             onImportClick = {}
         )
     }

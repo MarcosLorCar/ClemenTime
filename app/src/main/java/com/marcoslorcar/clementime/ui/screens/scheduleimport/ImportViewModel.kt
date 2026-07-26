@@ -5,9 +5,11 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.marcoslorcar.clementime.data.EntryType
+import com.marcoslorcar.clementime.data.SettingsRepository
 import com.marcoslorcar.clementime.data.Subject
 import com.marcoslorcar.clementime.data.SubjectWithSlots
 import com.marcoslorcar.clementime.data.importing.model.ImportFile
+import com.marcoslorcar.clementime.data.importing.model.ImportSourceType
 import com.marcoslorcar.clementime.data.importing.model.JsonSubject
 import com.marcoslorcar.clementime.data.importing.model.ScheduleJsonSchema
 import com.marcoslorcar.clementime.data.importing.model.SelectedSubject
@@ -24,14 +26,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
-
-import com.marcoslorcar.clementime.data.SettingsRepository
-import com.marcoslorcar.clementime.data.importing.model.ImportSourceType
-import kotlinx.coroutines.flow.first
 
 sealed interface ImportUiState {
     object LoadingLibrary : ImportUiState
@@ -49,7 +48,8 @@ sealed interface ImportUiState {
         val conflictStatus: ConflictStatus = ConflictStatus.None,
         val existingSubjects: List<SubjectWithSlots> = emptyList(),
         val onboardingEnabled: Boolean = true,
-        val hasSeenConflictTooltip: Boolean = false
+        val hasSeenConflictTooltip: Boolean = false,
+        val hasSeenPreviewTooltip: Boolean = false
     ) : ImportUiState
     object Importing : ImportUiState
     object Success : ImportUiState
@@ -71,11 +71,16 @@ class ImportViewModel @Inject constructor(
         viewModelScope.launch {
             kotlinx.coroutines.flow.combine(
                 settingsRepository.onboardingTooltipsEnabledFlow,
-                settingsRepository.hasSeenImportConflictTooltipFlow
-            ) { enabled, seen -> enabled to seen }.collect { (enabled, seen) ->
+                settingsRepository.hasSeenImportConflictTooltipFlow,
+                settingsRepository.hasSeenImportPreviewTooltipFlow
+            ) { enabled, seenConflict, seenPreview -> Triple(enabled, seenConflict, seenPreview) }.collect { (enabled, seenConflict, seenPreview) ->
                 val current = _uiState.value
                 if (current is ImportUiState.Selection) {
-                    _uiState.value = current.copy(onboardingEnabled = enabled, hasSeenConflictTooltip = seen)
+                    _uiState.value = current.copy(
+                        onboardingEnabled = enabled, 
+                        hasSeenConflictTooltip = seenConflict,
+                        hasSeenPreviewTooltip = seenPreview
+                    )
                 }
             }
         }
@@ -89,7 +94,7 @@ class ImportViewModel @Inject constructor(
                 val rawBaseUrl = try {
                     settingsRepository.githubRepoBaseUrlFlow.first()
                 } catch (_: Exception) {
-                    "https://raw.githubusercontent.com/MarcosLorCar/ClemenTime/master/schedules/dist/"
+                    SettingsRepository.DEFAULT_GITHUB_REPO_BASE_URL
                 }
 
                 val baseUrl = repository.normalizeGitHubUrl(rawBaseUrl)
@@ -194,6 +199,7 @@ class ImportViewModel @Inject constructor(
                 val existing = repository.getExistingActiveSubjects(schemaResult.getOrNull()?.semester ?: 1)
                 val onboardingEnabled = settingsRepository.onboardingTooltipsEnabledFlow.first()
                 val hasSeenConflictTooltip = settingsRepository.hasSeenImportConflictTooltipFlow.first()
+                val hasSeenPreviewTooltip = settingsRepository.hasSeenImportPreviewTooltipFlow.first()
                 
                 schemaResult.fold(
                     onSuccess = { schema ->
@@ -204,7 +210,8 @@ class ImportViewModel @Inject constructor(
                             conflictStatus = ConflictStatus.None,
                             existingSubjects = existing,
                             onboardingEnabled = onboardingEnabled,
-                            hasSeenConflictTooltip = hasSeenConflictTooltip
+                            hasSeenConflictTooltip = hasSeenConflictTooltip,
+                            hasSeenPreviewTooltip = hasSeenPreviewTooltip
                         )
                     },
                     onFailure = { error ->
@@ -408,7 +415,9 @@ class ImportViewModel @Inject constructor(
                     selectedSubjects = selected.toList(),
                     theoryOverlaps = theoryOverlaps,
                     hasLabCombinationWithZeroOverlaps = !hasLabConflict,
-                    theoryOverlappingSlots = theoryOverlappingSlots
+                    theoryOverlappingSlots = theoryOverlappingSlots,
+                    labOverlappingSlots = if (hasLabConflict) optimal.totalSlots else emptyList(),
+                    labOverlappingSlotIds = if (hasLabConflict) optimal.overlappingSlotIds else emptySet()
                 )
             )
         }
@@ -421,6 +430,17 @@ class ImportViewModel @Inject constructor(
                 _uiState.value = ImportUiState.Importing
                 try {
                     repository.importSubjects(currentState.selectedSubjects.toList())
+                    // Set the current semester from the schema if available
+                    currentState.schema.semester?.let { importedSemester ->
+                        val currentSemester = settingsRepository.currentSemesterFlow.first()
+                        if (importedSemester != currentSemester) {
+                            settingsRepository.setCurrentSemester(importedSemester)
+                            val hasManuallyChanged = settingsRepository.hasManuallyChangedSemesterFlow.first()
+                            if (!hasManuallyChanged) {
+                                settingsRepository.setWasSemesterAutoChanged(true)
+                            }
+                        }
+                    }
                     settingsRepository.setHasSeenAddSlotTooltip(true)
                     ScheduleWidgetUtils.updateWidget(context)
                     _uiState.value = ImportUiState.Success
@@ -443,6 +463,12 @@ class ImportViewModel @Inject constructor(
     fun markConflictTooltipSeen() {
         viewModelScope.launch {
             settingsRepository.setHasSeenImportConflictTooltip(true)
+        }
+    }
+
+    fun markPreviewTooltipSeen() {
+        viewModelScope.launch {
+            settingsRepository.setHasSeenImportPreviewTooltip(true)
         }
     }
 
