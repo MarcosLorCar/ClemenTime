@@ -25,20 +25,26 @@ DAY_MAP = {
     "viernes": "FRIDAY"
 }
 
-# Regex to match professor abbreviations (e.g. MariaL.Lopez, Jesus.Serrano, PeterS.Normile)
-PROF_REGEX = r'\b([A-Za-zÁÉÍÓÚáéíóúñ][A-Za-z0-9áéíóúñÁÉÍÓÚ]*(?:\.[A-Za-zÁÉÍÓÚáéíóúñ][A-Za-z0-9áéíóúñÁÉÍÓÚ]*)+)\b'
+# Regex to match professor abbreviations (e.g. MariaL.Lopez, Jesus.Serrano) or role-based identifiers (e.g. AsociadoMAT)
+PROF_REGEX = r'\b((?:Asociado|Sustituto|Sustitulo|AyudanteDr|Profesor|Coord|Ayuda|Ayudante)[A-Za-z0-9áéíóúñÁÉÍÓÚ\-\.]*)\b|\b([A-Za-zÁÉÍÓÚáéíóúñ][A-Za-z0-9áéíóúñÁÉÍÓÚ]*(?:\.[A-Za-zÁÉÍÓÚáéíóúñ][A-Za-z0-9áéíóúñÁÉÍÓÚ]*)+)\b'
 
 def clean_group_name(yr: str, grp_raw: str) -> str:
     """Normalizes raw group header text into clean group name."""
+    if yr == 'Máster':
+        return grp_raw.strip() or "A"
+
     grp_raw = re.sub(r'^[1234]º\s*', '', grp_raw)
+
+    # Remove degree program names from group identifier if not the primary name
     for s in ['Ciudad Real', 'Esc. Superior de Informatica', 'Esc. Superior de Informática', 'Bilingüe', 'MUFPS', 'ESI']:
         grp_raw = grp_raw.replace(s, '')
+
     grp_raw = grp_raw.strip()
 
     if yr not in ['3º', '4º'] and not grp_raw.startswith('Optativas'):
         if grp_raw:
             grp_raw = grp_raw.split()[0]
-    elif yr in ['3º', '4º']:
+    elif yr in ['3º', '4º', 'Máster']:
         if 'Computac' in grp_raw or ' CO' in grp_raw or grp_raw == 'CO':
             grp_raw = 'Computación'
         elif 'Computador' in grp_raw or ' IC' in grp_raw or grp_raw == 'IC':
@@ -177,11 +183,16 @@ class ScheduleParser:
         for line in lines:
             line_str = line.strip()
             
-            # Detect standalone Year / Group headers (e.g. "1º A", "3º CO", "3º Computación Ciudad Real")
-            header_match = re.match(r'^(1º|2º|3º|4º)\s+([A-Za-z0-9ÁÉÍÓÚáéíóúñ\.\s]+)$', line_str)
+            # Detect standalone Year / Group headers (e.g. "1º A", "3º CO", "Máster Profesorado")
+            header_match = re.match(r'^(1º|2º|3º|4º|Máster|Universidad|Universida|UnivMay)\b\s*(.*)$', line_str)
             if header_match and not line_str.startswith('|'):
                 flush_table()
                 yr = header_match.group(1)
+                if yr in ['Universidad', 'Universida', 'UnivMay']:
+                    current_year = None
+                    current_group = None
+                    continue
+
                 grp_full = header_match.group(2).strip()
                 current_year = yr
                 current_group = clean_group_name(yr, grp_full)
@@ -199,7 +210,7 @@ class ScheduleParser:
 
     def _process_table(self, table_lines: List[str], year: Optional[str], group: Optional[str],
                        global_matters_dict: Dict[str, Dict[str, Any]], years_list: List[Dict[str, Any]]):
-        if len(table_lines) < 2:
+        if len(table_lines) < 2 or year is None:
             return
 
         header_idx = None
@@ -210,13 +221,17 @@ class ScheduleParser:
             cols = [c.strip() for c in tline.split('|')[1:-1]]
             text_combined = " ".join(cols)
             
-            # Check for embedded year/group header (e.g. "| 2º C | 2º C | ... |" or "| 3º A | 3º A Bilingüe Lunes | ... |")
-            hdr_match = re.search(r'\b([1234]º)\s+([A-Za-z0-9ÁÉÍÓÚáéíóúñ\.\s]+)', text_combined)
+            # Check for embedded year/group header (e.g. "| 2º C | 2º C | ... |" or "| Máster | Máster | ... |")
+            hdr_match = re.search(r'\b([1234]º|Máster|Universidad|Universida)\s+([A-Za-z0-9ÁÉÍÓÚáéíóúñ\.\s]+)', text_combined)
             valid_days = [c for c in cols if any(dk in c.lower() for dk in DAY_MAP)]
 
             if hdr_match:
                 year = hdr_match.group(1)
-                group = clean_group_name(year, hdr_match.group(2))
+                if year in ['Universidad', 'Universida']:
+                    year = None
+                    group = None
+                else:
+                    group = clean_group_name(year, hdr_match.group(2))
 
             if valid_days and len(valid_days) >= 3:
                 header_idx = idx
@@ -291,7 +306,7 @@ class ScheduleParser:
                     room_key = self._find_classroom_key(cell_text)
                     classroom = self.mapper.get_classroom_name(room_key) if room_key else None
                     prof_match = re.search(PROF_REGEX, cell_text)
-                    prof_abbrev = prof_match.group(1) if prof_match else None
+                    prof_abbrev = (prof_match.group(1) or prof_match.group(2)) if prof_match else None
 
                     if classroom or prof_abbrev:
                         cont_entry = {
@@ -407,7 +422,8 @@ class ScheduleParser:
                         "Charles", "Babbage", "Alan", "Turing", "Edsger", "Dijkstra", "Dennis",
                         "Ritchie", "Bill", "Gates", "Claude", "Shannon", "ESI", "Esc", "Superior",
                         "Informatica", "Informática", "Ciudad", "Real", "George", "Boole", "Bab",
-                        "Jesus", "JoseL", "LD1", "LD2", "LD3", "LD4", "MUFPS", "Universidad", "Xavier"
+                        "Jesus", "JoseL", "LD1", "LD2", "LD3", "LD4", "MUFPS", "Universidad", "Xavier",
+                        "Asociado", "Sustituto", "Sustitulo", "AyudanteDr", "Profesor", "Coord", "Ayudante"
                     ]
                     if cand not in stop_list:
                         code_match = cand
@@ -424,7 +440,7 @@ class ScheduleParser:
             classroom = self.mapper.get_classroom_name(room_key) if room_key else None
 
             prof_match = re.search(PROF_REGEX, chunk)
-            prof_abbrev = prof_match.group(1) if prof_match else None
+            prof_abbrev = (prof_match.group(1) or prof_match.group(2)) if prof_match else None
 
             entries.append({
                 "code": code,
@@ -523,6 +539,8 @@ class ScheduleParser:
             final_slots.extend(merged)
 
         for s in final_slots:
+            if not s['year']:
+                continue
             code = s['code']
             prof_name = self.mapper.get_professor_name(s['professor'])
             matter_name = self.mapper.get_matter_name(code)

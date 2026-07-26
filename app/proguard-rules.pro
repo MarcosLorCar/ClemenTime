@@ -14,14 +14,20 @@
 -keep,allowobfuscation,allowshrinking @dagger.hilt.InstallIn class *
 -keep @dagger.hilt.android.lifecycle.HiltViewModel class *
 
-# --- Kotlin Serialization ---
+# --- Kotlin Serialization (Global & Permissive) ---
 -keepattributes *Annotation*, EnclosingMethod, InnerClasses, Signature
--keepclassmembers class com.marcoslorcar.clementime.data.** {
+-keepclassmembers class * {
     *** Companion;
 }
--keepclasseswithmembers class com.marcoslorcar.clementime.data.** {
+-keepclasseswithmembers class * {
     kotlinx.serialization.KSerializer serializer(...);
 }
+-keep class *$$serializer { *; }
+
+# --- Jetpack Navigation Type-Safe Routes ---
+# Keep all classes in the navigation package to prevent obfuscation of route names
+-keep class com.marcoslorcar.clementime.ui.navigation.** { *; }
+-keep interface com.marcoslorcar.clementime.ui.navigation.** { *; }
 
 # --- Glance ---
 # Keep the widget and its receiver to allow the system to instantiate them

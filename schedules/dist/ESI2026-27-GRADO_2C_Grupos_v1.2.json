@@ -465,7 +465,7 @@
                     "classroom": "LD2-Dennis Ritchie",
                     "groupName": "Lab-B1",
                     "entryType": "LAB",
-                    "professor": null
+                    "professor": "Ayudante"
                   }
                 ],
                 "Lab-B2": [
@@ -476,7 +476,7 @@
                     "classroom": "A2.2-Grace Murray",
                     "groupName": "Lab-B2",
                     "entryType": "LAB",
-                    "professor": null
+                    "professor": "Ayudante"
                   }
                 ]
               },
@@ -565,7 +565,7 @@
                     "classroom": "A2.2-Grace Murray",
                     "groupName": "Lab-B2",
                     "entryType": "LAB",
-                    "professor": null
+                    "professor": "Asociado"
                   }
                 ],
                 "Lab-B1": [
@@ -576,7 +576,7 @@
                     "classroom": "A2.2-Grace Murray",
                     "groupName": "Lab-B1",
                     "entryType": "LAB",
-                    "professor": null
+                    "professor": "Asociado"
                   }
                 ]
               },
@@ -943,7 +943,7 @@
                     "classroom": "LD3-Bill Gates",
                     "groupName": "Lab-D2",
                     "entryType": "LAB",
-                    "professor": null
+                    "professor": "Ayudante"
                   }
                 ],
                 "Lab-D1": [
@@ -1014,7 +1014,7 @@
                     "classroom": "A1.2-Tim Berners-Lee",
                     "groupName": null,
                     "entryType": "LAB",
-                    "professor": null
+                    "professor": "Sustituto"
                   },
                   {
                     "dayOfWeek": "TUESDAY",
@@ -1023,7 +1023,7 @@
                     "classroom": "A1.2-Tim Berners-Lee",
                     "groupName": null,
                     "entryType": "LAB",
-                    "professor": null
+                    "professor": "Sustituto"
                   }
                 ],
                 "Lab-D1": [
@@ -1034,7 +1034,7 @@
                     "classroom": "A1.2-Tim Berners-Lee",
                     "groupName": "Lab-D1",
                     "entryType": "LAB",
-                    "professor": null
+                    "professor": "Sustituto"
                   }
                 ]
               },
@@ -1357,7 +1357,7 @@
                     "classroom": "LD4-John Carmack",
                     "groupName": "Lab-B1",
                     "entryType": "LAB",
-                    "professor": null
+                    "professor": "Ayudante"
                   }
                 ],
                 "Lab-B2": [
@@ -1368,7 +1368,7 @@
                     "classroom": "LD4-John Carmack",
                     "groupName": "Lab-B2",
                     "entryType": "LAB",
-                    "professor": null
+                    "professor": "Ayudante"
                   }
                 ],
                 "Lab-BC1": [
@@ -1418,7 +1418,7 @@
                     "classroom": "LD3-Bill Gates",
                     "groupName": "Lab-BCD2",
                     "entryType": "LAB",
-                    "professor": null
+                    "professor": "Ayudante"
                   }
                 ],
                 "Lab-BD1": [
@@ -1440,7 +1440,7 @@
                     "classroom": "LD4-John Carmack",
                     "groupName": "Lab-BCD1",
                     "entryType": "LAB",
-                    "professor": null
+                    "professor": "Ayudante"
                   }
                 ],
                 "Lab-BD2": [
@@ -1689,7 +1689,7 @@
                     "classroom": "LD4-John Carmack",
                     "groupName": "Lab-BCD1",
                     "entryType": "LAB",
-                    "professor": null
+                    "professor": "Ayudante"
                   }
                 ]
               },
@@ -1857,7 +1857,7 @@
                   "classroom": "A2.2-Grace Murray",
                   "groupName": null,
                   "entryType": "THEORY",
-                  "professor": null
+                  "professor": "Sustituto"
                 },
                 {
                   "dayOfWeek": "WEDNESDAY",
@@ -1866,7 +1866,7 @@
                   "classroom": "A2.2-Grace Murray",
                   "groupName": null,
                   "entryType": "THEORY",
-                  "professor": null
+                  "professor": "Sustituto"
                 }
               ],
               "labVariants": {
@@ -1971,7 +1971,7 @@
                     "classroom": "LD3-Bill Gates",
                     "groupName": "Lab-BCD2",
                     "entryType": "LAB",
-                    "professor": null
+                    "professor": "Ayudante"
                   }
                 ],
                 "Lab-BD1": [
@@ -1993,7 +1993,7 @@
                     "classroom": "LD4-John Carmack",
                     "groupName": "Lab-BCD1",
                     "entryType": "LAB",
-                    "professor": null
+                    "professor": "Ayudante"
                   }
                 ]
               },
@@ -2204,7 +2204,7 @@
                     "classroom": "A2.1-George Boole",
                     "groupName": "Lab-CO/IS1",
                     "entryType": "LAB",
-                    "professor": null
+                    "professor": "Asociado"
                   }
                 ],
                 "Lab-CO/IS2": [
@@ -2430,7 +2430,7 @@
                   "dayOfWeek": "THURSDAY",
                   "startTime": "15:30",
                   "endTime": "16:50",
-                  "classroom": null,
+                  "classroom": "F1.1-Ángela Ruiz",
                   "groupName": null,
                   "entryType": "THEORY",
                   "professor": "Francisco Ruiz"
@@ -2454,7 +2454,7 @@
                     "classroom": "A2.1-George Boole",
                     "groupName": "Lab-IC/TI2",
                     "entryType": "LAB",
-                    "professor": null
+                    "professor": "Asociado"
                   }
                 ],
                 "Lab-IC/TI1": [
@@ -2626,7 +2626,7 @@
                     "classroom": "A2.1-George Boole",
                     "groupName": "Lab-CO/IS1",
                     "entryType": "LAB",
-                    "professor": null
+                    "professor": "Asociado"
                   }
                 ],
                 "Lab-CO/IS2": [
@@ -2852,7 +2852,7 @@
                   "dayOfWeek": "THURSDAY",
                   "startTime": "15:30",
                   "endTime": "16:50",
-                  "classroom": null,
+                  "classroom": "F1.1-Ángela Ruiz",
                   "groupName": null,
                   "entryType": "THEORY",
                   "professor": "Francisco Ruiz"
@@ -2876,7 +2876,7 @@
                     "classroom": "A2.1-George Boole",
                     "groupName": "Lab-IC/TI2",
                     "entryType": "LAB",
-                    "professor": null
+                    "professor": "Asociado"
                   }
                 ],
                 "Lab-IC/TI1": [
@@ -3141,7 +3141,7 @@
                   "classroom": "A2.1-George Boole",
                   "groupName": null,
                   "entryType": "THEORY",
-                  "professor": null
+                  "professor": "Sustituto"
                 },
                 {
                   "dayOfWeek": "MONDAY",
@@ -3150,34 +3150,7 @@
                   "classroom": "A2.1-George Boole",
                   "groupName": null,
                   "entryType": "THEORY",
-                  "professor": null
-                }
-              ],
-              "labVariants": {},
-              "semester": 2
-            },
-            {
-              "code": "UnivMayores",
-              "name": "Universidad de Mayores",
-              "color": null,
-              "theorySlots": [
-                {
-                  "dayOfWeek": "MONDAY",
-                  "startTime": "15:30",
-                  "endTime": "16:50",
-                  "classroom": "LD4-John Carmack",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Coordinador UnivMayores"
-                },
-                {
-                  "dayOfWeek": "MONDAY",
-                  "startTime": "17:00",
-                  "endTime": "21:30",
-                  "classroom": "LD4-John Carmack",
-                  "groupName": null,
-                  "entryType": "THEORY",
-                  "professor": "Coordinador UnivMayores"
+                  "professor": "Sustituto"
                 }
               ],
               "labVariants": {},
