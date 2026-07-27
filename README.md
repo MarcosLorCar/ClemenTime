@@ -16,7 +16,6 @@
 * **Adaptive Layout:** Responsive UI supporting phones, tablets, and foldables.
 * **Material 3 UI:** Clean look with support for light and dark themes, plus dynamic color styling.
 * **Home Screen Widget:** A reactive widget showing current and upcoming events at a glance.
-* **Local Cache:** Download schedule files from online repositories for offline use.
 * **Conflict Resolution:** Highlight and resolve overlapping schedule slots upon import.
 * **Data Portability:** Backup and restore data using import/export features, including calendar export to ICS format.
 * **Privacy First:** Fully offline operation with no account registration or analytics tracking.
