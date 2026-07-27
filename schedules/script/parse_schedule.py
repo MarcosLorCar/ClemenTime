@@ -142,10 +142,24 @@ def resolve_professors(prof_str: str, mappings: Dict, interactive: bool) -> str:
 
     return get_mapping(prof_str, "professors", mappings, interactive)
 
-def format_time(time_str: str) -> str:
+def format_time(time_str: str, is_end_time: bool = False) -> str:
+    """
+    Format H:MM to HH:MM.
+    If is_end_time is True and minutes are 50 (e.g. 09:50), round up to next hour (e.g. 10:00).
+    """
+    if not time_str:
+        return time_str
+
     parts = time_str.split(":")
     if len(parts) == 2:
-        return f"{int(parts[0]):02d}:{int(parts[1]):02d}"
+        hours = int(parts[0])
+        minutes = int(parts[1])
+
+        if is_end_time and minutes == 50:
+            hours = (hours + 1) % 24
+            minutes = 0
+
+        return f"{hours:02d}:{minutes:02d}"
     return time_str
 
 def parse_year_and_group(grupo_str: str):
@@ -167,8 +181,8 @@ def parse_year_and_group(grupo_str: str):
 
 def transform_slot(entry: Dict, mappings: Dict, interactive: bool) -> Dict:
     day = WEEKDAY_MAP.get(entry.get("dia", "").upper(), entry.get("dia", "").upper())
-    start_time = format_time(entry.get("hora_inicio", ""))
-    end_time = format_time(entry.get("hora_fin", ""))
+    start_time = format_time(entry.get("hora_inicio", ""), is_end_time=False)
+    end_time = format_time(entry.get("hora_fin", ""), is_end_time=True)
 
     entry_type = "LAB" if entry.get("es_laboratorio", False) else "THEORY"
 

@@ -859,7 +859,7 @@
                 {
                   "dayOfWeek": "MONDAY",
                   "startTime": "15:30",
-                  "endTime": "16:50",
+                  "endTime": "17:00",
                   "classroom": "Tim Berners-Lee - A1.2",
                   "groupName": null,
                   "entryType": "THEORY",
@@ -880,7 +880,7 @@
                   {
                     "dayOfWeek": "WEDNESDAY",
                     "startTime": "15:30",
-                    "endTime": "16:50",
+                    "endTime": "17:00",
                     "classroom": "Bill Gates - LD3",
                     "groupName": "Lab-D1",
                     "entryType": "LAB",
@@ -1030,7 +1030,7 @@
                 {
                   "dayOfWeek": "TUESDAY",
                   "startTime": "15:30",
-                  "endTime": "16:50",
+                  "endTime": "17:00",
                   "classroom": "Tim Berners-Lee - A1.2",
                   "groupName": null,
                   "entryType": "THEORY",
@@ -1039,7 +1039,7 @@
                 {
                   "dayOfWeek": "THURSDAY",
                   "startTime": "15:30",
-                  "endTime": "16:50",
+                  "endTime": "17:00",
                   "classroom": "Tim Berners-Lee - A1.2",
                   "groupName": null,
                   "entryType": "THEORY",
@@ -1073,7 +1073,7 @@
                   {
                     "dayOfWeek": "WEDNESDAY",
                     "startTime": "15:30",
-                    "endTime": "16:50",
+                    "endTime": "17:00",
                     "classroom": "Tim Berners-Lee - A1.2",
                     "groupName": "Lab-D1",
                     "entryType": "LAB",
@@ -1656,7 +1656,7 @@
                 {
                   "dayOfWeek": "MONDAY",
                   "startTime": "15:30",
-                  "endTime": "16:50",
+                  "endTime": "17:00",
                   "classroom": "Grace Murray Hopper - A2.2",
                   "groupName": null,
                   "entryType": "THEORY",
@@ -1677,7 +1677,7 @@
                   {
                     "dayOfWeek": "TUESDAY",
                     "startTime": "15:30",
-                    "endTime": "16:50",
+                    "endTime": "17:00",
                     "classroom": "Dennis Ritchie - LD2",
                     "groupName": "Lab-C2",
                     "entryType": "LAB",
@@ -1778,7 +1778,7 @@
                 {
                   "dayOfWeek": "THURSDAY",
                   "startTime": "15:30",
-                  "endTime": "16:50",
+                  "endTime": "17:00",
                   "classroom": "Grace Murray Hopper - A2.2",
                   "groupName": null,
                   "entryType": "THEORY",
@@ -1801,7 +1801,7 @@
                   {
                     "dayOfWeek": "TUESDAY",
                     "startTime": "15:30",
-                    "endTime": "16:50",
+                    "endTime": "17:00",
                     "classroom": "John Carmack - LD4",
                     "groupName": "Lab-C2",
                     "entryType": "LAB",
@@ -1904,7 +1904,7 @@
                 {
                   "dayOfWeek": "WEDNESDAY",
                   "startTime": "15:30",
-                  "endTime": "16:50",
+                  "endTime": "17:00",
                   "classroom": "Grace Murray Hopper - A2.2",
                   "groupName": null,
                   "entryType": "THEORY",
@@ -2266,7 +2266,7 @@
             {
               "dayOfWeek": "MONDAY",
               "startTime": "15:30",
-              "endTime": "16:50",
+              "endTime": "17:00",
               "classroom": "George Boole - A2.1",
               "groupName": null,
               "entryType": "THEORY",
@@ -2326,7 +2326,7 @@
             {
               "dayOfWeek": "THURSDAY",
               "startTime": "15:30",
-              "endTime": "16:50",
+              "endTime": "17:00",
               "classroom": "Claude Shannon - 0.07",
               "groupName": null,
               "entryType": "THEORY",
@@ -2366,7 +2366,7 @@
             {
               "dayOfWeek": "TUESDAY",
               "startTime": "15:30",
-              "endTime": "16:50",
+              "endTime": "17:00",
               "classroom": "Claude Shannon - 0.07",
               "groupName": null,
               "entryType": "THEORY",
@@ -2437,7 +2437,7 @@
             {
               "dayOfWeek": "WEDNESDAY",
               "startTime": "15:30",
-              "endTime": "16:50",
+              "endTime": "17:00",
               "classroom": "Claude Shannon - 0.07",
               "groupName": null,
               "entryType": "THEORY",
@@ -2483,7 +2483,7 @@
             {
               "dayOfWeek": "MONDAY",
               "startTime": "15:30",
-              "endTime": "16:50",
+              "endTime": "17:00",
               "classroom": "Hedy Lamarr - 0.04",
               "groupName": null,
               "entryType": "THEORY",
@@ -2492,7 +2492,7 @@
             {
               "dayOfWeek": "WEDNESDAY",
               "startTime": "15:30",
-              "endTime": "16:50",
+              "endTime": "17:00",
               "classroom": "Hedy Lamarr - 0.04",
               "groupName": null,
               "entryType": "THEORY",
@@ -2572,7 +2572,7 @@
             {
               "dayOfWeek": "TUESDAY",
               "startTime": "15:30",
-              "endTime": "16:50",
+              "endTime": "17:00",
               "classroom": "Ángela Ruiz Robles - F1.1",
               "groupName": null,
               "entryType": "THEORY",
@@ -2700,7 +2700,7 @@
             {
               "dayOfWeek": "MONDAY",
               "startTime": "15:30",
-              "endTime": "16:50",
+              "endTime": "17:00",
               "classroom": "George Boole - A2.1",
               "groupName": null,
               "entryType": "THEORY",
@@ -2800,7 +2800,7 @@
             {
               "dayOfWeek": "WEDNESDAY",
               "startTime": "15:30",
-              "endTime": "16:50",
+              "endTime": "17:00",
               "classroom": "Charles Babbage - 0.02+3",
               "groupName": null,
               "entryType": "THEORY",
@@ -2831,7 +2831,7 @@
             {
               "dayOfWeek": "TUESDAY",
               "startTime": "15:30",
-              "endTime": "16:50",
+              "endTime": "17:00",
               "classroom": "Charles Babbage - 0.02+3",
               "groupName": null,
               "entryType": "THEORY",
@@ -2880,7 +2880,7 @@
             {
               "dayOfWeek": "THURSDAY",
               "startTime": "15:30",
-              "endTime": "16:50",
+              "endTime": "17:00",
               "classroom": "Charles Babbage - 0.02+3",
               "groupName": null,
               "entryType": "THEORY",
@@ -2917,7 +2917,7 @@
             {
               "dayOfWeek": "MONDAY",
               "startTime": "15:30",
-              "endTime": "16:50",
+              "endTime": "17:00",
               "classroom": "Edsger W. Dijkstra - 0.05+6",
               "groupName": null,
               "entryType": "THEORY",
@@ -3006,7 +3006,7 @@
             {
               "dayOfWeek": "TUESDAY",
               "startTime": "15:30",
-              "endTime": "16:50",
+              "endTime": "17:00",
               "classroom": "Ángela Ruiz Robles - F1.1",
               "groupName": null,
               "entryType": "THEORY",
@@ -3048,7 +3048,7 @@
             {
               "dayOfWeek": "WEDNESDAY",
               "startTime": "15:30",
-              "endTime": "16:50",
+              "endTime": "17:00",
               "classroom": "Edsger W. Dijkstra - 0.05+6",
               "groupName": null,
               "entryType": "THEORY",
@@ -3097,7 +3097,7 @@
             {
               "dayOfWeek": "THURSDAY",
               "startTime": "15:30",
-              "endTime": "16:50",
+              "endTime": "17:00",
               "classroom": "Edsger W. Dijkstra - 0.05+6",
               "groupName": null,
               "entryType": "THEORY",
