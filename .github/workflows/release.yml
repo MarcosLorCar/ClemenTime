@@ -7,8 +7,8 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version tag to create (e.g. v1.0.0-rc5)'
-        required: true
+        description: 'Version tag to create (leave blank to use current tag)'
+        required: false
         type: string
 
 permissions:
@@ -37,16 +37,16 @@ jobs:
       - name: Get Versioning Info
         id: info
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            TAG_NAME="${{ inputs.version }}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.version }}" ]; then
+            TAG_NAME="${{ github.event.inputs.version }}"
           else
             TAG_NAME="${{ github.ref_name }}"
           fi
           echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
 
       # Tag the commit first if manually dispatched and tag doesn't exist
-      - name: Create Git Tag (manual dispatch only)
-        if: github.event_name == 'workflow_dispatch'
+      - name: Create Git Tag (manual dispatch with version input)
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.version != ''
         run: |
           TAG_NAME="${{ steps.info.outputs.tag_name }}"
           if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
@@ -81,6 +81,15 @@ jobs:
             app/build/outputs/apk/release/*.apk
             app/build/outputs/bundle/release/*.aab
           retention-days: 7
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.info.outputs.tag_name }}
+          files: app/build/outputs/apk/release/*.apk
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Clean up Keystore
         if: always()
