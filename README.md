@@ -1,40 +1,31 @@
-# ClemenTime
+<p align="center">
+  <img src=".github/assets/ic_app_logo.svg" alt="ClemenTime Logo" width="128" height="128" />
+</p>
 
-ClemenTime is a schedules and tasks planner app for Android, built with Jetpack Compose. It allows you to import, view, and manage your timetables and tasks on a clean, modern interface.
+<h1 align="center">Clemen<span style="color: #FF7A00;">Time</span></h1>
 
-## Features
+<p align="center">
+  ClemenTime is a schedule and task planner app for Android targeted to ESI students, built with Jetpack Compose. It allows you to import, view, and manage your timetables and tasks on a clean, modern interface.
+</p>
 
-- **Timetable Management**: View and coordinate daily and weekly schedules.
-- **Adaptive Layout**: Responsive UI supporting phones, tablets, and foldables.
-- **Material 3 UI**: Clean look with support for light and dark themes, plus dynamic color styling.
-- **Home Screen Widget**: A reactive widget showing current and upcoming events at a glance.
-- **Local Cache**: Download schedule files from online repositories for offline use.
-- **Conflict Resolution**: Highlight and resolve overlapping schedule slots upon import.
-- **Data Portability**: Backup and restore data using import/export features, including calendar export to ICS format.
-- **Privacy First**: Fully offline operation with no account registration or analytics tracking.
+---
 
-## Development
+<h2 align="center">Features</h2>
 
-You can build the app locally using the Gradle Wrapper.
+* **Timetable Management:** View and coordinate daily and weekly schedules.
+* **Adaptive Layout:** Responsive UI supporting phones, tablets, and foldables.
+* **Material 3 UI:** Clean look with support for light and dark themes, plus dynamic color styling.
+* **Home Screen Widget:** A reactive widget showing current and upcoming events at a glance.
+* **Local Cache:** Download schedule files from online repositories for offline use.
+* **Conflict Resolution:** Highlight and resolve overlapping schedule slots upon import.
+* **Data Portability:** Backup and restore data using import/export features, including calendar export to ICS format.
+* **Privacy First:** Fully offline operation with no account registration or analytics tracking.
 
-### Prerequisites
+---
 
-- Android SDK (API 34+)
-- JDK 17 or higher
+<h2 align="center">License</h2>
 
-### Building the APK
-
-Run the following command in your terminal:
-
-```bash
-./gradlew assembleDebug
-```
-
-The compiled debug APK will be generated at:
-`app/build/outputs/apk/debug/app-debug.apk`
-
-## License
-
+```text
 Copyright (C) 2026 Marcos Loro Carrasco
 
 This program is free software: you can redistribute it and/or modify
@@ -44,10 +35,8 @@ the Free Software Foundation, either version 3 of the License, or
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-See the [LICENSE](LICENSE) file for the full text.
+along with this program. If not, see [https://www.gnu.org/licenses/](https://www.gnu.org/licenses/).
