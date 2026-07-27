@@ -79,6 +79,7 @@ fun ScheduleWidgetContent(
     isTomorrow: Boolean,
     subjectsWithSlots: List<SubjectWithSlots>,
     showNowLine: Boolean,
+    nowLineStyle: String = "discrete",
     highContrast: Boolean,
     launchAppAction: Action
 ) {
@@ -246,6 +247,7 @@ fun ScheduleWidgetContent(
                                     cluster = segment.cluster,
                                     currentTime = currentTime,
                                     isNowInSegment = isNowInSegment,
+                                    nowLineStyle = nowLineStyle,
                                     highContrast = highContrast,
                                     launchAppAction = launchAppAction
                                 )
@@ -255,6 +257,7 @@ fun ScheduleWidgetContent(
                                     segment = segment,
                                     currentTime = currentTime,
                                     isNowInSegment = isNowInSegment,
+                                    nowLineStyle = nowLineStyle,
                                     launchAppAction = launchAppAction,
                                     isFirstSegment = index == 0,
                                     isLastSegment = index == timelineSegments.size - 1
@@ -276,6 +279,7 @@ fun ClusterSegmentRow(
     cluster: TimelineCluster,
     currentTime: LocalTime,
     isNowInSegment: Boolean,
+    nowLineStyle: String = "discrete",
     highContrast: Boolean,
     launchAppAction: Action
 ) {
@@ -373,27 +377,42 @@ fun ClusterSegmentRow(
         if (isNowInSegment) {
             val minutesFromStart = Duration.between(cluster.startTime, currentTime).toMinutes()
             val nowTopDp = BLOCK_HEIGHT * (minutesFromStart / 30.0).toFloat()
-            Row(
+            WidgetNowLine(
                 modifier = GlanceModifier
                     .fillMaxWidth()
                     .padding(top = nowTopDp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = GlanceModifier
-                        .width(6.dp)
-                        .height(6.dp)
-                        .cornerRadius(3.dp)
-                        .background(Color(0xFFFF3B30))
-                ) {}
-                Box(
-                    modifier = GlanceModifier
-                        .defaultWeight()
-                        .height(2.dp)
-                        .background(Color(0xFFFF3B30))
-                ) {}
-            }
+                style = nowLineStyle
+            )
         }
+    }
+}
+
+@Composable
+fun WidgetNowLine(
+    modifier: GlanceModifier = GlanceModifier,
+    style: String
+) {
+    val isObvious = style == "obvious"
+    val lineColor = if (isObvious) Color(0xFFFF3B30) else Color(0xFFFF9F0A)
+    val lineThickness = if (isObvious) 2.dp else 1.2.dp
+    val circleSize = if (isObvious) 7.dp else 5.dp
+
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = GlanceModifier
+                .size(circleSize)
+                .cornerRadius(circleSize / 2)
+                .background(lineColor)
+        ) {}
+        Box(
+            modifier = GlanceModifier
+                .defaultWeight()
+                .height(lineThickness)
+                .background(lineColor)
+        ) {}
     }
 }
 
@@ -402,6 +421,7 @@ fun EmptySegmentRow(
     segment: WidgetTimelineSegment.EmptySegment,
     currentTime: LocalTime,
     isNowInSegment: Boolean,
+    nowLineStyle: String = "discrete",
     launchAppAction: Action,
     isFirstSegment: Boolean = false,
     isLastSegment: Boolean = false
@@ -443,26 +463,12 @@ fun EmptySegmentRow(
                 if (isNowInBlock) {
                     val minutesFromBlockStart = Duration.between(curr, currentTime).toMinutes()
                     val nowTopDp = BLOCK_HEIGHT * (minutesFromBlockStart / 30.0).toFloat()
-                    Row(
+                    WidgetNowLine(
                         modifier = GlanceModifier
                             .fillMaxWidth()
                             .padding(top = nowTopDp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = GlanceModifier
-                                .width(6.dp)
-                                .height(6.dp)
-                                .background(Color(0xFFFF3B30))
-                                .cornerRadius(3.dp)
-                        ) {}
-                        Box(
-                            modifier = GlanceModifier
-                                .defaultWeight()
-                                .height(2.dp)
-                                .background(Color(0xFFFF3B30))
-                        ) {}
-                    }
+                        style = nowLineStyle
+                    )
                 }
             }
 

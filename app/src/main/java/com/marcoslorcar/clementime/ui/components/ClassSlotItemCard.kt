@@ -55,7 +55,8 @@ fun ClassSlotItemCard(
     onEditClick: (() -> Unit)? = null,
     onGoToSchedule: (DayOfWeek, Long) -> Unit = { _, _ -> },
     onDuplicate: () -> Unit = {},
-    onDelete: () -> Unit = {}
+    onDelete: () -> Unit = {},
+    isEditMode: Boolean = true
 ) {
     var showDeleteConfirmation by remember { mutableStateOf(false) }
     val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
@@ -172,21 +173,23 @@ fun ClassSlotItemCard(
                         }
                     }
 
-                    IconButton(onClick = onDuplicate) {
-                        Icon(
-                            imageVector = Icons.Default.ContentCopy,
-                            contentDescription = stringResource(R.string.duplicate_slot_label),
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                    IconButton(onClick = { showDeleteConfirmation = true }) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = stringResource(R.string.delete_slot_label),
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(20.dp)
-                        )
+                    if (isEditMode) {
+                        IconButton(onClick = onDuplicate) {
+                            Icon(
+                                imageVector = Icons.Default.ContentCopy,
+                                contentDescription = stringResource(R.string.duplicate_slot_label),
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        IconButton(onClick = { showDeleteConfirmation = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = stringResource(R.string.delete_slot_label),
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
                 }
             }

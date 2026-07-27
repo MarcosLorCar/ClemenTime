@@ -161,6 +161,16 @@ fun ClemenTimeApp(isOnboardingCompleted: Boolean) {
         )
     )
 
+    val navigateToTab = { route: Any ->
+        navController.navigate(route) {
+            popUpTo(navController.graph.findStartDestination().id) {
+                saveState = false
+            }
+            launchSingleTop = true
+            restoreState = false
+        }
+    }
+
     NavigationSuiteScaffold(
         layoutType = layoutType,
         navigationSuiteItems = {
@@ -176,13 +186,7 @@ fun ClemenTimeApp(isOnboardingCompleted: Boolean) {
                                 MoreRoute::class -> MoreRoute
                                 else -> return@item
                             }
-                            navController.navigate(route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
+                            navigateToTab(route)
                         },
                         icon = {
                             Icon(
@@ -296,12 +300,7 @@ fun ClemenTimeApp(isOnboardingCompleted: Boolean) {
                         navController.popBackStack()
                     },
                     onImportSuccess = {
-                        navController.navigate(SubjectsRoute) {
-                            popUpTo(ScheduleListRoute()) {
-                                inclusive = false
-                            }
-                            launchSingleTop = true
-                        }
+                        navigateToTab(SubjectsRoute)
                     }
                 )
             }
@@ -320,12 +319,7 @@ fun ClemenTimeApp(isOnboardingCompleted: Boolean) {
                         navController.navigate(AddEditSubjectRoute(subjectId))
                     },
                     onNavigateToSchedule = { dayOfWeek, slotId ->
-                        navController.navigate(ScheduleListRoute(dayOfWeek = dayOfWeek.name, highlightSlotId = slotId)) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = false
-                            }
-                            launchSingleTop = false
-                        }
+                        navigateToTab(ScheduleListRoute(dayOfWeek = dayOfWeek.name, highlightSlotId = slotId))
                     },
                     onNavigateToImport = {
                         navController.navigate(ImportRoute)
@@ -337,12 +331,7 @@ fun ClemenTimeApp(isOnboardingCompleted: Boolean) {
                 AddEditSubjectScreen(
                     onBack = { navController.popBackStack() },
                     onNavigateToSchedule = { dayOfWeek: java.time.DayOfWeek, slotId: Long? ->
-                        navController.navigate(ScheduleListRoute(dayOfWeek = dayOfWeek.name, highlightSlotId = slotId)) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = false
-                            }
-                            launchSingleTop = false
-                        }
+                        navigateToTab(ScheduleListRoute(dayOfWeek = dayOfWeek.name, highlightSlotId = slotId))
                     }
                 )
             }

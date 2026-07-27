@@ -776,7 +776,7 @@ fun ImportPreviewDialog(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(280.dp)
+                    .height(200.dp)
             ) {
                 ScheduleMiniPreview(
                     modifier = Modifier.fillMaxSize(),
@@ -863,7 +863,7 @@ fun ConflictDetailsDialog(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         ScheduleMiniPreview(
-                            modifier = Modifier.height(200.dp),
+                            modifier = Modifier.height(150.dp),
                             slots = detail.labOverlappingSlots,
                             overlappingSlotIds = detail.labOverlappingSlotIds
                         )

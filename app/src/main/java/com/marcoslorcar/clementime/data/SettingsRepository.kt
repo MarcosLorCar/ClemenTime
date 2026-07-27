@@ -35,6 +35,7 @@ open class SettingsRepository @Inject constructor(
     private val hasSeenResolverApplyTooltipKey = booleanPreferencesKey("has_seen_resolver_apply_tooltip")
     private val hasSeenAddSlotTooltipKey = booleanPreferencesKey("has_seen_add_slot_tooltip")
     private val hasSeenImportPreviewTooltipKey = booleanPreferencesKey("has_seen_import_preview_tooltip")
+    private val hasSeenLabSelectionTooltipKey = booleanPreferencesKey("has_seen_lab_selection_tooltip")
     private val currentSemesterKey = intPreferencesKey("current_semester")
     private val hasManuallyChangedSemesterKey = booleanPreferencesKey("has_manually_changed_semester")
     private val wasSemesterAutoChangedKey = booleanPreferencesKey("was_semester_auto_changed")
@@ -183,6 +184,15 @@ open class SettingsRepository @Inject constructor(
         get() = try {
             context?.dataStore?.data?.map { preferences ->
                 preferences[hasSeenImportPreviewTooltipKey] ?: false
+            } ?: kotlinx.coroutines.flow.flowOf(false)
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf(false)
+        }
+
+    open val hasSeenLabSelectionTooltipFlow: Flow<Boolean>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[hasSeenLabSelectionTooltipKey] ?: false
             } ?: kotlinx.coroutines.flow.flowOf(false)
         } catch (_: Throwable) {
             kotlinx.coroutines.flow.flowOf(false)
@@ -345,6 +355,14 @@ open class SettingsRepository @Inject constructor(
         try {
             context?.dataStore?.edit { preferences ->
                 preferences[hasSeenImportPreviewTooltipKey] = seen
+            }
+        } catch (_: Throwable) {}
+    }
+
+    open suspend fun setHasSeenLabSelectionTooltip(seen: Boolean) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[hasSeenLabSelectionTooltipKey] = seen
             }
         } catch (_: Throwable) {}
     }

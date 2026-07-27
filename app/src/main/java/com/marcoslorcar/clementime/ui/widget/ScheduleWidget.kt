@@ -67,6 +67,10 @@ class ScheduleWidget : GlanceAppWidget() {
                 entryPoint?.settingsRepository()?.highContrastFlow ?: kotlinx.coroutines.flow.flowOf(false)
             }.collectAsState(initial = false)
 
+            val nowLineStyle by remember(entryPoint) {
+                entryPoint?.settingsRepository()?.nowLineStyleFlow ?: kotlinx.coroutines.flow.flowOf("discrete")
+            }.collectAsState(initial = "discrete")
+
             val launchAppAction = remember(context) {
                 val intent = Intent().apply {
                     component = ComponentName(context, MainActivity::class.java)
@@ -87,6 +91,7 @@ class ScheduleWidget : GlanceAppWidget() {
                             isTomorrow = isTomorrowSelected,
                             subjectsWithSlots = data,
                             showNowLine = showNowLine,
+                            nowLineStyle = nowLineStyle,
                             highContrast = highContrast,
                             launchAppAction = launchAppAction
                         )

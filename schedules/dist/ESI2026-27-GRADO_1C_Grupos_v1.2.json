@@ -98,7 +98,7 @@
                     "dayOfWeek": "FRIDAY",
                     "startTime": "11:30",
                     "endTime": "13:00",
-                    "classroom": "LD3-Bill",
+                    "classroom": "LD3-Bill Gates",
                     "groupName": "Lab-A1",
                     "entryType": "LAB",
                     "professor": "Antonio Adan"
@@ -494,7 +494,7 @@
                     "dayOfWeek": "WEDNESDAY",
                     "startTime": "10:00",
                     "endTime": "11:30",
-                    "classroom": "LD3-Bill",
+                    "classroom": "LD3-Bill Gates",
                     "groupName": "Lab-BC",
                     "entryType": "LAB",
                     "professor": "Inocente Sanchez"
@@ -671,7 +671,7 @@
                     "dayOfWeek": "WEDNESDAY",
                     "startTime": "08:30",
                     "endTime": "10:00",
-                    "classroom": "LD3-Bill",
+                    "classroom": "LD3-Bill Gates",
                     "groupName": "Lab-C2",
                     "entryType": "LAB",
                     "professor": "Inocente Sanchez"
@@ -682,7 +682,7 @@
                     "dayOfWeek": "WEDNESDAY",
                     "startTime": "10:00",
                     "endTime": "11:30",
-                    "classroom": "LD3-Bill",
+                    "classroom": "LD3-Bill Gates",
                     "groupName": "Lab-BC",
                     "entryType": "LAB",
                     "professor": "Inocente Sanchez"
@@ -731,11 +731,11 @@
                   {
                     "dayOfWeek": "TUESDAY",
                     "startTime": "17:00",
-                    "endTime": "18:30",
+                    "endTime": "20:00",
                     "classroom": "0.07-Claude Shannon",
                     "groupName": "Lab-C1/C2",
                     "entryType": "LAB",
-                    "professor": null
+                    "professor": "Asociado MAT"
                   }
                 ]
               },
@@ -1029,7 +1029,7 @@
                     "classroom": "A1.2-Tim Berner",
                     "groupName": "Lab-D1/D2",
                     "entryType": "LAB",
-                    "professor": null
+                    "professor": "Asociado MAT"
                   }
                 ]
               },
@@ -1179,7 +1179,7 @@
                     "classroom": "0.05-Edsger W.",
                     "groupName": "Lab-A1",
                     "entryType": "LAB",
-                    "professor": null
+                    "professor": "Asociado LSI 1"
                   }
                 ]
               },
@@ -1370,7 +1370,7 @@
                     "dayOfWeek": "TUESDAY",
                     "startTime": "08:30",
                     "endTime": "10:00",
-                    "classroom": "LD3-Bill",
+                    "classroom": "LD3-Bill Gates",
                     "groupName": "Lab-B1",
                     "entryType": "LAB",
                     "professor": "Miguel Angel Redondo"
@@ -1503,7 +1503,7 @@
                     "dayOfWeek": "THURSDAY",
                     "startTime": "17:00",
                     "endTime": "18:30",
-                    "classroom": "LD3-Bill",
+                    "classroom": "LD3-Bill Gates",
                     "groupName": "Lab-B1",
                     "entryType": "LAB",
                     "professor": "Julian Caba"
@@ -1564,7 +1564,7 @@
                     "dayOfWeek": "MONDAY",
                     "startTime": "11:30",
                     "endTime": "13:00",
-                    "classroom": "LD3-Bill",
+                    "classroom": "LD3-Bill Gates",
                     "groupName": "Lab-BD2",
                     "entryType": "LAB",
                     "professor": "Jared David"
@@ -1628,7 +1628,7 @@
                     "classroom": "0.02+3-Charles",
                     "groupName": "Lab-BD1",
                     "entryType": "LAB",
-                    "professor": null
+                    "professor": "Asociado LSI 1"
                   }
                 ],
                 "Lab-B1": [
@@ -1694,7 +1694,7 @@
                     "classroom": "A2.2-Grace Murray",
                     "groupName": "Lab-C1",
                     "entryType": "LAB",
-                    "professor": null
+                    "professor": "Asociado LSI 1"
                   }
                 ],
                 "Lab-C2": [
@@ -1705,7 +1705,7 @@
                     "classroom": "A2.2-Grace Murray",
                     "groupName": "Lab-C2",
                     "entryType": "LAB",
-                    "professor": null
+                    "professor": "Asociado LSI 1"
                   }
                 ]
               },
@@ -1756,6 +1756,15 @@
                     "groupName": "Lab-C1",
                     "entryType": "LAB",
                     "professor": "Yoel Arroyo"
+                  },
+                  {
+                    "dayOfWeek": "FRIDAY",
+                    "startTime": "20:00",
+                    "endTime": "21:30",
+                    "classroom": "LD2-Dennis Ritchie",
+                    "groupName": "Lab-C1",
+                    "entryType": "LAB",
+                    "professor": "Ruben Rodriguez"
                   }
                 ]
               },
@@ -1841,7 +1850,7 @@
                     "dayOfWeek": "WEDNESDAY",
                     "startTime": "20:00",
                     "endTime": "21:30",
-                    "classroom": "LD3-Bill",
+                    "classroom": "LD3-Bill Gates",
                     "groupName": "Lab-C1",
                     "entryType": "LAB",
                     "professor": "Ruben Rodriguez"
@@ -1852,7 +1861,7 @@
                     "dayOfWeek": "THURSDAY",
                     "startTime": "20:00",
                     "endTime": "21:30",
-                    "classroom": "LD3-Bill",
+                    "classroom": "LD3-Bill Gates",
                     "groupName": "Lab-C2",
                     "entryType": "LAB",
                     "professor": null
@@ -1957,7 +1966,7 @@
                     "dayOfWeek": "TUESDAY",
                     "startTime": "10:00",
                     "endTime": "11:30",
-                    "classroom": "LD3-Bill",
+                    "classroom": "LD3-Bill Gates",
                     "groupName": "Lab-D1",
                     "entryType": "LAB",
                     "professor": "Javier Albusac"
@@ -2018,7 +2027,7 @@
                     "dayOfWeek": "THURSDAY",
                     "startTime": "18:30",
                     "endTime": "20:00",
-                    "classroom": "LD3-Bill",
+                    "classroom": "LD3-Bill Gates",
                     "groupName": "Lab-BD1",
                     "entryType": "LAB",
                     "professor": "Ruben Rodriguez"
@@ -2107,7 +2116,7 @@
                     "dayOfWeek": "MONDAY",
                     "startTime": "11:30",
                     "endTime": "13:00",
-                    "classroom": "LD3-Bill",
+                    "classroom": "LD3-Bill Gates",
                     "groupName": "Lab-BD2",
                     "entryType": "LAB",
                     "professor": "Jared David"
@@ -2160,7 +2169,7 @@
                     "classroom": "0.02+3-Charles",
                     "groupName": "Lab-BD1",
                     "entryType": "LAB",
-                    "professor": null
+                    "professor": "Asociado LSI 1"
                   }
                 ]
               },
@@ -2217,39 +2226,39 @@
               "semester": 1
             },
             {
-              "code": "SistDistr",
-              "name": "Sistemas Distribuidos",
+              "code": "IngSw2",
+              "name": "Ingenieria del Software II",
               "color": null,
               "theorySlots": [
                 {
-                  "dayOfWeek": "TUESDAY",
-                  "startTime": "15:30",
-                  "endTime": "17:00",
+                  "dayOfWeek": "MONDAY",
+                  "startTime": "18:30",
+                  "endTime": "20:00",
                   "classroom": "0.04-Hedy Lamarr",
                   "groupName": null,
                   "entryType": "THEORY",
-                  "professor": "David Villa"
+                  "professor": "Ismael Caballero"
                 },
                 {
-                  "dayOfWeek": "MONDAY",
-                  "startTime": "15:30",
-                  "endTime": "17:00",
+                  "dayOfWeek": "TUESDAY",
+                  "startTime": "18:30",
+                  "endTime": "20:00",
                   "classroom": "0.04-Hedy Lamarr",
                   "groupName": null,
                   "entryType": "THEORY",
-                  "professor": "David Villa"
+                  "professor": "Ismael Caballero"
                 }
               ],
               "labVariants": {
                 "Lab-A1": [
                   {
                     "dayOfWeek": "TUESDAY",
-                    "startTime": "17:00",
-                    "endTime": "18:30",
+                    "startTime": "15:30",
+                    "endTime": "17:00",
                     "classroom": "0.04-Hedy Lamarr",
                     "groupName": "Lab-A1",
                     "entryType": "LAB",
-                    "professor": "David Villa"
+                    "professor": "Ismael Caballero"
                   }
                 ]
               },
@@ -2295,39 +2304,39 @@
               "semester": 1
             },
             {
-              "code": "IngSw2",
-              "name": "Ingenieria del Software II",
+              "code": "SistDistr",
+              "name": "Sistemas Distribuidos",
               "color": null,
               "theorySlots": [
                 {
                   "dayOfWeek": "MONDAY",
-                  "startTime": "18:30",
-                  "endTime": "20:00",
+                  "startTime": "20:00",
+                  "endTime": "21:30",
                   "classroom": "0.04-Hedy Lamarr",
                   "groupName": null,
                   "entryType": "THEORY",
-                  "professor": "Ismael Caballero"
+                  "professor": "David Villa"
                 },
                 {
                   "dayOfWeek": "TUESDAY",
-                  "startTime": "18:30",
-                  "endTime": "20:00",
+                  "startTime": "20:00",
+                  "endTime": "21:30",
                   "classroom": "0.04-Hedy Lamarr",
                   "groupName": null,
                   "entryType": "THEORY",
-                  "professor": "Ismael Caballero"
+                  "professor": "David Villa"
                 }
               ],
               "labVariants": {
                 "Lab-A1": [
                   {
                     "dayOfWeek": "TUESDAY",
-                    "startTime": "20:00",
-                    "endTime": "21:30",
+                    "startTime": "17:00",
+                    "endTime": "18:30",
                     "classroom": "0.04-Hedy Lamarr",
                     "groupName": "Lab-A1",
                     "entryType": "LAB",
-                    "professor": "Ismael Caballero"
+                    "professor": "David Villa"
                   }
                 ]
               },
@@ -2345,7 +2354,7 @@
                   "classroom": "0.04-Hedy Lamarr",
                   "groupName": null,
                   "entryType": "THEORY",
-                  "professor": null
+                  "professor": "Sustituto LSI 1"
                 },
                 {
                   "dayOfWeek": "THURSDAY",
@@ -2354,7 +2363,7 @@
                   "classroom": "0.04-Hedy Lamarr",
                   "groupName": null,
                   "entryType": "THEORY",
-                  "professor": null
+                  "professor": "Sustituto LSI 1"
                 }
               ],
               "labVariants": {
@@ -2366,7 +2375,7 @@
                     "classroom": "LD4-John Carmack",
                     "groupName": "Lab-A2",
                     "entryType": "LAB",
-                    "professor": null
+                    "professor": "Sustituto LSI 1"
                   }
                 ],
                 "Lab-A1": [
@@ -2377,7 +2386,7 @@
                     "classroom": "LD2-Dennis Ritchie",
                     "groupName": "Lab-A1",
                     "entryType": "LAB",
-                    "professor": null
+                    "professor": "Sustituto LSI 1"
                   }
                 ]
               },
@@ -2432,7 +2441,7 @@
                     "classroom": "0.02+3-Charles",
                     "groupName": "Lab-B1",
                     "entryType": "LAB",
-                    "professor": null
+                    "professor": "Ayudante Doctor LSI"
                   }
                 ],
                 "Lab-B2": [
@@ -2845,7 +2854,7 @@
                     "dayOfWeek": "THURSDAY",
                     "startTime": "11:30",
                     "endTime": "13:00",
-                    "classroom": "LD3-Bill",
+                    "classroom": "LD3-Bill Gates",
                     "groupName": "Lab-BC",
                     "entryType": "LAB",
                     "professor": "Luis Jimenez"
@@ -2856,7 +2865,7 @@
                     "dayOfWeek": "WEDNESDAY",
                     "startTime": "13:00",
                     "endTime": "14:30",
-                    "classroom": "LD3-Bill",
+                    "classroom": "LD3-Bill Gates",
                     "groupName": "Lab-C2",
                     "entryType": "LAB",
                     "professor": "Luis Rodriguez"
@@ -3525,7 +3534,7 @@
                   "classroom": "A1.2-Tim Berner",
                   "groupName": null,
                   "entryType": "THEORY",
-                  "professor": null
+                  "professor": "Ayudante Doctor LSI"
                 },
                 {
                   "dayOfWeek": "MONDAY",
@@ -3534,7 +3543,7 @@
                   "classroom": "F1.1-Ángela Ruiz",
                   "groupName": null,
                   "entryType": "THEORY",
-                  "professor": null
+                  "professor": "Ayudante Doctor LSI"
                 }
               ],
               "labVariants": {
@@ -3546,7 +3555,7 @@
                     "classroom": "F1.1-Ángela Ruiz",
                     "groupName": "Lab-TI",
                     "entryType": "LAB",
-                    "professor": null
+                    "professor": "Ayudante Doctor LSI"
                   }
                 ]
               },
@@ -3642,7 +3651,7 @@
                   "classroom": "F1.1-Ángela Ruiz",
                   "groupName": null,
                   "entryType": "THEORY",
-                  "professor": null
+                  "professor": "Asociado LSI 2"
                 },
                 {
                   "dayOfWeek": "TUESDAY",
@@ -3651,7 +3660,7 @@
                   "classroom": "F1.1-Ángela Ruiz",
                   "groupName": null,
                   "entryType": "THEORY",
-                  "professor": null
+                  "professor": "Asociado LSI 2"
                 }
               ],
               "labVariants": {
@@ -3663,12 +3672,82 @@
                     "classroom": "F1.1-Ángela Ruiz",
                     "groupName": "Lab-TI",
                     "entryType": "LAB",
-                    "professor": null
+                    "professor": "Asociado LSI 2"
                   }
                 ]
               },
               "semester": 1
-            },
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Máster",
+      "matters": [],
+      "groups": [
+        {
+          "name": "Profesorado",
+          "matters": [
+            {
+              "code": "MUFPS",
+              "name": "Máster de Profesorado",
+              "color": null,
+              "theorySlots": [
+                {
+                  "dayOfWeek": "MONDAY",
+                  "startTime": "15:30",
+                  "endTime": "20:00",
+                  "classroom": "F1.1-Ángela Ruiz",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Profesor"
+                },
+                {
+                  "dayOfWeek": "TUESDAY",
+                  "startTime": "15:30",
+                  "endTime": "20:00",
+                  "classroom": "F1.1-Ángela Ruiz",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Profesor"
+                },
+                {
+                  "dayOfWeek": "WEDNESDAY",
+                  "startTime": "15:30",
+                  "endTime": "20:00",
+                  "classroom": "F1.1-Ángela Ruiz",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Profesor"
+                },
+                {
+                  "dayOfWeek": "THURSDAY",
+                  "startTime": "15:30",
+                  "endTime": "20:00",
+                  "classroom": "F1.1-Ángela Ruiz",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Profesor"
+                },
+                {
+                  "dayOfWeek": "FRIDAY",
+                  "startTime": "15:30",
+                  "endTime": "18:30",
+                  "classroom": "F1.1-Ángela Ruiz",
+                  "groupName": null,
+                  "entryType": "THEORY",
+                  "professor": "Profesor"
+                }
+              ],
+              "labVariants": {},
+              "semester": 1
+            }
+          ]
+        },
+        {
+          "name": "PERTE CHIP",
+          "matters": [
             {
               "code": "PERTE",
               "name": "PERTE",

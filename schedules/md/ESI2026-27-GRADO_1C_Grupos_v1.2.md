@@ -146,10 +146,10 @@ Ciudad Real Esc. Superior de Informatica Ciudad Real Ciudad Real
 | 10:00 11:30 | ESI                                           |                                                  |                                                 |                                                 |                                                   |
 | 11:30 13:00 |                                               |                                                  | Conferencias. Alan Turing ESI                   |                                                 |                                                   |
 | 13:00 14:30 |                                               |                                                  |                                                 |                                                 |                                                   |
-| 15:30 17:00 | IPO1 0.04-Hedy Lamar Manuel.Ortega            | SistDistr 0.04-Hedy Lamar David.Villa            | ArCo 0.04-Hedy Lamar Fernando.Rincon            | ArCo 0.04-Hedy Lamar Fernando.Rincon            |                                                   |
+| 15:30 17:00 | IPO1 0.04-Hedy Lamar Manuel.Ortega            | IngSw2-L 0.04-Hedy Lamar Ismael.Caballero Lab-A1 | ArCo 0.04-Hedy Lamar Fernando.Rincon            | ArCo 0.04-Hedy Lamar Fernando.Rincon            |                                                   |
 | 17:00 18:30 | IPO1-L 0.04-Hedy Lamar Manuel.Ortega Lab-A1   | SistDistr-L 0.04-Hedy Lamar David.Villa Lab-A1   | ArCo-L 0.04-Hedy Lamar JoseA.Torre Lab-A1       | IPO1 0.04-Hedy Lamar Manuel.Ortega              |                                                   |
 | 18:30 20:00 | IngSw2 0.04-Hedy Lamar Ismael.Caballero       | IngSw2 0.04-Hedy Lamar Ismael.Caballero          | SisInt 0.04-Hedy Lamar SustituloLSI-1           | SisInt 0.04-Hedy Lamar SustituloLSI-1           |                                                   |
-| 20:00 21:30 | SistDistr 0.04-Hedy Lamar David.Villa         | IngSw2-L 0.04-Hedy Lamar Ismael.Caballero Lab-A1 | SistInt-L LD4-John Carmac SustituloLSI-1 Lab-A2 | SistInt-L LD2-Dennis Ritc SustituloLSI-1 Lab-A1 |                                                   |
+| 20:00 21:30 | SistDistr 0.04-Hedy Lamar David.Villa         | SistDistr 0.04-Hedy Lamar David.Villa             | SistInt-L LD4-John Carmac SustituloLSI-1 Lab-A2 | SistInt-L LD2-Dennis Ritc SustituloLSI-1 Lab-A1 |                                                   |
 
 <!-- image -->
 

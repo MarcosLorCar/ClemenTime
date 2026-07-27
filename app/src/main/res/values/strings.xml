@@ -42,6 +42,9 @@
     </plurals>
     <string name="delete_selected_confirm">Delete</string>
 
+    <string name="tooltip_lab_selection_title">Lab Selection</string>
+    <string name="tooltip_lab_selection_desc">Select a lab group to filter the schedule and preview. If none selected, all render. Locked groups are mandatory.</string>
+
     <!-- Settings Screen strings -->
     <string name="data_storage_header">Data &amp; Storage</string>
     <string name="interface_header">Interface</string>
@@ -153,7 +156,8 @@
     <string name="conflict_resolver_continue">View Solutions</string>
     <string name="resolve_conflicts_tooltip">Resolve Conflicts</string>
     <string name="conflict_resolver_help_title">Conflict Resolver Help</string>
-    <string name="conflict_resolver_help_desc">Pin lab groups to lock them as mandatory selections for the solver. Tapping an unpinned group pins it, while tapping a pinned group unpins it. Toggle "Exclude from conflicts" to ignore specific classes during optimization.</string>
+    <string name="conflict_resolver_help_desc">Pin lab groups to lock them as mandatory selections for the solver. Tapping an unpinned group pins it, while tapping a pinned group unpins it. Toggle "Ignore class slot" to exclude specific classes from overlap checks entirely.</string>
+    <string name="conflict_resolver_lab_help_desc">Pin lab groups to lock them as mandatory selections for the solver. Tapping an unpinned group pins it, while tapping a pinned group unpins it. The optimizer will work around these locked choices.</string>
     <string name="conflict_resolver_pref_free_days">Free Days</string>
     <string name="conflict_resolver_pref_compact">Compactness</string>
     <string name="conflict_resolver_generate_preview">Preview Solutions</string>

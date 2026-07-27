@@ -46,6 +46,7 @@ data class AddEditSubjectUiState(
     val selectedLabGroup: String? = null,
     val onboardingTooltipsEnabled: Boolean = true,
     val hasSeenAddSlotTooltip: Boolean = false,
+    val hasSeenLabSelectionTooltip: Boolean = false,
     val isLoading: Boolean = false,
     val isSaved: Boolean = false,
     val errorMessage: String? = null
@@ -82,6 +83,11 @@ class AddEditSubjectViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.hasSeenAddSlotTooltipFlow.collect { seen ->
                 _uiState.update { it.copy(hasSeenAddSlotTooltip = seen) }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.hasSeenLabSelectionTooltipFlow.collect { seen ->
+                _uiState.update { it.copy(hasSeenLabSelectionTooltip = seen) }
             }
         }
         viewModelScope.launch {
@@ -139,6 +145,20 @@ class AddEditSubjectViewModel @Inject constructor(
             _uiState.update { it.copy(slots = it.slots + slot) }
         }
         closeSlotEditor()
+    }
+
+    fun markLabSelectionTooltipSeen() {
+        viewModelScope.launch {
+            settingsRepository.setHasSeenLabSelectionTooltip(true)
+        }
+    }
+
+    fun selectLabGroup(groupName: String?) {
+        _uiState.update { it.copy(selectedLabGroup = groupName) }
+        // Auto-save when selection changes in view mode
+        if (!_uiState.value.isEditMode) {
+            saveSubject(shouldExit = false)
+        }
     }
 
     fun updateCode(code: String) {
@@ -283,7 +303,7 @@ class AddEditSubjectViewModel @Inject constructor(
         }
     }
 
-    fun saveSubject() {
+    fun saveSubject(shouldExit: Boolean = true) {
         val state = _uiState.value
         if (state.code.isBlank() || state.name.isBlank()) return
 
@@ -310,7 +330,9 @@ class AddEditSubjectViewModel @Inject constructor(
 
             scheduleDao.upsertSubjectWithSlots(subjectToSave, validEntities)
             ScheduleWidgetUtils.updateWidget(context)
-            _uiState.update { it.copy(isSaved = true) }
+            if (shouldExit) {
+                _uiState.update { it.copy(isSaved = true) }
+            }
         }
     }
 }

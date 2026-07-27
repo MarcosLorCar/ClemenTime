@@ -46,6 +46,9 @@
     </plurals>
     <string name="delete_selected_confirm">Eliminar</string>
 
+    <string name="tooltip_lab_selection_title">Selección de Lab</string>
+    <string name="tooltip_lab_selection_desc">Selecciona un grupo de lab para filtrar el horario y la vista previa. Si no seleccionas ninguno, se muestran todos. Los grupos bloqueados son obligatorios.</string>
+
     <!-- Settings Screen strings -->
     <string name="data_storage_header">Datos y Almacenamiento</string>
     <string name="interface_header">Interfaz</string>
@@ -158,7 +161,8 @@
     <string name="conflict_resolver_continue">Ver Soluciones</string>
     <string name="resolve_conflicts_tooltip">Resolver Conflictos</string>
     <string name="conflict_resolver_help_title">Ayuda del Optimizador</string>
-    <string name="conflict_resolver_help_desc">Fija grupos de laboratorio para obligar al optimizador a usarlos. Al pulsar un grupo sin fijar se fija (icono de candado 🔒) y al pulsar uno fijado se desfija. Activa "Excluir de conflictos" para ignorar clases específicas durante la optimización.</string>
+    <string name="conflict_resolver_help_desc">Fija grupos de laboratorio para bloquearlos como selecciones obligatorias. Tocar un grupo no fijado lo fija, y viceversa. Activa "Ignorar horario" para excluir clases específicas de la detección de solapamientos.</string>
+    <string name="conflict_resolver_lab_help_desc">Fija grupos de laboratorio para bloquearlos como selecciones obligatorias para el optimizador. Tocar un grupo no fijado lo fija, y viceversa. El optimizador respetará estas elecciones fijas.</string>
     <string name="conflict_resolver_pref_free_days">Días Libres</string>
     <string name="conflict_resolver_pref_compact">Compacidad</string>
     <string name="conflict_resolver_generate_preview">Previsualizar Soluciones</string>

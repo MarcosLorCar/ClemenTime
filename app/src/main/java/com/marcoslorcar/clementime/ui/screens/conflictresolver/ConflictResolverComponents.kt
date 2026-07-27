@@ -74,6 +74,7 @@ fun UnifiedWorkspace(
     onToggleIgnored: (Long, Boolean) -> Unit,
     onSelectLabGroup: (Long, String?) -> Unit,
     onShowIgnoreHelp: () -> Unit,
+    onShowLabHelp: () -> Unit,
     onboardingTooltipsEnabled: Boolean = true,
     hasSeenPrioritiesTooltip: Boolean = false,
     onMarkPrioritiesTooltipSeen: () -> Unit = {}
@@ -146,12 +147,13 @@ fun UnifiedWorkspace(
                 subjectWithSlots = subjectWithSlots,
                 onToggleIgnored = onToggleIgnored,
                 onSelectLabGroup = onSelectLabGroup,
-                onShowIgnoreHelp = onShowIgnoreHelp
+                onShowIgnoreHelp = onShowIgnoreHelp,
+                onShowLabHelp = onShowLabHelp
             )
         }
 
         item {
-            Spacer(modifier = Modifier.height(72.dp))
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
@@ -162,7 +164,8 @@ fun SubjectConfigCard(
     subjectWithSlots: SubjectWithSlots,
     onToggleIgnored: (Long, Boolean) -> Unit,
     onSelectLabGroup: (Long, String?) -> Unit,
-    onShowIgnoreHelp: () -> Unit
+    onShowIgnoreHelp: () -> Unit,
+    onShowLabHelp: () -> Unit
 ) {
     val subject = subjectWithSlots.subject
     val slots = subjectWithSlots.slots
@@ -196,11 +199,24 @@ fun SubjectConfigCard(
             // Lab Group Choice Chips (Horizontal)
             if (labGroups.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = stringResource(R.string.lab_group_label),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = stringResource(R.string.lab_group_label),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    IconButton(
+                        onClick = onShowLabHelp,
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.HelpOutline,
+                            contentDescription = "Help",
+                            modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(
                     modifier = Modifier
@@ -221,6 +237,7 @@ fun SubjectConfigCard(
                                 }
                             },
                             label = { Text(groupName) },
+                            enabled = !isOnlyOption,
                             leadingIcon = {
                                 Icon(
                                     imageVector = if (isPinned || isOnlyOption) Icons.Default.Lock else Icons.Default.LockOpen,
@@ -228,6 +245,7 @@ fun SubjectConfigCard(
                                     modifier = Modifier.size(16.dp)
                                 )
                             },
+                            modifier = Modifier.alpha(if (isOnlyOption) 0.6f else 1f),
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                                 selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -503,14 +521,20 @@ fun SolutionCard(
             }
 
             // Wrapping FlowRow of Borderless Lab Group Chips
-            if (solution.labSelections.isNotEmpty()) {
+            val filteredSelections = remember(solution.labSelections, allSubjects) {
+                solution.labSelections.filter { (subjectId, _) ->
+                    allSubjects.find { it.subject.id == subjectId }?.subject?.selectedLabGroup == null
+                }
+            }
+
+            if (filteredSelections.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(10.dp))
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    solution.labSelections.forEach { (subjectId, labGroupNames) ->
+                    filteredSelections.forEach { (subjectId, labGroupNames) ->
                         val subject = allSubjects.find { it.subject.id == subjectId }?.subject
                         val codeStr = subject?.code ?: "SUB"
                         val groupText = labGroupNames.joinToString("/")
@@ -552,7 +576,9 @@ fun SolutionCard(
             Spacer(modifier = Modifier.height(12.dp))
 
             ScheduleMiniPreview(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp),
                 slots = solution.totalSlots,
                 overlappingSlotIds = solution.overlappingSlotIds
             )

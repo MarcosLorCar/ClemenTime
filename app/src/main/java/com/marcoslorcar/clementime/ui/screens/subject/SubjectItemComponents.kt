@@ -47,13 +47,18 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.marcoslorcar.clementime.R
 import com.marcoslorcar.clementime.data.ClassSlot
 import com.marcoslorcar.clementime.data.EntryType
+import com.marcoslorcar.clementime.data.Subject
 import com.marcoslorcar.clementime.data.SubjectWithSlots
 import com.marcoslorcar.clementime.data.cardColor
+import com.marcoslorcar.clementime.ui.components.ScheduleMiniPreview
+import com.marcoslorcar.clementime.ui.theme.ClemenTimeTheme
 import java.time.DayOfWeek
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -233,6 +238,20 @@ fun SubjectItemCard(
 
                             Spacer(modifier = Modifier.height(12.dp))
 
+                            val previewSlots = remember(subjectWithSlots) {
+                                subjectWithSlots.slots.map { subjectWithSlots.subject to it }
+                            }
+
+                            if (previewSlots.isNotEmpty()) {
+                                ScheduleMiniPreview(
+                                    slots = previewSlots,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(110.dp)
+                                        .padding(bottom = 12.dp)
+                                )
+                            }
+
                             if (subjectWithSlots.slots.isEmpty()) {
                                 Text(
                                     text = stringResource(R.string.no_slots_assigned),
@@ -264,7 +283,11 @@ fun SlotDetailRow(
 ) {
     val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
     val formattedTime = "${slot.startTime.format(timeFormatter)} - ${slot.endTime.format(timeFormatter)}"
-    val dayName = slot.dayOfWeek.name.lowercase().replaceFirstChar { it.uppercase() }
+    val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
+    val dayName = remember(slot.dayOfWeek, locale) {
+        slot.dayOfWeek.getDisplayName(java.time.format.TextStyle.FULL, locale)
+            .replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
+    }
 
     Surface(
         shape = RoundedCornerShape(8.dp),
@@ -331,6 +354,56 @@ fun SlotDetailRow(
                     modifier = Modifier.size(20.dp)
                 )
             }
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SubjectItemCardPreview() {
+    val sampleSubject = Subject(
+        id = 1,
+        code = "CS101",
+        name = "Introduction to Computer Science",
+        color = 0xFF2196F3.toInt(),
+        isActive = true,
+        semester = 1
+    )
+    val sampleSlots = listOf(
+        ClassSlot(
+            id = 1,
+            subjectId = 1,
+            dayOfWeek = DayOfWeek.MONDAY,
+            startTime = LocalTime.of(9, 0),
+            endTime = LocalTime.of(10, 30),
+            classroom = "Room 101",
+            entryType = EntryType.THEORY
+        ),
+        ClassSlot(
+            id = 2,
+            subjectId = 1,
+            dayOfWeek = DayOfWeek.WEDNESDAY,
+            startTime = LocalTime.of(14, 0),
+            endTime = LocalTime.of(16, 0),
+            classroom = "Lab 2",
+            entryType = EntryType.LAB
+        )
+    )
+    val subjectWithSlots = SubjectWithSlots(sampleSubject, sampleSlots)
+
+    ClemenTimeTheme {
+        Column(modifier = Modifier.padding(16.dp)) {
+            SubjectItemCard(
+                subjectWithSlots = subjectWithSlots,
+                isInSelectionMode = false,
+                isSelected = false,
+                highContrastEnabled = false,
+                onToggleActive = {},
+                onEditClick = {},
+                onDeleteClick = {},
+                onNavigateToSchedule = { _, _ -> },
+                onToggleSelection = {}
+            )
         }
     }
 }
