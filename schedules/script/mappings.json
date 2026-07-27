@@ -70,7 +70,11 @@
     "PlanIntSS": "Planificación e Integración de Sistemas y Servicios",
     "PERTE": "PERTE",
     "MUFPS": "Máster de Profesorado",
-    "UnivMayores": "UnivMayores"
+    "UnivMayores": "UnivMayores",
+    "SistInt-L": "Sistemas Inteligentes",
+    "SistInt": "Sistemas Inteligentes",
+    "Cálculo-L": "Calculo",
+    "FunGesEmp": "Fundamentos de Gestion Empresarial"
   },
   "professors": {
     "Antonio.Adan": "Antonio Adan",
@@ -193,7 +197,14 @@
     "Profesor.UnivMayores": "Profesor.UnivMayores",
     "Manuel.Villasalero": "Manuel Villasalero",
     "Jose Ramon Sanchez": "Jose Ramon Sanchez",
-    "JesusR.Oviedo": "Jesus Ramon Oviedo"
+    "JesusR.Oviedo": "Jesus Ramon Oviedo",
+    "Coord.UnivMay": "Coord.UnivMay",
+    "José": "José",
+    "Ramón": "Ramón",
+    "Sánchez": "Sánchez",
+    "JoseA": "Jose Angel",
+    "Antoni": "Antonio",
+    "Javier": "javier"
   },
   "classrooms": {
     "0.02+3-Charles": "0.02+3-Charles",
@@ -246,6 +257,22 @@
     "LD4-Joh": "LD4-John Carmack",
     "0.02-Charles Babbage": "0.02-Charles Babbage",
     "A2.2-Grace Murray": "A2.2-Grace Murray",
-    "LD4-John Carmack": "LD4-John Carmack"
+    "LD4-John Carmack": "LD4-John Carmack",
+    "Charles Babbage - 0.02+3": "Charles Babbage - 0.02+3",
+    "John von Neumann - A1.1": "John von Neumann - A1.1",
+    "John Carmack - LD4": "John Carmack - LD4",
+    "Alan Turing - Salón de Actos": "Alan Turing - Salón de Actos",
+    "Ignacio Cirac - LD1": "Ignacio Cirac - LD1",
+    "Bill Gates - LD3": "Bill Gates - LD3",
+    "Grace Murray Hopper - A2.2": "Grace Murray Hopper - A2.2",
+    "Tim Berners-Lee - A1.2": "Tim Berners-Lee - A1.2",
+    "Dennis Ritchie - LD2": "Dennis Ritchie - LD2",
+    "Claude Shannon - 0.07": "Claude Shannon - 0.07",
+    "Hedy Lamarr - 0.04": "Hedy Lamarr - 0.04",
+    "Edsger W. Dijkstra - 0.05+6": "Edsger W. Dijkstra - 0.05+6",
+    "George Boole - A2.1": "George Boole - A2.1",
+    "Marvin Minsky - F0.1": "Marvin Minsky - F0.1",
+    "Steve Jobs - F0.2": "Steve Jobs - F0.2",
+    "Ángela Ruiz Robles - F1.1": "Ángela Ruiz Robles - F1.1"
   }
 }

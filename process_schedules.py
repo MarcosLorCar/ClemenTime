@@ -2,15 +2,8 @@
 """
 process_schedules.py
 
-Project-root wrapper script to process schedule files (PDF -> JSON)
-and regenerate the schedule index.
-
-Usage:
-  python3 process_schedules.py               # Process all PDFs in schedules/pdf/
-  python3 process_schedules.py my.pdf        # Process specific PDF
-  python3 process_schedules.py --strict      # Non-interactive mode (CI)
-  python3 process_schedules.py --model ...   # Specify Gemini model
-  python3 process_schedules.py --clear-cache # Clear AI response cache
+Wrapper script to process JSON schedule files in schedules/input/
+and generate output JSON files per cuatrimestre in dist/.
 """
 
 import sys
@@ -20,72 +13,55 @@ import glob
 import argparse
 
 def main():
-    # Load env for model default
-    try:
-        from dotenv import load_dotenv
-        # Look for .env in the root or in the script subdir
-        root_dir = os.path.dirname(os.path.abspath(__file__))
-        load_dotenv(os.path.join(root_dir, ".env"))
-        load_dotenv(os.path.join(root_dir, "schedules", "script", ".env"))
-    except ImportError:
-        pass
+    parser = argparse.ArgumentParser(description="Process schedule JSON files into semester output JSONs.")
+    parser.add_argument("json_file", nargs="?", help="Specific JSON file to process. If omitted, processes all in schedules/input/")
+    parser.add_argument("--strict", action="store_true", help="Non-interactive mode")
 
-    default_model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
-
-    parser = argparse.ArgumentParser(description="Process schedule files (PDF -> JSON) and regenerate index.")
-    parser.add_argument("pdf", nargs="?", help="Specific PDF to process. If omitted, processes all in schedules/pdf/")
-    parser.add_argument("--strict", action="store_true", help="Non-interactive mode (CI)")
-    parser.add_argument("--model", default=default_model, help=f"Gemini model ID to use (default: {default_model}).")
-    parser.add_argument("--clear-cache", action="store_true", help="Clear AI response cache before running.")
-
-    args, unknown = parser.parse_known_args()
+    args = parser.parse_args()
 
     root_dir = os.path.dirname(os.path.abspath(__file__))
     script_dir = os.path.join(root_dir, "schedules", "script")
-    pdf_dir = os.path.join(root_dir, "schedules", "pdf")
+    input_dir = os.path.join(root_dir, "schedules", "input")
 
     parse_script = os.path.join(script_dir, "parse_schedule.py")
     index_script = os.path.join(script_dir, "generate_index.py")
 
-    # 1. Determine which PDFs to process
-    pdfs_to_process = []
-    if args.pdf:
-        if os.path.exists(args.pdf):
-            pdfs_to_process.append(args.pdf)
+    # 1. Determine JSON files to process
+    files_to_process = []
+    if args.json_file:
+        if os.path.exists(args.json_file):
+            files_to_process.append(args.json_file)
         else:
-            print(f"[Error] File '{args.pdf}' not found.")
+            print(f"[Error] File '{args.json_file}' not found.")
             sys.exit(1)
     else:
-        pdfs_to_process = glob.glob(os.path.join(pdf_dir, "*.pdf"))
-        if not pdfs_to_process:
-            print(f"[Warning] No PDFs found in {pdf_dir}")
+        files_to_process = glob.glob(os.path.join(input_dir, "*.json"))
+        if not files_to_process:
+            print(f"[Warning] No JSON files found in {input_dir}")
 
-    if not pdfs_to_process:
+    if not files_to_process:
         print("[Info] No files to process.")
     else:
-        # 2. Run schedule parsing for each PDF
-        for pdf in pdfs_to_process:
-            cmd_parse = [sys.executable, parse_script, pdf]
+        # 2. Run parsing script for each JSON file
+        for json_path in files_to_process:
+            cmd = [sys.executable, parse_script, json_path]
             if args.strict:
-                cmd_parse.append("--non-interactive")
-            if args.model:
-                cmd_parse.extend(["--model", args.model])
-            if args.clear_cache:
-                cmd_parse.append("--clear-cache")
+                cmd.append("--non-interactive")
 
-            print(f"\n[Run] Parsing {os.path.basename(pdf)} using {args.model}...")
-            res = subprocess.run(cmd_parse)
+            print(f"\n[Run] Processing {os.path.basename(json_path)}...")
+            res = subprocess.run(cmd)
             if res.returncode != 0:
-                print(f"[Error] Parsing failed for {pdf}")
+                print(f"[Error] Processing failed for {json_path}")
                 if args.strict:
                     sys.exit(res.returncode)
 
-    # 3. Run index generation
-    print(f"\n[Run] Regenerating index...")
-    res_index = subprocess.run([sys.executable, index_script])
-    if res_index.returncode != 0:
-        print("[Error] Schedule index generation failed.")
-        sys.exit(res_index.returncode)
+    # 3. Regenerate index if index script exists
+    if os.path.exists(index_script):
+        print("\n[Run] Regenerating index...")
+        res_index = subprocess.run([sys.executable, index_script])
+        if res_index.returncode != 0:
+            print("[Error] Schedule index generation failed.")
+            sys.exit(res_index.returncode)
 
     print("\n[Done] Pipeline finished successfully!")
 
