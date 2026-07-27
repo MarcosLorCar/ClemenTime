@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "title": "Cuatrimestre 1",
+  "title": "ESI2026-27-GRADO_1C_Grupos_v1.3",
   "semester": 1,
   "matters": [
     {
@@ -57,7 +57,7 @@
       "matters": [],
       "groups": [
         {
-          "name": "1º A",
+          "name": "A",
           "matters": [
             {
               "code": "FunProg1",
@@ -308,7 +308,7 @@
           ]
         },
         {
-          "name": "1º B",
+          "name": "B",
           "matters": [
             {
               "code": "Calculo",
@@ -590,7 +590,7 @@
           ]
         },
         {
-          "name": "1º C",
+          "name": "C",
           "matters": [
             {
               "code": "FunProg1",
@@ -872,7 +872,7 @@
           ]
         },
         {
-          "name": "1º D",
+          "name": "D",
           "matters": [
             {
               "code": "FunGesEmpr",
@@ -1116,7 +1116,7 @@
       "matters": [],
       "groups": [
         {
-          "name": "2º A",
+          "name": "A",
           "matters": [
             {
               "code": "Lógica",
@@ -1365,7 +1365,7 @@
           ]
         },
         {
-          "name": "2º B",
+          "name": "B",
           "matters": [
             {
               "code": "SSOO1",
@@ -1691,7 +1691,7 @@
           ]
         },
         {
-          "name": "2º C",
+          "name": "C",
           "matters": [
             {
               "code": "IngSw1",
@@ -1951,7 +1951,7 @@
           ]
         },
         {
-          "name": "2º D",
+          "name": "D",
           "matters": [
             {
               "code": "OrCo",
@@ -2283,7 +2283,7 @@
       "matters": [],
       "groups": [
         {
-          "name": "3º A",
+          "name": "A",
           "matters": [
             {
               "code": "IPO1",
@@ -2499,7 +2499,7 @@
           ]
         },
         {
-          "name": "3º B",
+          "name": "B",
           "matters": [
             {
               "code": "SisInt",
@@ -2770,7 +2770,7 @@
           ]
         },
         {
-          "name": "3º C",
+          "name": "C",
           "matters": [
             {
               "code": "ArCo",

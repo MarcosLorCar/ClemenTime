@@ -149,12 +149,16 @@ def format_time(time_str: str) -> str:
     return time_str
 
 def parse_year_and_group(grupo_str: str):
+    """
+    Parses 'grupo' string into year name and group name without repeating the year.
+    Example: '1A' -> ('1º', 'A'), '3º ISO' -> ('3º ISO', None)
+    """
     grupo_str = grupo_str.strip()
     match = re.match(r"^(\d+)([A-Z])$", grupo_str)
     if match:
         year_num, group_char = match.groups()
         year_name = f"{year_num}º"
-        group_name = f"{year_num}º {group_char}"
+        group_name = group_char
         return year_name, group_name
 
     if not grupo_str.endswith("º") and not grupo_str[0].isdigit():
@@ -212,8 +216,8 @@ def process_raw_json(raw_entries: List[Dict], interactive: bool = True) -> Dict[
     mappings = load_mappings()
 
     semesters: Dict[str, Dict] = {
-        "1C": {"version": 1, "title": "Cuatrimestre 1", "semester": 1, "matters": [], "years": []},
-        "2C": {"version": 1, "title": "Cuatrimestre 2", "semester": 2, "matters": [], "years": []}
+        "1C": {"version": 1, "title": None, "semester": 1, "matters": [], "years": []},
+        "2C": {"version": 1, "title": None, "semester": 2, "matters": [], "years": []}
     }
 
     global_matters: Dict[str, Dict[str, Dict]] = {"1C": {}, "2C": {}}
@@ -322,22 +326,27 @@ def main():
 
     print("\n--- Output Configuration ---")
     for sem_key, schema in results.items():
+        default_title = f"Cuatrimestre {1 if sem_key == '1C' else 2}"
         default_filename = f"{sem_key}.json"
 
         if interactive:
-            user_filename = input(f"Enter filename for {sem_key} output (default: {default_filename}): ").strip()
+            print(f"\n[{sem_key}]")
+            user_title = input(f"  Enter schedule title (default: '{default_title}'): ").strip()
+            schema["title"] = user_title if user_title else default_title
+
+            user_filename = input(f"  Enter output filename (default: '{default_filename}'): ").strip()
             filename = user_filename if user_filename else default_filename
         else:
+            schema["title"] = default_title
             filename = default_filename
 
-        # Ensure .json extension
         if not filename.endswith(".json"):
             filename += ".json"
 
         out_file = os.path.join(DEFAULT_DIST_DIR, filename)
         with open(out_file, "w", encoding="utf-8") as f:
             json.dump(schema, f, indent=2, ensure_ascii=False)
-        print(f"Generated: {out_file}")
+        print(f"  -> Saved: {out_file}")
 
 if __name__ == "__main__":
     main()

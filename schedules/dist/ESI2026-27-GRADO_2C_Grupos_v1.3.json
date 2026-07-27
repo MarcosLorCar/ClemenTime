@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "title": "Cuatrimestre 2",
+  "title": "ESI2026-27-GRADO_2C_Grupos_v1.3",
   "semester": 2,
   "matters": [
     {
@@ -57,7 +57,7 @@
       "matters": [],
       "groups": [
         {
-          "name": "1º A",
+          "name": "A",
           "matters": [
             {
               "code": "Redes I",
@@ -317,7 +317,7 @@
           ]
         },
         {
-          "name": "1º B",
+          "name": "B",
           "matters": [
             {
               "code": "Redes I",
@@ -588,7 +588,7 @@
           ]
         },
         {
-          "name": "1º C",
+          "name": "C",
           "matters": [
             {
               "code": "Redes I",
@@ -848,7 +848,7 @@
           ]
         },
         {
-          "name": "1º D",
+          "name": "D",
           "matters": [
             {
               "code": "Algebra",
@@ -1092,7 +1092,7 @@
       "matters": [],
       "groups": [
         {
-          "name": "2º A",
+          "name": "A",
           "matters": [
             {
               "code": "PCTR",
@@ -1330,7 +1330,7 @@
           ]
         },
         {
-          "name": "2º B",
+          "name": "B",
           "matters": [
             {
               "code": "Redes II",
@@ -1645,7 +1645,7 @@
           ]
         },
         {
-          "name": "2º C",
+          "name": "C",
           "matters": [
             {
               "code": "BBDD",
@@ -1949,7 +1949,7 @@
           ]
         },
         {
-          "name": "2º D",
+          "name": "D",
           "matters": [
             {
               "code": "Redes II",
