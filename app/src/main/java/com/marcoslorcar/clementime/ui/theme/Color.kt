@@ -4,53 +4,53 @@ package com.marcoslorcar.clementime.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Light Theme Clementine Colors
-val ClementinePrimaryLight = Color(0xFFCE5D1F) // Soft, muted Clementine Orange
+// Light Theme Clementine Colors (Citrus-Tangerine)
+val ClementinePrimaryLight = Color(0xFF8B5000)
 val ClementineOnPrimaryLight = Color(0xFFFFFFFF)
-val ClementinePrimaryContainerLight = Color(0xFFFBE4D5) // Muted pastel peach container
-val ClementineOnPrimaryContainerLight = Color(0xFF3B1500)
+val ClementinePrimaryContainerLight = Color(0xFFFFDCBE)
+val ClementineOnPrimaryContainerLight = Color(0xFF2D1600)
 
-val ClementineSecondaryLight = Color(0xFF6B6A65) // Warm neutral gray
+val ClementineSecondaryLight = Color(0xFF715A41)
 val ClementineOnSecondaryLight = Color(0xFFFFFFFF)
-val ClementineSecondaryContainerLight = Color(0xFFECEAE4) // Muted warm gray container
-val ClementineOnSecondaryContainerLight = Color(0xFF1C1C19)
+val ClementineSecondaryContainerLight = Color(0xFFFDDABE)
+val ClementineOnSecondaryContainerLight = Color(0xFF281805)
 
-val ClementineTertiaryLight = Color(0xFF4F6550) // Soft Sage Green accent
+val ClementineTertiaryLight = Color(0xFF53643E)
 val ClementineOnTertiaryLight = Color(0xFFFFFFFF)
-val ClementineTertiaryContainerLight = Color(0xFFD3EAD2)
-val ClementineOnTertiaryContainerLight = Color(0xFF0F1E10)
+val ClementineTertiaryContainerLight = Color(0xFFD6E9B9)
+val ClementineOnTertiaryContainerLight = Color(0xFF121F03)
 
-val ClementineBackgroundLight = Color(0xFFF6F5F2) // Soft warm cotton-paper (cuts brightness/glare)
-val ClementineOnBackgroundLight = Color(0xFF1C1C19)
-val ClementineSurfaceLight = Color(0xFFFAF9F6) // Warm off-white
-val ClementineOnSurfaceLight = Color(0xFF1C1C19)
-val ClementineSurfaceVariantLight = Color(0xFFECEAE4) // Muted warm neutral variant
-val ClementineOnSurfaceVariantLight = Color(0xFF5C5B56)
-val ClementineOutlineLight = Color(0xFFD4D2C9)
+val ClementineBackgroundLight = Color(0xFFFFFBFF)
+val ClementineOnBackgroundLight = Color(0xFF1F1B16)
+val ClementineSurfaceLight = Color(0xFFFFFBFF)
+val ClementineOnSurfaceLight = Color(0xFF1F1B16)
+val ClementineSurfaceVariantLight = Color(0xFFF0E0D0)
+val ClementineOnSurfaceVariantLight = Color(0xFF4F4539)
+val ClementineOutlineLight = Color(0xFF817567)
 
-// Dark Theme Clementine Colors
-val ClementinePrimaryDark = Color(0xFFFFC59E) // Soft, pale pastel peach (not rusty)
-val ClementineOnPrimaryDark = Color(0xFF4A1F03)
-val ClementinePrimaryContainerDark = Color(0xFF3F2516) // Deep warm cocoa/charcoal (not rusty red)
-val ClementineOnPrimaryContainerDark = Color(0xFFFFDCC1)
+// Dark Theme Clementine Colors (Citrus-Tangerine)
+val ClementinePrimaryDark = Color(0xFFFFB86F)
+val ClementineOnPrimaryDark = Color(0xFF4A2800)
+val ClementinePrimaryContainerDark = Color(0xFF693C00)
+val ClementineOnPrimaryContainerDark = Color(0xFFFFDCBE)
 
-val ClementineSecondaryDark = Color(0xFFA1A1AA) // Zinc 400
-val ClementineOnSecondaryDark = Color(0xFF18181B)
-val ClementineSecondaryContainerDark = Color(0xFF27272A) // Zinc 800
-val ClementineOnSecondaryContainerDark = Color(0xFFF4F4F5)
+val ClementineSecondaryDark = Color(0xFFDFB997)
+val ClementineOnSecondaryDark = Color(0xFF402D15)
+val ClementineSecondaryContainerDark = Color(0xFF58422A)
+val ClementineOnSecondaryContainerDark = Color(0xFFFDDABE)
 
-val ClementineTertiaryDark = Color(0xFFB7CCB6) // Soft Sage Green for Dark Mode
-val ClementineOnTertiaryDark = Color(0xFF203421)
-val ClementineTertiaryContainerDark = Color(0xFF384B39)
-val ClementineOnTertiaryContainerDark = Color(0xFFD3EAD2)
+val ClementineTertiaryDark = Color(0xFFBACC9F)
+val ClementineOnTertiaryDark = Color(0xFF253513)
+val ClementineTertiaryContainerDark = Color(0xFF3C4C28)
+val ClementineOnTertiaryContainerDark = Color(0xFFD6E9B9)
 
-val ClementineBackgroundDark = Color(0xFF0F0F11) // Sleek dark charcoal
-val ClementineOnBackgroundDark = Color(0xFFF4F4F5)
-val ClementineSurfaceDark = Color(0xFF18181B) // Zinc 900 surface
-val ClementineOnSurfaceDark = Color(0xFFF4F4F5)
-val ClementineSurfaceVariantDark = Color(0xFF27272A) // Zinc 800 variant
-val ClementineOnSurfaceVariantDark = Color(0xFFA1A1AA)
-val ClementineOutlineDark = Color(0xFF3F3F46) // Zinc 700
+val ClementineBackgroundDark = Color(0xFF1F1B16)
+val ClementineOnBackgroundDark = Color(0xFFEAE1D9)
+val ClementineSurfaceDark = Color(0xFF1F1B16)
+val ClementineOnSurfaceDark = Color(0xFFEAE1D9)
+val ClementineSurfaceVariantDark = Color(0xFF4F4539)
+val ClementineOnSurfaceVariantDark = Color(0xFFD3C4B4)
+val ClementineOutlineDark = Color(0xFF9C8F80)
 
 // New Themes (Primary, Secondary, Tertiary, Container)
 val ClementinePrimary = Color(0xFFFF9800)

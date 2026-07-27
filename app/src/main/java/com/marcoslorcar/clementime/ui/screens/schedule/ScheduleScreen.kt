@@ -67,8 +67,6 @@ import com.marcoslorcar.clementime.ui.model.ClassSlotUiModel
 import com.marcoslorcar.clementime.ui.model.toUiModel
 import com.marcoslorcar.clementime.ui.screens.subject.SlotEditBottomSheet
 import com.marcoslorcar.clementime.ui.theme.ClemenTimeTheme
-import com.marcoslorcar.clementime.utils.DAY_END_TIME
-import com.marcoslorcar.clementime.utils.DAY_START_TIME
 import com.marcoslorcar.clementime.utils.getNarrowLabel
 import com.marcoslorcar.clementime.utils.groupSlotsIntoClusters
 import kotlinx.coroutines.delay
@@ -194,12 +192,14 @@ fun ScheduleContent(
                             show = uiState.onboardingTooltipsEnabled && uiState.showAutoChangeTooltip,
                             onDismiss = onMarkAutoSemesterChangeTooltipSeen
                         ) {
-                            IconButton(onClick = onToggleSemesterSwitcher) {
-                                Icon(
-                                    imageVector = Icons.Default.DateRange,
-                                    contentDescription = stringResource(R.string.content_description_toggle_semester_switcher),
-                                    tint = if (uiState.isSemesterSwitcherVisible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                                )
+                            if (uiState.hasAnySubjects) {
+                                IconButton(onClick = onToggleSemesterSwitcher) {
+                                    Icon(
+                                        imageVector = Icons.Default.DateRange,
+                                        contentDescription = stringResource(R.string.content_description_toggle_semester_switcher),
+                                        tint = if (uiState.isSemesterSwitcherVisible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
                             }
                         }
                         if (uiState.subjectsWithSlots.isNotEmpty()) {
@@ -316,7 +316,7 @@ fun ScheduleContent(
         },
         floatingActionButton = {
             val isWeekday = today != DayOfWeek.SATURDAY && today != DayOfWeek.SUNDAY
-            val isWithinTimelineRange = currentTime in DAY_START_TIME..DAY_END_TIME
+            val isWithinTimelineRange = currentTime in uiState.dayStartTime..uiState.dayEndTime
             
             val shouldShowFab = uiState.showNowLine && 
                               isWeekday && 
@@ -405,6 +405,8 @@ fun ScheduleContent(
                 ScheduleTimeline(
                     modifier = Modifier.fillMaxSize(),
                     clusters = clusters,
+                    startTime = uiState.dayStartTime,
+                    endTime = uiState.dayEndTime,
                     showNowLine = uiState.showNowLine,
                     nowLineStyle = uiState.nowLineStyle,
                     dayOfWeek = currentDay.dayOfWeek,

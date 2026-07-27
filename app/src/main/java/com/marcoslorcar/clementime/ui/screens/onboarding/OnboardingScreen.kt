@@ -1,5 +1,6 @@
 package com.marcoslorcar.clementime.ui.screens.onboarding
 
+import android.os.Build
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,6 +36,8 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -200,6 +203,8 @@ fun ThemePage(
     onThemeModeSelected: (String) -> Unit,
     onColorThemeSelected: (String) -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -292,9 +297,15 @@ fun ThemePage(
                     "light" -> false
                     else -> systemIsDark
                 }
+                val previewColorScheme = if (id == "clementine" && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    if (isPreviewDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+                } else {
+                    getThemeColorScheme(id, isPreviewDark)
+                }
+
                 AppSkeletonPreview(
                     name = name,
-                    colorScheme = getThemeColorScheme(id, isPreviewDark),
+                    colorScheme = previewColorScheme,
                     isSelected = selectedTheme == id,
                     onClick = { onColorThemeSelected(id) }
                 )

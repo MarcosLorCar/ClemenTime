@@ -20,10 +20,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.LocalTime
 import javax.inject.Inject
 
 data class ScheduleUiState(
@@ -38,9 +38,12 @@ data class ScheduleUiState(
     val hasOverlaps: Boolean = false,
     val highlightSlotId: Long? = null,
     val isSemesterSwitcherVisible: Boolean = false,
+    val hasAnySubjects: Boolean = false,
     val onboardingTooltipsEnabled: Boolean = true,
     val hasSeenOptimizerTooltip: Boolean = false,
-    val showAutoChangeTooltip: Boolean = false
+    val showAutoChangeTooltip: Boolean = false,
+    val dayStartTime: LocalTime = LocalTime.of(8, 30),
+    val dayEndTime: LocalTime = LocalTime.of(21, 30)
 )
 
 private data class SettingsAndHighlight(
@@ -52,7 +55,9 @@ private data class SettingsAndHighlight(
     val onboardingTooltipsEnabled: Boolean,
     val hasSeenOptimizerTooltip: Boolean,
     val selectedSemester: Int,
-    val wasSemesterAutoChanged: Boolean
+    val wasSemesterAutoChanged: Boolean,
+    val dayStartTime: LocalTime,
+    val dayEndTime: LocalTime
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -93,9 +98,7 @@ class ScheduleViewModel @Inject constructor(
     }
 
     val uiState: StateFlow<ScheduleUiState> = combine(
-        settingsRepository.currentSemesterFlow.flatMapLatest { semester ->
-            scheduleDao.getActiveSubjectsWithSlotsBySemester(semester)
-        },
+        scheduleDao.getAllSubjectsWithSlots(),
         _selectedTab,
         _isSemesterSwitcherVisible,
         combine<Any?, SettingsAndHighlight>(
@@ -107,7 +110,11 @@ class ScheduleViewModel @Inject constructor(
             settingsRepository.onboardingTooltipsEnabledFlow,
             settingsRepository.hasSeenOptimizerTooltipFlow,
             settingsRepository.currentSemesterFlow,
-            settingsRepository.wasSemesterAutoChangedFlow
+            settingsRepository.wasSemesterAutoChangedFlow,
+            settingsRepository.dayStartHourFlow,
+            settingsRepository.dayStartMinuteFlow,
+            settingsRepository.dayEndHourFlow,
+            settingsRepository.dayEndMinuteFlow
         ) { args ->
             SettingsAndHighlight(
                 scrollable = args[0] as Boolean,
@@ -118,11 +125,14 @@ class ScheduleViewModel @Inject constructor(
                 onboardingTooltipsEnabled = args[5] as Boolean,
                 hasSeenOptimizerTooltip = args[6] as Boolean,
                 selectedSemester = args[7] as Int,
-                wasSemesterAutoChanged = args[8] as Boolean
+                wasSemesterAutoChanged = args[8] as Boolean,
+                dayStartTime = LocalTime.of(args[9] as Int, args[10] as Int),
+                dayEndTime = LocalTime.of(args[11] as Int, args[12] as Int)
             )
         }
-    ) { rawSubjects, selectedTab, isSwitcherVisible, settings ->
-        val filteredSubjects = rawSubjects.map { sWithSlots ->
+    ) { allSubjects, selectedTab, isSwitcherVisible, settings ->
+        val semesterSubjects = allSubjects.filter { it.subject.semester == settings.selectedSemester && it.subject.isActive }
+        val filteredSubjects = semesterSubjects.map { sWithSlots ->
             val filteredSlots = sWithSlots.slots.filter { slot ->
                 slot.entryType == EntryType.THEORY || 
                 sWithSlots.subject.selectedLabGroup == null || 
@@ -145,9 +155,12 @@ class ScheduleViewModel @Inject constructor(
             hasOverlaps = hasOverlaps,
             highlightSlotId = settings.highlightSlotId,
             isSemesterSwitcherVisible = isSwitcherVisible,
+            hasAnySubjects = allSubjects.isNotEmpty(),
             onboardingTooltipsEnabled = settings.onboardingTooltipsEnabled,
             hasSeenOptimizerTooltip = settings.hasSeenOptimizerTooltip,
-            showAutoChangeTooltip = settings.wasSemesterAutoChanged
+            showAutoChangeTooltip = settings.wasSemesterAutoChanged,
+            dayStartTime = settings.dayStartTime,
+            dayEndTime = settings.dayEndTime
         )
     }.stateIn(
         scope = viewModelScope,

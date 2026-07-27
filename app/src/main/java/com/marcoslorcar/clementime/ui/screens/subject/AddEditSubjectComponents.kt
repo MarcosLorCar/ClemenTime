@@ -1,5 +1,10 @@
 package com.marcoslorcar.clementime.ui.screens.subject
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -191,17 +196,24 @@ fun SubjectBasicDetailsCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                OutlinedTextField(
-                    value = localCode,
-                    onValueChange = {
-                        localCode = it
-                        onUpdateCode(it)
-                    },
-                    label = { Text(stringResource(R.string.code_label)) },
-                    placeholder = { Text(stringResource(R.string.code_placeholder)) },
-                    singleLine = true,
+                AnimatedVisibility(
+                    visible = localName.isNotBlank() || localCode.isNotBlank(),
+                    enter = fadeIn() + expandHorizontally(),
+                    exit = fadeOut() + shrinkHorizontally(),
                     modifier = Modifier.weight(0.35f)
-                )
+                ) {
+                    OutlinedTextField(
+                        value = localCode,
+                        onValueChange = {
+                            localCode = it
+                            onUpdateCode(it)
+                        },
+                        label = { Text(stringResource(R.string.code_label)) },
+                        placeholder = { Text(stringResource(R.string.code_placeholder)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
                 OutlinedTextField(
                     value = localName,
                     onValueChange = {
@@ -211,7 +223,7 @@ fun SubjectBasicDetailsCard(
                     label = { Text(stringResource(R.string.name_label)) },
                     placeholder = { Text(stringResource(R.string.name_placeholder)) },
                     singleLine = true,
-                    modifier = Modifier.weight(0.65f)
+                    modifier = Modifier.weight(if (localName.isNotBlank() || localCode.isNotBlank()) 0.65f else 1f)
                 )
             }
 

@@ -70,8 +70,11 @@
 
     <string name="high_contrast_setting_title">Tarjetas de Alto Contraste</string>
     <string name="high_contrast_setting_desc">Tarjetas más opacas para una mejor legibilidad</string>
+    <string name="schedule_range_header">Rango del Horario</string>
+    <string name="day_start_time_label">Hora de Inicio del Día</string>
+    <string name="day_end_time_label">Hora de Fin del Día</string>
     <string name="theme_preview_title">Selección de Tema</string>
-    <string name="theme_clementine">Clementina</string>
+    <string name="theme_clementine">Dinámico</string>
     <string name="theme_blueberry">Arándano</string>
     <string name="theme_matcha">Matcha</string>
     <string name="theme_espresso">Espresso</string>

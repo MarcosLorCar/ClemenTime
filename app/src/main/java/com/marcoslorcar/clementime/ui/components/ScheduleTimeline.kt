@@ -86,6 +86,8 @@ private val SLOT_GAP: Dp = 3.dp
 fun ScheduleTimeline(
     modifier: Modifier = Modifier,
     clusters: List<TimelineCluster>,
+    startTime: LocalTime = DAY_START_TIME,
+    endTime: LocalTime = DAY_END_TIME,
     showNowLine: Boolean = false,
     nowLineStyle: String = "discrete",
     dayOfWeek: DayOfWeek? = null,
@@ -99,7 +101,7 @@ fun ScheduleTimeline(
     val scrollState = rememberScrollState()
     val density = LocalDensity.current
 
-    val totalMinutes = Duration.between(DAY_START_TIME, DAY_END_TIME).toMinutes().toInt()
+    val totalMinutes = Duration.between(startTime, endTime).toMinutes().toInt()
     val totalHeight = MINUTE_HEIGHT * totalMinutes
 
     var currentTime by remember { mutableStateOf(LocalTime.now()) }
@@ -111,7 +113,7 @@ fun ScheduleTimeline(
     }
 
     val isToday = dayOfWeek == java.time.LocalDate.now().dayOfWeek
-    val isWithinTimeRange = currentTime in DAY_START_TIME..DAY_END_TIME
+    val isWithinTimeRange = currentTime in startTime..endTime
 
     var viewportHeightPx by remember { mutableIntStateOf(0) }
     var hasAutoScrolled by remember { mutableStateOf(false) }
@@ -121,7 +123,7 @@ fun ScheduleTimeline(
             if (viewportHeightPx == 0 || !isToday || !isWithinTimeRange) {
                 false
             } else {
-                val nowMinutes = Duration.between(DAY_START_TIME, currentTime).toMinutes().toInt()
+                val nowMinutes = Duration.between(startTime, currentTime).toMinutes().toInt()
                 val nowLinePosPx = with(density) { (MINUTE_HEIGHT * nowMinutes).toPx() + TOP_TIMELINE_PADDING.toPx() }
                 val centeredPosPx = nowLinePosPx - (viewportHeightPx / 2)
                 val diff = abs(scrollState.value - centeredPosPx)
@@ -138,7 +140,7 @@ fun ScheduleTimeline(
     // Function to perform the scroll to now
     val scrollToNow = suspend {
         if (isWithinTimeRange && viewportHeightPx > 0) {
-            val nowMinutes = Duration.between(DAY_START_TIME, currentTime).toMinutes().toInt()
+            val nowMinutes = Duration.between(startTime, currentTime).toMinutes().toInt()
             val nowLinePosPx = with(density) { (MINUTE_HEIGHT * nowMinutes).toPx() + TOP_TIMELINE_PADDING.toPx() }
             val targetPx = (nowLinePosPx - (viewportHeightPx / 2)).toInt().coerceAtLeast(0)
             scrollState.animateScrollTo(targetPx)
@@ -146,7 +148,7 @@ fun ScheduleTimeline(
     }
 
     // Reset auto-scroll flag when day or settings change
-    LaunchedEffect(dayOfWeek, showNowLine) {
+    LaunchedEffect(dayOfWeek, showNowLine, startTime, endTime) {
         hasAutoScrolled = false
     }
 
@@ -157,14 +159,14 @@ fun ScheduleTimeline(
         }
     }
 
-    LaunchedEffect(clusters, showNowLine, isToday, viewportHeightPx, highlightSlotId) {
+    LaunchedEffect(clusters, showNowLine, isToday, viewportHeightPx, highlightSlotId, startTime, endTime) {
         if (viewportHeightPx == 0) return@LaunchedEffect
         if (hasAutoScrolled) return@LaunchedEffect
 
         if (highlightSlotId != null) {
             val targetSlot = clusters.flatMap { it.items }.find { it.second.id == highlightSlotId }?.second
             if (targetSlot != null) {
-                val startMinutes = Duration.between(DAY_START_TIME, targetSlot.startTime).toMinutes().toInt()
+                val startMinutes = Duration.between(startTime, targetSlot.startTime).toMinutes().toInt()
                 val slotTopPx = with(density) { ((MINUTE_HEIGHT * startMinutes) + TOP_TIMELINE_PADDING).toPx() }
                 
                 // Center the slot in the viewport
@@ -182,7 +184,7 @@ fun ScheduleTimeline(
         } else if (!isToday || !showNowLine) {
             val firstClass = clusters.minByOrNull { it.startTime }
             if (firstClass != null) {
-                val startMinutes = Duration.between(DAY_START_TIME, firstClass.startTime).toMinutes().toInt()
+                val startMinutes = Duration.between(startTime, firstClass.startTime).toMinutes().toInt()
                 val targetMinutes = (startMinutes - 30).coerceAtLeast(0)
                 val targetPx = with(density) { ((MINUTE_HEIGHT * targetMinutes) + TOP_TIMELINE_PADDING).toPx() }.toInt()
                 scrollState.animateScrollTo(targetPx)
@@ -204,7 +206,9 @@ fun ScheduleTimeline(
             .padding(top = TOP_TIMELINE_PADDING, bottom = BOTTOM_TIMELINE_PADDING)
     ) {
         HourGridBackground(
-            totalHeight = totalHeight
+            totalHeight = totalHeight,
+            startTime = startTime,
+            endTime = endTime
         )
 
         Box(
@@ -235,8 +239,8 @@ fun ScheduleTimeline(
             val dividerThicknessPx = with(density) { DIVIDER_THICKNESS.toPx() }.roundToInt()
 
             clusters.forEach { cluster ->
-                val startOffsetMinutes = Duration.between(DAY_START_TIME, cluster.startTime).toMinutes().toInt()
-                val endOffsetMinutes = Duration.between(DAY_START_TIME, cluster.endTime).toMinutes().toInt()
+                val startOffsetMinutes = Duration.between(startTime, cluster.startTime).toMinutes().toInt()
+                val endOffsetMinutes = Duration.between(startTime, cluster.endTime).toMinutes().toInt()
 
                 val startLinePx = (minuteHeightPx * startOffsetMinutes).roundToInt()
                 val endLinePx = (minuteHeightPx * endOffsetMinutes).roundToInt()
@@ -293,6 +297,7 @@ fun ScheduleTimeline(
                 NowLine(
                     modifier = Modifier.fillMaxWidth(),
                     currentTime = currentTime,
+                    startTime = startTime,
                     style = nowLineStyle
                 )
             }
@@ -304,10 +309,11 @@ fun ScheduleTimeline(
 fun NowLine(
     modifier: Modifier = Modifier,
     currentTime: LocalTime,
+    startTime: LocalTime,
     style: String
 ) {
     val density = LocalDensity.current
-    val nowMinutes = Duration.between(DAY_START_TIME, currentTime).toMinutes().toInt()
+    val nowMinutes = Duration.between(startTime, currentTime).toMinutes().toInt()
     val yOffsetPx = with(density) { (MINUTE_HEIGHT * nowMinutes).toPx() }
     
     val lineColor = if (style == "obvious") Color.Red else MaterialTheme.colorScheme.primary

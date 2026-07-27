@@ -134,6 +134,7 @@ fun AddEditSubjectContent(
     val scrollState = rememberScrollState()
     var showNotesSheet by remember { mutableStateOf(false) }
     var showLabHelpDialog by remember { mutableStateOf(false) }
+    var showManualLabTooltip by remember { mutableStateOf(false) }
 
     val labGroups = remember(uiState.slots) {
         uiState.slots.filter { it.entryType == com.marcoslorcar.clementime.data.EntryType.LAB }
@@ -235,6 +236,8 @@ fun AddEditSubjectContent(
 
             ScheduleMiniPreview(
                 slots = previewSlots,
+                startTime = uiState.dayStartTime,
+                endTime = uiState.dayEndTime,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(150.dp)
@@ -256,7 +259,7 @@ fun AddEditSubjectContent(
                         )
                         IconButton(
                             onClick = { 
-                                showLabHelpDialog = true
+                                showManualLabTooltip = true
                                 onMarkLabTooltipSeen() 
                             },
                             modifier = Modifier.size(24.dp)
@@ -273,8 +276,11 @@ fun AddEditSubjectContent(
                     OnboardingTooltip(
                         text = stringResource(R.string.tooltip_lab_selection_desc),
                         title = stringResource(R.string.tooltip_lab_selection_title),
-                        show = uiState.onboardingTooltipsEnabled && !uiState.hasSeenLabSelectionTooltip,
-                        onDismiss = onMarkLabTooltipSeen
+                        show = (uiState.onboardingTooltipsEnabled && !uiState.hasSeenLabSelectionTooltip) || showManualLabTooltip,
+                        onDismiss = {
+                            onMarkLabTooltipSeen()
+                            showManualLabTooltip = false
+                        }
                     ) {
                         FlowRow(
                             modifier = Modifier.fillMaxWidth(),

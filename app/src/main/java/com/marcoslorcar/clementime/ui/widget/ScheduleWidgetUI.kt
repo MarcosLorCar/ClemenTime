@@ -81,6 +81,8 @@ fun ScheduleWidgetContent(
     showNowLine: Boolean,
     nowLineStyle: String = "discrete",
     highContrast: Boolean,
+    dayStartTime: LocalTime = DAY_START_TIME,
+    dayEndTime: LocalTime = DAY_END_TIME,
     launchAppAction: Action
 ) {
     val context = LocalContext.current
@@ -148,11 +150,11 @@ fun ScheduleWidgetContent(
     }
 
     val isToday = !isTomorrow
-    val isWithinTimeRange = currentTime in DAY_START_TIME..DAY_END_TIME
+    val isWithinTimeRange = currentTime in dayStartTime..dayEndTime
     val shouldShowNowLine = showNowLine && isToday && isWithinTimeRange
 
-    val timelineSegments = remember(daySlots, currentTime, shouldShowNowLine) {
-        buildTimelineSegments(daySlots, currentTime, shouldShowNowLine)
+    val timelineSegments = remember(daySlots, currentTime, shouldShowNowLine, dayStartTime, dayEndTime) {
+        buildTimelineSegments(daySlots, currentTime, shouldShowNowLine, dayStartTime, dayEndTime)
     }
 
     Column(

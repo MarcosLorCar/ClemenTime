@@ -69,7 +69,8 @@
     "RySM": "Redes y Servicios Moviles",
     "PlanIntSS": "Planificación e Integración de Sistemas y Servicios",
     "PERTE": "PERTE",
-    "MUFPS": "Máster de Profesorado"
+    "MUFPS": "Máster de Profesorado",
+    "UnivMayores": "UnivMayores"
   },
   "professors": {
     "Antonio.Adan": "Antonio Adan",
@@ -169,7 +170,30 @@
     "Profesor": "Profesor",
     "Sustituto": "Sustituto",
     "Sustitulo": "Sustituto",
-    "Ayuda": "Ayudante"
+    "Ayuda": "Ayudante",
+    "ESI": "ESI",
+    "Pruebas. ESI": "Pruebas. ESI",
+    "Jose Angel Martin": "Jose Angel Martin",
+    "Jesus Serrano": "Jesus Serrano",
+    "Aurora Vizcaino": "Aurora Vizcaino",
+    "Fernando Rincon": "Fernando Rincon",
+    "Jesus Blanco Rodriguez": "Jesus Blanco Rodriguez",
+    "Coral Calero": "Coral Calero",
+    "Xavier del Toro": "Xavier del Toro",
+    "Julian Caba": "Julian Caba",
+    "Antonio Santos": "Antonio Santos",
+    "Julian Ruiz": "Julian Ruiz",
+    "Jesus Barba": "Jesus Barba",
+    "Inocente Sanchez": "Inocente Sanchez",
+    "Eusebio Angulo": "Eusebio Angulo",
+    "Ayudante": "Ayudante",
+    "Javier Dorado": "Javier Dorado",
+    "Moises Rodriguez": "Moises Rodriguez",
+    "Asociado LSI 2": "Asociado LSI 2",
+    "Profesor.UnivMayores": "Profesor.UnivMayores",
+    "Manuel.Villasalero": "Manuel Villasalero",
+    "Jose Ramon Sanchez": "Jose Ramon Sanchez",
+    "JesusR.Oviedo": "Jesus Ramon Oviedo"
   },
   "classrooms": {
     "0.02+3-Charles": "0.02+3-Charles",
@@ -219,6 +243,9 @@
     "Ayuda": "Ayudante",
     "LD4-John": "LD4-John Carmack",
     "LD4-John Carmac": "LD4-John Carmack",
-    "LD4-Joh": "LD4-John Carmack"
+    "LD4-Joh": "LD4-John Carmack",
+    "0.02-Charles Babbage": "0.02-Charles Babbage",
+    "A2.2-Grace Murray": "A2.2-Grace Murray",
+    "LD4-John Carmack": "LD4-John Carmack"
   }
 }

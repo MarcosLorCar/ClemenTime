@@ -23,27 +23,32 @@ def generate_index(dist_dir=None):
 
     index_entries = []
 
-    for filename in sorted(os.listdir(dist_dir)):
-        if filename.endswith(".json") and filename != "schedules_index.json":
-            file_path = os.path.join(dist_dir, filename)
-            try:
-                with open(file_path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
+    files = sorted(os.listdir(dist_dir))
+    json_files = [f for f in files if f.endswith(".json") and f != "schedules_index.json"]
 
-                schedule_id = os.path.splitext(filename)[0]
-                title = data.get("title", filename)
-                file_hash = get_file_hash(file_path)
+    if not json_files:
+        print(f"[Warning] No schedule JSON files found in {dist_dir}")
 
-                index_entries.append({
-                    "id": schedule_id,
-                    "title": title,
-                    "description": "Horario oficial",
-                    "path": filename,
-                    "hash": file_hash,
-                    "updatedTime": datetime.now().strftime("%Y-%m-%d")
-                })
-            except Exception as e:
-                print(f"Skipping {filename}: {e}")
+    for filename in json_files:
+        file_path = os.path.join(dist_dir, filename)
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+
+            schedule_id = os.path.splitext(filename)[0]
+            title = data.get("title", filename)
+            file_hash = get_file_hash(file_path)
+
+            index_entries.append({
+                "id": schedule_id,
+                "title": title,
+                "description": "Horario oficial",
+                "path": filename,
+                "hash": file_hash,
+                "updatedTime": datetime.now().strftime("%Y-%m-%d")
+            })
+        except Exception as e:
+            print(f"Skipping {filename}: {e}")
 
     output_path = os.path.join(dist_dir, "schedules_index.json")
 

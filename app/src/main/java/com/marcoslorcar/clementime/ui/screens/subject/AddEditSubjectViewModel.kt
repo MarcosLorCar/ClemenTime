@@ -20,6 +20,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -44,12 +45,15 @@ data class AddEditSubjectUiState(
     val attachedFiles: List<AttachedFileItem> = emptyList(),
     val slots: List<ClassSlotUiModel> = emptyList(),
     val selectedLabGroup: String? = null,
+    val isCodeManuallyEdited: Boolean = false,
     val onboardingTooltipsEnabled: Boolean = true,
     val hasSeenAddSlotTooltip: Boolean = false,
     val hasSeenLabSelectionTooltip: Boolean = false,
     val isLoading: Boolean = false,
     val isSaved: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val dayStartTime: LocalTime = LocalTime.of(8, 30),
+    val dayEndTime: LocalTime = LocalTime.of(21, 30)
 )
 
 @HiltViewModel
@@ -93,6 +97,18 @@ class AddEditSubjectViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.currentSemesterFlow.firstOrNull()?.let { semester ->
                 _uiState.update { it.copy(semester = semester) }
+            }
+        }
+        viewModelScope.launch {
+            combine(
+                settingsRepository.dayStartHourFlow,
+                settingsRepository.dayStartMinuteFlow,
+                settingsRepository.dayEndHourFlow,
+                settingsRepository.dayEndMinuteFlow
+            ) { sh, sm, eh, em ->
+                LocalTime.of(sh, sm) to LocalTime.of(eh, em)
+            }.collect { (start, end) ->
+                _uiState.update { it.copy(dayStartTime = start, dayEndTime = end) }
             }
         }
     }
@@ -162,11 +178,20 @@ class AddEditSubjectViewModel @Inject constructor(
     }
 
     fun updateCode(code: String) {
-        _uiState.update { it.copy(code = code) }
+        _uiState.update { it.copy(code = code, isCodeManuallyEdited = code.isNotBlank()) }
     }
 
     fun updateName(name: String) {
-        _uiState.update { it.copy(name = name) }
+        _uiState.update { state ->
+            val newCode = if (!state.isCodeManuallyEdited) {
+                name.split(" ")
+                    .filter { it.length > 2 }
+                    .joinToString("") { it.take(3).uppercase() }
+            } else {
+                state.code
+            }
+            state.copy(name = name, code = newCode)
+        }
     }
 
     fun updateColor(color: Int) {

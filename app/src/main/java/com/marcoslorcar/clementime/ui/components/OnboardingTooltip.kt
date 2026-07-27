@@ -50,6 +50,13 @@ fun OnboardingTooltip(
         }
     }
 
+    // Handle dismissal by tapping outside or other internal mechanisms
+    LaunchedEffect(tooltipState.isVisible) {
+        if (show && !tooltipState.isVisible) {
+            onDismiss()
+        }
+    }
+
     TooltipBox(
         positionProvider = positionProvider,
         tooltip = {
@@ -60,7 +67,6 @@ fun OnboardingTooltip(
                     TextButton(
                         onClick = {
                             scope.launch { tooltipState.dismiss() }
-                            onDismiss()
                         }
                     ) {
                         Text(

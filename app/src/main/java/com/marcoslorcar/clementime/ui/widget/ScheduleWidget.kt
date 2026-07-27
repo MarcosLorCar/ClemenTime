@@ -25,7 +25,9 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import java.time.LocalTime
 
 @EntryPoint
 @InstallIn(SingletonComponent::class)
@@ -71,6 +73,22 @@ class ScheduleWidget : GlanceAppWidget() {
                 entryPoint?.settingsRepository()?.nowLineStyleFlow ?: kotlinx.coroutines.flow.flowOf("discrete")
             }.collectAsState(initial = "discrete")
 
+            val dayStartTime by remember(entryPoint) {
+                entryPoint?.settingsRepository()?.dayStartHourFlow?.let { hourFlow ->
+                    combine(hourFlow, entryPoint.settingsRepository().dayStartMinuteFlow) { h, m ->
+                        LocalTime.of(h, m)
+                    }
+                } ?: kotlinx.coroutines.flow.flowOf(LocalTime.of(8, 30))
+            }.collectAsState(initial = LocalTime.of(8, 30))
+
+            val dayEndTime by remember(entryPoint) {
+                entryPoint?.settingsRepository()?.dayEndHourFlow?.let { hourFlow ->
+                    combine(hourFlow, entryPoint.settingsRepository().dayEndMinuteFlow) { h, m ->
+                        LocalTime.of(h, m)
+                    }
+                } ?: kotlinx.coroutines.flow.flowOf(LocalTime.of(21, 30))
+            }.collectAsState(initial = LocalTime.of(21, 30))
+
             val launchAppAction = remember(context) {
                 val intent = Intent().apply {
                     component = ComponentName(context, MainActivity::class.java)
@@ -93,6 +111,8 @@ class ScheduleWidget : GlanceAppWidget() {
                             showNowLine = showNowLine,
                             nowLineStyle = nowLineStyle,
                             highContrast = highContrast,
+                            dayStartTime = dayStartTime,
+                            dayEndTime = dayEndTime,
                             launchAppAction = launchAppAction
                         )
                     }

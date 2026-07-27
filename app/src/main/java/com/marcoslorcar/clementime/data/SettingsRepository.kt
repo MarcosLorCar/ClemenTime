@@ -39,6 +39,10 @@ open class SettingsRepository @Inject constructor(
     private val currentSemesterKey = intPreferencesKey("current_semester")
     private val hasManuallyChangedSemesterKey = booleanPreferencesKey("has_manually_changed_semester")
     private val wasSemesterAutoChangedKey = booleanPreferencesKey("was_semester_auto_changed")
+    private val dayStartHourKey = intPreferencesKey("day_start_hour")
+    private val dayStartMinuteKey = intPreferencesKey("day_start_minute")
+    private val dayEndHourKey = intPreferencesKey("day_end_hour")
+    private val dayEndMinuteKey = intPreferencesKey("day_end_minute")
 
 
     open val themeFlow: Flow<String>
@@ -225,6 +229,42 @@ open class SettingsRepository @Inject constructor(
             kotlinx.coroutines.flow.flowOf(false)
         }
 
+    open val dayStartHourFlow: Flow<Int>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[dayStartHourKey] ?: 8
+            } ?: kotlinx.coroutines.flow.flowOf(8)
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf(8)
+        }
+
+    open val dayStartMinuteFlow: Flow<Int>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[dayStartMinuteKey] ?: 30
+            } ?: kotlinx.coroutines.flow.flowOf(30)
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf(30)
+        }
+
+    open val dayEndHourFlow: Flow<Int>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[dayEndHourKey] ?: 21
+            } ?: kotlinx.coroutines.flow.flowOf(21)
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf(21)
+        }
+
+    open val dayEndMinuteFlow: Flow<Int>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[dayEndMinuteKey] ?: 30
+            } ?: kotlinx.coroutines.flow.flowOf(30)
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf(30)
+        }
+
 
     open suspend fun setThemeMode(theme: String) {
         try {
@@ -387,6 +427,24 @@ open class SettingsRepository @Inject constructor(
         try {
             context?.dataStore?.edit { preferences ->
                 preferences[wasSemesterAutoChangedKey] = autoChanged
+            }
+        } catch (_: Throwable) {}
+    }
+
+    open suspend fun setDayStartTime(hour: Int, minute: Int) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[dayStartHourKey] = hour
+                preferences[dayStartMinuteKey] = minute
+            }
+        } catch (_: Throwable) {}
+    }
+
+    open suspend fun setDayEndTime(hour: Int, minute: Int) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[dayEndHourKey] = hour
+                preferences[dayEndMinuteKey] = minute
             }
         } catch (_: Throwable) {}
     }

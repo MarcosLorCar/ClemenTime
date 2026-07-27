@@ -518,7 +518,6 @@ fun ImportContent(
                     ) {
                         IconButton(
                             onClick = { 
-                                showManualTooltip = false // Toggle to ensure reset if already true
                                 showManualTooltip = true 
                             }
                         ) {

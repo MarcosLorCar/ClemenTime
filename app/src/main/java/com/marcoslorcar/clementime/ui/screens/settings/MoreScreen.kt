@@ -83,18 +83,23 @@ import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import com.marcoslorcar.clementime.BuildConfig
 import com.marcoslorcar.clementime.R
 import com.marcoslorcar.clementime.data.SettingsRepository
 import com.marcoslorcar.clementime.ui.components.AppSkeletonPreview
 import com.marcoslorcar.clementime.ui.components.ClemenTimeTopBar
+import com.marcoslorcar.clementime.ui.screens.subject.RadialTimePickerDialog
 import com.marcoslorcar.clementime.ui.theme.ClemenTimeTheme
 import com.marcoslorcar.clementime.ui.theme.getThemeColorScheme
 import com.marcoslorcar.clementime.ui.widget.ScheduleWidgetReceiver
 import com.marcoslorcar.clementime.utils.fadingEdges
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun MoreScreen(
@@ -119,6 +124,8 @@ fun MoreScreen(
         onNowLineStyleChanged = viewModel::setNowLineStyle,
         onToggleHighContrast = viewModel::setHighContrast,
         onThemeSelected = viewModel::setSelectedTheme,
+        onDayStartTimeChanged = viewModel::setDayStartTime,
+        onDayEndTimeChanged = viewModel::setDayEndTime,
         onGithubRepoUrlChanged = viewModel::setGithubRepoBaseUrl,
         onToggleOnboardingTooltips = viewModel::setOnboardingTooltipsEnabled,
         onExportData = viewModel::exportData,
@@ -139,6 +146,8 @@ fun MoreContent(
     onNowLineStyleChanged: (String) -> Unit,
     onToggleHighContrast: (Boolean) -> Unit,
     onThemeSelected: (String) -> Unit,
+    onDayStartTimeChanged: (LocalTime) -> Unit,
+    onDayEndTimeChanged: (LocalTime) -> Unit,
     onGithubRepoUrlChanged: (String) -> Unit,
     onToggleOnboardingTooltips: (Boolean) -> Unit,
     onExportData: (android.content.Context, Uri, (ExportStatus) -> Unit) -> Unit,
@@ -384,9 +393,15 @@ fun MoreContent(
                         "light" -> false
                         else -> systemIsDark
                     }
+                    val previewColorScheme = if (id == "clementine" && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        if (isPreviewDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+                    } else {
+                        getThemeColorScheme(id, isPreviewDark)
+                    }
+
                     AppSkeletonPreview(
                         name = name,
-                        colorScheme = getThemeColorScheme(id, isPreviewDark),
+                        colorScheme = previewColorScheme,
                         isSelected = uiState.selectedTheme == id,
                         onClick = { onThemeSelected(id) }
                     )
@@ -497,6 +512,54 @@ fun MoreContent(
                         Switch(checked = uiState.highContrast, onCheckedChange = onToggleHighContrast)
                     }
                 )
+
+                // Schedule Range
+                Text(
+                    text = stringResource(R.string.schedule_range_header),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.padding(top = 8.dp, start = 4.dp)
+                )
+
+                var showStartTimePicker by remember { mutableStateOf(false) }
+                var showEndTimePicker by remember { mutableStateOf(false) }
+                val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
+
+                SettingItem(
+                    icon = Icons.Default.Schedule,
+                    title = stringResource(R.string.day_start_time_label),
+                    subtitle = uiState.dayStartTime.format(timeFormatter),
+                    onClick = { showStartTimePicker = true }
+                )
+
+                SettingItem(
+                    icon = Icons.Default.Schedule,
+                    title = stringResource(R.string.day_end_time_label),
+                    subtitle = uiState.dayEndTime.format(timeFormatter),
+                    onClick = { showEndTimePicker = true }
+                )
+
+                if (showStartTimePicker) {
+                    RadialTimePickerDialog(
+                        initialTime = uiState.dayStartTime,
+                        onDismiss = { showStartTimePicker = false },
+                        onTimeConfirm = {
+                            onDayStartTimeChanged(it)
+                            showStartTimePicker = false
+                        }
+                    )
+                }
+
+                if (showEndTimePicker) {
+                    RadialTimePickerDialog(
+                        initialTime = uiState.dayEndTime,
+                        onDismiss = { showEndTimePicker = false },
+                        onTimeConfirm = {
+                            onDayEndTimeChanged(it)
+                            showEndTimePicker = false
+                        }
+                    )
+                }
 
                 // "Now" Line
                 SettingItem(
@@ -703,6 +766,8 @@ fun MoreScreenPreview() {
             onToggleOnboardingTooltips = {},
             onExportData = { _, _, _ -> },
             onExportIcs = { _, _, _, _, _, _, _ -> },
+            onDayStartTimeChanged = {},
+            onDayEndTimeChanged = {},
             onImportClick = {}
         )
     }

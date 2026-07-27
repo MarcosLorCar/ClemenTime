@@ -41,19 +41,18 @@ import java.time.DayOfWeek
 import java.time.Duration
 import java.time.LocalTime
 
-private val PREVIEW_START_TIME = LocalTime.of(8, 0)
-private val PREVIEW_END_TIME = LocalTime.of(21, 0)
-
 @Composable
 fun ScheduleMiniPreview(
     modifier: Modifier = Modifier,
     slots: List<Pair<Subject, ClassSlot>>,
-    overlappingSlotIds: Set<Long> = emptySet()
+    overlappingSlotIds: Set<Long> = emptySet(),
+    startTime: LocalTime = LocalTime.of(8, 30),
+    endTime: LocalTime = LocalTime.of(21, 30)
 ) {
     val days = listOf(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY)
     val locale = LocalConfiguration.current.locales[0]
     
-    val totalMinutes = Duration.between(PREVIEW_START_TIME, PREVIEW_END_TIME).toMinutes().toInt()
+    val totalMinutes = Duration.between(startTime, endTime).toMinutes().toInt()
 
     Surface(
         modifier = modifier,
@@ -126,7 +125,7 @@ fun ScheduleMiniPreview(
                             .padding(horizontal = 1.dp)
                         ) {
                             clusters.forEach { cluster ->
-                                val startMinutes = Duration.between(PREVIEW_START_TIME, cluster.startTime).toMinutes().toInt()
+                                val startMinutes = Duration.between(startTime, cluster.startTime).toMinutes().toInt()
                                 val durationMinutes = Duration.between(cluster.startTime, cluster.endTime).toMinutes().toInt().coerceAtLeast(1)
                                 
                                 val topOffset = maxHeightDp * (startMinutes.toFloat() / totalMinutes)

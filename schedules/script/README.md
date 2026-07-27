@@ -1,6 +1,6 @@
-# Schedule PDF to Structured JSON Converter (`convert_schedule.py`)
+# Schedule PDF to Structured JSON Converter (`parse_schedule.py`)
 
-Automated tool to convert course schedule PDFs into structured JSON schedule files (`primer_cuatrimestre.json`). Uses **Docling** for PDF-to-Markdown table extraction, interactive CLI prompting for subject/professor name mapping, and advanced slot deduplication and merging algorithms.
+Automated tool to convert course schedule PDFs into structured JSON schedule files (`output_schedule.json`). Uses **Google Gemini (LLM)** for visual table extraction and an **interactive CLI** for subject/professor name mapping.
 
 ---
 
@@ -13,27 +13,17 @@ Automated tool to convert course schedule PDFs into structured JSON schedule fil
                               |
                               v
                +-----------------------------+
-               | Docling Document Converter  |
+               | pdf2image (Page Conversion) |
                +--------------+--------------+
                               |
                               v
                +-----------------------------+
-               | Intermediate Markdown (.md) |  <-- Cached automatically
+               |    Gemini-2.0-Flash API     | <---> mappings.json (Context)
                +--------------+--------------+
                               |
                               v
                +-----------------------------+
-               |   Markdown Table Parser     |
-               +--------------+--------------+
-                              |
-                              v
-               +-----------------------------+
-               |  Interactive CLI Mapper     | <---> mappings.json (Cache)
-               +--------------+--------------+
-                              |
-                              v
-               +-----------------------------+
-               | Slot Merger & Deduplicator  |
+               |  Interactive CLI Mapper     | <---> mappings.json (Update)
                +--------------+--------------+
                               |
                               v
@@ -46,95 +36,68 @@ Automated tool to convert course schedule PDFs into structured JSON schedule fil
 
 ## Installation & Dependencies
 
-Requires Python 3.9+ and `docling`.
+This project uses `uv` for dependency management.
 
 ```bash
-pip install docling
+uv sync
 ```
+
+> [!IMPORTANT]
+> You must also have `poppler` installed on your system for `pdf2image` to work.
 
 ---
 
-## CLI Usage Instructions
+## Setup
 
-### 1. Default Interactive Mode (Recommended)
-
-Converts the PDF schedule into Markdown, prompts for any unmapped subject codes or professor abbreviations, saves confirmed mappings to `mappings.json`, and exports the final JSON file.
-
-```bash
-python3 convert_schedule.py ESI2026-27-GRADO_1C_Grupos.pdf -o primer_cuatrimestre.json
-```
-
-### 2. Fast Run Using Cached Markdown
-
-If the intermediate `<pdf_name>.md` file already exists, the script skips the Docling PDF rendering step to save time:
-
-```bash
-python3 convert_schedule.py ESI2026-27-GRADO_1C_Grupos.pdf --md-file ESI2026-27-GRADO_1C_Grupos.md -o primer_cuatrimestre.json
-```
-
-### 3. Force PDF Re-conversion
-
-Bypasses any existing Markdown cache and forces Docling to re-parse the PDF:
-
-```bash
-python3 convert_schedule.py ESI2026-27-GRADO_1C_Grupos.pdf --force-pdf -o primer_cuatrimestre.json
-```
-
-### 4. Non-Interactive / Batch Mode
-
-Runs without terminal prompts (uses raw codes/abbreviations if unmapped):
-
-```bash
-python3 convert_schedule.py ESI2026-27-GRADO_1C_Grupos.pdf -o output.json --non-interactive
-```
+1.  **API Key**: Obtain a Gemini API key from [Google AI Studio](https://aistudio.google.com/).
+2.  **Configuration**: You can set your API key and preferred model in two ways:
+    - **Option A: .env file (Recommended)**: Create a file named `.env` in the same directory as the script:
+      ```text
+      GEMINI_API_KEY=your_api_key_here
+      GEMINI_MODEL=gemini-2.0-flash
+      ```
+    - **Option B: Environment Variable**:
+      ```bash
+      export GEMINI_API_KEY="your_api_key_here"
+      ```
 
 ---
 
-## Mapping Configuration (`mappings.json`)
+## Usage Instructions
 
-The script persists confirmed mappings in `mappings.json`:
+### 1. Run the script
 
-```json
-{
-  "matters": {
-    "FunProg1": "Fundamentos de la Programación 1",
-    "TeCo": "Tecnología de Computadores",
-    "Calculo": "Cálculo",
-    "Fisica": "Física",
-    "FunGesEmpr": "Fundamentos de Gestión Empresarial"
-  },
-  "professors": {
-    "Jesus.Serrano": "Jesús Serrano",
-    "MariaL.Lopez": "María L. López",
-    "Antonio.Adan": "Antonio Adán",
-    "PeterS.Normile": "Peter S. Normile",
-    "Javier.Verdugo": "Javier Verdugo"
-  },
-  "classrooms": {
-    "0.04-Hedy": "0.04-Hedy Lamarr",
-    "0.05-Eds": "0.05-Edsger W.",
-    "LD2-Den": "LD2-Dennis Ritchie"
-  }
-}
+By default, the script looks for `horarios.pdf` in the current directory:
+
+```bash
+uv run parse_schedule.py
 ```
 
+Or specify a custom file:
+
+```bash
+uv run parse_schedule.py my_schedule.pdf
+```
+
+### 2. Interactive Mapping
+
+If Gemini finds an abbreviation or code (subject, professor, or classroom) that is not in `mappings.json`, the script will pause and prompt you:
+
+```
+[?] Unknown matter found: 'TeCo'
+    Enter full name for 'TeCo' (or press Enter to use as is): Tecnologia de Computadores
+```
+
+Your answers are automatically saved to `mappings.json` and used in future runs (including being sent to Gemini as context).
+
+### 3. Rate Limiting Handling
+
+The script includes exponential backoff retry logic. If the API returns a rate limit error (`429`), it will wait and retry automatically until the page is successfully processed.
+
 ---
 
-## CLI Command Arguments
+## Output Configuration
 
-| Argument | Long Option | Default | Description |
-|---|---|---|---|
-| `pdf_path` | — | *(Required)* | Path to input PDF file |
-| `-o` | `--output` | `output_schedule.json` | Path for exported schedule JSON file |
-| — | `--md-file` | `<pdf_basename>.md` | Path to intermediate Markdown cache file |
-| — | `--mappings-file` | `mappings.json` | Path to persistent symbol mappings JSON |
-| — | `--non-interactive` | `False` | Run headless without terminal prompts |
-| — | `--force-pdf` | `False` | Force re-running Docling even if `.md` cache exists |
-
----
-
-## Key Technical Details
-
-- **Horizontal Deduplication**: Deduplicates multi-column PDF table spans (e.g. repeated `Martes | Martes` headers).
-- **Vertical Time Merging**: Automatically merges contiguous 1.5-hour time rows (`08:30–10:00` + `10:00–11:30`) for matching subjects into continuous 3-hour slots (`08:30–11:30`).
-- **Continuation Cell Recovery**: Resolves split PDF table cells where row 1 contains the subject code and row 2 contains room/professor details.
+- **Input**: PDF files (converted to 200 DPI images).
+- **Mappings**: `mappings.json` (stores persistent name resolutions).
+- **Output**: `output_schedule.json` (structured JSON for the app).

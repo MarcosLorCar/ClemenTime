@@ -28,11 +28,13 @@ sealed interface WidgetTimelineSegment {
 fun buildTimelineSegments(
     daySlots: List<Pair<Subject, ClassSlot>>,
     currentTime: LocalTime,
-    shouldShowNowLine: Boolean
+    shouldShowNowLine: Boolean,
+    dayStartTime: LocalTime = DAY_START_TIME,
+    dayEndTime: LocalTime = DAY_END_TIME
 ): List<WidgetTimelineSegment> {
     val clusters = groupSlotsIntoClusters(daySlots)
     if (clusters.isEmpty()) {
-        return listOf(WidgetTimelineSegment.EmptySegment(DAY_START_TIME, DAY_END_TIME))
+        return listOf(WidgetTimelineSegment.EmptySegment(dayStartTime, dayEndTime))
     }
 
     val firstClassStart = clusters.minOf { it.startTime }
@@ -41,12 +43,12 @@ fun buildTimelineSegments(
     val displayStartTime = if (shouldShowNowLine) {
         val thirtyMinsBeforeNow = currentTime.minusMinutes(30)
         val snapped = thirtyMinsBeforeNow.withMinute((thirtyMinsBeforeNow.minute / 30) * 30).withSecond(0).withNano(0)
-        snapped.coerceIn(DAY_START_TIME, firstClassStart.minusMinutes(30).coerceAtLeast(DAY_START_TIME))
+        snapped.coerceIn(dayStartTime, firstClassStart.minusMinutes(30).coerceAtLeast(dayStartTime))
     } else {
-        firstClassStart.minusMinutes(30).coerceAtLeast(DAY_START_TIME)
+        firstClassStart.minusMinutes(30).coerceAtLeast(dayStartTime)
     }
 
-    val displayEndTime = lastClassEnd.plusMinutes(30).coerceAtMost(DAY_END_TIME)
+    val displayEndTime = lastClassEnd.plusMinutes(30).coerceAtMost(dayEndTime)
 
     val segments = mutableListOf<WidgetTimelineSegment>()
     var curr = displayStartTime

@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.LocalTime
 import java.util.Locale
 import javax.inject.Inject
 
@@ -35,7 +36,9 @@ data class MoreUiState(
     val highContrast: Boolean = false,
     val selectedTheme: String = "clementine",
     val githubRepoBaseUrl: String = SettingsRepository.DEFAULT_GITHUB_REPO_BASE_URL,
-    val onboardingTooltipsEnabled: Boolean = true
+    val onboardingTooltipsEnabled: Boolean = true,
+    val dayStartTime: LocalTime = LocalTime.of(8, 30),
+    val dayEndTime: LocalTime = LocalTime.of(21, 30)
 )
 
 sealed interface ExportStatus {
@@ -54,7 +57,7 @@ class MoreViewModel @Inject constructor(
 
     private val _appLanguage = MutableStateFlow(getCurrentLanguage())
 
-    val uiState: StateFlow<MoreUiState> = combine<Any?, MoreUiState>(
+    val uiState: StateFlow<MoreUiState> = combine(
         settingsRepository.themeFlow,
         settingsRepository.scrollableTabsFlow,
         settingsRepository.showNowLineFlow,
@@ -63,6 +66,10 @@ class MoreViewModel @Inject constructor(
         settingsRepository.selectedThemeFlow,
         settingsRepository.githubRepoBaseUrlFlow,
         settingsRepository.onboardingTooltipsEnabledFlow,
+        settingsRepository.dayStartHourFlow,
+        settingsRepository.dayStartMinuteFlow,
+        settingsRepository.dayEndHourFlow,
+        settingsRepository.dayEndMinuteFlow,
         _appLanguage
     ) { args: Array<Any?> ->
         MoreUiState(
@@ -74,7 +81,9 @@ class MoreViewModel @Inject constructor(
             selectedTheme = args[5] as String,
             githubRepoBaseUrl = args[6] as String,
             onboardingTooltipsEnabled = args[7] as Boolean,
-            appLanguage = args[8] as String
+            dayStartTime = LocalTime.of(args[8] as Int, args[9] as Int),
+            dayEndTime = LocalTime.of(args[10] as Int, args[11] as Int),
+            appLanguage = args[12] as String
         )
     }.stateIn(
         scope = viewModelScope,
@@ -144,6 +153,30 @@ class MoreViewModel @Inject constructor(
     fun setOnboardingTooltipsEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setOnboardingTooltipsEnabled(enabled)
+        }
+    }
+
+    fun setDayStartTime(time: LocalTime) {
+        viewModelScope.launch {
+            val snappedTime = snapTo30Minutes(time)
+            settingsRepository.setDayStartTime(snappedTime.hour, snappedTime.minute)
+            ScheduleWidgetUtils.updateWidget(context)
+        }
+    }
+
+    fun setDayEndTime(time: LocalTime) {
+        viewModelScope.launch {
+            val snappedTime = snapTo30Minutes(time)
+            settingsRepository.setDayEndTime(snappedTime.hour, snappedTime.minute)
+            ScheduleWidgetUtils.updateWidget(context)
+        }
+    }
+
+    private fun snapTo30Minutes(time: LocalTime): LocalTime {
+        return when (time.minute) {
+            in 0..14 -> time.withMinute(0)
+            in 15..44 -> time.withMinute(30)
+            else -> time.plusHours(1).withMinute(0)
         }
     }
 

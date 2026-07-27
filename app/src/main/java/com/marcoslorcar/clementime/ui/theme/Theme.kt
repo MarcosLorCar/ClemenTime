@@ -149,11 +149,11 @@ fun ClemenTimeTheme(
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
-        selectedTheme != "clementine" -> getThemeColorScheme(selectedTheme, darkTheme)
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+        selectedTheme == "clementine" && dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
+        selectedTheme != "clementine" -> getThemeColorScheme(selectedTheme, darkTheme)
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
