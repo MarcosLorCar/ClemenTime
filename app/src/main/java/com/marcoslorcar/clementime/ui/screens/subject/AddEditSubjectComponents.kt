@@ -97,8 +97,7 @@ fun SubjectBasicDetailsCard(
     onUpdateName: (String) -> Unit,
     onUpdateColor: (Int) -> Unit,
     onUpdateSemester: (Int) -> Unit,
-    onUpdateActive: (Boolean) -> Unit = {},
-    isCreating: Boolean = false
+    onUpdateActive: (Boolean) -> Unit = {}
 ) {
     if (!isEditMode) {
         Card(
@@ -228,52 +227,43 @@ fun SubjectBasicDetailsCard(
                 )
             }
 
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = stringResource(R.string.semester_label),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                SemesterSwitcher(
-                    selectedSemester = selectedSemester,
-                    onSemesterSelected = onUpdateSemester,
-                    showBothOption = true
-                )
-            }
+            SemesterSwitcher(
+                selectedSemester = selectedSemester,
+                onSemesterSelected = onUpdateSemester,
+                modifier = Modifier.padding(horizontal = 0.dp)
+            )
 
-            if (!isCreating) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = if (isActive) Icons.Default.Check else Icons.Default.Close,
-                            contentDescription = null,
-                            tint = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-                        )
-                        Spacer(Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = stringResource(if (isActive) R.string.active else R.string.inactive),
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Text(
-                                text = if (isActive) stringResource(R.string.visible_in_schedule) else stringResource(R.string.hidden_from_schedule),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                    Switch(
-                        checked = isActive,
-                        onCheckedChange = onUpdateActive
+            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = if (isActive) Icons.Default.Check else Icons.Default.Close,
+                        contentDescription = null,
+                        tint = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                     )
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = stringResource(if (isActive) R.string.active else R.string.inactive),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = if (isActive) stringResource(R.string.visible_in_schedule) else stringResource(R.string.hidden_from_schedule),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
-
-                HorizontalDivider()
+                Switch(
+                    checked = isActive,
+                    onCheckedChange = onUpdateActive
+                )
             }
 
             Row(

@@ -57,8 +57,6 @@ import com.marcoslorcar.clementime.data.SubjectWithSlots
 import com.marcoslorcar.clementime.data.cardColor
 import com.marcoslorcar.clementime.ui.components.ScheduleMiniPreview
 import com.marcoslorcar.clementime.ui.theme.ClemenTimeTheme
-import com.marcoslorcar.clementime.utils.DAY_END_TIME
-import com.marcoslorcar.clementime.utils.DAY_START_TIME
 import java.time.DayOfWeek
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -74,9 +72,7 @@ fun SubjectItemCard(
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onNavigateToSchedule: (DayOfWeek, Long?) -> Unit,
-    onToggleSelection: () -> Unit,
-    dayStartTime: LocalTime = DAY_START_TIME,
-    dayEndTime: LocalTime = DAY_END_TIME
+    onToggleSelection: () -> Unit
 ) {
     val subject = subjectWithSlots.subject
     var isExpanded by remember { mutableStateOf(false) }
@@ -249,8 +245,6 @@ fun SubjectItemCard(
                             if (previewSlots.isNotEmpty()) {
                                 ScheduleMiniPreview(
                                     slots = previewSlots,
-                                    startTime = dayStartTime,
-                                    endTime = dayEndTime,
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .height(110.dp)

@@ -252,9 +252,7 @@ fun ConflictResolverScreen(
                 onSelectSolution = { solutionToConfirm = it },
                 onboardingTooltipsEnabled = uiState.onboardingTooltipsEnabled,
                 hasSeenApplyTooltip = uiState.hasSeenApplyTooltip,
-                onMarkApplyTooltipSeen = viewModel::markApplyTooltipSeen,
-                dayStartTime = uiState.dayStartTime,
-                dayEndTime = uiState.dayEndTime
+                onMarkApplyTooltipSeen = viewModel::markApplyTooltipSeen
             )
         }
     }

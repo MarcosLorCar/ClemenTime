@@ -62,8 +62,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -85,6 +83,8 @@ import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import com.marcoslorcar.clementime.BuildConfig
 import com.marcoslorcar.clementime.R
 import com.marcoslorcar.clementime.data.SettingsRepository
@@ -660,7 +660,6 @@ fun MoreContent(
                 }
             )
 
-
             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
             // --- Section: About ---
@@ -698,7 +697,6 @@ fun MoreContent(
                     context.startActivity(intent)
                 }
             )
-
         }
     }
 }

@@ -153,17 +153,6 @@ class AddEditSubjectViewModel @Inject constructor(
         _uiState.update { it.copy(editingSlotIndex = null, isSlotEditorOpen = false) }
     }
 
-    /**
-     * Slots are editable outside subject edit mode, but the Save action only exists *in* edit
-     * mode - so a slot change made while viewing would never reach the database. Persist it
-     * immediately, mirroring what [selectLabGroup] already does.
-     */
-    private fun persistSlotChangeIfNotEditing() {
-        if (!_uiState.value.isEditMode) {
-            saveSubject(shouldExit = false)
-        }
-    }
-
     fun saveSlotFromEditor(slot: ClassSlotUiModel) {
         val index = _uiState.value.editingSlotIndex
         if (index != null && index in _uiState.value.slots.indices) {
@@ -172,7 +161,6 @@ class AddEditSubjectViewModel @Inject constructor(
             _uiState.update { it.copy(slots = it.slots + slot) }
         }
         closeSlotEditor()
-        persistSlotChangeIfNotEditing()
     }
 
     fun markLabSelectionTooltipSeen() {
@@ -243,7 +231,6 @@ class AddEditSubjectViewModel @Inject constructor(
 
     fun addSlot() {
         val lastSlot = _uiState.value.slots.lastOrNull()
-        val newIndex = _uiState.value.slots.size
 
         val newSlot = ClassSlotUiModel(
             id = 0L,
@@ -257,13 +244,7 @@ class AddEditSubjectViewModel @Inject constructor(
             professor = lastSlot?.professor
         )
 
-        _uiState.update {
-            it.copy(
-                slots = it.slots + newSlot,
-                editingSlotIndex = newIndex,
-                isSlotEditorOpen = true
-            )
-        }
+        _uiState.update { it.copy(slots = it.slots + newSlot) }
     }
 
     fun duplicateSlot(index: Int) {
@@ -276,7 +257,6 @@ class AddEditSubjectViewModel @Inject constructor(
                 updatedList.add(index + 1, duplicatedSlot)
                 it.copy(slots = updatedList)
             }
-            persistSlotChangeIfNotEditing()
         }
     }
 
@@ -299,16 +279,6 @@ class AddEditSubjectViewModel @Inject constructor(
                 updatedList.removeAt(index)
                 state.copy(slots = updatedList)
             }
-            persistSlotChangeIfNotEditing()
-        }
-    }
-
-    fun deleteSubject() {
-        val id = _uiState.value.subjectId ?: return
-        viewModelScope.launch {
-            scheduleDao.deleteSubjectById(id)
-            ScheduleWidgetUtils.updateWidget(context)
-            _uiState.update { it.copy(isSaved = true) }
         }
     }
 
@@ -383,22 +353,10 @@ class AddEditSubjectViewModel @Inject constructor(
 
             val validEntities = state.slots.mapNotNull { it.toEntity(subjectToSave.id) }
 
-            val actualId = scheduleDao.upsertSubjectWithSlots(subjectToSave, validEntities)
+            scheduleDao.upsertSubjectWithSlots(subjectToSave, validEntities)
             ScheduleWidgetUtils.updateWidget(context)
             if (shouldExit) {
                 _uiState.update { it.copy(isSaved = true) }
-            } else {
-                // The screen stays open, and loadSubject only reads once. A slot added here
-                // still holds id = 0L, so without this refresh the next auto-save would
-                // insert it as a brand new row each time and churn its ID.
-                val saved = scheduleDao.getSubjectWithSlotsById(actualId).firstOrNull() ?: return@launch
-                _uiState.update { state ->
-                    state.copy(
-                        subjectId = saved.subject.id,
-                        slots = saved.slots.map { slot -> slot.toUiModel() },
-                        isEditMode = false
-                    )
-                }
             }
         }
     }

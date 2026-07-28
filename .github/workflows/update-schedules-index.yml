@@ -2,7 +2,7 @@ name: Update Schedules Index
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
     paths:
       - 'schedules/dist/**'
       - '!schedules/dist/schedules_index.json'

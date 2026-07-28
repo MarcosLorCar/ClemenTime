@@ -76,7 +76,7 @@ object ConflictSolver {
                 keySelector = { entry -> 
                     entry.value.map { it.dayOfWeek to (it.startTime to it.endTime) }.sortedBy { it.first } 
                 },
-                valueTransform = { it.key ?: "Default" }
+                valueTransform = { it.key!! }
             )
 
             scheduleToGroupNames.map { (_, groupNames) ->

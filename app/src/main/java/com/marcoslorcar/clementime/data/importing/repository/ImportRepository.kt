@@ -14,14 +14,40 @@ import com.marcoslorcar.clementime.data.importing.parser.JsonScheduleParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import java.io.File
+import java.security.MessageDigest
 import javax.inject.Inject
+
+@Serializable
+data class CacheMetadata(
+    val id: String,
+    val title: String,
+    val description: String?,
+    val remotePath: String,
+    val lastUsed: Long,
+    val hash: String,
+    val updatedTime: String? = null
+)
+
+@Serializable
+data class RemoteCacheList(
+    val entries: List<CacheMetadata> = emptyList()
+)
 
 class ImportRepository @Inject constructor(
     private val dao: ScheduleDao,
     private val parser: JsonScheduleParser = JsonScheduleParser(),
-    private val apiService: GitHubScheduleApiService? = null
+    private val apiService: GitHubScheduleApiService? = null,
+    private val json: Json = Json { ignoreUnknownKeys = true; coerceInputValues = true; encodeDefaults = true }
 ) {
+
+    private fun String.sha256(): String {
+        val md = MessageDigest.getInstance("SHA-256")
+        val digest = md.digest(this.toByteArray(Charsets.UTF_8))
+        return digest.joinToString("") { "%02x".format(it) }
+    }
 
     fun parseJsonString(jsonContent: String): Result<ScheduleJsonSchema> {
         return parser.parseJson(jsonContent)
@@ -30,14 +56,35 @@ class ImportRepository @Inject constructor(
     suspend fun listAvailableImportFiles(context: Context): List<ImportFile> = withContext(Dispatchers.IO) {
         val list = mutableListOf<ImportFile>()
 
+        // 1. Check bundled asset
+        var bundledHash = ""
+        try {
+            context.assets.open("schedules/primer_cuatrimestre.json").use { stream ->
+                val jsonString = stream.bufferedReader().readText()
+                bundledHash = jsonString.sha256()
+                val schema = parser.parseJson(jsonString).getOrNull()
+                val title = schema?.title ?: "Horarios 2026/2027 - 1º Cuatrimestre"
+                list.add(ImportFile(id = "bundled", title = title, isBundled = true, fileUri = null))
+            }
+        } catch (_: Exception) {
+            // Asset not found or failed to parse
+        }
+
+        // 2. Check local imports directory
         val dir = File(context.filesDir, "imports")
         if (dir.exists()) {
             dir.listFiles { _, name -> name.endsWith(".json") }?.forEach { file ->
                 try {
                     val jsonString = file.readText()
+                    val fileHash = jsonString.sha256()
+                    // Deduplicate against bundled file
+                    if (fileHash == bundledHash) {
+                        file.delete() // Clean up local duplicate
+                        return@forEach
+                    }
                     val schema = parser.parseJson(jsonString).getOrNull()
                     val title = schema?.title ?: file.name
-                    list.add(ImportFile(id = file.name, title = title, fileUri = file.absolutePath))
+                    list.add(ImportFile(id = file.name, title = title, isBundled = false, fileUri = file.absolutePath))
                 } catch (_: Exception) {
                     // Skip invalid files
                 }
@@ -55,15 +102,31 @@ class ImportRepository @Inject constructor(
 
             val schema = parser.parseJson(jsonString).getOrThrow()
             val title = schema.title ?: "Custom Import"
+            val fileHash = jsonString.sha256()
 
-            val filename = "import_${System.currentTimeMillis()}.json"
+            // Check if it matches bundled file hash
+            var bundledHash = ""
+            try {
+                context.assets.open("schedules/primer_cuatrimestre.json").use { stream ->
+                    bundledHash = stream.bufferedReader().readText().sha256()
+                }
+            } catch (_: Exception) {
+                // Ignore
+            }
+
+            if (fileHash == bundledHash) {
+                // It's the bundled file, return reference to bundled representation instead of duplicating
+                return@withContext Result.success(ImportFile(id = "bundled", title = title, isBundled = true, fileUri = null))
+            }
+
+            val filename = "import_$fileHash.json"
             val dir = File(context.filesDir, "imports")
             if (!dir.exists()) dir.mkdirs()
 
             val destFile = File(dir, filename)
             destFile.writeText(jsonString)
 
-            Result.success(ImportFile(id = filename, title = title, fileUri = destFile.absolutePath))
+            Result.success(ImportFile(id = filename, title = title, isBundled = false, fileUri = destFile.absolutePath))
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -90,13 +153,8 @@ class ImportRepository @Inject constructor(
             
             // Find existing subject with same code (or name) to replace it
             val existing = existingSubjects.find { 
-                val localCode = it.subject.code.trim()
-                val remoteCode = jsonSubject.code.trim()
-                val localName = it.subject.name.trim()
-                val remoteName = jsonSubject.name.trim()
-                
-                (remoteCode.isNotBlank() && localCode.equals(remoteCode, ignoreCase = true)) ||
-                (remoteCode.isBlank() && localName.equals(remoteName, ignoreCase = true))
+                (it.subject.code.isNotBlank() && it.subject.code.equals(jsonSubject.code, ignoreCase = true)) ||
+                (it.subject.code.isBlank() && it.subject.name.equals(jsonSubject.name, ignoreCase = true))
             }?.subject
 
             // Auto-select lab group if only one variant exists
@@ -158,21 +216,15 @@ class ImportRepository @Inject constructor(
         return trimmed
     }
 
-    suspend fun fetchRemoteSchedules(rawBaseUrl: String, forceRefresh: Boolean = false): Result<List<RemoteScheduleSummary>> = withContext(Dispatchers.IO) {
+    suspend fun fetchRemoteSchedules(rawBaseUrl: String): Result<List<RemoteScheduleSummary>> = withContext(Dispatchers.IO) {
         try {
             if (apiService == null) return@withContext Result.failure(Exception("Network service unavailable"))
             val baseUrl = normalizeGitHubUrl(rawBaseUrl)
-            var indexUrl = when {
+            val indexUrl = when {
                 baseUrl.endsWith("schedules_index.json") -> baseUrl
                 baseUrl.endsWith("/") -> "${baseUrl}schedules_index.json"
                 else -> "$baseUrl/schedules_index.json"
             }
-            
-            if (forceRefresh) {
-                indexUrl += if (indexUrl.contains("?")) "&" else "?"
-                indexUrl += "t=${System.currentTimeMillis()}"
-            }
-
             val response = apiService.getScheduleIndex(indexUrl)
             if (response.isSuccessful && response.body() != null) {
                 Result.success(response.body()!!)
@@ -192,13 +244,43 @@ class ImportRepository @Inject constructor(
         return dir
     }
 
+    private fun getMetadataFile(context: Context): File {
+        return File(getCacheDir(context), "metadata.json")
+    }
+
+    fun getCachedRemoteSchedules(context: Context): List<CacheMetadata> {
+        return readCacheMetadata(context)
+    }
+
+    private fun readCacheMetadata(context: Context): List<CacheMetadata> {
+        val file = getMetadataFile(context)
+        if (!file.exists()) return emptyList()
+        return try {
+            val jsonString = file.readText()
+            json.decodeFromString<RemoteCacheList>(jsonString).entries
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    private fun writeCacheMetadata(context: Context, entries: List<CacheMetadata>) {
+        val file = getMetadataFile(context)
+        try {
+            val jsonString = json.encodeToString(RemoteCacheList(entries))
+            file.writeText(jsonString)
+        } catch (_: Exception) {
+            // Ignore
+        }
+    }
+
     suspend fun fetchRemoteScheduleSchema(
         context: Context,
-        file: ImportFile,
-        forceRefresh: Boolean = false
+        file: ImportFile
     ): Result<ScheduleJsonSchema> = withContext(Dispatchers.IO) {
         val cacheDir = getCacheDir(context)
         val cacheFile = File(cacheDir, "cache_${file.id}.json")
+        val metadataList = readCacheMetadata(context).toMutableList()
+        val existingEntry = metadataList.find { it.id == file.id }
 
         try {
             if (apiService == null) throw Exception("Network service unavailable")
@@ -207,19 +289,51 @@ class ImportRepository @Inject constructor(
             if (response.isSuccessful) {
                 val jsonBody = response.body()?.string() ?: throw Exception("Response body is empty")
                 val schema = parser.parseJson(jsonBody).getOrThrow()
-                
-                // Save to cache for offline availability
-                cacheFile.writeText(jsonBody)
-                
+                val newHash = jsonBody.sha256()
+
+                val updatedEntry = CacheMetadata(
+                    id = file.id,
+                    title = schema.title ?: file.title,
+                    description = file.description,
+                    remotePath = file.remotePath,
+                    lastUsed = System.currentTimeMillis(),
+                    hash = newHash,
+                    updatedTime = file.updatedTime
+                )
+
+                if (existingEntry == null || existingEntry.hash != newHash || !cacheFile.exists()) {
+                    cacheFile.writeText(jsonBody)
+                    metadataList.removeAll { it.id == file.id }
+                    metadataList.add(updatedEntry)
+
+                    if (metadataList.size > 5) {
+                        metadataList.sortBy { it.lastUsed }
+                        while (metadataList.size > 5) {
+                            val oldest = metadataList.removeAt(0)
+                            val oldestFile = File(cacheDir, "cache_${oldest.id}.json")
+                            if (oldestFile.exists()) {
+                                oldestFile.delete()
+                            }
+                        }
+                    }
+                } else {
+                    metadataList.removeAll { it.id == file.id }
+                    metadataList.add(updatedEntry)
+                }
+
+                writeCacheMetadata(context, metadataList)
                 Result.success(schema)
             } else {
                 throw Exception("Failed to fetch remote schema: ${response.code()} ${response.message()}")
             }
         } catch (e: Exception) {
-            if (!forceRefresh && cacheFile.exists()) {
+            if (existingEntry != null && cacheFile.exists()) {
                 try {
                     val jsonBody = cacheFile.readText()
                     val schema = parser.parseJson(jsonBody).getOrThrow()
+                    metadataList.removeAll { it.id == file.id }
+                    metadataList.add(existingEntry.copy(lastUsed = System.currentTimeMillis()))
+                    writeCacheMetadata(context, metadataList)
                     Result.success(schema)
                 } catch (_: Exception) {
                     Result.failure(e)
@@ -229,6 +343,5 @@ class ImportRepository @Inject constructor(
             }
         }
     }
-
 
 }

@@ -430,7 +430,7 @@ fun ScheduleContent(
     }
 
     if (selectedSlotForSheet != null) {
-        val (sheetSubject, slot) = selectedSlotForSheet!!
+        val (_, slot) = selectedSlotForSheet!!
         SlotEditBottomSheet(
             initialSlot = slot,
             onDismiss = { selectedSlotForSheet = null },
@@ -441,10 +441,7 @@ fun ScheduleContent(
             onDelete = {
                 onDeleteSlot(slot.id)
                 selectedSlotForSheet = null
-            },
-            dayStartTime = uiState.dayStartTime,
-            dayEndTime = uiState.dayEndTime,
-            defaultDurationMinutes = sheetSubject.defaultDurationMinutes ?: 90
+            }
         )
     }
 }

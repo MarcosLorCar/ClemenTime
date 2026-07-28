@@ -32,11 +32,11 @@ class OnboardingViewModel @Inject constructor(
         settingsRepository.themeFlow,
         settingsRepository.selectedThemeFlow,
         _appLanguage
-    ) { args: Array<Any?> ->
+    ) { theme: String, selectedTheme: String, lang: String ->
         OnboardingUiState(
-            themeMode = args[0] as String,
-            selectedTheme = args[1] as String,
-            appLanguage = args[2] as String
+            themeMode = theme,
+            selectedTheme = selectedTheme,
+            appLanguage = lang
         )
     }.stateIn(
         scope = viewModelScope,

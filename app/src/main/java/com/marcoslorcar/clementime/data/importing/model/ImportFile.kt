@@ -1,6 +1,7 @@
 package com.marcoslorcar.clementime.data.importing.model
 
 enum class ImportSourceType {
+    BUNDLED,
     REMOTE,
     CUSTOM
 }
@@ -8,12 +9,12 @@ enum class ImportSourceType {
 data class ImportFile(
     val id: String,
     val title: String,
+    val isBundled: Boolean = false,
     val fileUri: String? = null,
-    val sourceType: ImportSourceType = ImportSourceType.CUSTOM,
+    val sourceType: ImportSourceType = if (isBundled) ImportSourceType.BUNDLED else ImportSourceType.CUSTOM,
     val remotePath: String? = null,
     val description: String? = null,
     val isCached: Boolean = false,
     val isUpdateAvailable: Boolean = false,
-    val updatedTime: String? = null,
-    val hash: String? = null
+    val updatedTime: String? = null
 )

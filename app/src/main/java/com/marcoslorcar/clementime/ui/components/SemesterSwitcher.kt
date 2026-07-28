@@ -1,6 +1,7 @@
 package com.marcoslorcar.clementime.ui.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -9,6 +10,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.marcoslorcar.clementime.R
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -16,13 +18,14 @@ import com.marcoslorcar.clementime.R
 fun SemesterSwitcher(
     selectedSemester: Int,
     onSemesterSelected: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-    showBothOption: Boolean = false
+    modifier: Modifier = Modifier
 ) {
-    val options = if (showBothOption) listOf(1, 2, 3) else listOf(1, 2)
+    val options = listOf(1, 2)
     
     SingleChoiceSegmentedButtonRow(
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         options.forEachIndexed { index, semester ->
             SegmentedButton(
@@ -31,11 +34,7 @@ fun SemesterSwitcher(
                 selected = selectedSemester == semester,
                 label = {
                     Text(
-                        text = when (semester) {
-                            1 -> if (showBothOption) stringResource(R.string.semester_1_short) else stringResource(R.string.semester_1_label)
-                            2 -> if (showBothOption) stringResource(R.string.semester_2_short) else stringResource(R.string.semester_2_label)
-                            else -> stringResource(R.string.semester_both_short)
-                        }
+                        text = stringResource(if (semester == 1) R.string.semester_1_label else R.string.semester_2_label)
                     )
                 }
             )

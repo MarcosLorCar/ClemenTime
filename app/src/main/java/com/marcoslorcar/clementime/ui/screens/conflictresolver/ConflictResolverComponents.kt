@@ -63,10 +63,7 @@ import com.marcoslorcar.clementime.data.SubjectWithSlots
 import com.marcoslorcar.clementime.data.uiColor
 import com.marcoslorcar.clementime.ui.components.OnboardingTooltip
 import com.marcoslorcar.clementime.ui.components.ScheduleMiniPreview
-import com.marcoslorcar.clementime.utils.DAY_END_TIME
-import com.marcoslorcar.clementime.utils.DAY_START_TIME
 import com.marcoslorcar.clementime.utils.ScheduleSolution
-import java.time.LocalTime
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -364,9 +361,7 @@ fun SolutionsSheetContent(
     onSelectSolution: (ScheduleSolution) -> Unit,
     onboardingTooltipsEnabled: Boolean = true,
     hasSeenApplyTooltip: Boolean = false,
-    onMarkApplyTooltipSeen: () -> Unit = {},
-    dayStartTime: LocalTime = DAY_START_TIME,
-    dayEndTime: LocalTime = DAY_END_TIME
+    onMarkApplyTooltipSeen: () -> Unit = {}
 ) {
     if (solutions.isEmpty()) {
         Box(
@@ -409,9 +404,7 @@ fun SolutionsSheetContent(
                 allSubjects = subjects,
                 onApply = { onSelectSolution(solution) },
                 showOnboardingTooltip = isFirstNonCurrent && onboardingTooltipsEnabled && !hasSeenApplyTooltip,
-                onMarkApplyTooltipSeen = onMarkApplyTooltipSeen,
-                dayStartTime = dayStartTime,
-                dayEndTime = dayEndTime
+                onMarkApplyTooltipSeen = onMarkApplyTooltipSeen
             )
         }
     }
@@ -424,9 +417,7 @@ fun SolutionCard(
     allSubjects: List<SubjectWithSlots>,
     onApply: () -> Unit,
     showOnboardingTooltip: Boolean = false,
-    onMarkApplyTooltipSeen: () -> Unit = {},
-    dayStartTime: LocalTime = DAY_START_TIME,
-    dayEndTime: LocalTime = DAY_END_TIME
+    onMarkApplyTooltipSeen: () -> Unit = {}
 ) {
     val isCurrent = solution.isCurrent
     val conflictingClassesCount = solution.overlappingSlotIds.size
@@ -589,9 +580,7 @@ fun SolutionCard(
                     .fillMaxWidth()
                     .height(180.dp),
                 slots = solution.totalSlots,
-                overlappingSlotIds = solution.overlappingSlotIds,
-                startTime = dayStartTime,
-                endTime = dayEndTime
+                overlappingSlotIds = solution.overlappingSlotIds
             )
         }
     }

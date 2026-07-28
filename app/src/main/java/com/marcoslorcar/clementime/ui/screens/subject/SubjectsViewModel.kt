@@ -6,17 +6,13 @@ import androidx.lifecycle.viewModelScope
 import com.marcoslorcar.clementime.data.ScheduleDao
 import com.marcoslorcar.clementime.data.SubjectWithSlots
 import com.marcoslorcar.clementime.ui.widget.ScheduleWidgetUtils
-import com.marcoslorcar.clementime.utils.DAY_END_TIME
-import com.marcoslorcar.clementime.utils.DAY_START_TIME
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.LocalTime
 import javax.inject.Inject
 
 data class SubjectsUiState(
@@ -28,15 +24,13 @@ data class SubjectsUiState(
     val isSelectionModeForced: Boolean = false,
     val highContrast: Boolean = false,
     val isSemesterSwitcherVisible: Boolean = false,
-    val isToolsVisible: Boolean = false,
-    val dayStartTime: LocalTime = DAY_START_TIME,
-    val dayEndTime: LocalTime = DAY_END_TIME
+    val isToolsVisible: Boolean = false
 ) {
     val isInSelectionMode: Boolean
         get() = isSelectionModeForced || selectedSubjectIds.isNotEmpty()
 
     val subjectsInSelectedSemester: List<SubjectWithSlots>
-        get() = subjects.filter { it.subject.semester == selectedSemester || it.subject.semester == 3 }
+        get() = subjects.filter { it.subject.semester == selectedSemester }
 
     val filteredSubjects: List<SubjectWithSlots>
         get() = subjectsInSelectedSemester
@@ -90,18 +84,6 @@ class SubjectsViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.currentSemesterFlow.collect { semester ->
                 _uiState.update { it.copy(selectedSemester = semester) }
-            }
-        }
-        viewModelScope.launch {
-            combine(
-                settingsRepository.dayStartHourFlow,
-                settingsRepository.dayStartMinuteFlow,
-                settingsRepository.dayEndHourFlow,
-                settingsRepository.dayEndMinuteFlow
-            ) { sh, sm, eh, em ->
-                LocalTime.of(sh, sm) to LocalTime.of(eh, em)
-            }.collect { (start, end) ->
-                _uiState.update { it.copy(dayStartTime = start, dayEndTime = end) }
             }
         }
     }

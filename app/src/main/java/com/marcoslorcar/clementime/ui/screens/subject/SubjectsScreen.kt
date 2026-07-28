@@ -459,9 +459,7 @@ fun SubjectsContent(
                                 onEditClick = { onNavigateToAddEditSubject(subjectWithSlots.subject.id) },
                                 onDeleteClick = { onEvent(SubjectsUiEvent.DeleteSubject(subjectWithSlots.subject.id)) },
                                 onNavigateToSchedule = onNavigateToSchedule,
-                                onToggleSelection = { onEvent(SubjectsUiEvent.ToggleSubjectSelection(subjectWithSlots.subject.id)) },
-                                dayStartTime = uiState.dayStartTime,
-                                dayEndTime = uiState.dayEndTime
+                                onToggleSelection = { onEvent(SubjectsUiEvent.ToggleSubjectSelection(subjectWithSlots.subject.id)) }
                             )
                         }
                     }

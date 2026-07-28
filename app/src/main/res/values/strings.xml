@@ -11,8 +11,8 @@
     <string name="delete_subject_confirm">Delete</string>
     <string name="cancel">Cancel</string>
     <string name="no_subjects_title">No subjects added yet</string>
-    <string name="no_subjects_subtitle">Import a schedule from the library or add subjects manually to get started.</string>
-    <string name="add_subject_manually_button">Add Subject Manually</string>
+    <string name="no_subjects_subtitle">Import a schedule or tap + to create one.</string>
+    <string name="add_subject_manually_button">Create Manually</string>
     <string name="no_search_results">No subjects match your search.</string>
     <plurals name="slots_count">
         <item quantity="one">%1$d slot</item>
@@ -109,13 +109,14 @@
     <string name="export_error_prefix">Export failed: %1$s</string>
     <string name="import_library_title">Import Library</string>
     <string name="import_cached_label">Saved</string>
-    <string name="import_update_available_label">Update available</string>
+    <string name="import_update_available_label">Update Available</string>
     <string name="import_select_file_device">Import JSON from device</string>
+    <string name="import_bundled_label">Bundled</string>
     <string name="import_custom_label">Custom</string>
     <string name="import_delete_confirm_title">Delete Import File</string>
     <string name="import_delete_confirm_message">Are you sure you want to remove \"%1$s\" from your import library?</string>
     <string name="no_schedule_data">No schedule data</string>
-    <string name="no_schedule_data_subtitle">Import a schedule from the library or add subjects manually to get started.</string>
+    <string name="no_schedule_data_subtitle">Import a schedule or add subjects to get started.</string>
     <string name="import_screen_prompt">Select subjects to import</string>
     <string name="import_preview_tooltip_title">Subject Preview</string>
     <string name="import_preview_tooltip_desc">Long press any subject to see how its classes fit into your current schedule.</string>
@@ -262,9 +263,6 @@
     <string name="onboarding_ready_title">You\'re all set!</string>
     <string name="onboarding_ready_desc">You can change these anytime in Settings. Let\'s get started!</string>
     <string name="onboarding_next">Next</string>
-
-    <string name="affected_subjects_label">Affected subjects:</string>
-    <string name="apply_changes_confirm">Apply Changes</string>
     <string name="onboarding_back">Back</string>
     <string name="onboarding_finish">Get Started</string>
     <string name="onboarding_skip">Skip</string>
@@ -318,16 +316,10 @@
     <string name="color_green">Green: %1$d</string>
     <string name="color_blue">Blue: %1$d</string>
     <string name="start_time_empty">Start: —:—</string>
-    <string name="slot_time_out_of_range">Time must be between %1$s and %2$s. Change the day range in More to use other times.</string>
     <string name="end_time_empty">End: —:—</string>
     <string name="action_undo">UNDO</string>
     <string name="lang_en">English</string>
     <string name="lang_es">Español</string>
-    <string name="semester_both_label">Both Semesters</string>
-    <string name="semester_1_short">1st</string>
-    <string name="semester_2_short">2nd</string>
-    <string name="semester_both_short">Both</string>
-    <string name="label_optional">(Optional)</string>
     <string name="bullet_point"> • %1$s</string>
     <string name="bullet_point_with_ampersand"> • %1$s &amp; %2$s</string>
 

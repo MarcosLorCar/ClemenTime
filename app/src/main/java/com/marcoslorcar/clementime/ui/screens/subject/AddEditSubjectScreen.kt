@@ -16,19 +16,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
@@ -98,8 +95,7 @@ fun AddEditSubjectScreen(
         onDeleteSlot = viewModel::deleteSlot,
         onAddSlot = viewModel::addSlot,
         onDuplicateSlot = viewModel::duplicateSlot,
-        onSaveSubject = { viewModel.saveSubject(shouldExit = false) },
-        onDeleteSubject = viewModel::deleteSubject,
+        onSaveSubject = viewModel::saveSubject,
         onToggleEditMode = viewModel::toggleEditMode,
         onOpenSlotEditor = viewModel::openSlotEditor,
         onCloseSlotEditor = viewModel::closeSlotEditor,
@@ -127,7 +123,6 @@ fun AddEditSubjectContent(
     onAddSlot: () -> Unit,
     onDuplicateSlot: (Int) -> Unit,
     onSaveSubject: () -> Unit,
-    onDeleteSubject: () -> Unit,
     onToggleEditMode: () -> Unit,
     onOpenSlotEditor: (Int?) -> Unit,
     onCloseSlotEditor: () -> Unit,
@@ -140,7 +135,6 @@ fun AddEditSubjectContent(
     var showNotesSheet by remember { mutableStateOf(false) }
     var showLabHelpDialog by remember { mutableStateOf(false) }
     var showManualLabTooltip by remember { mutableStateOf(false) }
-    var showDeleteSubjectDialog by remember { mutableStateOf(false) }
 
     val labGroups = remember(uiState.slots) {
         uiState.slots.filter { it.entryType == com.marcoslorcar.clementime.data.EntryType.LAB }
@@ -190,49 +184,32 @@ fun AddEditSubjectContent(
         }
     }
 
-    val isCreating = remember(uiState.subjectId) { uiState.subjectId == null || uiState.subjectId == 0L }
-    val titleRes = when {
-        isCreating -> R.string.new_subject_title
-        uiState.isEditMode -> R.string.edit_subject_title
-        else -> R.string.view_subject_title
-    }
-
     Scaffold(
         topBar = {
             ClemenTimeTopBar(
-                title = stringResource(titleRes),
+                title = stringResource(if (uiState.isEditMode) R.string.edit_subject_title else R.string.add_subject_title),
                 onNavigateBack = onBack,
                 actions = {
                     if (uiState.isEditMode) {
-                        TextButton(
-                            onClick = onSaveSubject,
-                            enabled = uiState.code.isNotBlank() && uiState.name.isNotBlank(),
-                            colors = ButtonDefaults.textButtonColors(
-                                contentColor = MaterialTheme.colorScheme.primary
-                            )
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Save,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(stringResource(R.string.save_button))
+                        IconButton(onClick = onSaveSubject) {
+                            Icon(Icons.Default.Save, contentDescription = stringResource(R.string.save_button))
                         }
                     } else {
-                        IconButton(onClick = { showDeleteSubjectDialog = true }) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = stringResource(R.string.delete_subject),
-                                tint = MaterialTheme.colorScheme.error
-                            )
-                        }
                         IconButton(onClick = onToggleEditMode) {
                             Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.edit_subject))
                         }
                     }
                 }
             )
+        },
+        floatingActionButton = {
+            if (uiState.isEditMode) {
+                ExtendedFloatingActionButton(
+                    onClick = onAddSlot,
+                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                    text = { Text(stringResource(R.string.add_slot_button)) }
+                )
+            }
         }
     ) { padding ->
         Column(
@@ -254,28 +231,23 @@ fun AddEditSubjectContent(
                 onUpdateName = onUpdateName,
                 onUpdateColor = onUpdateColor,
                 onUpdateSemester = onUpdateSemester,
-                onUpdateActive = onUpdateActive,
-                isCreating = isCreating
+                onUpdateActive = onUpdateActive
             )
 
-            if (previewSlots.isNotEmpty()) {
-                ScheduleMiniPreview(
-                    slots = previewSlots,
-                    startTime = uiState.dayStartTime,
-                    endTime = uiState.dayEndTime,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(150.dp)
-                )
-            }
+            ScheduleMiniPreview(
+                slots = previewSlots,
+                startTime = uiState.dayStartTime,
+                endTime = uiState.dayEndTime,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(150.dp)
+            )
 
-            if (!isCreating) {
-                SubjectNotesAndFilesSummary(
-                    notesText = uiState.notesText,
-                    attachedFiles = uiState.attachedFiles,
-                    onClick = { showNotesSheet = true }
-                )
-            }
+            SubjectNotesAndFilesSummary(
+                notesText = uiState.notesText,
+                attachedFiles = uiState.attachedFiles,
+                onClick = { showNotesSheet = true }
+            )
 
             if (!uiState.isEditMode && labGroups.isNotEmpty()) {
                 Column {
@@ -374,24 +346,15 @@ fun AddEditSubjectContent(
                         ClassSlotItemCard(
                             slot = slot,
                             isHighlighted = slot.id == uiState.highlightSlotId,
-                            // Slots are always editable: isEditMode governs the subject's own
-                            // fields, not its class slots.
-                            onEditClick = { onOpenSlotEditor(index) },
+                            onEditClick = if (uiState.isEditMode) { { onOpenSlotEditor(index) } } else null,
                             onGoToSchedule = { day, id -> onNavigateToSchedule(day, id) },
                             onDuplicate = { onDuplicateSlot(index) },
                             onDelete = { onDeleteSlot(index) },
-                            isEditMode = true
+                            isEditMode = uiState.isEditMode
                         )
                     }
                 }
             }
-
-            ExtendedFloatingActionButton(
-                onClick = onAddSlot,
-                icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text(stringResource(R.string.add_slot_button)) },
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            )
 
             Spacer(modifier = Modifier.height(80.dp))
         }
@@ -412,10 +375,7 @@ fun AddEditSubjectContent(
             initialSlot = editingSlot,
             onDismiss = onCloseSlotEditor,
             onSaveSlot = onSaveSlotFromEditor,
-            onDelete = uiState.editingSlotIndex?.let { index -> { onDeleteSlot(index); onCloseSlotEditor() } },
-            dayStartTime = uiState.dayStartTime,
-            dayEndTime = uiState.dayEndTime,
-            defaultDurationMinutes = uiState.defaultDurationMinutes
+            onDelete = uiState.editingSlotIndex?.let { index -> { onDeleteSlot(index); onCloseSlotEditor() } }
         )
     }
 
@@ -438,30 +398,6 @@ fun AddEditSubjectContent(
             confirmButton = {
                 TextButton(onClick = { showLabHelpDialog = false }) {
                     Text(stringResource(R.string.onboarding_got_it))
-                }
-            }
-        )
-    }
-
-    if (showDeleteSubjectDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteSubjectDialog = false },
-            title = { Text(stringResource(R.string.delete_subject_dialog_title)) },
-            text = { Text(stringResource(R.string.delete_subject_dialog_message, uiState.name)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onDeleteSubject()
-                        showDeleteSubjectDialog = false
-                    },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Text(stringResource(R.string.delete_subject_confirm))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteSubjectDialog = false }) {
-                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -495,7 +431,6 @@ fun AddEditSubjectContentPreview() {
             onAddSlot = {},
             onDuplicateSlot = {},
             onSaveSubject = {},
-            onDeleteSubject = {},
             onToggleEditMode = {},
             onOpenSlotEditor = {},
             onCloseSlotEditor = {},

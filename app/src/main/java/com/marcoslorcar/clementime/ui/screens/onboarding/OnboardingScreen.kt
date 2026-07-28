@@ -323,13 +323,11 @@ fun ReadyPage() {
     )
 }
 
-
 @Composable
 fun OnboardingPageContent(
     icon: ImageVector,
     title: String,
-    description: String,
-    customContent: @Composable (() -> Unit)? = null
+    description: String
 ) {
     Column(
         modifier = Modifier
@@ -359,7 +357,6 @@ fun OnboardingPageContent(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             lineHeight = 22.sp
         )
-        customContent?.invoke()
     }
 }
 

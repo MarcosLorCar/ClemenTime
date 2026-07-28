@@ -43,7 +43,6 @@ open class SettingsRepository @Inject constructor(
     private val dayStartMinuteKey = intPreferencesKey("day_start_minute")
     private val dayEndHourKey = intPreferencesKey("day_end_hour")
     private val dayEndMinuteKey = intPreferencesKey("day_end_minute")
-    private val lastKnownHashesKey = stringPreferencesKey("last_known_hashes")
 
 
     open val themeFlow: Flow<String>
@@ -266,20 +265,6 @@ open class SettingsRepository @Inject constructor(
             kotlinx.coroutines.flow.flowOf(30)
         }
 
-    open val lastKnownHashesFlow: Flow<Map<String, String>>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                val raw = preferences[lastKnownHashesKey] ?: ""
-                if (raw.isBlank()) return@map emptyMap<String, String>()
-                raw.split(";").mapNotNull {
-                    val parts = it.split("|")
-                    if (parts.size == 2) parts[0] to parts[1] else null
-                }.toMap()
-            } ?: kotlinx.coroutines.flow.flowOf(emptyMap())
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(emptyMap())
-        }
-
 
     open suspend fun setThemeMode(theme: String) {
         try {
@@ -460,14 +445,6 @@ open class SettingsRepository @Inject constructor(
             context?.dataStore?.edit { preferences ->
                 preferences[dayEndHourKey] = hour
                 preferences[dayEndMinuteKey] = minute
-            }
-        } catch (_: Throwable) {}
-    }
-
-    open suspend fun setLastKnownHashes(hashes: Map<String, String>) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[lastKnownHashesKey] = hashes.entries.joinToString(";") { "${it.key}|${it.value}" }
             }
         } catch (_: Throwable) {}
     }

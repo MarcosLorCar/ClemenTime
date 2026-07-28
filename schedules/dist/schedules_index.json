@@ -1,18 +1,18 @@
 [
   {
-    "id": "ESI2026-27-GRADO_1C_Grupos",
+    "id": "ESI2026-27-GRADO_1C_Grupos_v1.3",
     "title": "ESI2026-27-GRADO_1C_Grupos_v1.3",
     "description": "Horario oficial",
-    "path": "ESI2026-27-GRADO_1C_Grupos.json",
+    "path": "ESI2026-27-GRADO_1C_Grupos_v1.3.json",
     "hash": "557f9887c4c5b0476292ed59588fb10fd22515d9cc9c0803b24b23e425a75a49",
-    "updatedTime": "2026-07-28"
+    "updatedTime": "2026-07-27"
   },
   {
-    "id": "ESI2026-27-GRADO_2C_Grupos",
+    "id": "ESI2026-27-GRADO_2C_Grupos_v1.3",
     "title": "ESI2026-27-GRADO_2C_Grupos_v1.3",
     "description": "Horario oficial",
-    "path": "ESI2026-27-GRADO_2C_Grupos.json",
+    "path": "ESI2026-27-GRADO_2C_Grupos_v1.3.json",
     "hash": "17dafcd7fc33b208820efb894725c7402e851aef39d063beff86b8ac7c5e5625",
-    "updatedTime": "2026-07-28"
+    "updatedTime": "2026-07-27"
   }
 ]

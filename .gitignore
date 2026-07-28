@@ -14,7 +14,6 @@
 .cxx
 local.properties
 .artifacts
-/CLAUDE.md
 .venv/
 __pycache__/
 output_schedule.json
@@ -35,7 +34,3 @@ schedules/script/.cache/
 # Signing files
 *.jks
 *.keystore
-
-# Build artifacts
-*.apk
-/app/release/

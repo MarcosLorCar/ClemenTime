@@ -16,7 +16,6 @@ def main():
     parser = argparse.ArgumentParser(description="Process schedule JSON files into semester output JSONs.")
     parser.add_argument("json_file", nargs="?", help="Specific JSON file to process. If omitted, processes all in schedules/input/")
     parser.add_argument("--strict", action="store_true", help="Non-interactive mode")
-    parser.add_argument("--name", help="Base name for the output schedule(s)")
 
     args = parser.parse_args()
 
@@ -48,8 +47,6 @@ def main():
             cmd = [sys.executable, parse_script, json_path]
             if args.strict:
                 cmd.append("--non-interactive")
-            if args.name:
-                cmd.extend(["--name", args.name])
 
             print(f"\n[Run] Processing {os.path.basename(json_path)}...")
             res = subprocess.run(cmd)
