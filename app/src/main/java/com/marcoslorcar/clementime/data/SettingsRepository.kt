@@ -6,7 +6,9 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -43,6 +45,10 @@ open class SettingsRepository @Inject constructor(
     private val dayStartMinuteKey = intPreferencesKey("day_start_minute")
     private val dayEndHourKey = intPreferencesKey("day_end_hour")
     private val dayEndMinuteKey = intPreferencesKey("day_end_minute")
+    private val scheduleNotificationsEnabledKey = booleanPreferencesKey("schedule_notifications_enabled")
+    private val hasPendingScheduleUpdateKey = booleanPreferencesKey("has_pending_schedule_update")
+    private val lastScheduleSyncTimestampKey = longPreferencesKey("last_schedule_sync_timestamp")
+    private val affectedSubjectIdsKey = stringSetPreferencesKey("affected_subject_ids")
 
 
     open val themeFlow: Flow<String>
@@ -265,6 +271,33 @@ open class SettingsRepository @Inject constructor(
             kotlinx.coroutines.flow.flowOf(30)
         }
 
+    open val scheduleNotificationsEnabledFlow: Flow<Boolean>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[scheduleNotificationsEnabledKey] ?: false
+            } ?: kotlinx.coroutines.flow.flowOf(false)
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf(false)
+        }
+
+    open val hasPendingScheduleUpdateFlow: Flow<Boolean>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[hasPendingScheduleUpdateKey] ?: false
+            } ?: kotlinx.coroutines.flow.flowOf(false)
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf(false)
+        }
+
+    open val affectedSubjectIdsFlow: Flow<Set<String>>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[affectedSubjectIdsKey] ?: emptySet()
+            } ?: kotlinx.coroutines.flow.flowOf(emptySet())
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf(emptySet())
+        }
+
 
     open suspend fun setThemeMode(theme: String) {
         try {
@@ -445,6 +478,38 @@ open class SettingsRepository @Inject constructor(
             context?.dataStore?.edit { preferences ->
                 preferences[dayEndHourKey] = hour
                 preferences[dayEndMinuteKey] = minute
+            }
+        } catch (_: Throwable) {}
+    }
+
+    open suspend fun setScheduleNotificationsEnabled(enabled: Boolean) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[scheduleNotificationsEnabledKey] = enabled
+            }
+        } catch (_: Throwable) {}
+    }
+
+    open suspend fun setHasPendingScheduleUpdate(hasUpdate: Boolean) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[hasPendingScheduleUpdateKey] = hasUpdate
+            }
+        } catch (_: Throwable) {}
+    }
+
+    open suspend fun setLastScheduleSyncTimestamp(timestamp: Long) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[lastScheduleSyncTimestampKey] = timestamp
+            }
+        } catch (_: Throwable) {}
+    }
+
+    open suspend fun setAffectedSubjectIds(ids: Set<String>) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[affectedSubjectIdsKey] = ids
             }
         } catch (_: Throwable) {}
     }

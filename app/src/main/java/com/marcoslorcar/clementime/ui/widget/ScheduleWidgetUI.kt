@@ -442,7 +442,7 @@ fun EmptySegmentRow(
         buildList {
             var curr = segment.startTime
             while (curr < segment.endTime) {
-                val minutesToBoundary = (30 - (curr.minute % 30)).let { if (it == 0) 30 else it }
+                val minutesToBoundary = 30 - (curr.minute % 30)
                 val stepped = curr.plusMinutes(minutesToBoundary.toLong())
                 // plusMinutes wraps at midnight; stop rather than stepping backwards.
                 val next = if (stepped <= curr) segment.endTime else minOf(stepped, segment.endTime)

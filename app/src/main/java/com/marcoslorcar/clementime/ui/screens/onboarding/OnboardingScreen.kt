@@ -1,6 +1,10 @@
 package com.marcoslorcar.clementime.ui.screens.onboarding
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,6 +29,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,6 +39,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -50,6 +56,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.marcoslorcar.clementime.R
@@ -64,7 +71,7 @@ fun OnboardingScreen(
     viewModel: OnboardingViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val pagerState = rememberPagerState(pageCount = { 4 })
+    val pagerState = rememberPagerState(pageCount = { 5 })
     val coroutineScope = rememberCoroutineScope()
 
     // pagerState should automatically persist its page during recreation.
@@ -94,7 +101,11 @@ fun OnboardingScreen(
                         onThemeModeSelected = viewModel::setThemeMode,
                         onColorThemeSelected = viewModel::setSelectedTheme
                     )
-                    3 -> ReadyPage()
+                    3 -> NotificationsPage(
+                        enabled = uiState.scheduleNotificationsEnabled,
+                        onToggle = viewModel::setScheduleNotificationsEnabled
+                    )
+                    4 -> ReadyPage()
                 }
             }
 
@@ -324,10 +335,58 @@ fun ReadyPage() {
 }
 
 @Composable
+fun NotificationsPage(
+    enabled: Boolean,
+    onToggle: (Boolean) -> Unit
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            onToggle(true)
+        }
+    }
+
+    OnboardingPageContent(
+        icon = Icons.Default.Notifications,
+        title = stringResource(R.string.schedule_notifications_onboarding_title),
+        description = stringResource(R.string.schedule_notifications_onboarding_desc),
+        customContent = {
+            Spacer(modifier = Modifier.height(32.dp))
+            Switch(
+                checked = enabled,
+                onCheckedChange = { isChecked ->
+                    if (isChecked) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            val isGranted = ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.POST_NOTIFICATIONS
+                            ) == PackageManager.PERMISSION_GRANTED
+                            
+                            if (isGranted) {
+                                onToggle(true)
+                            } else {
+                                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            }
+                        } else {
+                            onToggle(true)
+                        }
+                    } else {
+                        onToggle(false)
+                    }
+                }
+            )
+        }
+    )
+}
+
+@Composable
 fun OnboardingPageContent(
     icon: ImageVector,
     title: String,
-    description: String
+    description: String,
+    customContent: @Composable (() -> Unit)? = null
 ) {
     Column(
         modifier = Modifier
@@ -357,6 +416,7 @@ fun OnboardingPageContent(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             lineHeight = 22.sp
         )
+        customContent?.invoke()
     }
 }
 

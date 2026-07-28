@@ -10,6 +10,7 @@ import com.marcoslorcar.clementime.data.importing.model.ImportFile
 import com.marcoslorcar.clementime.data.importing.model.RemoteScheduleSummary
 import com.marcoslorcar.clementime.data.importing.model.ScheduleJsonSchema
 import com.marcoslorcar.clementime.data.importing.model.SelectedSubject
+import com.marcoslorcar.clementime.data.importing.model.JsonSubject
 import com.marcoslorcar.clementime.data.importing.parser.JsonScheduleParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -143,7 +144,8 @@ class ImportRepository @Inject constructor(
                 isActive = true,
                 selectedLabGroup = autoSelectedLabGroup,
                 semester = jsonSubject.semester ?: 1,
-                isDummy = jsonSubject.isDummy
+                isDummy = jsonSubject.isDummy,
+                remotePath = selected.remotePath
             )
 
             val theorySlots = jsonSubject.theorySlots.map {
@@ -306,6 +308,45 @@ class ImportRepository @Inject constructor(
                 Result.failure(e)
             }
         }
+    }
+
+    suspend fun importSpecificSubjects(context: Context, subjectIds: Set<Long>) {
+        val allExisting = dao.getAllSubjectsWithSlots().first()
+        val toUpdate = allExisting.filter { it.subject.id in subjectIds && it.subject.remotePath != null }
+        
+        val paths = toUpdate.mapNotNull { it.subject.remotePath }.distinct()
+        
+        for (path in paths) {
+            val file = ImportFile(id = "update_${path.hashCode()}", title = "Update", remotePath = path)
+            val schemaResult = fetchRemoteScheduleSchema(context, file)
+            
+            schemaResult.onSuccess { schema ->
+                val subjectsInSchema = getAllSubjectsInSchema(schema)
+                val selected = toUpdate.filter { it.subject.remotePath == path }.mapNotNull { local ->
+                    subjectsInSchema.find { it.code == local.subject.code }?.let { remoteJson ->
+                        SelectedSubject(
+                            subject = remoteJson,
+                            courseGroup = local.subject.courseGroup ?: "General",
+                            remotePath = path
+                        )
+                    }
+                }
+                if (selected.isNotEmpty()) {
+                    importSubjects(selected)
+                }
+            }
+        }
+    }
+
+    private fun getAllSubjectsInSchema(schema: ScheduleJsonSchema): List<JsonSubject> {
+        val list = schema.subjects.toMutableList()
+        schema.years.forEach { year ->
+            list.addAll(year.subjects)
+            year.groups.forEach { group ->
+                list.addAll(group.subjects)
+            }
+        }
+        return list
     }
 
 }

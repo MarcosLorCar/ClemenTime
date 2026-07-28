@@ -265,6 +265,20 @@
     <string name="onboarding_ready_title">¡Todo listo!</string>
     <string name="onboarding_ready_desc">Puedes cambiar estos ajustes en cualquier momento. ¡Empecemos!</string>
     <string name="onboarding_next">Siguiente</string>
+
+    <!-- Schedule Notifications -->
+    <string name="schedule_notifications_title">Actualizaciones de horario</string>
+    <string name="schedule_notifications_desc">Recibe notificaciones cuando las asignaturas de tu horario se actualicen de forma remota.</string>
+    <string name="schedule_notifications_onboarding_title">Mantente al día</string>
+    <string name="schedule_notifications_onboarding_desc">¿Te gustaría recibir notificaciones cuando cambie tu horario universitario? Comprobaremos si hay cambios en segundo plano.</string>
+    <string name="schedule_update_notification_channel_name">Actualizaciones de Horario</string>
+    <string name="schedule_update_notification_title">Horario Actualizado</string>
+    <string name="schedule_update_notification_text">Algunas asignaturas de tu horario han cambiado. Pulsa para revisar y aplicar los cambios.</string>
+    <string name="schedule_update_alert_title">Actualizaciones Disponibles</string>
+    <string name="schedule_update_alert_text">Se han detectado nuevas versiones de tus horarios importados. Algunas de tus asignaturas pueden haber cambiado de hora o de aula.</string>
+    <string name="apply_updates_button">Revisar Actualizaciones</string>
+    <string name="affected_subjects_label">Asignaturas afectadas:</string>
+    <string name="apply_changes_confirm">Aplicar Cambios</string>
     <string name="onboarding_back">Atrás</string>
     <string name="onboarding_finish">Empezar</string>
     <string name="onboarding_skip">Omitir</string>

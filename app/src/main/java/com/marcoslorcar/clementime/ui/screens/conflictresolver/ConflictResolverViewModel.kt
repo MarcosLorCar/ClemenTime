@@ -72,11 +72,14 @@ class ConflictResolverViewModel @Inject constructor(
             LocalTime.of(sh, sm) to LocalTime.of(eh, em)
         }
     ) { args ->
+        @Suppress("UNCHECKED_CAST")
         val subjects = args[0] as List<SubjectWithSlots>
+        @Suppress("UNCHECKED_CAST")
         val prefMode = args[1] as PreferenceMode
         val onboardingEnabled = args[2] as Boolean
         val seenPriorities = args[3] as Boolean
         val seenApply = args[4] as Boolean
+        @Suppress("UNCHECKED_CAST")
         val dayRange = args[5] as Pair<LocalTime, LocalTime>
 
         try {

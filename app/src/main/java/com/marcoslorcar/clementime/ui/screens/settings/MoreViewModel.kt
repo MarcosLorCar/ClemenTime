@@ -13,6 +13,7 @@ import com.marcoslorcar.clementime.data.SettingsRepository
 import com.marcoslorcar.clementime.data.importing.parser.JsonScheduleParser
 import com.marcoslorcar.clementime.ui.widget.ScheduleWidgetUtils
 import com.marcoslorcar.clementime.utils.IcsExporter
+import com.marcoslorcar.clementime.work.ScheduleSyncWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +21,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -37,6 +39,7 @@ data class MoreUiState(
     val selectedTheme: String = "clementine",
     val githubRepoBaseUrl: String = SettingsRepository.DEFAULT_GITHUB_REPO_BASE_URL,
     val onboardingTooltipsEnabled: Boolean = true,
+    val scheduleNotificationsEnabled: Boolean = false,
     val dayStartTime: LocalTime = LocalTime.of(8, 30),
     val dayEndTime: LocalTime = LocalTime.of(21, 30)
 )
@@ -66,6 +69,7 @@ class MoreViewModel @Inject constructor(
         settingsRepository.selectedThemeFlow,
         settingsRepository.githubRepoBaseUrlFlow,
         settingsRepository.onboardingTooltipsEnabledFlow,
+        settingsRepository.scheduleNotificationsEnabledFlow,
         settingsRepository.dayStartHourFlow,
         settingsRepository.dayStartMinuteFlow,
         settingsRepository.dayEndHourFlow,
@@ -81,9 +85,10 @@ class MoreViewModel @Inject constructor(
             selectedTheme = args[5] as String,
             githubRepoBaseUrl = args[6] as String,
             onboardingTooltipsEnabled = args[7] as Boolean,
-            dayStartTime = LocalTime.of(args[8] as Int, args[9] as Int),
-            dayEndTime = LocalTime.of(args[10] as Int, args[11] as Int),
-            appLanguage = args[12] as String
+            scheduleNotificationsEnabled = args[8] as Boolean,
+            dayStartTime = LocalTime.of(args[9] as Int, args[10] as Int),
+            dayEndTime = LocalTime.of(args[11] as Int, args[12] as Int),
+            appLanguage = args[13] as String
         )
     }.stateIn(
         scope = viewModelScope,
@@ -156,6 +161,19 @@ class MoreViewModel @Inject constructor(
         }
     }
 
+    fun setScheduleNotificationsEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setScheduleNotificationsEnabled(enabled)
+            if (enabled) {
+                ScheduleSyncWorker.enqueuePeriodicWork(context)
+            } else {
+                ScheduleSyncWorker.cancelWork(context)
+                settingsRepository.setHasPendingScheduleUpdate(false)
+                settingsRepository.setAffectedSubjectIds(emptySet())
+            }
+        }
+    }
+
     fun setDayStartTime(time: LocalTime) {
         viewModelScope.launch {
             val snappedTime = snapTo30Minutes(time)
@@ -183,6 +201,55 @@ class MoreViewModel @Inject constructor(
     fun setGithubRepoBaseUrl(url: String) {
         viewModelScope.launch {
             settingsRepository.setGithubRepoBaseUrl(url)
+        }
+    }
+
+    @android.annotation.SuppressLint("MissingPermission")
+    fun simulateUpdate() {
+        viewModelScope.launch {
+            val activeSubjects = scheduleDao.getAllSubjectsWithSlots().firstOrNull()?.filter { it.subject.isActive }
+            if (activeSubjects.isNullOrEmpty()) return@launch
+
+            // Pick a random subject to "update"
+            val subjectToUpdate = activeSubjects.random()
+            val currentAffected = settingsRepository.affectedSubjectIdsFlow.first()
+            
+            settingsRepository.setAffectedSubjectIds(currentAffected + subjectToUpdate.subject.id.toString())
+            settingsRepository.setHasPendingScheduleUpdate(true)
+            
+            // Trigger a simple system notification for testing UI flow
+            val channelId = "schedule_updates"
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+            
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                val channel = android.app.NotificationChannel(
+                    channelId,
+                    context.getString(R.string.schedule_update_notification_channel_name),
+                    android.app.NotificationManager.IMPORTANCE_DEFAULT
+                )
+                notificationManager.createNotificationChannel(channel)
+            }
+
+            val intent = android.content.Intent(context, com.marcoslorcar.clementime.MainActivity::class.java).apply {
+                flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+            val pendingIntent = android.app.PendingIntent.getActivity(
+                context, 0, intent,
+                android.app.PendingIntent.FLAG_IMMUTABLE or android.app.PendingIntent.FLAG_UPDATE_CURRENT
+            )
+
+            val builder = androidx.core.app.NotificationCompat.Builder(context, channelId)
+                .setSmallIcon(R.drawable.ic_refresh)
+                .setContentTitle(context.getString(R.string.schedule_update_notification_title))
+                .setContentText(context.getString(R.string.schedule_update_notification_text))
+                .setPriority(androidx.core.app.NotificationCompat.PRIORITY_DEFAULT)
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true)
+
+            try {
+                @android.annotation.SuppressLint("MissingPermission")
+                notificationManager.notify(1001, builder.build())
+            } catch (_: SecurityException) {}
         }
     }
 

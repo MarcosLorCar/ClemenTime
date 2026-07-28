@@ -70,7 +70,6 @@ import com.marcoslorcar.clementime.data.EntryType
 import com.marcoslorcar.clementime.data.Subject
 import com.marcoslorcar.clementime.data.SubjectWithSlots
 import com.marcoslorcar.clementime.data.importing.model.ImportFile
-import com.marcoslorcar.clementime.data.importing.model.JsonSubject
 import com.marcoslorcar.clementime.data.importing.model.SelectedSubject
 import com.marcoslorcar.clementime.data.importing.parser.JsonScheduleParser
 import com.marcoslorcar.clementime.ui.components.ClemenTimeTopBar
@@ -362,7 +361,7 @@ fun ImportLibraryContent(
 @Composable
 fun ImportContent(
     uiState: ImportUiState.Selection,
-    onToggleSubject: (JsonSubject, String) -> Unit,
+    onToggleSubject: (SelectedSubject) -> Unit,
     onToggleSection: (Collection<SelectedSubject>) -> Unit,
     onDeselectAll: () -> Unit,
     onUpdateSearchQuery: (String) -> Unit,
@@ -428,7 +427,7 @@ fun ImportContent(
                         is ConflictStatus.Error -> {
                             Icon(
                                 imageVector = Icons.Default.Error,
-                                contentDescription = (uiState.conflictStatus as ConflictStatus.Error).message,
+                                contentDescription = uiState.conflictStatus.message,
                                 tint = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.padding(8.dp).size(24.dp)
                             )
@@ -477,12 +476,19 @@ fun ImportContent(
             var selectedYearFilter by remember { mutableStateOf<String?>(null) }
 
             // All subjects in the schema flattened with their group/year info
-            val allFlattenedSubjects = remember(uiState.schema) {
-                val fromRoot = uiState.schema.subjects.map { SelectedSubject(it, "General") }
+            val allFlattenedSubjects = remember(uiState.schema, uiState.selectedFile.remotePath) {
+                val remotePath = uiState.selectedFile.remotePath
+                val fromRoot = uiState.schema.subjects.map { 
+                    SelectedSubject(it, "General", remotePath) 
+                }
                 val fromYears = uiState.schema.years.flatMap { year ->
-                    val yearCommon = year.subjects.map { SelectedSubject(it, "${year.name} Common") }
+                    val yearCommon = year.subjects.map { 
+                        SelectedSubject(it, "${year.name} Common", remotePath) 
+                    }
                     val fromGroups = year.groups.flatMap { group ->
-                        group.subjects.map { SelectedSubject(it, "${year.name} ${group.name}") }
+                        group.subjects.map { 
+                            SelectedSubject(it, "${year.name} ${group.name}", remotePath) 
+                        }
                     }
                     yearCommon + fromGroups
                 }
@@ -645,7 +651,7 @@ fun ImportContent(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .combinedClickable(
-                                        onClick = { onToggleSubject(selected.subject, fullGroupName) },
+                                        onClick = { onToggleSubject(selected) },
                                         onLongClick = { longPressedSubject = selected }
                                     )
                                     .padding(vertical = 4.dp, horizontal = 4.dp),
@@ -653,7 +659,7 @@ fun ImportContent(
                             ) {
                                 Checkbox(
                                     checked = isSelected,
-                                    onCheckedChange = { onToggleSubject(selected.subject, fullGroupName) }
+                                    onCheckedChange = { onToggleSubject(selected) }
                                 )
                                 Column(modifier = Modifier.padding(start = 8.dp)) {
                                     Text(text = selected.subject.name, style = MaterialTheme.typography.bodyLarge)

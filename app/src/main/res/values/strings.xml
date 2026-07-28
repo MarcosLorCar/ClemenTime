@@ -262,6 +262,20 @@
     <string name="onboarding_ready_title">You\'re all set!</string>
     <string name="onboarding_ready_desc">You can change these anytime in Settings. Let\'s get started!</string>
     <string name="onboarding_next">Next</string>
+
+    <!-- Schedule Notifications -->
+    <string name="schedule_notifications_title">Schedule updates</string>
+    <string name="schedule_notifications_desc">Get notified when subjects in your schedule are updated remotely.</string>
+    <string name="schedule_notifications_onboarding_title">Stay Updated</string>
+    <string name="schedule_notifications_onboarding_desc">Would you like to receive notifications when your university schedule changes? We will check for updates in the background.</string>
+    <string name="schedule_update_notification_channel_name">Schedule Updates</string>
+    <string name="schedule_update_notification_title">Schedule Updated</string>
+    <string name="schedule_update_notification_text">Some subjects in your schedule have changed. Tap to review and apply updates.</string>
+    <string name="schedule_update_alert_title">Schedule Updates Available</string>
+    <string name="schedule_update_alert_text">New versions of your imported schedules have been detected. Some of your subjects may have changed times or classrooms.</string>
+    <string name="apply_updates_button">Review Updates</string>
+    <string name="affected_subjects_label">Affected subjects:</string>
+    <string name="apply_changes_confirm">Apply Changes</string>
     <string name="onboarding_back">Back</string>
     <string name="onboarding_finish">Get Started</string>
     <string name="onboarding_skip">Skip</string>

@@ -39,7 +39,9 @@ import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.InvertColors
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Policy
 import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material.icons.filled.Schedule
@@ -128,6 +130,8 @@ fun MoreScreen(
         onDayEndTimeChanged = viewModel::setDayEndTime,
         onGithubRepoUrlChanged = viewModel::setGithubRepoBaseUrl,
         onToggleOnboardingTooltips = viewModel::setOnboardingTooltipsEnabled,
+        onToggleScheduleNotifications = viewModel::setScheduleNotificationsEnabled,
+        onSimulateUpdate = viewModel::simulateUpdate,
         onExportData = viewModel::exportData,
         onExportIcs = viewModel::exportFullYearToIcs,
         onImportClick = onNavigateToImport,
@@ -150,6 +154,8 @@ fun MoreContent(
     onDayEndTimeChanged: (LocalTime) -> Unit,
     onGithubRepoUrlChanged: (String) -> Unit,
     onToggleOnboardingTooltips: (Boolean) -> Unit,
+    onToggleScheduleNotifications: (Boolean) -> Unit,
+    onSimulateUpdate: () -> Unit,
     onExportData: (android.content.Context, Uri, (ExportStatus) -> Unit) -> Unit,
     onExportIcs: (android.content.Context, Uri, LocalDate, LocalDate, LocalDate, LocalDate, (ExportStatus) -> Unit) -> Unit,
     onImportClick: () -> Unit,
@@ -660,6 +666,45 @@ fun MoreContent(
                 }
             )
 
+            val permissionLauncher = rememberLauncherForActivityResult(
+                ActivityResultContracts.RequestPermission()
+            ) { isGranted ->
+                if (isGranted) {
+                    onToggleScheduleNotifications(true)
+                }
+            }
+
+            SettingItem(
+                icon = Icons.Default.Notifications,
+                title = stringResource(R.string.schedule_notifications_title),
+                subtitle = stringResource(R.string.schedule_notifications_desc),
+                trailingContent = {
+                    Switch(
+                        checked = uiState.scheduleNotificationsEnabled,
+                        onCheckedChange = { enabled ->
+                            if (enabled) {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                    val isGranted = androidx.core.content.ContextCompat.checkSelfPermission(
+                                        context,
+                                        android.Manifest.permission.POST_NOTIFICATIONS
+                                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                                    
+                                    if (isGranted) {
+                                        onToggleScheduleNotifications(true)
+                                    } else {
+                                        permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                                    }
+                                } else {
+                                    onToggleScheduleNotifications(true)
+                                }
+                            } else {
+                                onToggleScheduleNotifications(false)
+                            }
+                        }
+                    )
+                }
+            )
+
             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
             // --- Section: About ---
@@ -697,6 +742,21 @@ fun MoreContent(
                     context.startActivity(intent)
                 }
             )
+
+            if (BuildConfig.DEBUG) {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                Text(
+                    text = "Debug Tools",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+                SettingItem(
+                    icon = Icons.Default.BugReport,
+                    title = "Simulate Schedule Update",
+                    subtitle = "Triggers the update alert for a random active subject",
+                    onClick = onSimulateUpdate
+                )
+            }
         }
     }
 }
@@ -764,6 +824,8 @@ fun MoreScreenPreview() {
             onThemeSelected = {},
             onGithubRepoUrlChanged = {},
             onToggleOnboardingTooltips = {},
+            onToggleScheduleNotifications = {},
+            onSimulateUpdate = {},
             onExportData = { _, _, _ -> },
             onExportIcs = { _, _, _, _, _, _, _ -> },
             onDayStartTimeChanged = {},

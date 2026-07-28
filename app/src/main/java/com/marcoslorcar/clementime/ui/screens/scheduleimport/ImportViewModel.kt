@@ -10,7 +10,6 @@ import com.marcoslorcar.clementime.data.Subject
 import com.marcoslorcar.clementime.data.SubjectWithSlots
 import com.marcoslorcar.clementime.data.importing.model.ImportFile
 import com.marcoslorcar.clementime.data.importing.model.ImportSourceType
-import com.marcoslorcar.clementime.data.importing.model.JsonSubject
 import com.marcoslorcar.clementime.data.importing.model.ScheduleJsonSchema
 import com.marcoslorcar.clementime.data.importing.model.SelectedSubject
 import com.marcoslorcar.clementime.data.importing.parser.JsonScheduleParser
@@ -242,10 +241,9 @@ class ImportViewModel @Inject constructor(
         loadLibrary(context)
     }
 
-    fun toggleSubjectSelection(subject: JsonSubject, groupName: String) {
+    fun toggleSubjectSelection(selectedSubject: SelectedSubject) {
         val currentState = _uiState.value
         if (currentState is ImportUiState.Selection) {
-            val selectedSubject = SelectedSubject(subject, groupName)
             val updatedSelection = currentState.selectedSubjects.toMutableSet()
             if (updatedSelection.contains(selectedSubject)) {
                 updatedSelection.remove(selectedSubject)
@@ -294,11 +292,18 @@ class ImportViewModel @Inject constructor(
         val currentState = _uiState.value
         if (currentState is ImportUiState.Selection) {
             val toSelect = subjects ?: run {
-                val fromRoot = currentState.schema.subjects.map { SelectedSubject(it, "General") }
+                val remotePath = currentState.selectedFile.remotePath
+                val fromRoot = currentState.schema.subjects.map { 
+                    SelectedSubject(it, "General", remotePath) 
+                }
                 val fromYears = currentState.schema.years.flatMap { year ->
-                    val yearCommon = year.subjects.map { SelectedSubject(it, "${year.name} Common") }
+                    val yearCommon = year.subjects.map { 
+                        SelectedSubject(it, "${year.name} Common", remotePath) 
+                    }
                     val fromGroups = year.groups.flatMap { group ->
-                        group.subjects.map { SelectedSubject(it, "${year.name} ${group.name}") }
+                        group.subjects.map { 
+                            SelectedSubject(it, "${year.name} ${group.name}", remotePath) 
+                        }
                     }
                     yearCommon + fromGroups
                 }
