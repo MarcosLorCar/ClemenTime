@@ -264,10 +264,16 @@
     <string name="onboarding_next">Next</string>
 
     <!-- Schedule Notifications -->
-    <string name="schedule_notifications_title">Schedule updates</string>
-    <string name="schedule_notifications_desc">Get notified when subjects in your schedule are updated remotely.</string>
-    <string name="schedule_notifications_onboarding_title">Stay Updated</string>
-    <string name="schedule_notifications_onboarding_desc">Would you like to receive notifications when your university schedule changes? We will check for updates in the background.</string>
+    <string name="auto_update_title">Automatic Refresh</string>
+    <string name="auto_update_desc">Automatically check for classroom or time changes in your schedule once a day.</string>
+    <string name="auto_update_onboarding_title">Smart Schedule Updates</string>
+    <string name="auto_update_onboarding_desc">ClemenTime can periodically check for changes in your university schedule (like new classrooms or time shifts).</string>
+    <string name="auto_update_card_title">Automatically check for updates</string>
+    <string name="notify_via_push_title">System Notifications</string>
+    <string name="notify_via_push_desc">Show a notification when updates are found.</string>
+    <string name="notify_via_app_title">In-App Alerts</string>
+    <string name="notify_via_app_desc">Show an alert drawer when opening the app.</string>
+    <string name="schedule_notifications_battery_label">Battery Friendly</string>
     <string name="schedule_update_notification_channel_name">Schedule Updates</string>
     <string name="schedule_update_notification_title">Schedule Updated</string>
     <string name="schedule_update_notification_text">Some subjects in your schedule have changed. Tap to review and apply updates.</string>

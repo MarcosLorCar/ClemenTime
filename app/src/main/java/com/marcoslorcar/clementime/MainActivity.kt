@@ -131,6 +131,11 @@ private fun getTabIndex(entry: NavBackStackEntry?): Int {
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun ClemenTimeApp(isOnboardingCompleted: Boolean, hasPendingUpdate: Boolean) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val settingsRepository = (context as? MainActivity)?.settingsRepository
+    
+    val notifyViaApp by (settingsRepository?.notifyViaAppFlow?.collectAsState(initial = true) ?: androidx.compose.runtime.remember { mutableStateOf(true) })
+
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
@@ -141,8 +146,8 @@ fun ClemenTimeApp(isOnboardingCompleted: Boolean, hasPendingUpdate: Boolean) {
     )
     var showUpdateSheet by remember { mutableStateOf(false) }
 
-    androidx.compose.runtime.LaunchedEffect(hasPendingUpdate) {
-        showUpdateSheet = hasPendingUpdate
+    androidx.compose.runtime.LaunchedEffect(hasPendingUpdate, notifyViaApp) {
+        showUpdateSheet = hasPendingUpdate && notifyViaApp
     }
 
     if (showUpdateSheet) {

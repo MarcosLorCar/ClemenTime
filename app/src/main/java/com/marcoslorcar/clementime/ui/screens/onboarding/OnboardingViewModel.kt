@@ -22,7 +22,9 @@ data class OnboardingUiState(
     val themeMode: String = "system",
     val selectedTheme: String = "clementine",
     val appLanguage: String = "en",
-    val scheduleNotificationsEnabled: Boolean = false
+    val autoUpdateEnabled: Boolean = false,
+    val notifyViaPush: Boolean = true,
+    val notifyViaApp: Boolean = true
 )
 
 @HiltViewModel
@@ -37,13 +39,17 @@ class OnboardingViewModel @Inject constructor(
         settingsRepository.themeFlow,
         settingsRepository.selectedThemeFlow,
         settingsRepository.scheduleNotificationsEnabledFlow,
+        settingsRepository.notifyViaPushFlow,
+        settingsRepository.notifyViaAppFlow,
         _appLanguage
-    ) { theme: String, selectedTheme: String, notifications: Boolean, lang: String ->
+    ) { args: Array<Any?> ->
         OnboardingUiState(
-            themeMode = theme,
-            selectedTheme = selectedTheme,
-            appLanguage = lang,
-            scheduleNotificationsEnabled = notifications
+            themeMode = args[0] as String,
+            selectedTheme = args[1] as String,
+            autoUpdateEnabled = args[2] as Boolean,
+            notifyViaPush = args[3] as Boolean,
+            notifyViaApp = args[4] as Boolean,
+            appLanguage = args[5] as String
         )
     }.stateIn(
         scope = viewModelScope,
@@ -79,15 +85,26 @@ class OnboardingViewModel @Inject constructor(
         AppCompatDelegate.setApplicationLocales(localeList)
     }
 
-    fun setScheduleNotificationsEnabled(enabled: Boolean) {
+    fun setAutoUpdateEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setScheduleNotificationsEnabled(enabled)
-            // Note: We don't enqueue work here yet, we'll do it in completeOnboarding if enabled
+        }
+    }
+
+    fun setNotifyViaPush(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setNotifyViaPush(enabled)
+        }
+    }
+
+    fun setNotifyViaApp(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setNotifyViaApp(enabled)
         }
     }
 
     suspend fun completeOnboarding() {
-        if (uiState.value.scheduleNotificationsEnabled) {
+        if (uiState.value.autoUpdateEnabled) {
             ScheduleSyncWorker.enqueuePeriodicWork(context)
         }
         settingsRepository.setOnboardingCompleted(true)

@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -130,7 +131,9 @@ fun MoreScreen(
         onDayEndTimeChanged = viewModel::setDayEndTime,
         onGithubRepoUrlChanged = viewModel::setGithubRepoBaseUrl,
         onToggleOnboardingTooltips = viewModel::setOnboardingTooltipsEnabled,
-        onToggleScheduleNotifications = viewModel::setScheduleNotificationsEnabled,
+        onToggleAutoUpdate = viewModel::setAutoUpdateEnabled,
+        onTogglePush = viewModel::setNotifyViaPush,
+        onToggleApp = viewModel::setNotifyViaApp,
         onSimulateUpdate = viewModel::simulateUpdate,
         onExportData = viewModel::exportData,
         onExportIcs = viewModel::exportFullYearToIcs,
@@ -154,7 +157,9 @@ fun MoreContent(
     onDayEndTimeChanged: (LocalTime) -> Unit,
     onGithubRepoUrlChanged: (String) -> Unit,
     onToggleOnboardingTooltips: (Boolean) -> Unit,
-    onToggleScheduleNotifications: (Boolean) -> Unit,
+    onToggleAutoUpdate: (Boolean) -> Unit,
+    onTogglePush: (Boolean) -> Unit,
+    onToggleApp: (Boolean) -> Unit,
     onSimulateUpdate: () -> Unit,
     onExportData: (android.content.Context, Uri, (ExportStatus) -> Unit) -> Unit,
     onExportIcs: (android.content.Context, Uri, LocalDate, LocalDate, LocalDate, LocalDate, (ExportStatus) -> Unit) -> Unit,
@@ -670,17 +675,18 @@ fun MoreContent(
                 ActivityResultContracts.RequestPermission()
             ) { isGranted ->
                 if (isGranted) {
-                    onToggleScheduleNotifications(true)
+                    onToggleAutoUpdate(true)
+                    onTogglePush(true)
                 }
             }
 
             SettingItem(
                 icon = Icons.Default.Notifications,
-                title = stringResource(R.string.schedule_notifications_title),
-                subtitle = stringResource(R.string.schedule_notifications_desc),
+                title = stringResource(R.string.auto_update_title),
+                subtitle = stringResource(R.string.auto_update_desc),
                 trailingContent = {
                     Switch(
-                        checked = uiState.scheduleNotificationsEnabled,
+                        checked = uiState.autoUpdateEnabled,
                         onCheckedChange = { enabled ->
                             if (enabled) {
                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -690,18 +696,51 @@ fun MoreContent(
                                     ) == android.content.pm.PackageManager.PERMISSION_GRANTED
                                     
                                     if (isGranted) {
-                                        onToggleScheduleNotifications(true)
+                                        onToggleAutoUpdate(true)
                                     } else {
                                         permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
                                     }
                                 } else {
-                                    onToggleScheduleNotifications(true)
+                                    onToggleAutoUpdate(true)
                                 }
                             } else {
-                                onToggleScheduleNotifications(false)
+                                onToggleAutoUpdate(false)
                             }
                         }
                     )
+                },
+                expandedContent = {
+                    AnimatedVisibility(visible = uiState.autoUpdateEnabled) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 16.dp, start = 36.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(text = stringResource(R.string.notify_via_push_title), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                                    Text(text = stringResource(R.string.notify_via_push_desc), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Switch(checked = uiState.notifyViaPush, onCheckedChange = onTogglePush)
+                            }
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(text = stringResource(R.string.notify_via_app_title), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                                    Text(text = stringResource(R.string.notify_via_app_desc), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Switch(checked = uiState.notifyViaApp, onCheckedChange = onToggleApp)
+                            }
+                        }
+                    }
                 }
             )
 
@@ -824,7 +863,9 @@ fun MoreScreenPreview() {
             onThemeSelected = {},
             onGithubRepoUrlChanged = {},
             onToggleOnboardingTooltips = {},
-            onToggleScheduleNotifications = {},
+            onToggleAutoUpdate = {},
+            onTogglePush = {},
+            onToggleApp = {},
             onSimulateUpdate = {},
             onExportData = { _, _, _ -> },
             onExportIcs = { _, _, _, _, _, _, _ -> },

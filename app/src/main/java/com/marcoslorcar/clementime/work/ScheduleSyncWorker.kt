@@ -101,7 +101,10 @@ class ScheduleSyncWorker @AssistedInject constructor(
             val currentAffected = settingsRepository.affectedSubjectIdsFlow.first()
             settingsRepository.setAffectedSubjectIds(currentAffected + affectedSubjectIds)
             
-            showNotification()
+            val pushEnabled = settingsRepository.notifyViaPushFlow.first()
+            if (pushEnabled) {
+                showNotification()
+            }
         }
 
         settingsRepository.setLastScheduleSyncTimestamp(System.currentTimeMillis())
@@ -189,7 +192,7 @@ class ScheduleSyncWorker @AssistedInject constructor(
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val name = context.getString(R.string.schedule_update_notification_channel_name)
-            val descriptionText = context.getString(R.string.schedule_notifications_desc)
+            val descriptionText = context.getString(R.string.auto_update_desc)
             val importance = NotificationManager.IMPORTANCE_DEFAULT
             val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
                 description = descriptionText

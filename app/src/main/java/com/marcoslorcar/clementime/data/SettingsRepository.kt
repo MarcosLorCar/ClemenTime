@@ -46,6 +46,8 @@ open class SettingsRepository @Inject constructor(
     private val dayEndHourKey = intPreferencesKey("day_end_hour")
     private val dayEndMinuteKey = intPreferencesKey("day_end_minute")
     private val scheduleNotificationsEnabledKey = booleanPreferencesKey("schedule_notifications_enabled")
+    private val notifyViaPushKey = booleanPreferencesKey("notify_via_push")
+    private val notifyViaAppKey = booleanPreferencesKey("notify_via_app")
     private val hasPendingScheduleUpdateKey = booleanPreferencesKey("has_pending_schedule_update")
     private val lastScheduleSyncTimestampKey = longPreferencesKey("last_schedule_sync_timestamp")
     private val affectedSubjectIdsKey = stringSetPreferencesKey("affected_subject_ids")
@@ -280,6 +282,24 @@ open class SettingsRepository @Inject constructor(
             kotlinx.coroutines.flow.flowOf(false)
         }
 
+    open val notifyViaPushFlow: Flow<Boolean>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[notifyViaPushKey] ?: true
+            } ?: kotlinx.coroutines.flow.flowOf(true)
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf(true)
+        }
+
+    open val notifyViaAppFlow: Flow<Boolean>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[notifyViaAppKey] ?: true
+            } ?: kotlinx.coroutines.flow.flowOf(true)
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf(true)
+        }
+
     open val hasPendingScheduleUpdateFlow: Flow<Boolean>
         get() = try {
             context?.dataStore?.data?.map { preferences ->
@@ -486,6 +506,22 @@ open class SettingsRepository @Inject constructor(
         try {
             context?.dataStore?.edit { preferences ->
                 preferences[scheduleNotificationsEnabledKey] = enabled
+            }
+        } catch (_: Throwable) {}
+    }
+
+    open suspend fun setNotifyViaPush(enabled: Boolean) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[notifyViaPushKey] = enabled
+            }
+        } catch (_: Throwable) {}
+    }
+
+    open suspend fun setNotifyViaApp(enabled: Boolean) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[notifyViaAppKey] = enabled
             }
         } catch (_: Throwable) {}
     }

@@ -39,7 +39,9 @@ data class MoreUiState(
     val selectedTheme: String = "clementine",
     val githubRepoBaseUrl: String = SettingsRepository.DEFAULT_GITHUB_REPO_BASE_URL,
     val onboardingTooltipsEnabled: Boolean = true,
-    val scheduleNotificationsEnabled: Boolean = false,
+    val autoUpdateEnabled: Boolean = false,
+    val notifyViaPush: Boolean = true,
+    val notifyViaApp: Boolean = true,
     val dayStartTime: LocalTime = LocalTime.of(8, 30),
     val dayEndTime: LocalTime = LocalTime.of(21, 30)
 )
@@ -70,6 +72,8 @@ class MoreViewModel @Inject constructor(
         settingsRepository.githubRepoBaseUrlFlow,
         settingsRepository.onboardingTooltipsEnabledFlow,
         settingsRepository.scheduleNotificationsEnabledFlow,
+        settingsRepository.notifyViaPushFlow,
+        settingsRepository.notifyViaAppFlow,
         settingsRepository.dayStartHourFlow,
         settingsRepository.dayStartMinuteFlow,
         settingsRepository.dayEndHourFlow,
@@ -85,10 +89,12 @@ class MoreViewModel @Inject constructor(
             selectedTheme = args[5] as String,
             githubRepoBaseUrl = args[6] as String,
             onboardingTooltipsEnabled = args[7] as Boolean,
-            scheduleNotificationsEnabled = args[8] as Boolean,
-            dayStartTime = LocalTime.of(args[9] as Int, args[10] as Int),
-            dayEndTime = LocalTime.of(args[11] as Int, args[12] as Int),
-            appLanguage = args[13] as String
+            autoUpdateEnabled = args[8] as Boolean,
+            notifyViaPush = args[9] as Boolean,
+            notifyViaApp = args[10] as Boolean,
+            dayStartTime = LocalTime.of(args[11] as Int, args[12] as Int),
+            dayEndTime = LocalTime.of(args[13] as Int, args[14] as Int),
+            appLanguage = args[15] as String
         )
     }.stateIn(
         scope = viewModelScope,
@@ -161,7 +167,7 @@ class MoreViewModel @Inject constructor(
         }
     }
 
-    fun setScheduleNotificationsEnabled(enabled: Boolean) {
+    fun setAutoUpdateEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setScheduleNotificationsEnabled(enabled)
             if (enabled) {
@@ -171,6 +177,18 @@ class MoreViewModel @Inject constructor(
                 settingsRepository.setHasPendingScheduleUpdate(false)
                 settingsRepository.setAffectedSubjectIds(emptySet())
             }
+        }
+    }
+
+    fun setNotifyViaPush(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setNotifyViaPush(enabled)
+        }
+    }
+
+    fun setNotifyViaApp(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setNotifyViaApp(enabled)
         }
     }
 
