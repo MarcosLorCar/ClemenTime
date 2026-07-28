@@ -69,7 +69,7 @@
                   "dayOfWeek": "MONDAY",
                   "startTime": "10:00",
                   "endTime": "11:30",
-                  "classroom": "John von Neumann - A1.1",
+                  "classroom": "John von Neumann - A1.0",
                   "groupName": null,
                   "entryType": "THEORY",
                   "professor": "Jesus Serrano"
@@ -120,7 +120,7 @@
                   "dayOfWeek": "TUESDAY",
                   "startTime": "11:30",
                   "endTime": "13:00",
-                  "classroom": "John von Neumann - A1.1",
+                  "classroom": "John von Neumann - A1.0",
                   "groupName": null,
                   "entryType": "THEORY",
                   "professor": "Maria Luz Lopez"
@@ -320,7 +320,7 @@
                   "dayOfWeek": "MONDAY",
                   "startTime": "10:00",
                   "endTime": "11:30",
-                  "classroom": "Grace Murray Hopper - A2.2",
+                  "classroom": "Grace Murray Hopper - A2.1",
                   "groupName": null,
                   "entryType": "THEORY",
                   "professor": "Maria Luz Lopez"
