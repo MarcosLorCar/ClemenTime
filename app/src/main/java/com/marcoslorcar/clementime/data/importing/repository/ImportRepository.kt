@@ -56,35 +56,14 @@ class ImportRepository @Inject constructor(
     suspend fun listAvailableImportFiles(context: Context): List<ImportFile> = withContext(Dispatchers.IO) {
         val list = mutableListOf<ImportFile>()
 
-        // 1. Check bundled asset
-        var bundledHash = ""
-        try {
-            context.assets.open("schedules/primer_cuatrimestre.json").use { stream ->
-                val jsonString = stream.bufferedReader().readText()
-                bundledHash = jsonString.sha256()
-                val schema = parser.parseJson(jsonString).getOrNull()
-                val title = schema?.title ?: "Horarios 2026/2027 - 1º Cuatrimestre"
-                list.add(ImportFile(id = "bundled", title = title, isBundled = true, fileUri = null))
-            }
-        } catch (_: Exception) {
-            // Asset not found or failed to parse
-        }
-
-        // 2. Check local imports directory
         val dir = File(context.filesDir, "imports")
         if (dir.exists()) {
             dir.listFiles { _, name -> name.endsWith(".json") }?.forEach { file ->
                 try {
                     val jsonString = file.readText()
-                    val fileHash = jsonString.sha256()
-                    // Deduplicate against bundled file
-                    if (fileHash == bundledHash) {
-                        file.delete() // Clean up local duplicate
-                        return@forEach
-                    }
                     val schema = parser.parseJson(jsonString).getOrNull()
                     val title = schema?.title ?: file.name
-                    list.add(ImportFile(id = file.name, title = title, isBundled = false, fileUri = file.absolutePath))
+                    list.add(ImportFile(id = file.name, title = title, fileUri = file.absolutePath))
                 } catch (_: Exception) {
                     // Skip invalid files
                 }
@@ -104,21 +83,6 @@ class ImportRepository @Inject constructor(
             val title = schema.title ?: "Custom Import"
             val fileHash = jsonString.sha256()
 
-            // Check if it matches bundled file hash
-            var bundledHash = ""
-            try {
-                context.assets.open("schedules/primer_cuatrimestre.json").use { stream ->
-                    bundledHash = stream.bufferedReader().readText().sha256()
-                }
-            } catch (_: Exception) {
-                // Ignore
-            }
-
-            if (fileHash == bundledHash) {
-                // It's the bundled file, return reference to bundled representation instead of duplicating
-                return@withContext Result.success(ImportFile(id = "bundled", title = title, isBundled = true, fileUri = null))
-            }
-
             val filename = "import_$fileHash.json"
             val dir = File(context.filesDir, "imports")
             if (!dir.exists()) dir.mkdirs()
@@ -126,7 +90,7 @@ class ImportRepository @Inject constructor(
             val destFile = File(dir, filename)
             destFile.writeText(jsonString)
 
-            Result.success(ImportFile(id = filename, title = title, isBundled = false, fileUri = destFile.absolutePath))
+            Result.success(ImportFile(id = filename, title = title, fileUri = destFile.absolutePath))
         } catch (e: Exception) {
             Result.failure(e)
         }

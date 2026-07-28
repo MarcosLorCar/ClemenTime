@@ -2,7 +2,7 @@
   <img src=".github/assets/ic_app_logo.svg" alt="ClemenTime Logo" width="128" height="128" />
 </p>
 
-<h1 align="center">Clemen<span style="color: #FF7A00;">Time</span></h1>
+<h1 align="center">ClemenTime</h1>
 
 <p align="center">
   ClemenTime is a schedule and task planner app for Android targeted to ESI students, built with Jetpack Compose. It allows you to import, view, and manage your timetables and tasks on a clean, modern interface.

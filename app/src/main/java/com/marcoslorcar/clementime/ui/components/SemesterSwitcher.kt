@@ -18,14 +18,13 @@ import com.marcoslorcar.clementime.R
 fun SemesterSwitcher(
     selectedSemester: Int,
     onSemesterSelected: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showBothOption: Boolean = false
 ) {
-    val options = listOf(1, 2)
+    val options = if (showBothOption) listOf(1, 2, 3) else listOf(1, 2)
     
     SingleChoiceSegmentedButtonRow(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+        modifier = modifier.fillMaxWidth()
     ) {
         options.forEachIndexed { index, semester ->
             SegmentedButton(
@@ -34,7 +33,11 @@ fun SemesterSwitcher(
                 selected = selectedSemester == semester,
                 label = {
                     Text(
-                        text = stringResource(if (semester == 1) R.string.semester_1_label else R.string.semester_2_label)
+                        text = when (semester) {
+                            1 -> if (showBothOption) stringResource(R.string.semester_1_short) else stringResource(R.string.semester_1_label)
+                            2 -> if (showBothOption) stringResource(R.string.semester_2_short) else stringResource(R.string.semester_2_label)
+                            else -> stringResource(R.string.semester_both_short)
+                        }
                     )
                 }
             )

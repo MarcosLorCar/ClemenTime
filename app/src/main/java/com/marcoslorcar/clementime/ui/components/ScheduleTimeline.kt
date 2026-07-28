@@ -118,7 +118,9 @@ fun ScheduleTimeline(
     var viewportHeightPx by remember { mutableIntStateOf(0) }
     var hasAutoScrolled by remember { mutableStateOf(false) }
 
-    val isNearNow by remember {
+    // Keyed: isToday/isWithinTimeRange are plain vals recomputed each composition, not
+    // snapshot state, so an unkeyed remember would freeze them at their app-start values.
+    val isNearNow by remember(isToday, isWithinTimeRange, currentTime, startTime) {
         derivedStateOf {
             if (viewportHeightPx == 0 || !isToday || !isWithinTimeRange) {
                 false
@@ -137,13 +139,31 @@ fun ScheduleTimeline(
         onNearNowChanged(isNearNow)
     }
 
-    // Function to perform the scroll to now
+    // Scroll target used when "now" is not on screen: 30 min before the first class of the
+    // day, or the top of the timetable (= startTime) when the day has no classes.
+    val fallbackScrollTargetPx = {
+        val firstClass = clusters.minByOrNull { it.startTime }
+        if (firstClass != null) {
+            val startMinutes = Duration.between(startTime, firstClass.startTime).toMinutes().toInt()
+            val targetMinutes = (startMinutes - 30).coerceAtLeast(0)
+            with(density) { ((MINUTE_HEIGHT * targetMinutes) + TOP_TIMELINE_PADDING).toPx() }.toInt()
+        } else {
+            0
+        }
+    }
+
+    // Function to perform the scroll to now, falling back when "now" is out of bounds today
+    // (otherwise the FAB would be a no-op outside the configured day range).
     val scrollToNow = suspend {
-        if (isWithinTimeRange && viewportHeightPx > 0) {
-            val nowMinutes = Duration.between(startTime, currentTime).toMinutes().toInt()
-            val nowLinePosPx = with(density) { (MINUTE_HEIGHT * nowMinutes).toPx() + TOP_TIMELINE_PADDING.toPx() }
-            val targetPx = (nowLinePosPx - (viewportHeightPx / 2)).toInt().coerceAtLeast(0)
-            scrollState.animateScrollTo(targetPx)
+        if (viewportHeightPx > 0) {
+            if (isWithinTimeRange) {
+                val nowMinutes = Duration.between(startTime, currentTime).toMinutes().toInt()
+                val nowLinePosPx = with(density) { (MINUTE_HEIGHT * nowMinutes).toPx() + TOP_TIMELINE_PADDING.toPx() }
+                val targetPx = (nowLinePosPx - (viewportHeightPx / 2)).toInt().coerceAtLeast(0)
+                scrollState.animateScrollTo(targetPx)
+            } else {
+                scrollState.animateScrollTo(fallbackScrollTargetPx())
+            }
         }
     }
 
@@ -181,18 +201,11 @@ fun ScheduleTimeline(
         if (showNowLine && isToday && isWithinTimeRange) {
             scrollToNow()
             hasAutoScrolled = true
-        } else if (!isToday || !showNowLine) {
-            val firstClass = clusters.minByOrNull { it.startTime }
-            if (firstClass != null) {
-                val startMinutes = Duration.between(startTime, firstClass.startTime).toMinutes().toInt()
-                val targetMinutes = (startMinutes - 30).coerceAtLeast(0)
-                val targetPx = with(density) { ((MINUTE_HEIGHT * targetMinutes) + TOP_TIMELINE_PADDING).toPx() }.toInt()
-                scrollState.animateScrollTo(targetPx)
-                hasAutoScrolled = true
-            } else if (!isToday) {
-                scrollState.scrollTo(0)
-                hasAutoScrolled = true
-            }
+        } else {
+            // Covers every remaining case, including today-but-outside-the-day-range, which
+            // previously matched no branch at all and left the view stranded on blank space.
+            scrollState.animateScrollTo(fallbackScrollTargetPx())
+            hasAutoScrolled = true
         }
     }
 

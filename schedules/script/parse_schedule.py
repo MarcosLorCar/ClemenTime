@@ -106,7 +106,8 @@ def resolve_mapping(code: str, category: str, mappings: Dict, interactive: bool 
 
     # 6. Fallback to Prompt
     if not interactive:
-        return code, code
+        print(f"\n[Error] Unknown {category[:-1]} found: '{code}' (Running in non-interactive/strict mode)")
+        sys.exit(1)
 
     print(f"\n[?] Unknown {category[:-1]} found: '{code}'")
     val = input(f"    Enter full name for '{code}' (or press Enter to use as is): ").strip()

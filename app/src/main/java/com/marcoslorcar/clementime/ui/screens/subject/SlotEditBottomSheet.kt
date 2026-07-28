@@ -56,6 +56,9 @@ import com.marcoslorcar.clementime.R
 import com.marcoslorcar.clementime.data.EntryType
 import com.marcoslorcar.clementime.ui.model.ClassSlotUiModel
 import com.marcoslorcar.clementime.ui.screens.schedule.ScheduleTab
+import com.marcoslorcar.clementime.utils.DAY_END_TIME
+import com.marcoslorcar.clementime.utils.DAY_START_TIME
+import com.marcoslorcar.clementime.utils.SlotTimeBounds
 import com.marcoslorcar.clementime.utils.shortName
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -66,16 +69,28 @@ fun SlotEditBottomSheet(
     initialSlot: ClassSlotUiModel,
     onDismiss: () -> Unit,
     onSaveSlot: (ClassSlotUiModel) -> Unit,
-    onDelete: (() -> Unit)? = null
+    onDelete: (() -> Unit)? = null,
+    dayStartTime: LocalTime = DAY_START_TIME,
+    dayEndTime: LocalTime = DAY_END_TIME,
+    defaultDurationMinutes: Int = 90
 ) {
     var editedSlot by remember(initialSlot) { mutableStateOf(initialSlot) }
     var showStartPicker by remember { mutableStateOf(false) }
     var showEndPicker by remember { mutableStateOf(false) }
     var showIgnoreHelp by remember { mutableStateOf(false) }
     var showDeleteConfirmation by remember { mutableStateOf(false) }
+    // Set when a newly picked time falls outside the configured day range. Pre-existing
+    // out-of-range times are never flagged - only what the user actively selects.
+    var timeRangeError by remember { mutableStateOf<String?>(null) }
 
     val locale = LocalConfiguration.current.locales[0]
     val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
+
+    val outOfRangeMessage = stringResource(
+        R.string.slot_time_out_of_range,
+        dayStartTime.format(timeFormatter),
+        dayEndTime.format(timeFormatter)
+    )
 
     val sheetState = rememberBottomSheetState(
         initialValue = SheetValue.Hidden,
@@ -184,6 +199,14 @@ fun SlotEditBottomSheet(
                 }
             }
 
+            timeRangeError?.let { message ->
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+
             // Classroom & Professor TextFields
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -192,7 +215,11 @@ fun SlotEditBottomSheet(
                 OutlinedTextField(
                     value = editedSlot.classroom ?: "",
                     onValueChange = { editedSlot = editedSlot.copy(classroom = it.ifBlank { null }) },
-                    label = { Text(stringResource(R.string.room_label)) },
+                    label = {
+                        Text(
+                            text = stringResource(R.string.room_label) + if (editedSlot.classroom.isNullOrBlank()) " " + stringResource(R.string.label_optional) else ""
+                        )
+                    },
                     placeholder = { Text(stringResource(R.string.room_placeholder)) },
                     singleLine = true,
                     modifier = Modifier.weight(1f)
@@ -200,7 +227,11 @@ fun SlotEditBottomSheet(
                 OutlinedTextField(
                     value = editedSlot.professor ?: "",
                     onValueChange = { editedSlot = editedSlot.copy(professor = it.ifBlank { null }) },
-                    label = { Text(stringResource(R.string.professor_label)) },
+                    label = {
+                        Text(
+                            text = stringResource(R.string.professor_label) + if (editedSlot.professor.isNullOrBlank()) " " + stringResource(R.string.label_optional) else ""
+                        )
+                    },
                     placeholder = { Text(stringResource(R.string.professor_placeholder)) },
                     singleLine = true,
                     modifier = Modifier.weight(1f)
@@ -290,7 +321,10 @@ fun SlotEditBottomSheet(
                     Button(
                         onClick = {
                             onSaveSlot(editedSlot)
-                        }
+                        },
+                        // A slot with a missing time is silently dropped by toEntity(), so
+                        // saving one would look like it worked and lose the slot.
+                        enabled = editedSlot.startTime != null && editedSlot.endTime != null
                     ) {
                         Text(stringResource(R.string.save_button))
                     }
@@ -326,13 +360,26 @@ fun SlotEditBottomSheet(
     if (showStartPicker) {
         RadialTimePickerDialog(
             initialTime = editedSlot.startTime ?: LocalTime.of(9, 0),
-            onDismiss = { showStartPicker = false },
+            onDismiss = { showStartPicker = false; timeRangeError = null },
             onTimeConfirm = { selectedTime ->
-                val end = editedSlot.endTime
-                val newEnd = if (end == null || selectedTime.isAfter(end) || selectedTime == end) {
-                    selectedTime.plusMinutes(90)
-                } else end
-                editedSlot = editedSlot.copy(startTime = selectedTime, endTime = newEnd)
+                if (!SlotTimeBounds.isWithinRange(selectedTime, dayStartTime, dayEndTime)) {
+                    // Reject rather than clamp, so the user's choice is never silently changed.
+                    timeRangeError = outOfRangeMessage
+                } else {
+                    val end = editedSlot.endTime
+                    val newEnd = if (end == null || !end.isAfter(selectedTime)) {
+                        SlotTimeBounds.deriveEndTime(selectedTime, defaultDurationMinutes, dayEndTime)
+                    } else end
+                    if (newEnd == null) {
+                        // No room left in the day for a class starting here (e.g. start
+                        // exactly at dayEndTime). Reject instead of committing a null time,
+                        // which would silently disable Save with nothing explaining why.
+                        timeRangeError = outOfRangeMessage
+                    } else {
+                        editedSlot = editedSlot.copy(startTime = selectedTime, endTime = newEnd)
+                        timeRangeError = null
+                    }
+                }
                 showStartPicker = false
             }
         )
@@ -340,14 +387,27 @@ fun SlotEditBottomSheet(
 
     if (showEndPicker) {
         RadialTimePickerDialog(
-            initialTime = editedSlot.endTime ?: (editedSlot.startTime?.plusMinutes(90) ?: LocalTime.of(10, 30)),
-            onDismiss = { showEndPicker = false },
+            initialTime = editedSlot.endTime
+                ?: editedSlot.startTime?.let {
+                    SlotTimeBounds.deriveEndTime(it, defaultDurationMinutes, dayEndTime)
+                }
+                ?: LocalTime.of(10, 30),
+            onDismiss = { showEndPicker = false; timeRangeError = null },
             onTimeConfirm = { selectedTime ->
-                val start = editedSlot.startTime
-                val newStart = if (start == null || selectedTime.isBefore(start) || selectedTime == start) {
-                    selectedTime.minusMinutes(90)
-                } else start
-                editedSlot = editedSlot.copy(startTime = newStart, endTime = selectedTime)
+                if (!SlotTimeBounds.isWithinRange(selectedTime, dayStartTime, dayEndTime)) {
+                    timeRangeError = outOfRangeMessage
+                } else {
+                    val start = editedSlot.startTime
+                    val newStart = if (start == null || !start.isBefore(selectedTime)) {
+                        SlotTimeBounds.deriveStartTime(selectedTime, defaultDurationMinutes, dayStartTime)
+                    } else start
+                    if (newStart == null) {
+                        timeRangeError = outOfRangeMessage
+                    } else {
+                        editedSlot = editedSlot.copy(startTime = newStart, endTime = selectedTime)
+                        timeRangeError = null
+                    }
+                }
                 showEndPicker = false
             }
         )

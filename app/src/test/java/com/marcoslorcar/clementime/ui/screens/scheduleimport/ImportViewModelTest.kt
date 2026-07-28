@@ -66,7 +66,7 @@ class ImportViewModelTest {
         stateFlow.value = ImportUiState.Selection(
             schema = sampleSchema,
             selectedSubjects = emptySet(),
-            selectedFile = ImportFile("bundled", "Test Bundled", true)
+            selectedFile = ImportFile("test.json", "Test Schedule")
         )
 
         viewModel.selectAllSubjects()
@@ -91,7 +91,7 @@ class ImportViewModelTest {
         stateFlow.value = ImportUiState.Selection(
             schema = sampleSchema,
             selectedSubjects = setOf(selected1, selected2, selected3),
-            selectedFile = ImportFile("bundled", "Test Bundled", true)
+            selectedFile = ImportFile("test.json", "Test Schedule")
         )
 
         // Deselect subject1
@@ -117,7 +117,7 @@ class ImportViewModelTest {
         stateFlow.value = ImportUiState.Selection(
             schema = sampleSchema,
             selectedSubjects = setOf(selected1, selected2, selected3),
-            selectedFile = ImportFile("bundled", "Test Bundled", true)
+            selectedFile = ImportFile("test.json", "Test Schedule")
         )
 
         val sectionA = listOf(selected1, selected2)
@@ -147,7 +147,7 @@ class ImportViewModelTest {
         stateFlow.value = ImportUiState.Selection(
             schema = sampleSchema,
             selectedSubjects = setOf(selected1, selected2, selected3),
-            selectedFile = ImportFile("bundled", "Test Bundled", true)
+            selectedFile = ImportFile("test.json", "Test Schedule")
         )
 
         val allFlattened = listOf(selected1, selected2, selected3)
@@ -179,7 +179,7 @@ class ImportViewModelTest {
         stateFlow.value = ImportUiState.Selection(
             schema = ScheduleJsonSchema(subjects = listOf(s1, s2)),
             selectedSubjects = emptySet(),
-            selectedFile = ImportFile("bundled", "Test", true),
+            selectedFile = ImportFile("test.json", "Test"),
             conflictStatus = ConflictStatus.None
         )
 
@@ -219,7 +219,7 @@ class ImportViewModelTest {
         stateFlow.value = ImportUiState.Selection(
             schema = ScheduleJsonSchema(subjects = listOf(s1)),
             selectedSubjects = emptySet(),
-            selectedFile = ImportFile("bundled", "Test", true),
+            selectedFile = ImportFile("test.json", "Test"),
             conflictStatus = ConflictStatus.None,
             existingSubjects = existing
         )

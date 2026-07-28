@@ -126,7 +126,6 @@ class ImportViewModel @Inject constructor(
                             ImportFile(
                                 id = summary.id,
                                 title = summary.title,
-                                isBundled = false,
                                 fileUri = null,
                                 sourceType = ImportSourceType.REMOTE,
                                 remotePath = fullPath,
@@ -144,7 +143,6 @@ class ImportViewModel @Inject constructor(
                             ImportFile(
                                 id = entry.id,
                                 title = entry.title,
-                                isBundled = false,
                                 fileUri = null,
                                 sourceType = ImportSourceType.REMOTE,
                                 remotePath = entry.remotePath,
@@ -179,14 +177,6 @@ class ImportViewModel @Inject constructor(
                 val schemaResult: Result<ScheduleJsonSchema> = when {
                     file.sourceType == ImportSourceType.REMOTE -> {
                         repository.fetchRemoteScheduleSchema(context, file)
-                    }
-                    file.isBundled -> {
-                        val jsonString = withContext(Dispatchers.IO) {
-                            context.assets.open("schedules/primer_cuatrimestre.json").use { stream ->
-                                stream.bufferedReader().readText()
-                            }
-                        }
-                        repository.parseJsonString(jsonString)
                     }
                     else -> {
                         val jsonString = withContext(Dispatchers.IO) {
@@ -241,7 +231,7 @@ class ImportViewModel @Inject constructor(
 
     fun deleteFile(context: Context, file: ImportFile) {
         viewModelScope.launch {
-            if (!file.isBundled) {
+            if (file.sourceType == ImportSourceType.CUSTOM) {
                 repository.deleteCustomImportFile(context, file.id)
                 loadLibrary(context)
             }
@@ -329,54 +319,57 @@ class ImportViewModel @Inject constructor(
     ): ConflictStatus {
         if (selected.isEmpty()) return ConflictStatus.None
 
-        var slotIdCounter = 1L
-        val subjectsWithSlots = selected.map { selectedSubject ->
-            val jsonSubject = selectedSubject.subject
-            val subjectId = jsonSubject.code.hashCode().toLong()
-            val subject = Subject(
-                id = subjectId,
-                code = jsonSubject.code,
-                name = jsonSubject.name,
-                color = jsonSubject.color ?: Subject.PRESET_COLORS.indices.random(), // Random preset if null
-                isActive = true
-            )
-            val theorySlots = jsonSubject.theorySlots.map { 
-                with(parser) { it.toClassSlot(subjectId).copy(id = slotIdCounter++) }
-            }
-            val labSlots = jsonSubject.labVariants.flatMap { (groupName, variantSlots) ->
-                variantSlots.map { slot ->
-                    with(parser) {
-                        slot.toClassSlot(subjectId).copy(
-                            id = slotIdCounter++,
-                            labGroupName = groupName,
-                            entryType = EntryType.LAB
-                        )
+        return try {
+            var slotIdCounter = 1L
+            val subjectsWithSlots = selected.map { selectedSubject ->
+                val jsonSubject = selectedSubject.subject
+                val subjectId = jsonSubject.code.hashCode().toLong()
+                val subject = Subject(
+                    id = subjectId,
+                    code = jsonSubject.code,
+                    name = jsonSubject.name,
+                    color = jsonSubject.color ?: Subject.PRESET_COLORS.indices.random(), // Random preset if null
+                    isActive = true
+                )
+                val theorySlots = jsonSubject.theorySlots.map {
+                    with(parser) { it.toClassSlot(subjectId).copy(id = slotIdCounter++) }
+                }
+                val labSlots = jsonSubject.labVariants.flatMap { (groupName, variantSlots) ->
+                    variantSlots.map { slot ->
+                        with(parser) {
+                            slot.toClassSlot(subjectId).copy(
+                                id = slotIdCounter++,
+                                labGroupName = groupName,
+                                entryType = EntryType.LAB
+                            )
+                        }
                     }
                 }
+                SubjectWithSlots(subject, theorySlots + labSlots)
             }
-            SubjectWithSlots(subject, theorySlots + labSlots)
-        }
 
-        val mappedExisting = existing.map { sWithSlots ->
-            val activeSlots = sWithSlots.slots.filter { slot ->
-                slot.entryType == EntryType.THEORY ||
-                sWithSlots.subject.selectedLabGroup == null ||
-                slot.labGroupName == sWithSlots.subject.selectedLabGroup
-            }.map { slot ->
-                slot.copy(id = slotIdCounter++)
+            val mappedExisting = existing.map { sWithSlots ->
+                val activeSlots = sWithSlots.slots.filter { slot ->
+                    slot.entryType == EntryType.THEORY ||
+                            sWithSlots.subject.selectedLabGroup == null ||
+                            slot.labGroupName == sWithSlots.subject.selectedLabGroup
+                }.map { slot ->
+                    slot.copy(id = slotIdCounter++)
+                }
+                sWithSlots.copy(slots = activeSlots)
             }
-            sWithSlots.copy(slots = activeSlots)
-        }
 
-        val allSubjectsWithSlots = subjectsWithSlots + mappedExisting
+            val allSubjectsWithSlots = subjectsWithSlots + mappedExisting
 
-        val solutions = ConflictSolver.findSolutions(allSubjectsWithSlots)
-        val optimal = solutions.firstOrNull() ?: return ConflictStatus.None
+            val solutions = ConflictSolver.findSolutions(allSubjectsWithSlots)
+            val optimal = solutions.firstOrNull() ?: return ConflictStatus.None
 
-        val theoryOverlaps = mutableListOf<TheoryOverlap>()
-        val theorySlots = allSubjectsWithSlots.flatMap { s -> 
-            s.slots.filter { it.entryType == EntryType.THEORY }.map { s.subject to it } 
-        }
+            val theoryOverlaps = mutableListOf<TheoryOverlap>()
+            val theorySlots = allSubjectsWithSlots.flatMap { s ->
+                s.slots.filter { it.entryType == EntryType.THEORY }.map { s.subject to it }
+            }
+            
+            // ... truncated logic ...
         
         for (i in theorySlots.indices) {
             for (j in i + 1 until theorySlots.size) {
@@ -410,16 +403,19 @@ class ImportViewModel @Inject constructor(
                 }
             }.distinctBy { it.second.id }
 
-            ConflictStatus.Conflict(
-                ConflictDetail(
-                    selectedSubjects = selected.toList(),
-                    theoryOverlaps = theoryOverlaps,
-                    hasLabCombinationWithZeroOverlaps = !hasLabConflict,
-                    theoryOverlappingSlots = theoryOverlappingSlots,
-                    labOverlappingSlots = if (hasLabConflict) optimal.totalSlots else emptyList(),
-                    labOverlappingSlotIds = if (hasLabConflict) optimal.overlappingSlotIds else emptySet()
+                ConflictStatus.Conflict(
+                    ConflictDetail(
+                        selectedSubjects = selected.toList(),
+                        theoryOverlaps = theoryOverlaps,
+                        hasLabCombinationWithZeroOverlaps = !hasLabConflict,
+                        theoryOverlappingSlots = theoryOverlappingSlots,
+                        labOverlappingSlots = if (hasLabConflict) optimal.totalSlots else emptyList(),
+                        labOverlappingSlotIds = if (hasLabConflict) optimal.overlappingSlotIds else emptySet()
+                    )
                 )
-            )
+            }
+        } catch (e: Exception) {
+            ConflictStatus.Error(e.localizedMessage ?: "Unknown error")
         }
     }
 

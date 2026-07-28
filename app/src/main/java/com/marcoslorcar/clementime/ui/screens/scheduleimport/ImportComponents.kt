@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
@@ -242,7 +243,6 @@ fun ImportLibraryContent(
                                 Text(
                                     text = when (sourceType) {
                                         com.marcoslorcar.clementime.data.importing.model.ImportSourceType.REMOTE -> stringResource(R.string.online_repository_title)
-                                        com.marcoslorcar.clementime.data.importing.model.ImportSourceType.BUNDLED -> stringResource(R.string.import_bundled_label)
                                         com.marcoslorcar.clementime.data.importing.model.ImportSourceType.CUSTOM -> stringResource(R.string.import_custom_label)
                                     },
                                     style = MaterialTheme.typography.titleSmall,
@@ -424,6 +424,14 @@ fun ImportContent(
                                     )
                                 }
                             }
+                        }
+                        is ConflictStatus.Error -> {
+                            Icon(
+                                imageVector = Icons.Default.Error,
+                                contentDescription = (uiState.conflictStatus as ConflictStatus.Error).message,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.padding(8.dp).size(24.dp)
+                            )
                         }
                         ConflictStatus.None -> {}
                     }
