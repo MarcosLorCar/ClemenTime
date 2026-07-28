@@ -6,9 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
-import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -45,12 +43,7 @@ open class SettingsRepository @Inject constructor(
     private val dayStartMinuteKey = intPreferencesKey("day_start_minute")
     private val dayEndHourKey = intPreferencesKey("day_end_hour")
     private val dayEndMinuteKey = intPreferencesKey("day_end_minute")
-    private val scheduleNotificationsEnabledKey = booleanPreferencesKey("schedule_notifications_enabled")
-    private val notifyViaPushKey = booleanPreferencesKey("notify_via_push")
-    private val notifyViaAppKey = booleanPreferencesKey("notify_via_app")
-    private val hasPendingScheduleUpdateKey = booleanPreferencesKey("has_pending_schedule_update")
-    private val lastScheduleSyncTimestampKey = longPreferencesKey("last_schedule_sync_timestamp")
-    private val affectedSubjectIdsKey = stringSetPreferencesKey("affected_subject_ids")
+    private val lastKnownHashesKey = stringPreferencesKey("last_known_hashes")
 
 
     open val themeFlow: Flow<String>
@@ -273,49 +266,18 @@ open class SettingsRepository @Inject constructor(
             kotlinx.coroutines.flow.flowOf(30)
         }
 
-    open val scheduleNotificationsEnabledFlow: Flow<Boolean>
+    open val lastKnownHashesFlow: Flow<Map<String, String>>
         get() = try {
             context?.dataStore?.data?.map { preferences ->
-                preferences[scheduleNotificationsEnabledKey] ?: true
-            } ?: kotlinx.coroutines.flow.flowOf(true)
+                val raw = preferences[lastKnownHashesKey] ?: ""
+                if (raw.isBlank()) return@map emptyMap<String, String>()
+                raw.split(";").mapNotNull {
+                    val parts = it.split("|")
+                    if (parts.size == 2) parts[0] to parts[1] else null
+                }.toMap()
+            } ?: kotlinx.coroutines.flow.flowOf(emptyMap())
         } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(true)
-        }
-
-    open val notifyViaPushFlow: Flow<Boolean>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                preferences[notifyViaPushKey] ?: false
-            } ?: kotlinx.coroutines.flow.flowOf(false)
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(false)
-        }
-
-    open val notifyViaAppFlow: Flow<Boolean>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                preferences[notifyViaAppKey] ?: true
-            } ?: kotlinx.coroutines.flow.flowOf(true)
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(true)
-        }
-
-    open val hasPendingScheduleUpdateFlow: Flow<Boolean>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                preferences[hasPendingScheduleUpdateKey] ?: false
-            } ?: kotlinx.coroutines.flow.flowOf(false)
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(false)
-        }
-
-    open val affectedSubjectIdsFlow: Flow<Set<String>>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                preferences[affectedSubjectIdsKey] ?: emptySet()
-            } ?: kotlinx.coroutines.flow.flowOf(emptySet())
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(emptySet())
+            kotlinx.coroutines.flow.flowOf(emptyMap())
         }
 
 
@@ -502,50 +464,10 @@ open class SettingsRepository @Inject constructor(
         } catch (_: Throwable) {}
     }
 
-    open suspend fun setScheduleNotificationsEnabled(enabled: Boolean) {
+    open suspend fun setLastKnownHashes(hashes: Map<String, String>) {
         try {
             context?.dataStore?.edit { preferences ->
-                preferences[scheduleNotificationsEnabledKey] = enabled
-            }
-        } catch (_: Throwable) {}
-    }
-
-    open suspend fun setNotifyViaPush(enabled: Boolean) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[notifyViaPushKey] = enabled
-            }
-        } catch (_: Throwable) {}
-    }
-
-    open suspend fun setNotifyViaApp(enabled: Boolean) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[notifyViaAppKey] = enabled
-            }
-        } catch (_: Throwable) {}
-    }
-
-    open suspend fun setHasPendingScheduleUpdate(hasUpdate: Boolean) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[hasPendingScheduleUpdateKey] = hasUpdate
-            }
-        } catch (_: Throwable) {}
-    }
-
-    open suspend fun setLastScheduleSyncTimestamp(timestamp: Long) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[lastScheduleSyncTimestampKey] = timestamp
-            }
-        } catch (_: Throwable) {}
-    }
-
-    open suspend fun setAffectedSubjectIds(ids: Set<String>) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[affectedSubjectIdsKey] = ids
+                preferences[lastKnownHashesKey] = hashes.entries.joinToString(";") { "${it.key}|${it.value}" }
             }
         } catch (_: Throwable) {}
     }

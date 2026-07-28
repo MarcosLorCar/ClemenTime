@@ -112,6 +112,7 @@
     <string name="export_error_prefix">Error al exportar: %1$s</string>
     <string name="import_library_title">Biblioteca de Importación</string>
     <string name="import_cached_label">Guardado</string>
+    <string name="import_update_available_label">Actualización disponible</string>
     <string name="import_select_file_device">Importar JSON desde el dispositivo</string>
     <string name="import_custom_label">Personalizado</string>
     <string name="import_delete_confirm_title">Eliminar Archivo de Importación</string>
@@ -265,23 +266,6 @@
     <string name="onboarding_ready_desc">Puedes cambiar estos ajustes en cualquier momento. ¡Empecemos!</string>
     <string name="onboarding_next">Siguiente</string>
 
-    <!-- Schedule Notifications -->
-    <string name="auto_update_title">Actualización automática</string>
-    <string name="auto_update_desc">Busca cambios de aula o de hora en tu horario automáticamente una vez al día.</string>
-    <string name="auto_update_onboarding_title">Horarios Inteligentes</string>
-    <string name="auto_update_onboarding_desc">ClemenTime puede buscar cambios en tu horario (como nuevas aulas o cambios de hora) de forma periódica.</string>
-    <string name="auto_update_card_title">Buscar actualizaciones automáticamente</string>
-    <string name="notify_via_push_title">Notificaciones del sistema</string>
-    <string name="notify_via_push_desc">Muestra una notificación cuando se encuentren cambios.</string>
-    <string name="notify_via_app_title">Avisos en la aplicación</string>
-    <string name="notify_via_app_desc">Muestra un panel de aviso al abrir la aplicación.</string>
-    <string name="schedule_notifications_battery_label">Bajo consumo</string>
-    <string name="schedule_update_notification_channel_name">Actualizaciones de Horario</string>
-    <string name="schedule_update_notification_title">Horario Actualizado</string>
-    <string name="schedule_update_notification_text">Algunas asignaturas de tu horario han cambiado. Pulsa para revisar y aplicar los cambios.</string>
-    <string name="schedule_update_alert_title">Actualizaciones Disponibles</string>
-    <string name="schedule_update_alert_text">Se han detectado nuevas versiones de tus horarios importados. Algunas de tus asignaturas pueden haber cambiado de hora o de aula.</string>
-    <string name="apply_updates_button">Revisar Actualizaciones</string>
     <string name="affected_subjects_label">Asignaturas afectadas:</string>
     <string name="apply_changes_confirm">Aplicar Cambios</string>
     <string name="onboarding_back">Atrás</string>

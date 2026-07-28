@@ -296,13 +296,13 @@ fun ImportLibraryContent(
                                             if (file.isCached) {
                                                 Surface(
                                                     shape = RoundedCornerShape(4.dp),
-                                                    color = Color(0xFFC8E6C9)
+                                                    color = if (file.isUpdateAvailable) MaterialTheme.colorScheme.errorContainer else Color(0xFFC8E6C9)
                                                 ) {
                                                     Text(
-                                                        text = stringResource(R.string.import_cached_label),
+                                                        text = if (file.isUpdateAvailable) stringResource(R.string.import_update_available_label) else stringResource(R.string.import_cached_label),
                                                         style = MaterialTheme.typography.labelSmall,
                                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                                        color = Color(0xFF2E7D32)
+                                                        color = if (file.isUpdateAvailable) MaterialTheme.colorScheme.onErrorContainer else Color(0xFF2E7D32)
                                                     )
                                                 }
                                             }
@@ -463,18 +463,17 @@ fun ImportContent(
             var selectedYearFilter by remember { mutableStateOf<String?>(null) }
 
             // All subjects in the schema flattened with their group/year info
-            val allFlattenedSubjects = remember(uiState.schema, uiState.selectedFile.remotePath) {
-                val remotePath = uiState.selectedFile.remotePath
+            val allFlattenedSubjects = remember(uiState.schema) {
                 val fromRoot = uiState.schema.subjects.map { 
-                    SelectedSubject(it, "General", remotePath) 
+                    SelectedSubject(it, "General") 
                 }
                 val fromYears = uiState.schema.years.flatMap { year ->
                     val yearCommon = year.subjects.map { 
-                        SelectedSubject(it, "${year.name} Common", remotePath) 
+                        SelectedSubject(it, "${year.name} Common") 
                     }
                     val fromGroups = year.groups.flatMap { group ->
                         group.subjects.map { 
-                            SelectedSubject(it, "${year.name} ${group.name}", remotePath) 
+                            SelectedSubject(it, "${year.name} ${group.name}") 
                         }
                     }
                     yearCommon + fromGroups

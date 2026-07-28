@@ -10,20 +10,17 @@ import com.marcoslorcar.clementime.data.importing.model.ImportFile
 import com.marcoslorcar.clementime.data.importing.model.RemoteScheduleSummary
 import com.marcoslorcar.clementime.data.importing.model.ScheduleJsonSchema
 import com.marcoslorcar.clementime.data.importing.model.SelectedSubject
-import com.marcoslorcar.clementime.data.importing.model.JsonSubject
 import com.marcoslorcar.clementime.data.importing.parser.JsonScheduleParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
 import java.io.File
 import javax.inject.Inject
 
 class ImportRepository @Inject constructor(
     private val dao: ScheduleDao,
     private val parser: JsonScheduleParser = JsonScheduleParser(),
-    private val apiService: GitHubScheduleApiService? = null,
-    private val json: Json = Json { ignoreUnknownKeys = true; coerceInputValues = true; encodeDefaults = true }
+    private val apiService: GitHubScheduleApiService? = null
 ) {
 
     fun parseJsonString(jsonContent: String): Result<ScheduleJsonSchema> {
@@ -93,8 +90,13 @@ class ImportRepository @Inject constructor(
             
             // Find existing subject with same code (or name) to replace it
             val existing = existingSubjects.find { 
-                (it.subject.code.isNotBlank() && it.subject.code.equals(jsonSubject.code, ignoreCase = true)) ||
-                (it.subject.code.isBlank() && it.subject.name.equals(jsonSubject.name, ignoreCase = true))
+                val localCode = it.subject.code.trim()
+                val remoteCode = jsonSubject.code.trim()
+                val localName = it.subject.name.trim()
+                val remoteName = jsonSubject.name.trim()
+                
+                (remoteCode.isNotBlank() && localCode.equals(remoteCode, ignoreCase = true)) ||
+                (remoteCode.isBlank() && localName.equals(remoteName, ignoreCase = true))
             }?.subject
 
             // Auto-select lab group if only one variant exists
@@ -119,8 +121,7 @@ class ImportRepository @Inject constructor(
                 isActive = true,
                 selectedLabGroup = autoSelectedLabGroup,
                 semester = jsonSubject.semester ?: 1,
-                isDummy = jsonSubject.isDummy,
-                remotePath = selected.remotePath
+                isDummy = jsonSubject.isDummy
             )
 
             val theorySlots = jsonSubject.theorySlots.map {
@@ -157,15 +158,21 @@ class ImportRepository @Inject constructor(
         return trimmed
     }
 
-    suspend fun fetchRemoteSchedules(rawBaseUrl: String): Result<List<RemoteScheduleSummary>> = withContext(Dispatchers.IO) {
+    suspend fun fetchRemoteSchedules(rawBaseUrl: String, forceRefresh: Boolean = false): Result<List<RemoteScheduleSummary>> = withContext(Dispatchers.IO) {
         try {
             if (apiService == null) return@withContext Result.failure(Exception("Network service unavailable"))
             val baseUrl = normalizeGitHubUrl(rawBaseUrl)
-            val indexUrl = when {
+            var indexUrl = when {
                 baseUrl.endsWith("schedules_index.json") -> baseUrl
                 baseUrl.endsWith("/") -> "${baseUrl}schedules_index.json"
                 else -> "$baseUrl/schedules_index.json"
             }
+            
+            if (forceRefresh) {
+                indexUrl += if (indexUrl.contains("?")) "&" else "?"
+                indexUrl += "t=${System.currentTimeMillis()}"
+            }
+
             val response = apiService.getScheduleIndex(indexUrl)
             if (response.isSuccessful && response.body() != null) {
                 Result.success(response.body()!!)
@@ -223,42 +230,5 @@ class ImportRepository @Inject constructor(
         }
     }
 
-    suspend fun importSpecificSubjects(context: Context, subjectIds: Set<Long>) {
-        val allExisting = dao.getAllSubjectsWithSlots().first()
-        val toUpdate = allExisting.filter { it.subject.id in subjectIds && it.subject.remotePath != null }
-        
-        val paths = toUpdate.mapNotNull { it.subject.remotePath }.distinct()
-        
-        for (path in paths) {
-            val file = ImportFile(id = "update_${path.hashCode()}", title = "Update", remotePath = path)
-            val schemaResult = fetchRemoteScheduleSchema(context, file, forceRefresh = true)
-            
-            schemaResult.onSuccess { schema ->
-                val subjectsInSchema = getAllSubjectsInSchema(schema)
-                val selected = toUpdate.filter { it.subject.remotePath == path }.mapNotNull { local ->
-                    subjectsInSchema.find { it.code == local.subject.code }?.let { remoteJson ->
-                        SelectedSubject(
-                            subject = remoteJson,
-                            courseGroup = local.subject.courseGroup ?: "General",
-                            remotePath = path
-                        )
-                    }
-                }
-                if (selected.isNotEmpty()) {
-                    importSubjects(selected)
-                }
-            }
-        }
-    }
 
-    private fun getAllSubjectsInSchema(schema: ScheduleJsonSchema): List<JsonSubject> {
-        val list = schema.subjects.toMutableList()
-        schema.years.forEach { year ->
-            list.addAll(year.subjects)
-            year.groups.forEach { group ->
-                list.addAll(group.subjects)
-            }
-        }
-        return list
-    }
 }

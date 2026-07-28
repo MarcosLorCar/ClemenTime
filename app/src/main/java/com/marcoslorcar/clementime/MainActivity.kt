@@ -16,10 +16,8 @@ import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.outlined.School
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
@@ -28,9 +26,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -58,15 +53,12 @@ import com.marcoslorcar.clementime.ui.navigation.SubjectsRoute
 import com.marcoslorcar.clementime.ui.screens.conflictresolver.ConflictResolverScreen
 import com.marcoslorcar.clementime.ui.screens.onboarding.OnboardingScreen
 import com.marcoslorcar.clementime.ui.screens.schedule.ScheduleScreen
-import com.marcoslorcar.clementime.ui.screens.schedule.UpdateSubjectsBottomSheet
 import com.marcoslorcar.clementime.ui.screens.scheduleimport.ImportScreen
 import com.marcoslorcar.clementime.ui.screens.settings.MoreScreen
 import com.marcoslorcar.clementime.ui.screens.subject.AddEditSubjectScreen
 import com.marcoslorcar.clementime.ui.screens.subject.SubjectsScreen
 import com.marcoslorcar.clementime.ui.theme.ClemenTimeTheme
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 import kotlin.reflect.KClass
 
@@ -81,21 +73,10 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         
-        // Ensure background sync is enqueued if enabled
-        val autoUpdateEnabled = try {
-            runBlocking { settingsRepository.scheduleNotificationsEnabledFlow.first() }
-        } catch (_: Exception) {
-            true // Default to true if not set
-        }
-        if (autoUpdateEnabled) {
-            com.marcoslorcar.clementime.work.ScheduleSyncWorker.enqueuePeriodicWork(this)
-        }
-
         setContent {
             val themeMode by settingsRepository.themeFlow.collectAsState(initial = "system")
             val selectedTheme by settingsRepository.selectedThemeFlow.collectAsState(initial = "clementine")
             val isOnboardingCompleted by settingsRepository.isOnboardingCompletedFlow.collectAsState(initial = null)
-            val hasPendingUpdate by settingsRepository.hasPendingScheduleUpdateFlow.collectAsState(initial = false)
 
             val darkTheme = when (themeMode) {
                 "light" -> false
@@ -113,7 +94,7 @@ class MainActivity : AppCompatActivity() {
                 ) {
                     if (isOnboardingCompleted != null) {
                         key(isOnboardingCompleted) {
-                            ClemenTimeApp(isOnboardingCompleted!!, hasPendingUpdate)
+                            ClemenTimeApp(isOnboardingCompleted!!)
                         }
                     }
                 }
@@ -143,32 +124,10 @@ private fun getTabIndex(entry: NavBackStackEntry?): Int {
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-fun ClemenTimeApp(isOnboardingCompleted: Boolean, hasPendingUpdate: Boolean) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val settingsRepository = (context as? MainActivity)?.settingsRepository
-    
-    val notifyViaApp by (settingsRepository?.notifyViaAppFlow?.collectAsState(initial = true) ?: androidx.compose.runtime.remember { mutableStateOf(true) })
-
+fun ClemenTimeApp(isOnboardingCompleted: Boolean) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
-
-    val sheetState = rememberBottomSheetState(
-        initialValue = SheetValue.Hidden,
-        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
-    )
-    var showUpdateSheet by remember { mutableStateOf(false) }
-
-    androidx.compose.runtime.LaunchedEffect(hasPendingUpdate, notifyViaApp) {
-        showUpdateSheet = hasPendingUpdate && notifyViaApp
-    }
-
-    if (showUpdateSheet) {
-        UpdateSubjectsBottomSheet(
-            sheetState = sheetState,
-            onDismissRequest = { showUpdateSheet = false }
-        )
-    }
 
     val isNavVisible = currentDestination?.let { dest ->
         (dest.hasRoute(ScheduleListRoute::class) || 

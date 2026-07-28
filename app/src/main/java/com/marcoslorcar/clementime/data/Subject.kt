@@ -17,8 +17,7 @@ data class Subject(
     val attachedFiles: List<AttachedFileItem> = emptyList(),
     val selectedLabGroup: String? = null,
     val semester: Int = 1,
-    val isDummy: Boolean = false,
-    val remotePath: String? = null
+    val isDummy: Boolean = false
 ) {
     companion object {
         val PRESET_COLORS = listOf(

@@ -29,7 +29,7 @@ jobs:
           fi
           
       - name: Process schedules
-        run: python process_schedules.py --strict
+        run: python process_schedules.py --strict --name "ESI2026-27-GRADO_{sem}_Grupos"
         
       - name: Commit and push changes
         run: |

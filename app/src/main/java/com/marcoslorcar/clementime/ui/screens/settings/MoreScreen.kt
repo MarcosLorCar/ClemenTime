@@ -9,7 +9,6 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -40,9 +39,7 @@ import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.InvertColors
 import androidx.compose.material.icons.filled.Language
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Policy
 import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material.icons.filled.Schedule
@@ -65,6 +62,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -86,8 +85,6 @@ import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import com.marcoslorcar.clementime.BuildConfig
 import com.marcoslorcar.clementime.R
 import com.marcoslorcar.clementime.data.SettingsRepository
@@ -131,10 +128,6 @@ fun MoreScreen(
         onDayEndTimeChanged = viewModel::setDayEndTime,
         onGithubRepoUrlChanged = viewModel::setGithubRepoBaseUrl,
         onToggleOnboardingTooltips = viewModel::setOnboardingTooltipsEnabled,
-        onToggleAutoUpdate = viewModel::setAutoUpdateEnabled,
-        onTogglePush = viewModel::setNotifyViaPush,
-        onToggleApp = viewModel::setNotifyViaApp,
-        onSimulateUpdate = viewModel::simulateUpdate,
         onExportData = viewModel::exportData,
         onExportIcs = viewModel::exportFullYearToIcs,
         onImportClick = onNavigateToImport,
@@ -157,10 +150,6 @@ fun MoreContent(
     onDayEndTimeChanged: (LocalTime) -> Unit,
     onGithubRepoUrlChanged: (String) -> Unit,
     onToggleOnboardingTooltips: (Boolean) -> Unit,
-    onToggleAutoUpdate: (Boolean) -> Unit,
-    onTogglePush: (Boolean) -> Unit,
-    onToggleApp: (Boolean) -> Unit,
-    onSimulateUpdate: () -> Unit,
     onExportData: (android.content.Context, Uri, (ExportStatus) -> Unit) -> Unit,
     onExportIcs: (android.content.Context, Uri, LocalDate, LocalDate, LocalDate, LocalDate, (ExportStatus) -> Unit) -> Unit,
     onImportClick: () -> Unit,
@@ -671,78 +660,6 @@ fun MoreContent(
                 }
             )
 
-            val permissionLauncher = rememberLauncherForActivityResult(
-                ActivityResultContracts.RequestPermission()
-            ) { isGranted ->
-                if (isGranted) {
-                    onToggleAutoUpdate(true)
-                    onTogglePush(true)
-                }
-            }
-
-            SettingItem(
-                icon = Icons.Default.Notifications,
-                title = stringResource(R.string.auto_update_title),
-                subtitle = stringResource(R.string.auto_update_desc),
-                trailingContent = {
-                    Switch(
-                        checked = uiState.autoUpdateEnabled,
-                        onCheckedChange = { enabled ->
-                            if (enabled) {
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                    val isGranted = androidx.core.content.ContextCompat.checkSelfPermission(
-                                        context,
-                                        android.Manifest.permission.POST_NOTIFICATIONS
-                                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                                    
-                                    if (isGranted) {
-                                        onToggleAutoUpdate(true)
-                                    } else {
-                                        permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-                                    }
-                                } else {
-                                    onToggleAutoUpdate(true)
-                                }
-                            } else {
-                                onToggleAutoUpdate(false)
-                            }
-                        }
-                    )
-                },
-                expandedContent = {
-                    AnimatedVisibility(visible = uiState.autoUpdateEnabled) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 16.dp, start = 36.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(text = stringResource(R.string.notify_via_push_title), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
-                                    Text(text = stringResource(R.string.notify_via_push_desc), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                                Switch(checked = uiState.notifyViaPush, onCheckedChange = onTogglePush)
-                            }
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(text = stringResource(R.string.notify_via_app_title), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
-                                    Text(text = stringResource(R.string.notify_via_app_desc), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                                Switch(checked = uiState.notifyViaApp, onCheckedChange = onToggleApp)
-                            }
-                        }
-                    }
-                }
-            )
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
@@ -782,20 +699,6 @@ fun MoreContent(
                 }
             )
 
-            if (BuildConfig.DEBUG) {
-                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                Text(
-                    text = "Debug Tools",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.error
-                )
-                SettingItem(
-                    icon = Icons.Default.BugReport,
-                    title = "Simulate Schedule Update",
-                    subtitle = "Triggers the update alert for a random active subject",
-                    onClick = onSimulateUpdate
-                )
-            }
         }
     }
 }
@@ -863,10 +766,6 @@ fun MoreScreenPreview() {
             onThemeSelected = {},
             onGithubRepoUrlChanged = {},
             onToggleOnboardingTooltips = {},
-            onToggleAutoUpdate = {},
-            onTogglePush = {},
-            onToggleApp = {},
-            onSimulateUpdate = {},
             onExportData = { _, _, _ -> },
             onExportIcs = { _, _, _, _, _, _, _ -> },
             onDayStartTimeChanged = {},

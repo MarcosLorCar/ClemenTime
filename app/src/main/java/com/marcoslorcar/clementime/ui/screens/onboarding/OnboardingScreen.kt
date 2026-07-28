@@ -1,16 +1,6 @@
 package com.marcoslorcar.clementime.ui.screens.onboarding
 
-import android.Manifest
-import android.content.pm.PackageManager
 import android.os.Build
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,19 +19,14 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Lightbulb
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -49,8 +34,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -67,7 +50,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.marcoslorcar.clementime.R
@@ -82,7 +64,7 @@ fun OnboardingScreen(
     viewModel: OnboardingViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val pagerState = rememberPagerState(pageCount = { 5 })
+    val pagerState = rememberPagerState(pageCount = { 4 })
     val coroutineScope = rememberCoroutineScope()
 
     // pagerState should automatically persist its page during recreation.
@@ -112,15 +94,7 @@ fun OnboardingScreen(
                         onThemeModeSelected = viewModel::setThemeMode,
                         onColorThemeSelected = viewModel::setSelectedTheme
                     )
-                    3 -> NotificationsPage(
-                        autoUpdateEnabled = uiState.autoUpdateEnabled,
-                        pushEnabled = uiState.notifyViaPush,
-                        appEnabled = uiState.notifyViaApp,
-                        onToggleAutoUpdate = viewModel::setAutoUpdateEnabled,
-                        onTogglePush = viewModel::setNotifyViaPush,
-                        onToggleApp = viewModel::setNotifyViaApp
-                    )
-                    4 -> ReadyPage()
+                    3 -> ReadyPage()
                 }
             }
 
@@ -349,193 +323,6 @@ fun ReadyPage() {
     )
 }
 
-@Composable
-fun NotificationsPage(
-    autoUpdateEnabled: Boolean,
-    pushEnabled: Boolean,
-    appEnabled: Boolean,
-    onToggleAutoUpdate: (Boolean) -> Unit,
-    onTogglePush: (Boolean) -> Unit,
-    onToggleApp: (Boolean) -> Unit
-) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
-            onToggleAutoUpdate(true)
-            onTogglePush(true)
-        }
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp)
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            imageVector = Icons.Default.Notifications,
-            contentDescription = null,
-            modifier = Modifier.size(100.dp),
-            tint = MaterialTheme.colorScheme.primary
-        )
-        Spacer(modifier = Modifier.height(32.dp))
-        Text(
-            text = stringResource(R.string.auto_update_onboarding_title),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = stringResource(R.string.auto_update_onboarding_desc),
-            style = MaterialTheme.typography.bodyMedium,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            lineHeight = 22.sp
-        )
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Tier 1: Master Switch Card
-        Card(
-            onClick = {
-                val nextState = !autoUpdateEnabled
-                if (nextState) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        val isGranted = ContextCompat.checkSelfPermission(
-                            context,
-                            Manifest.permission.POST_NOTIFICATIONS
-                        ) == PackageManager.PERMISSION_GRANTED
-
-                        if (isGranted) {
-                            onToggleAutoUpdate(true)
-                        } else {
-                            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                        }
-                    } else {
-                        onToggleAutoUpdate(true)
-                    }
-                } else {
-                    onToggleAutoUpdate(false)
-                }
-            },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = if (autoUpdateEnabled) {
-                    MaterialTheme.colorScheme.primaryContainer
-                } else {
-                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                }
-            )
-        ) {
-            Row(
-                modifier = Modifier
-                    .padding(20.dp)
-                    .fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .background(
-                            if (autoUpdateEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
-                            CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = if (autoUpdateEnabled) Icons.Default.CheckCircle else Icons.Default.Notifications,
-                        contentDescription = null,
-                        tint = if (autoUpdateEnabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.auto_update_card_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = if (autoUpdateEnabled) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
-                    )
-                }
-
-                Switch(
-                    checked = autoUpdateEnabled,
-                    onCheckedChange = null
-                )
-            }
-        }
-
-        // Tier 2: Channels (Animated visibility or just simple conditional)
-        AnimatedVisibility(
-            visible = autoUpdateEnabled,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut()
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = "Alert Channels",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 8.dp)
-                )
-
-                // Push Notifications
-                OptionToggleRow(
-                    title = stringResource(R.string.notify_via_push_title),
-                    subtitle = stringResource(R.string.notify_via_push_desc),
-                    enabled = pushEnabled,
-                    onToggle = onTogglePush
-                )
-
-                // In-App Alerts
-                OptionToggleRow(
-                    title = stringResource(R.string.notify_via_app_title),
-                    subtitle = stringResource(R.string.notify_via_app_desc),
-                    enabled = appEnabled,
-                    onToggle = onToggleApp
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun OptionToggleRow(
-    title: String,
-    subtitle: String,
-    enabled: Boolean,
-    onToggle: (Boolean) -> Unit
-) {
-    Surface(
-        onClick = { onToggle(!enabled) },
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
-                Text(text = subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Switch(checked = enabled, onCheckedChange = onToggle)
-        }
-    }
-}
 
 @Composable
 fun OnboardingPageContent(
