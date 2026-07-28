@@ -25,7 +25,8 @@ runtime = "1.11.4"
 adaptive = "1.2.0"
 adaptiveNavigationSuite = "1.5.0-alpha24"
 glance = "1.1.1"
-work = "2.11.2"
+work = "2.10.0"
+workHilt = "1.2.0"
 retrofit = "3.0.0"
 okhttp = "5.4.0"
 coil = "3.5.0"
@@ -72,7 +73,8 @@ kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-t
 androidx-glance-appwidget = { module = "androidx.glance:glance-appwidget", version.ref = "glance" }
 androidx-glance-material3 = { module = "androidx.glance:glance-material3", version.ref = "glance" }
 androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "work" }
-androidx-hilt-work = { group = "androidx.hilt", name = "hilt-work", version = "1.4.0" }
+androidx-hilt-work = { group = "androidx.hilt", name = "hilt-work", version.ref = "workHilt" }
+androidx-hilt-compiler = { group = "androidx.hilt", name = "hilt-compiler", version.ref = "workHilt" }
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
 retrofit-kotlinx-serialization = { group = "com.squareup.retrofit2", name = "converter-kotlinx-serialization", version.ref = "retrofit" }
 okhttp-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }

@@ -65,6 +65,8 @@ import com.marcoslorcar.clementime.ui.screens.subject.AddEditSubjectScreen
 import com.marcoslorcar.clementime.ui.screens.subject.SubjectsScreen
 import com.marcoslorcar.clementime.ui.theme.ClemenTimeTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 import kotlin.reflect.KClass
 
@@ -78,6 +80,17 @@ class MainActivity : AppCompatActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        // Ensure background sync is enqueued if enabled
+        val autoUpdateEnabled = try {
+            runBlocking { settingsRepository.scheduleNotificationsEnabledFlow.first() }
+        } catch (_: Exception) {
+            true // Default to true if not set
+        }
+        if (autoUpdateEnabled) {
+            com.marcoslorcar.clementime.work.ScheduleSyncWorker.enqueuePeriodicWork(this)
+        }
+
         setContent {
             val themeMode by settingsRepository.themeFlow.collectAsState(initial = "system")
             val selectedTheme by settingsRepository.selectedThemeFlow.collectAsState(initial = "clementine")

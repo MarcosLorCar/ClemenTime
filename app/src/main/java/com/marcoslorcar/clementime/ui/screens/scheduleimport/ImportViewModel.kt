@@ -103,9 +103,6 @@ class ImportViewModel @Inject constructor(
                     else -> "$baseUrl/"
                 }
 
-                val cacheMetadata = repository.getCachedRemoteSchedules(context)
-                val cacheDir = repository.getCacheDir(context)
-
                 val remoteResult = repository.fetchRemoteSchedules(baseUrl)
                 val remoteFiles = remoteResult.fold(
                     onSuccess = { list ->
@@ -114,14 +111,6 @@ class ImportViewModel @Inject constructor(
                                 summary.path.startsWith("http://") || summary.path.startsWith("https://") -> summary.path
                                 else -> "$folderUrl${summary.path.removePrefix("/")}"
                             }
-                            val cachedEntry = cacheMetadata.find { it.id == summary.id }
-                            val isCached = cachedEntry != null && 
-                                           cachedEntry.hash == summary.hash &&
-                                           File(cacheDir, "cache_${summary.id}.json").exists()
-                            val isUpdateAvailable = cachedEntry != null && 
-                                                    summary.hash != null && 
-                                                    cachedEntry.hash != summary.hash &&
-                                                    File(cacheDir, "cache_${summary.id}.json").exists()
                             ImportFile(
                                 id = summary.id,
                                 title = summary.title,
@@ -129,28 +118,13 @@ class ImportViewModel @Inject constructor(
                                 sourceType = ImportSourceType.REMOTE,
                                 remotePath = fullPath,
                                 description = summary.description,
-                                isCached = isCached,
-                                isUpdateAvailable = isUpdateAvailable,
+                                isCached = false, // Simplified
+                                isUpdateAvailable = false,
                                 updatedTime = summary.updatedTime
                             )
                         }
                     },
-                    onFailure = { _ ->
-                        cacheMetadata.filter { 
-                            File(cacheDir, "cache_${it.id}.json").exists()
-                        }.map { entry ->
-                            ImportFile(
-                                id = entry.id,
-                                title = entry.title,
-                                fileUri = null,
-                                sourceType = ImportSourceType.REMOTE,
-                                remotePath = entry.remotePath,
-                                description = entry.description,
-                                isCached = true,
-                                updatedTime = entry.updatedTime
-                            )
-                        }
-                    }
+                    onFailure = { emptyList() }
                 )
 
                 val combined = remoteFiles + localFiles
@@ -175,7 +149,7 @@ class ImportViewModel @Inject constructor(
             try {
                 val schemaResult: Result<ScheduleJsonSchema> = when {
                     file.sourceType == ImportSourceType.REMOTE -> {
-                        repository.fetchRemoteScheduleSchema(context, file)
+                        repository.fetchRemoteScheduleSchema(context, file, forceRefresh = file.isUpdateAvailable)
                     }
                     else -> {
                         val jsonString = withContext(Dispatchers.IO) {

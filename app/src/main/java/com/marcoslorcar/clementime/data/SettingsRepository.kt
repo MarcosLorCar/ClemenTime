@@ -276,19 +276,19 @@ open class SettingsRepository @Inject constructor(
     open val scheduleNotificationsEnabledFlow: Flow<Boolean>
         get() = try {
             context?.dataStore?.data?.map { preferences ->
-                preferences[scheduleNotificationsEnabledKey] ?: false
-            } ?: kotlinx.coroutines.flow.flowOf(false)
+                preferences[scheduleNotificationsEnabledKey] ?: true
+            } ?: kotlinx.coroutines.flow.flowOf(true)
         } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(false)
+            kotlinx.coroutines.flow.flowOf(true)
         }
 
     open val notifyViaPushFlow: Flow<Boolean>
         get() = try {
             context?.dataStore?.data?.map { preferences ->
-                preferences[notifyViaPushKey] ?: true
-            } ?: kotlinx.coroutines.flow.flowOf(true)
+                preferences[notifyViaPushKey] ?: false
+            } ?: kotlinx.coroutines.flow.flowOf(false)
         } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(true)
+            kotlinx.coroutines.flow.flowOf(false)
         }
 
     open val notifyViaAppFlow: Flow<Boolean>

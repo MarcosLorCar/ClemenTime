@@ -15,27 +15,9 @@ import com.marcoslorcar.clementime.data.importing.parser.JsonScheduleParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
-import java.security.MessageDigest
 import javax.inject.Inject
-
-@Serializable
-data class CacheMetadata(
-    val id: String,
-    val title: String,
-    val description: String?,
-    val remotePath: String,
-    val lastUsed: Long,
-    val hash: String,
-    val updatedTime: String? = null
-)
-
-@Serializable
-data class RemoteCacheList(
-    val entries: List<CacheMetadata> = emptyList()
-)
 
 class ImportRepository @Inject constructor(
     private val dao: ScheduleDao,
@@ -43,12 +25,6 @@ class ImportRepository @Inject constructor(
     private val apiService: GitHubScheduleApiService? = null,
     private val json: Json = Json { ignoreUnknownKeys = true; coerceInputValues = true; encodeDefaults = true }
 ) {
-
-    private fun String.sha256(): String {
-        val md = MessageDigest.getInstance("SHA-256")
-        val digest = md.digest(this.toByteArray(Charsets.UTF_8))
-        return digest.joinToString("") { "%02x".format(it) }
-    }
 
     fun parseJsonString(jsonContent: String): Result<ScheduleJsonSchema> {
         return parser.parseJson(jsonContent)
@@ -82,9 +58,8 @@ class ImportRepository @Inject constructor(
 
             val schema = parser.parseJson(jsonString).getOrThrow()
             val title = schema.title ?: "Custom Import"
-            val fileHash = jsonString.sha256()
 
-            val filename = "import_$fileHash.json"
+            val filename = "import_${System.currentTimeMillis()}.json"
             val dir = File(context.filesDir, "imports")
             if (!dir.exists()) dir.mkdirs()
 
@@ -210,43 +185,13 @@ class ImportRepository @Inject constructor(
         return dir
     }
 
-    private fun getMetadataFile(context: Context): File {
-        return File(getCacheDir(context), "metadata.json")
-    }
-
-    fun getCachedRemoteSchedules(context: Context): List<CacheMetadata> {
-        return readCacheMetadata(context)
-    }
-
-    private fun readCacheMetadata(context: Context): List<CacheMetadata> {
-        val file = getMetadataFile(context)
-        if (!file.exists()) return emptyList()
-        return try {
-            val jsonString = file.readText()
-            json.decodeFromString<RemoteCacheList>(jsonString).entries
-        } catch (_: Exception) {
-            emptyList()
-        }
-    }
-
-    private fun writeCacheMetadata(context: Context, entries: List<CacheMetadata>) {
-        val file = getMetadataFile(context)
-        try {
-            val jsonString = json.encodeToString(RemoteCacheList(entries))
-            file.writeText(jsonString)
-        } catch (_: Exception) {
-            // Ignore
-        }
-    }
-
     suspend fun fetchRemoteScheduleSchema(
         context: Context,
-        file: ImportFile
+        file: ImportFile,
+        forceRefresh: Boolean = false
     ): Result<ScheduleJsonSchema> = withContext(Dispatchers.IO) {
         val cacheDir = getCacheDir(context)
         val cacheFile = File(cacheDir, "cache_${file.id}.json")
-        val metadataList = readCacheMetadata(context).toMutableList()
-        val existingEntry = metadataList.find { it.id == file.id }
 
         try {
             if (apiService == null) throw Exception("Network service unavailable")
@@ -255,51 +200,19 @@ class ImportRepository @Inject constructor(
             if (response.isSuccessful) {
                 val jsonBody = response.body()?.string() ?: throw Exception("Response body is empty")
                 val schema = parser.parseJson(jsonBody).getOrThrow()
-                val newHash = jsonBody.sha256()
-
-                val updatedEntry = CacheMetadata(
-                    id = file.id,
-                    title = schema.title ?: file.title,
-                    description = file.description,
-                    remotePath = file.remotePath,
-                    lastUsed = System.currentTimeMillis(),
-                    hash = newHash,
-                    updatedTime = file.updatedTime
-                )
-
-                if (existingEntry == null || existingEntry.hash != newHash || !cacheFile.exists()) {
-                    cacheFile.writeText(jsonBody)
-                    metadataList.removeAll { it.id == file.id }
-                    metadataList.add(updatedEntry)
-
-                    if (metadataList.size > 5) {
-                        metadataList.sortBy { it.lastUsed }
-                        while (metadataList.size > 5) {
-                            val oldest = metadataList.removeAt(0)
-                            val oldestFile = File(cacheDir, "cache_${oldest.id}.json")
-                            if (oldestFile.exists()) {
-                                oldestFile.delete()
-                            }
-                        }
-                    }
-                } else {
-                    metadataList.removeAll { it.id == file.id }
-                    metadataList.add(updatedEntry)
-                }
-
-                writeCacheMetadata(context, metadataList)
+                
+                // Save to cache for offline availability
+                cacheFile.writeText(jsonBody)
+                
                 Result.success(schema)
             } else {
                 throw Exception("Failed to fetch remote schema: ${response.code()} ${response.message()}")
             }
         } catch (e: Exception) {
-            if (existingEntry != null && cacheFile.exists()) {
+            if (!forceRefresh && cacheFile.exists()) {
                 try {
                     val jsonBody = cacheFile.readText()
                     val schema = parser.parseJson(jsonBody).getOrThrow()
-                    metadataList.removeAll { it.id == file.id }
-                    metadataList.add(existingEntry.copy(lastUsed = System.currentTimeMillis()))
-                    writeCacheMetadata(context, metadataList)
                     Result.success(schema)
                 } catch (_: Exception) {
                     Result.failure(e)
@@ -318,7 +231,7 @@ class ImportRepository @Inject constructor(
         
         for (path in paths) {
             val file = ImportFile(id = "update_${path.hashCode()}", title = "Update", remotePath = path)
-            val schemaResult = fetchRemoteScheduleSchema(context, file)
+            val schemaResult = fetchRemoteScheduleSchema(context, file, forceRefresh = true)
             
             schemaResult.onSuccess { schema ->
                 val subjectsInSchema = getAllSubjectsInSchema(schema)
@@ -348,5 +261,4 @@ class ImportRepository @Inject constructor(
         }
         return list
     }
-
 }

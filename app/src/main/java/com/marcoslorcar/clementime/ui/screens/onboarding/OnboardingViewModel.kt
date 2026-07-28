@@ -22,8 +22,8 @@ data class OnboardingUiState(
     val themeMode: String = "system",
     val selectedTheme: String = "clementine",
     val appLanguage: String = "en",
-    val autoUpdateEnabled: Boolean = false,
-    val notifyViaPush: Boolean = true,
+    val autoUpdateEnabled: Boolean = true,
+    val notifyViaPush: Boolean = false,
     val notifyViaApp: Boolean = true
 )
 

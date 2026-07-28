@@ -109,7 +109,6 @@
     <string name="export_error_prefix">Export failed: %1$s</string>
     <string name="import_library_title">Import Library</string>
     <string name="import_cached_label">Saved</string>
-    <string name="import_update_available_label">Update Available</string>
     <string name="import_select_file_device">Import JSON from device</string>
     <string name="import_custom_label">Custom</string>
     <string name="import_delete_confirm_title">Delete Import File</string>

@@ -306,19 +306,6 @@ fun ImportLibraryContent(
                                                     )
                                                 }
                                             }
-                                            if (file.isUpdateAvailable) {
-                                                Surface(
-                                                    shape = RoundedCornerShape(4.dp),
-                                                    color = MaterialTheme.colorScheme.errorContainer
-                                                ) {
-                                                    Text(
-                                                        text = stringResource(R.string.import_update_available_label),
-                                                        style = MaterialTheme.typography.labelSmall,
-                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                                        color = MaterialTheme.colorScheme.onErrorContainer
-                                                    )
-                                                }
-                                            }
                                             if (!file.updatedTime.isNullOrBlank()) {
                                                 Text(
                                                     text = stringResource(R.string.bullet_point, file.updatedTime),

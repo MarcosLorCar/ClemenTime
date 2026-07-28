@@ -112,7 +112,6 @@
     <string name="export_error_prefix">Error al exportar: %1$s</string>
     <string name="import_library_title">Biblioteca de Importación</string>
     <string name="import_cached_label">Guardado</string>
-    <string name="import_update_available_label">Actualización Disponible</string>
     <string name="import_select_file_device">Importar JSON desde el dispositivo</string>
     <string name="import_custom_label">Personalizado</string>
     <string name="import_delete_confirm_title">Eliminar Archivo de Importación</string>
