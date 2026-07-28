@@ -10,7 +10,6 @@ import com.marcoslorcar.clementime.data.Subject
 import com.marcoslorcar.clementime.data.SubjectWithSlots
 import com.marcoslorcar.clementime.data.importing.model.ImportFile
 import com.marcoslorcar.clementime.data.importing.model.ImportSourceType
-import com.marcoslorcar.clementime.data.importing.model.JsonSubject
 import com.marcoslorcar.clementime.data.importing.model.ScheduleJsonSchema
 import com.marcoslorcar.clementime.data.importing.model.SelectedSubject
 import com.marcoslorcar.clementime.data.importing.parser.JsonScheduleParser
@@ -104,10 +103,9 @@ class ImportViewModel @Inject constructor(
                     else -> "$baseUrl/"
                 }
 
-                val cacheMetadata = repository.getCachedRemoteSchedules(context)
-                val cacheDir = repository.getCacheDir(context)
+                val remoteResult = repository.fetchRemoteSchedules(baseUrl, forceRefresh = true)
+                val lastKnownHashes = settingsRepository.lastKnownHashesFlow.first()
 
-                val remoteResult = repository.fetchRemoteSchedules(baseUrl)
                 val remoteFiles = remoteResult.fold(
                     onSuccess = { list ->
                         list.map { summary ->
@@ -115,45 +113,25 @@ class ImportViewModel @Inject constructor(
                                 summary.path.startsWith("http://") || summary.path.startsWith("https://") -> summary.path
                                 else -> "$folderUrl${summary.path.removePrefix("/")}"
                             }
-                            val cachedEntry = cacheMetadata.find { it.id == summary.id }
-                            val isCached = cachedEntry != null && 
-                                           cachedEntry.hash == summary.hash &&
-                                           File(cacheDir, "cache_${summary.id}.json").exists()
-                            val isUpdateAvailable = cachedEntry != null && 
-                                                    summary.hash != null && 
-                                                    cachedEntry.hash != summary.hash &&
-                                                    File(cacheDir, "cache_${summary.id}.json").exists()
+                            
+                            val localHash = lastKnownHashes[fullPath]
+                            val isUpdateAvailable = localHash != null && summary.hash != null && localHash != summary.hash
+
                             ImportFile(
                                 id = summary.id,
                                 title = summary.title,
-                                isBundled = false,
                                 fileUri = null,
                                 sourceType = ImportSourceType.REMOTE,
                                 remotePath = fullPath,
                                 description = summary.description,
-                                isCached = isCached,
+                                isCached = localHash != null,
                                 isUpdateAvailable = isUpdateAvailable,
-                                updatedTime = summary.updatedTime
+                                updatedTime = summary.updatedTime,
+                                hash = summary.hash
                             )
                         }
                     },
-                    onFailure = { _ ->
-                        cacheMetadata.filter { 
-                            File(cacheDir, "cache_${it.id}.json").exists()
-                        }.map { entry ->
-                            ImportFile(
-                                id = entry.id,
-                                title = entry.title,
-                                isBundled = false,
-                                fileUri = null,
-                                sourceType = ImportSourceType.REMOTE,
-                                remotePath = entry.remotePath,
-                                description = entry.description,
-                                isCached = true,
-                                updatedTime = entry.updatedTime
-                            )
-                        }
-                    }
+                    onFailure = { emptyList() }
                 )
 
                 val combined = remoteFiles + localFiles
@@ -178,15 +156,7 @@ class ImportViewModel @Inject constructor(
             try {
                 val schemaResult: Result<ScheduleJsonSchema> = when {
                     file.sourceType == ImportSourceType.REMOTE -> {
-                        repository.fetchRemoteScheduleSchema(context, file)
-                    }
-                    file.isBundled -> {
-                        val jsonString = withContext(Dispatchers.IO) {
-                            context.assets.open("schedules/primer_cuatrimestre.json").use { stream ->
-                                stream.bufferedReader().readText()
-                            }
-                        }
-                        repository.parseJsonString(jsonString)
+                        repository.fetchRemoteScheduleSchema(context, file, forceRefresh = file.isUpdateAvailable)
                     }
                     else -> {
                         val jsonString = withContext(Dispatchers.IO) {
@@ -241,7 +211,7 @@ class ImportViewModel @Inject constructor(
 
     fun deleteFile(context: Context, file: ImportFile) {
         viewModelScope.launch {
-            if (!file.isBundled) {
+            if (file.sourceType == ImportSourceType.CUSTOM) {
                 repository.deleteCustomImportFile(context, file.id)
                 loadLibrary(context)
             }
@@ -252,10 +222,9 @@ class ImportViewModel @Inject constructor(
         loadLibrary(context)
     }
 
-    fun toggleSubjectSelection(subject: JsonSubject, groupName: String) {
+    fun toggleSubjectSelection(selectedSubject: SelectedSubject) {
         val currentState = _uiState.value
         if (currentState is ImportUiState.Selection) {
-            val selectedSubject = SelectedSubject(subject, groupName)
             val updatedSelection = currentState.selectedSubjects.toMutableSet()
             if (updatedSelection.contains(selectedSubject)) {
                 updatedSelection.remove(selectedSubject)
@@ -304,11 +273,17 @@ class ImportViewModel @Inject constructor(
         val currentState = _uiState.value
         if (currentState is ImportUiState.Selection) {
             val toSelect = subjects ?: run {
-                val fromRoot = currentState.schema.subjects.map { SelectedSubject(it, "General") }
+                val fromRoot = currentState.schema.subjects.map { 
+                    SelectedSubject(it, "General") 
+                }
                 val fromYears = currentState.schema.years.flatMap { year ->
-                    val yearCommon = year.subjects.map { SelectedSubject(it, "${year.name} Common") }
+                    val yearCommon = year.subjects.map { 
+                        SelectedSubject(it, "${year.name} Common") 
+                    }
                     val fromGroups = year.groups.flatMap { group ->
-                        group.subjects.map { SelectedSubject(it, "${year.name} ${group.name}") }
+                        group.subjects.map { 
+                            SelectedSubject(it, "${year.name} ${group.name}") 
+                        }
                     }
                     yearCommon + fromGroups
                 }
@@ -329,54 +304,60 @@ class ImportViewModel @Inject constructor(
     ): ConflictStatus {
         if (selected.isEmpty()) return ConflictStatus.None
 
-        var slotIdCounter = 1L
-        val subjectsWithSlots = selected.map { selectedSubject ->
-            val jsonSubject = selectedSubject.subject
-            val subjectId = jsonSubject.code.hashCode().toLong()
-            val subject = Subject(
-                id = subjectId,
-                code = jsonSubject.code,
-                name = jsonSubject.name,
-                color = jsonSubject.color ?: Subject.PRESET_COLORS.indices.random(), // Random preset if null
-                isActive = true
-            )
-            val theorySlots = jsonSubject.theorySlots.map { 
-                with(parser) { it.toClassSlot(subjectId).copy(id = slotIdCounter++) }
-            }
-            val labSlots = jsonSubject.labVariants.flatMap { (groupName, variantSlots) ->
-                variantSlots.map { slot ->
-                    with(parser) {
-                        slot.toClassSlot(subjectId).copy(
-                            id = slotIdCounter++,
-                            labGroupName = groupName,
-                            entryType = EntryType.LAB
-                        )
+        return try {
+            var slotIdCounter = 1L
+            val subjectsWithSlots = selected.map { selectedSubject ->
+                val jsonSubject = selectedSubject.subject
+                val subjectId = jsonSubject.code.hashCode().toLong()
+                val subject = Subject(
+                    id = subjectId,
+                    code = jsonSubject.code,
+                    name = jsonSubject.name,
+                    color = jsonSubject.color ?: Subject.PRESET_COLORS.indices.random(), // Random preset if null
+                    isActive = true
+                )
+                val theorySlots = jsonSubject.theorySlots.map {
+                    with(parser) { it.toClassSlot(subjectId).copy(id = slotIdCounter++) }
+                }
+                val labSlots = jsonSubject.labVariants.flatMap { (groupName, variantSlots) ->
+                    variantSlots.map { slot ->
+                        with(parser) {
+                            slot.toClassSlot(subjectId).copy(
+                                id = slotIdCounter++,
+                                labGroupName = groupName,
+                                entryType = EntryType.LAB
+                            )
+                        }
                     }
                 }
+                SubjectWithSlots(subject, theorySlots + labSlots)
             }
-            SubjectWithSlots(subject, theorySlots + labSlots)
-        }
 
-        val mappedExisting = existing.map { sWithSlots ->
-            val activeSlots = sWithSlots.slots.filter { slot ->
-                slot.entryType == EntryType.THEORY ||
-                sWithSlots.subject.selectedLabGroup == null ||
-                slot.labGroupName == sWithSlots.subject.selectedLabGroup
-            }.map { slot ->
-                slot.copy(id = slotIdCounter++)
+            val selectedCodes = selected.map { it.subject.code }.toSet()
+            val mappedExisting = existing
+                .filter { it.subject.code !in selectedCodes } // Optimization: Ignore subjects that are being replaced
+                .map { sWithSlots ->
+                    val activeSlots = sWithSlots.slots.filter { slot ->
+                        slot.entryType == EntryType.THEORY ||
+                                sWithSlots.subject.selectedLabGroup == null ||
+                                slot.labGroupName == sWithSlots.subject.selectedLabGroup
+                    }.map { slot ->
+                        slot.copy(id = slotIdCounter++)
+                    }
+                    sWithSlots.copy(slots = activeSlots)
+                }
+
+            val allSubjectsWithSlots = subjectsWithSlots + mappedExisting
+
+            val solutions = ConflictSolver.findSolutions(allSubjectsWithSlots)
+            val optimal = solutions.firstOrNull() ?: return ConflictStatus.None
+
+            val theoryOverlaps = mutableListOf<TheoryOverlap>()
+            val theorySlots = allSubjectsWithSlots.flatMap { s ->
+                s.slots.filter { it.entryType == EntryType.THEORY }.map { s.subject to it }
             }
-            sWithSlots.copy(slots = activeSlots)
-        }
-
-        val allSubjectsWithSlots = subjectsWithSlots + mappedExisting
-
-        val solutions = ConflictSolver.findSolutions(allSubjectsWithSlots)
-        val optimal = solutions.firstOrNull() ?: return ConflictStatus.None
-
-        val theoryOverlaps = mutableListOf<TheoryOverlap>()
-        val theorySlots = allSubjectsWithSlots.flatMap { s -> 
-            s.slots.filter { it.entryType == EntryType.THEORY }.map { s.subject to it } 
-        }
+            
+            // ... truncated logic ...
         
         for (i in theorySlots.indices) {
             for (j in i + 1 until theorySlots.size) {
@@ -410,16 +391,19 @@ class ImportViewModel @Inject constructor(
                 }
             }.distinctBy { it.second.id }
 
-            ConflictStatus.Conflict(
-                ConflictDetail(
-                    selectedSubjects = selected.toList(),
-                    theoryOverlaps = theoryOverlaps,
-                    hasLabCombinationWithZeroOverlaps = !hasLabConflict,
-                    theoryOverlappingSlots = theoryOverlappingSlots,
-                    labOverlappingSlots = if (hasLabConflict) optimal.totalSlots else emptyList(),
-                    labOverlappingSlotIds = if (hasLabConflict) optimal.overlappingSlotIds else emptySet()
+                ConflictStatus.Conflict(
+                    ConflictDetail(
+                        selectedSubjects = selected.toList(),
+                        theoryOverlaps = theoryOverlaps,
+                        hasLabCombinationWithZeroOverlaps = !hasLabConflict,
+                        theoryOverlappingSlots = theoryOverlappingSlots,
+                        labOverlappingSlots = if (hasLabConflict) optimal.totalSlots else emptyList(),
+                        labOverlappingSlotIds = if (hasLabConflict) optimal.overlappingSlotIds else emptySet()
+                    )
                 )
-            )
+            }
+        } catch (e: Exception) {
+            ConflictStatus.Error(e.localizedMessage ?: "Unknown error")
         }
     }
 
@@ -430,6 +414,16 @@ class ImportViewModel @Inject constructor(
                 _uiState.value = ImportUiState.Importing
                 try {
                     repository.importSubjects(currentState.selectedSubjects.toList())
+                    
+                    // Update last known hash for this file
+                    val remotePath = currentState.selectedFile.remotePath
+                    val newHash = currentState.selectedFile.hash
+                    if (remotePath != null && newHash != null) {
+                        val currentHashes = settingsRepository.lastKnownHashesFlow.first().toMutableMap()
+                        currentHashes[remotePath] = newHash
+                        settingsRepository.setLastKnownHashes(currentHashes)
+                    }
+
                     // Set the current semester from the schema if available
                     currentState.schema.semester?.let { importedSemester ->
                         val currentSemester = settingsRepository.currentSemesterFlow.first()

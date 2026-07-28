@@ -66,7 +66,7 @@ class ImportViewModelTest {
         stateFlow.value = ImportUiState.Selection(
             schema = sampleSchema,
             selectedSubjects = emptySet(),
-            selectedFile = ImportFile("bundled", "Test Bundled", true)
+            selectedFile = ImportFile("test.json", "Test Schedule")
         )
 
         viewModel.selectAllSubjects()
@@ -91,17 +91,17 @@ class ImportViewModelTest {
         stateFlow.value = ImportUiState.Selection(
             schema = sampleSchema,
             selectedSubjects = setOf(selected1, selected2, selected3),
-            selectedFile = ImportFile("bundled", "Test Bundled", true)
+            selectedFile = ImportFile("test.json", "Test Schedule")
         )
 
         // Deselect subject1
-        viewModel.toggleSubjectSelection(subject1, "1º A")
+        viewModel.toggleSubjectSelection(selected1)
         var currentSelection = (viewModel.uiState.value as ImportUiState.Selection).selectedSubjects
         assertFalse(currentSelection.contains(selected1))
         assertTrue(currentSelection.contains(selected2))
 
         // Re-select subject1
-        viewModel.toggleSubjectSelection(subject1, "1º A")
+        viewModel.toggleSubjectSelection(selected1)
         currentSelection = (viewModel.uiState.value as ImportUiState.Selection).selectedSubjects
         assertTrue(currentSelection.contains(selected1))
     }
@@ -117,7 +117,7 @@ class ImportViewModelTest {
         stateFlow.value = ImportUiState.Selection(
             schema = sampleSchema,
             selectedSubjects = setOf(selected1, selected2, selected3),
-            selectedFile = ImportFile("bundled", "Test Bundled", true)
+            selectedFile = ImportFile("test.json", "Test Schedule")
         )
 
         val sectionA = listOf(selected1, selected2)
@@ -147,7 +147,7 @@ class ImportViewModelTest {
         stateFlow.value = ImportUiState.Selection(
             schema = sampleSchema,
             selectedSubjects = setOf(selected1, selected2, selected3),
-            selectedFile = ImportFile("bundled", "Test Bundled", true)
+            selectedFile = ImportFile("test.json", "Test Schedule")
         )
 
         val allFlattened = listOf(selected1, selected2, selected3)
@@ -179,15 +179,15 @@ class ImportViewModelTest {
         stateFlow.value = ImportUiState.Selection(
             schema = ScheduleJsonSchema(subjects = listOf(s1, s2)),
             selectedSubjects = emptySet(),
-            selectedFile = ImportFile("bundled", "Test", true),
+            selectedFile = ImportFile("test.json", "Test"),
             conflictStatus = ConflictStatus.None
         )
 
-        viewModel.toggleSubjectSelection(s1, "General")
+        viewModel.toggleSubjectSelection(SelectedSubject(s1, "General"))
         assertTrue(viewModel.uiState.value is ImportUiState.Selection)
         assertEquals(ConflictStatus.Valid, (viewModel.uiState.value as ImportUiState.Selection).conflictStatus)
 
-        viewModel.toggleSubjectSelection(s2, "General")
+        viewModel.toggleSubjectSelection(SelectedSubject(s2, "General"))
         val state = viewModel.uiState.value as ImportUiState.Selection
         assertTrue(state.conflictStatus is ConflictStatus.Conflict)
         val conflict = state.conflictStatus as ConflictStatus.Conflict
@@ -219,12 +219,12 @@ class ImportViewModelTest {
         stateFlow.value = ImportUiState.Selection(
             schema = ScheduleJsonSchema(subjects = listOf(s1)),
             selectedSubjects = emptySet(),
-            selectedFile = ImportFile("bundled", "Test", true),
+            selectedFile = ImportFile("test.json", "Test"),
             conflictStatus = ConflictStatus.None,
             existingSubjects = existing
         )
 
-        viewModel.toggleSubjectSelection(s1, "General")
+        viewModel.toggleSubjectSelection(SelectedSubject(s1, "General"))
         val state = viewModel.uiState.value as ImportUiState.Selection
         assertTrue(state.conflictStatus is ConflictStatus.Conflict)
         val conflict = state.conflictStatus as ConflictStatus.Conflict

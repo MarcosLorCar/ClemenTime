@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
@@ -69,7 +70,6 @@ import com.marcoslorcar.clementime.data.EntryType
 import com.marcoslorcar.clementime.data.Subject
 import com.marcoslorcar.clementime.data.SubjectWithSlots
 import com.marcoslorcar.clementime.data.importing.model.ImportFile
-import com.marcoslorcar.clementime.data.importing.model.JsonSubject
 import com.marcoslorcar.clementime.data.importing.model.SelectedSubject
 import com.marcoslorcar.clementime.data.importing.parser.JsonScheduleParser
 import com.marcoslorcar.clementime.ui.components.ClemenTimeTopBar
@@ -242,7 +242,6 @@ fun ImportLibraryContent(
                                 Text(
                                     text = when (sourceType) {
                                         com.marcoslorcar.clementime.data.importing.model.ImportSourceType.REMOTE -> stringResource(R.string.online_repository_title)
-                                        com.marcoslorcar.clementime.data.importing.model.ImportSourceType.BUNDLED -> stringResource(R.string.import_bundled_label)
                                         com.marcoslorcar.clementime.data.importing.model.ImportSourceType.CUSTOM -> stringResource(R.string.import_custom_label)
                                     },
                                     style = MaterialTheme.typography.titleSmall,
@@ -297,26 +296,13 @@ fun ImportLibraryContent(
                                             if (file.isCached) {
                                                 Surface(
                                                     shape = RoundedCornerShape(4.dp),
-                                                    color = Color(0xFFC8E6C9)
+                                                    color = if (file.isUpdateAvailable) MaterialTheme.colorScheme.errorContainer else Color(0xFFC8E6C9)
                                                 ) {
                                                     Text(
-                                                        text = stringResource(R.string.import_cached_label),
+                                                        text = if (file.isUpdateAvailable) stringResource(R.string.import_update_available_label) else stringResource(R.string.import_cached_label),
                                                         style = MaterialTheme.typography.labelSmall,
                                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                                        color = Color(0xFF2E7D32)
-                                                    )
-                                                }
-                                            }
-                                            if (file.isUpdateAvailable) {
-                                                Surface(
-                                                    shape = RoundedCornerShape(4.dp),
-                                                    color = MaterialTheme.colorScheme.errorContainer
-                                                ) {
-                                                    Text(
-                                                        text = stringResource(R.string.import_update_available_label),
-                                                        style = MaterialTheme.typography.labelSmall,
-                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                                        color = MaterialTheme.colorScheme.onErrorContainer
+                                                        color = if (file.isUpdateAvailable) MaterialTheme.colorScheme.onErrorContainer else Color(0xFF2E7D32)
                                                     )
                                                 }
                                             }
@@ -362,7 +348,7 @@ fun ImportLibraryContent(
 @Composable
 fun ImportContent(
     uiState: ImportUiState.Selection,
-    onToggleSubject: (JsonSubject, String) -> Unit,
+    onToggleSubject: (SelectedSubject) -> Unit,
     onToggleSection: (Collection<SelectedSubject>) -> Unit,
     onDeselectAll: () -> Unit,
     onUpdateSearchQuery: (String) -> Unit,
@@ -425,6 +411,14 @@ fun ImportContent(
                                 }
                             }
                         }
+                        is ConflictStatus.Error -> {
+                            Icon(
+                                imageVector = Icons.Default.Error,
+                                contentDescription = uiState.conflictStatus.message,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.padding(8.dp).size(24.dp)
+                            )
+                        }
                         ConflictStatus.None -> {}
                     }
 
@@ -470,11 +464,17 @@ fun ImportContent(
 
             // All subjects in the schema flattened with their group/year info
             val allFlattenedSubjects = remember(uiState.schema) {
-                val fromRoot = uiState.schema.subjects.map { SelectedSubject(it, "General") }
+                val fromRoot = uiState.schema.subjects.map { 
+                    SelectedSubject(it, "General") 
+                }
                 val fromYears = uiState.schema.years.flatMap { year ->
-                    val yearCommon = year.subjects.map { SelectedSubject(it, "${year.name} Common") }
+                    val yearCommon = year.subjects.map { 
+                        SelectedSubject(it, "${year.name} Common") 
+                    }
                     val fromGroups = year.groups.flatMap { group ->
-                        group.subjects.map { SelectedSubject(it, "${year.name} ${group.name}") }
+                        group.subjects.map { 
+                            SelectedSubject(it, "${year.name} ${group.name}") 
+                        }
                     }
                     yearCommon + fromGroups
                 }
@@ -637,7 +637,7 @@ fun ImportContent(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .combinedClickable(
-                                        onClick = { onToggleSubject(selected.subject, fullGroupName) },
+                                        onClick = { onToggleSubject(selected) },
                                         onLongClick = { longPressedSubject = selected }
                                     )
                                     .padding(vertical = 4.dp, horizontal = 4.dp),
@@ -645,7 +645,7 @@ fun ImportContent(
                             ) {
                                 Checkbox(
                                     checked = isSelected,
-                                    onCheckedChange = { onToggleSubject(selected.subject, fullGroupName) }
+                                    onCheckedChange = { onToggleSubject(selected) }
                                 )
                                 Column(modifier = Modifier.padding(start = 8.dp)) {
                                     Text(text = selected.subject.name, style = MaterialTheme.typography.bodyLarge)

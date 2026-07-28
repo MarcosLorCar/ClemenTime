@@ -224,6 +224,7 @@ class MoreViewModel @Inject constructor(
                             slots = sws.slots.filter { slot ->
                                 !slot.isIgnored && (
                                     slot.entryType == EntryType.THEORY || 
+                                    sws.subject.selectedLabGroup == null ||
                                     slot.labGroupName == sws.subject.selectedLabGroup
                                 )
                             }
@@ -238,8 +239,15 @@ class MoreViewModel @Inject constructor(
 
                 val icsString = IcsExporter.generateIcsContent(semesters)
                 
-                context.contentResolver.openOutputStream(customUri)?.use { out ->
-                    out.write(icsString.toByteArray())
+                // "wt" truncates: plain "w" leaves trailing bytes from a longer previous
+                // export after END:VCALENDAR, producing an invalid file.
+                val stream = context.contentResolver.openOutputStream(customUri, "wt")
+                if (stream == null) {
+                    onResult(ExportStatus.Error(context.getString(R.string.export_error_prefix, "")))
+                    return@launch
+                }
+                stream.use { out ->
+                    out.write(icsString.toByteArray(Charsets.UTF_8))
                 }
                 onResult(ExportStatus.Success(context.getString(R.string.export_success_local)))
             } catch (e: Exception) {

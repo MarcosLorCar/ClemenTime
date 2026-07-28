@@ -430,7 +430,27 @@ fun EmptySegmentRow(
 ) {
     val durationMinutes = Duration.between(segment.startTime, segment.endTime).toMinutes().coerceAtLeast(1)
     val totalHeight = BLOCK_HEIGHT * (durationMinutes / 30.0).toFloat()
-    val numBlocks = (durationMinutes / 30).toInt()
+
+    // A gap starts wherever the previous class ended - often not a clock boundary (e.g.
+    // 10:50). Stepping a fixed 30 minutes from there would put every separator on 10:50 /
+    // 11:20 / 11:50, so `isHourMark` never fires and the lines the user reads as hour marks
+    // are not on hours at all. Instead, emit a short leading block up to the next :00/:30 and
+    // align every block after it to real clock boundaries. The trailing remainder gets its
+    // own partial block too - previously it was dropped by integer division, which made the
+    // now line disappear whenever "now" landed inside it.
+    val blocks = remember(segment.startTime, segment.endTime) {
+        buildList {
+            var curr = segment.startTime
+            while (curr < segment.endTime) {
+                val minutesToBoundary = 30 - (curr.minute % 30)
+                val stepped = curr.plusMinutes(minutesToBoundary.toLong())
+                // plusMinutes wraps at midnight; stop rather than stepping backwards.
+                val next = if (stepped <= curr) segment.endTime else minOf(stepped, segment.endTime)
+                add(curr to Duration.between(curr, next).toMinutes())
+                curr = next
+            }
+        }
+    }
 
     Column(
         modifier = GlanceModifier
@@ -438,19 +458,24 @@ fun EmptySegmentRow(
             .height(totalHeight)
             .clickable(launchAppAction)
     ) {
-        var curr = segment.startTime
-        repeat(numBlocks) { blockIndex ->
-            val isHourMark = curr.minute == 0
-            val isNowInBlock = isNowInSegment && (currentTime >= curr && currentTime < curr.plusMinutes(30))
+        blocks.forEachIndexed { blockIndex, (blockStart, blockMinutes) ->
+            val blockEnd = blockStart.plusMinutes(blockMinutes)
+            val blockHeight = BLOCK_HEIGHT * (blockMinutes / 30.0).toFloat()
+            val isHourMark = blockStart.minute == 0
+            val isNowInBlock = isNowInSegment && currentTime >= blockStart && currentTime < blockEnd
 
             Box(
                 modifier = GlanceModifier
                     .fillMaxWidth()
-                    .height(BLOCK_HEIGHT)
+                    .height(blockHeight)
                     .padding(horizontal = 11.dp),
                 contentAlignment = Alignment.TopStart
             ) {
-                val shouldSkipLine = (isFirstSegment && blockIndex == 0) || (isLastSegment && blockIndex == 0)
+                // Only draw a separator on a real clock boundary; the leading partial block
+                // starts mid-half-hour and would otherwise draw a meaningless line.
+                val isOnBoundary = blockStart.minute % 30 == 0
+                val shouldSkipLine =
+                    !isOnBoundary || (isFirstSegment && blockIndex == 0) || (isLastSegment && blockIndex == 0)
                 if (!shouldSkipLine) {
                     Box(
                         modifier = GlanceModifier
@@ -463,7 +488,7 @@ fun EmptySegmentRow(
                 }
 
                 if (isNowInBlock) {
-                    val minutesFromBlockStart = Duration.between(curr, currentTime).toMinutes()
+                    val minutesFromBlockStart = Duration.between(blockStart, currentTime).toMinutes()
                     val nowTopDp = BLOCK_HEIGHT * (minutesFromBlockStart / 30.0).toFloat()
                     WidgetNowLine(
                         modifier = GlanceModifier
@@ -473,8 +498,6 @@ fun EmptySegmentRow(
                     )
                 }
             }
-
-            curr = curr.plusMinutes(30)
         }
     }
 }

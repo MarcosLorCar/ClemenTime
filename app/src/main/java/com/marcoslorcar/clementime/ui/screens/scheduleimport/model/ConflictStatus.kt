@@ -16,6 +16,11 @@ sealed interface ConflictStatus {
      * Unavoidable overlaps exist.
      */
     data class Conflict(val detail: ConflictDetail) : ConflictStatus
+
+    /**
+     * An error occurred during calculation.
+     */
+    data class Error(val message: String) : ConflictStatus
 }
 
 data class ConflictDetail(

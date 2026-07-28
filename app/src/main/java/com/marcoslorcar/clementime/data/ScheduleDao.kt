@@ -16,7 +16,7 @@ interface ScheduleDao {
 
     // Main schedule view: Only loads active slots (Theory + Selected Lab)
     @Transaction
-    @Query("SELECT * FROM subjects WHERE isActive = 1 AND semester = :semester ORDER BY name ASC")
+    @Query("SELECT * FROM subjects WHERE isActive = 1 AND (semester = :semester OR semester = 3) ORDER BY name ASC")
     fun getActiveSubjectsWithSlotsBySemester(semester: Int): Flow<List<SubjectWithSlots>>
 
     @Query("UPDATE subjects SET isActive = :isActive WHERE id = :subjectId")
@@ -33,7 +33,7 @@ interface ScheduleDao {
     }
 
     @Transaction
-    @Query("SELECT * FROM subjects WHERE semester = :semester ORDER BY name ASC")
+    @Query("SELECT * FROM subjects WHERE (semester = :semester OR semester = 3) ORDER BY name ASC")
     fun getAllSubjectsWithSlotsBySemester(semester: Int): Flow<List<SubjectWithSlots>>
 
     @Transaction
@@ -72,7 +72,7 @@ interface ScheduleDao {
     suspend fun deleteSlotById(slotId: Long)
 
     @Transaction
-    suspend fun upsertSubjectWithSlots(subject: Subject, slots: List<ClassSlot>) {
+    suspend fun upsertSubjectWithSlots(subject: Subject, slots: List<ClassSlot>): Long {
         val actualSubjectId = if (subject.id == 0L) {
             insertSubject(subject)
         } else {
@@ -84,11 +84,12 @@ interface ScheduleDao {
 
         val updatedSlots = slots.map { slot ->
             slot.copy(
-                id = if (subject.id == 0L) 0L else slot.id,
+                id = 0L,
                 subjectId = actualSubjectId
             )
         }
         insertSlots(updatedSlots)
+        return actualSubjectId
     }
 
     @Query("DELETE FROM class_slots WHERE subjectId = :subjectId")

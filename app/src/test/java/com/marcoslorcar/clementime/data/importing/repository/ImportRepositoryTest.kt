@@ -71,7 +71,8 @@ class FakeScheduleDaoForRepositoryTest(
     override suspend fun deleteSubjectsByIds(subjectIds: List<Long>) {}
     override suspend fun updateSubjectsActiveStatus(subjectIds: List<Long>, isActive: Boolean) {}
 
-    override suspend fun upsertSubjectWithSlots(subject: Subject, slots: List<ClassSlot>) {
+    override suspend fun upsertSubjectWithSlots(subject: Subject, slots: List<ClassSlot>): Long {
         upsertedSubjects.add(Pair(subject, slots))
+        return subject.id
     }
 }

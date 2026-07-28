@@ -72,6 +72,7 @@ class MainActivity : AppCompatActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
         setContent {
             val themeMode by settingsRepository.themeFlow.collectAsState(initial = "system")
             val selectedTheme by settingsRepository.selectedThemeFlow.collectAsState(initial = "clementine")
@@ -121,6 +122,7 @@ private fun getTabIndex(entry: NavBackStackEntry?): Int {
     } ?: -1
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun ClemenTimeApp(isOnboardingCompleted: Boolean) {
     val navController = rememberNavController()

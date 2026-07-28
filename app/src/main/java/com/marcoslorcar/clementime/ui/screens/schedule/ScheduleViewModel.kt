@@ -131,7 +131,10 @@ class ScheduleViewModel @Inject constructor(
             )
         }
     ) { allSubjects, selectedTab, isSwitcherVisible, settings ->
-        val semesterSubjects = allSubjects.filter { it.subject.semester == settings.selectedSemester && it.subject.isActive }
+        val semesterSubjects = allSubjects.filter { 
+            (it.subject.semester == settings.selectedSemester || it.subject.semester == 3) && 
+            it.subject.isActive 
+        }
         val filteredSubjects = semesterSubjects.map { sWithSlots ->
             val filteredSlots = sWithSlots.slots.filter { slot ->
                 slot.entryType == EntryType.THEORY || 
@@ -177,6 +180,7 @@ class ScheduleViewModel @Inject constructor(
             settingsRepository.setCurrentSemester(semester)
             settingsRepository.setHasManuallyChangedSemester(true)
             settingsRepository.setWasSemesterAutoChanged(false)
+            ScheduleWidgetUtils.updateWidget(context)
         }
     }
 

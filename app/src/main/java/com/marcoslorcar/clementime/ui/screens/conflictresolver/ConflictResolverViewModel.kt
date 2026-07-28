@@ -8,6 +8,8 @@ import com.marcoslorcar.clementime.data.SettingsRepository
 import com.marcoslorcar.clementime.data.SubjectWithSlots
 import com.marcoslorcar.clementime.ui.widget.ScheduleWidgetUtils
 import com.marcoslorcar.clementime.utils.ConflictSolver
+import com.marcoslorcar.clementime.utils.DAY_END_TIME
+import com.marcoslorcar.clementime.utils.DAY_START_TIME
 import com.marcoslorcar.clementime.utils.ScheduleSolution
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -21,6 +23,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.LocalTime
 import javax.inject.Inject
 
 enum class PreferenceMode {
@@ -36,7 +39,9 @@ data class ConflictResolverUiState(
     val canUndo: Boolean = false,
     val onboardingTooltipsEnabled: Boolean = true,
     val hasSeenPrioritiesTooltip: Boolean = false,
-    val hasSeenApplyTooltip: Boolean = false
+    val hasSeenApplyTooltip: Boolean = false,
+    val dayStartTime: LocalTime = DAY_START_TIME,
+    val dayEndTime: LocalTime = DAY_END_TIME
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -57,8 +62,26 @@ class ConflictResolverViewModel @Inject constructor(
         _preferenceMode,
         settingsRepository.onboardingTooltipsEnabledFlow,
         settingsRepository.hasSeenResolverPrioritiesTooltipFlow,
-        settingsRepository.hasSeenResolverApplyTooltipFlow
-    ) { subjects, prefMode, onboardingEnabled, seenPriorities, seenApply ->
+        settingsRepository.hasSeenResolverApplyTooltipFlow,
+        combine(
+            settingsRepository.dayStartHourFlow,
+            settingsRepository.dayStartMinuteFlow,
+            settingsRepository.dayEndHourFlow,
+            settingsRepository.dayEndMinuteFlow
+        ) { sh, sm, eh, em ->
+            LocalTime.of(sh, sm) to LocalTime.of(eh, em)
+        }
+    ) { args ->
+        @Suppress("UNCHECKED_CAST")
+        val subjects = args[0] as List<SubjectWithSlots>
+        @Suppress("UNCHECKED_CAST")
+        val prefMode = args[1] as PreferenceMode
+        val onboardingEnabled = args[2] as Boolean
+        val seenPriorities = args[3] as Boolean
+        val seenApply = args[4] as Boolean
+        @Suppress("UNCHECKED_CAST")
+        val dayRange = args[5] as Pair<LocalTime, LocalTime>
+
         try {
             val solutions = ConflictSolver.findSolutions(subjects)
             val mappedSolutions = solutions.map { solution ->
@@ -94,7 +117,9 @@ class ConflictResolverViewModel @Inject constructor(
                 canUndo = lastAppliedLabSelections != null,
                 onboardingTooltipsEnabled = onboardingEnabled,
                 hasSeenPrioritiesTooltip = seenPriorities,
-                hasSeenApplyTooltip = seenApply
+                hasSeenApplyTooltip = seenApply,
+                dayStartTime = dayRange.first,
+                dayEndTime = dayRange.second
             )
         } catch (_: Exception) {
             ConflictResolverUiState(
@@ -104,7 +129,9 @@ class ConflictResolverViewModel @Inject constructor(
                 canUndo = lastAppliedLabSelections != null,
                 onboardingTooltipsEnabled = onboardingEnabled,
                 hasSeenPrioritiesTooltip = seenPriorities,
-                hasSeenApplyTooltip = seenApply
+                hasSeenApplyTooltip = seenApply,
+                dayStartTime = dayRange.first,
+                dayEndTime = dayRange.second
             )
         }
     }

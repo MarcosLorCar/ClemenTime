@@ -106,7 +106,8 @@ def resolve_mapping(code: str, category: str, mappings: Dict, interactive: bool 
 
     # 6. Fallback to Prompt
     if not interactive:
-        return code, code
+        print(f"\n[Error] Unknown {category[:-1]} found: '{code}' (Running in non-interactive/strict mode)")
+        sys.exit(1)
 
     print(f"\n[?] Unknown {category[:-1]} found: '{code}'")
     val = input(f"    Enter full name for '{code}' (or press Enter to use as is): ").strip()
@@ -324,6 +325,7 @@ def main():
     parser = argparse.ArgumentParser(description="Process combined schedule JSON into semester schemas.")
     parser.add_argument("input_json", help="Path to input raw JSON file.")
     parser.add_argument("--non-interactive", action="store_true", help="Run without interactive prompts.")
+    parser.add_argument("--name", help="Base name for the output schedule(s).")
     args = parser.parse_args()
 
     if not os.path.exists(args.input_json):
@@ -339,20 +341,30 @@ def main():
     os.makedirs(DEFAULT_DIST_DIR, exist_ok=True)
 
     print("\n--- Output Configuration ---")
+    input_base = os.path.splitext(os.path.basename(args.input_json))[0]
     for sem_key, schema in results.items():
-        default_title = f"Cuatrimestre {1 if sem_key == '1C' else 2}"
-        default_filename = f"{sem_key}.json"
+        if args.name:
+            if "{sem}" in args.name:
+                default_name = args.name.replace("{sem}", sem_key)
+            elif sem_key in args.name:
+                default_name = args.name
+            else:
+                # Add 1C/2C suffix if not already present in the custom name
+                default_name = f"{args.name} {sem_key}"
+        elif sem_key in input_base:
+            default_name = input_base
+        else:
+            default_name = f"{input_base}_{sem_key}"
 
         if interactive:
             print(f"\n[{sem_key}]")
-            user_title = input(f"  Enter schedule title (default: '{default_title}'): ").strip()
-            schema["title"] = user_title if user_title else default_title
-
-            user_filename = input(f"  Enter output filename (default: '{default_filename}'): ").strip()
-            filename = user_filename if user_filename else default_filename
+            user_input = input(f"  Enter name for this schedule (default: '{default_name}'): ").strip()
+            name = user_input if user_input else default_name
+            schema["title"] = name
+            filename = name
         else:
-            schema["title"] = default_title
-            filename = default_filename
+            schema["title"] = default_name
+            filename = default_name
 
         if not filename.endswith(".json"):
             filename += ".json"
