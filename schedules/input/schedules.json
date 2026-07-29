@@ -40,7 +40,7 @@
   "asignatura": "Cálculo-L",
   "tipo": "laboratorio",
   "aula": "John von Neumann - A1.1",
-  "profesor": "MariaL.Lopez Inocente.Sánchez",
+  "profesor": "MariaL.Lopez",
   "es_laboratorio": true,
   "grupo_practicas": "Lab-A1/A2"
  },
@@ -85,7 +85,7 @@
   "asignatura": "Cálculo",
   "tipo": "teoría",
   "aula": "John von Neumann - A1.1",
-  "profesor": "MariaL.Lopez Inocente.Sánchez",
+  "profesor": "MariaL.Lopez",
   "es_laboratorio": false,
   "grupo_practicas": ""
  },
@@ -100,7 +100,7 @@
   "asignatura": "Física",
   "tipo": "teoría",
   "aula": "John von Neumann - A1.1",
-  "profesor": "PeterS.Normile Inocente.Sánchez",
+  "profesor": "PeterS.Normile",
   "es_laboratorio": false,
   "grupo_practicas": ""
  },
@@ -115,7 +115,7 @@
   "asignatura": "Cálculo",
   "tipo": "teoría",
   "aula": "John von Neumann - A1.1",
-  "profesor": "MariaL.Lopez Inocente.Sánchez",
+  "profesor": "MariaL.Lopez",
   "es_laboratorio": false,
   "grupo_practicas": ""
  },
@@ -130,7 +130,7 @@
   "asignatura": "Física",
   "tipo": "teoría",
   "aula": "John von Neumann - A1.1",
-  "profesor": "PeterS.Normile Inocente.Sánchez",
+  "profesor": "PeterS.Normile",
   "es_laboratorio": false,
   "grupo_practicas": ""
  },
@@ -265,7 +265,7 @@
   "asignatura": "Física-L",
   "tipo": "laboratorio",
   "aula": "Ignacio Cirac - LD1",
-  "profesor": "PeterS.Normile Inocente.Sánchez",
+  "profesor": "PeterS.Normile",
   "es_laboratorio": true,
   "grupo_practicas": "Lab-A1"
  },
@@ -355,7 +355,7 @@
   "asignatura": "Cálculo",
   "tipo": "teoría",
   "aula": "Grace Murray Hopper - A2.2",
-  "profesor": "MariaL.Lopez Inocente.Sánchez",
+  "profesor": "MariaL.Lopez",
   "es_laboratorio": false,
   "grupo_practicas": ""
  },
@@ -370,7 +370,7 @@
   "asignatura": "Física",
   "tipo": "teoría",
   "aula": "Grace Murray Hopper - A2.2",
-  "profesor": "PeterS.Normile Inocente.Sánchez",
+  "profesor": "PeterS.Normile",
   "es_laboratorio": false,
   "grupo_practicas": ""
  },
@@ -385,7 +385,7 @@
   "asignatura": "Física-L",
   "tipo": "laboratorio",
   "aula": "Ignacio Cirac - LD1",
-  "profesor": "PeterS.Normile Inocente.Sánchez",
+  "profesor": "PeterS.Normile",
   "es_laboratorio": true,
   "grupo_practicas": "Lab-B2"
  },
@@ -400,7 +400,7 @@
   "asignatura": "FunProg1-L",
   "tipo": "laboratorio",
   "aula": "Tim Berners-Lee - A1.2",
-  "profesor": "Ester.Castillo Inocente.Sánchez",
+  "profesor": "Ester.Castillo",
   "es_laboratorio": true,
   "grupo_practicas": "Lab-BC"
  },
@@ -415,7 +415,7 @@
   "asignatura": "Física-L",
   "tipo": "laboratorio",
   "aula": "Ignacio Cirac - LD1",
-  "profesor": "Fernando.Teran Inocente.Sánchez",
+  "profesor": "Fernando.Teran",
   "es_laboratorio": true,
   "grupo_practicas": "Lab-BC"
  },
@@ -430,7 +430,7 @@
   "asignatura": "Cálculo",
   "tipo": "teoría",
   "aula": "Grace Murray Hopper - A2.2",
-  "profesor": "MariaL.Lopez Inocente.Sánchez",
+  "profesor": "MariaL.Lopez",
   "es_laboratorio": false,
   "grupo_practicas": ""
  },
@@ -445,7 +445,7 @@
   "asignatura": "Física",
   "tipo": "teoría",
   "aula": "Grace Murray Hopper - A2.2",
-  "profesor": "PeterS.Normile Inocente.Sánchez",
+  "profesor": "PeterS.Normile",
   "es_laboratorio": false,
   "grupo_practicas": ""
  },
@@ -460,7 +460,7 @@
   "asignatura": "Física-L",
   "tipo": "laboratorio",
   "aula": "Ignacio Cirac - LD1",
-  "profesor": "PeterS.Normile Inocente.Sánchez",
+  "profesor": "PeterS.Normile",
   "es_laboratorio": true,
   "grupo_practicas": "Lab-B1"
  },
@@ -520,7 +520,7 @@
   "asignatura": "TeCo-L",
   "tipo": "laboratorio",
   "aula": "Bill Gates - LD3",
-  "profesor": "",
+  "profesor": "Inocente.Sánchez",
   "es_laboratorio": true,
   "grupo_practicas": "Lab-BC"
  },
@@ -535,7 +535,7 @@
   "asignatura": "FunProg1-L",
   "tipo": "laboratorio",
   "aula": "Grace Murray Hopper - A2.2",
-  "profesor": "Ester.Castillo Inocente.Sánchez",
+  "profesor": "Ester.Castillo",
   "es_laboratorio": true,
   "grupo_practicas": "Lab-B2"
  },
@@ -610,7 +610,7 @@
   "asignatura": "Cálculo-L",
   "tipo": "laboratorio",
   "aula": "Grace Murray Hopper - A2.2",
-  "profesor": "MariaL.Lopez Inocente.Sánchez",
+  "profesor": "MariaL.Lopez",
   "es_laboratorio": true,
   "grupo_practicas": "Lab-B1/B2"
  },
@@ -730,7 +730,7 @@
   "asignatura": "FunProg1",
   "tipo": "teoría",
   "aula": "Tim Berners-Lee - A1.2",
-  "profesor": "Ester.Castillo Inocente.Sánchez",
+  "profesor": "Ester.Castillo",
   "es_laboratorio": false,
   "grupo_practicas": ""
  },
@@ -745,7 +745,7 @@
   "asignatura": "FunProg1-L",
   "tipo": "laboratorio",
   "aula": "Tim Berners-Lee - A1.2",
-  "profesor": "Ester.Castillo Inocente.Sánchez",
+  "profesor": "Ester.Castillo",
   "es_laboratorio": true,
   "grupo_practicas": "Lab-C2"
  },
@@ -775,7 +775,7 @@
   "asignatura": "FunProg1-L",
   "tipo": "laboratorio",
   "aula": "Tim Berners-Lee - A1.2",
-  "profesor": "Ester.Castillo Inocente.Sánchez",
+  "profesor": "Ester.Castillo",
   "es_laboratorio": true,
   "grupo_practicas": "Lab-BC"
  },
@@ -790,7 +790,7 @@
   "asignatura": "Física-L",
   "tipo": "laboratorio",
   "aula": "Ignacio Cirac - LD1",
-  "profesor": "Fernando.Teran Inocente.Sánchez",
+  "profesor": "Fernando.Teran",
   "es_laboratorio": true,
   "grupo_practicas": "Lab-BC"
  },
@@ -820,7 +820,7 @@
   "asignatura": "FunProg1",
   "tipo": "teoría",
   "aula": "Tim Berners-Lee - A1.2",
-  "profesor": "Ester.Castillo Inocente.Sánchez",
+  "profesor": "Ester.Castillo",
   "es_laboratorio": false,
   "grupo_practicas": ""
  },
@@ -835,7 +835,7 @@
   "asignatura": "Cálculo",
   "tipo": "teoría",
   "aula": "Tim Berners-Lee - A1.2",
-  "profesor": "MariaL.Lopez Inocente.Sánchez",
+  "profesor": "MariaL.Lopez",
   "es_laboratorio": false,
   "grupo_practicas": ""
  },
@@ -895,7 +895,7 @@
   "asignatura": "TeCo-L",
   "tipo": "laboratorio",
   "aula": "Bill Gates - LD3",
-  "profesor": "",
+  "profesor": "Inocente.Sánchez",
   "es_laboratorio": true,
   "grupo_practicas": "Lab-C2"
  },
@@ -910,7 +910,7 @@
   "asignatura": "FunProg1-L",
   "tipo": "laboratorio",
   "aula": "Dennis Ritchie - LD2",
-  "profesor": "Ester.Castillo Inocente.Sánchez",
+  "profesor": "Ester.Castillo",
   "es_laboratorio": true,
   "grupo_practicas": "Lab-C1"
  },
@@ -925,7 +925,7 @@
   "asignatura": "TeCo-L",
   "tipo": "laboratorio",
   "aula": "Bill Gates - LD3",
-  "profesor": "",
+  "profesor": "Inocente.Sánchez",
   "es_laboratorio": true,
   "grupo_practicas": "Lab-BC"
  },
@@ -940,7 +940,7 @@
   "asignatura": "Física-L",
   "tipo": "laboratorio",
   "aula": "Ignacio Cirac - LD1",
-  "profesor": "Fernando.Teran Inocente.Sánchez",
+  "profesor": "Fernando.Teran",
   "es_laboratorio": true,
   "grupo_practicas": "Lab-C2"
  },
@@ -1030,7 +1030,7 @@
   "asignatura": "Cálculo",
   "tipo": "teoría",
   "aula": "Tim Berners-Lee - A1.2",
-  "profesor": "MariaL.Lopez Inocente.Sánchez",
+  "profesor": "MariaL.Lopez",
   "es_laboratorio": false,
   "grupo_practicas": ""
  },
@@ -1120,7 +1120,7 @@
   "asignatura": "Física",
   "tipo": "teoría",
   "aula": "Tim Berners-Lee - A1.2",
-  "profesor": "Fernando.Teran Inocente.Sánchez",
+  "profesor": "Fernando.Teran",
   "es_laboratorio": false,
   "grupo_practicas": ""
  },
@@ -1150,7 +1150,7 @@
   "asignatura": "Física-L",
   "tipo": "laboratorio",
   "aula": "Ignacio Cirac - LD1",
-  "profesor": "Fernando.Teran Inocente.Sánchez",
+  "profesor": "Fernando.Teran",
   "es_laboratorio": true,
   "grupo_practicas": "Lab-D2"
  },
@@ -1165,7 +1165,7 @@
   "asignatura": "Física-L",
   "tipo": "laboratorio",
   "aula": "Ignacio Cirac - LD1",
-  "profesor": "Fernando.Teran Inocente.Sánchez",
+  "profesor": "Fernando.Teran",
   "es_laboratorio": true,
   "grupo_practicas": "Lab-D1"
  },
@@ -1195,7 +1195,7 @@
   "asignatura": "Física",
   "tipo": "teoría",
   "aula": "Tim Berners-Lee - A1.2",
-  "profesor": "Fernando.Teran Inocente.Sánchez",
+  "profesor": "Fernando.Teran",
   "es_laboratorio": false,
   "grupo_practicas": ""
  },
@@ -1225,7 +1225,7 @@
   "asignatura": "FunProg1-L",
   "tipo": "laboratorio",
   "aula": "Tim Berners-Lee - A1.2",
-  "profesor": "Ester.Castillo Inocente.Sánchez",
+  "profesor": "Ester.Castillo",
   "es_laboratorio": true,
   "grupo_practicas": "Lab-D1"
  },
@@ -1270,7 +1270,7 @@
   "asignatura": "TeCo-L",
   "tipo": "laboratorio",
   "aula": "Dennis Ritchie - LD2",
-  "profesor": "",
+  "profesor": "Inocente.Sánchez",
   "es_laboratorio": true,
   "grupo_practicas": "Lab-D2"
  },
@@ -1285,7 +1285,7 @@
   "asignatura": "FunProg1-L",
   "tipo": "laboratorio",
   "aula": "Tim Berners-Lee - A1.2",
-  "profesor": "Ester.Castillo Inocente.Sánchez",
+  "profesor": "Ester.Castillo",
   "es_laboratorio": true,
   "grupo_practicas": "Lab-D2"
  },
@@ -5950,7 +5950,7 @@
   "asignatura": "SistInf-L",
   "tipo": "laboratorio",
   "aula": "George Boole - A2.1",
-  "profesor": "José Ramón Sánchez",
+  "profesor": "José",
   "es_laboratorio": true,
   "grupo_practicas": "Lab-C1"
  },
@@ -7990,7 +7990,7 @@
   "asignatura": "TeoríaAC",
   "tipo": "teoría",
   "aula": "Claude Shannon - 0.07",
-  "profesor": "Ester.Castillo Inocente.Sánchez",
+  "profesor": "Ester.Castillo",
   "es_laboratorio": false,
   "grupo_practicas": ""
  },
@@ -8005,7 +8005,7 @@
   "asignatura": "TeoríaAC",
   "tipo": "laboratorio",
   "aula": "Claude Shannon - 0.07",
-  "profesor": "Ester.Castillo Inocente.Sánchez",
+  "profesor": "Ester.Castillo",
   "es_laboratorio": true,
   "grupo_practicas": "Lab-CO"
  },
@@ -8020,7 +8020,7 @@
   "asignatura": "TeoríaAC",
   "tipo": "teoría",
   "aula": "Claude Shannon - 0.07",
-  "profesor": "Ester.Castillo Inocente.Sánchez",
+  "profesor": "Ester.Castillo",
   "es_laboratorio": false,
   "grupo_practicas": ""
  },

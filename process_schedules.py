@@ -35,7 +35,10 @@ def main():
             print(f"[Error] File '{args.json_file}' not found.")
             sys.exit(1)
     else:
-        files_to_process = glob.glob(os.path.join(input_dir, "*.json"))
+        files_to_process = [
+            f for f in glob.glob(os.path.join(input_dir, "*.json"))
+            if os.path.basename(f) != "esi_meta.json"
+        ]
         if not files_to_process:
             print(f"[Warning] No JSON files found in {input_dir}")
 

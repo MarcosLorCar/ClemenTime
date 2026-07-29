@@ -42,6 +42,60 @@ class ImportRepositoryTest {
         assertEquals("Sistemas Operativos Updated", upsertedSubject.name)
         assertEquals(0xFF123456.toInt(), upsertedSubject.color)
     }
+
+    @Test
+    fun applySlotDiffs_updatesSubjectWithNewClassSlots() = runTest {
+        val existingSubject = Subject(
+            id = 10L,
+            code = "FunProg1",
+            name = "Fundamentos de Programación 1",
+            color = 0xFF4CAF50.toInt(),
+            isActive = true,
+            semester = 1
+        )
+        val fakeDao = FakeScheduleDaoForRepositoryTest(
+            initialSubjects = listOf(SubjectWithSlots(existingSubject, emptyList()))
+        )
+        val repository = ImportRepository(dao = fakeDao)
+
+        val diffs = listOf(
+            com.marcoslorcar.clementime.utils.SlotDiff(
+                subjectCode = "FunProg1",
+                subjectName = "Fundamentos de Programación 1",
+                changeType = com.marcoslorcar.clementime.utils.DiffType.MODIFIED,
+                oldDetail = "Lunes 08:30 - 10:00",
+                newDetail = "Martes 10:00 - 11:30"
+            )
+        )
+
+        val remoteSlots = listOf(
+            com.marcoslorcar.clementime.data.importing.model.JsonFlatSlot(
+                grupo = "1A",
+                cuatrimestre = "1C",
+                dia = "Martes",
+                horaInicio = "10:00",
+                horaFin = "11:30",
+                asignatura = "FunProg1",
+                tipo = "teoría",
+                aula = "A1.1",
+                profesor = "Prof. Serrano"
+            )
+        )
+
+        repository.applySlotDiffs(diffs = diffs, remoteSlots = remoteSlots, semester = 1)
+
+        assertEquals(1, fakeDao.upsertedSubjects.size)
+        val (upsertedSubject, newSlots) = fakeDao.upsertedSubjects[0]
+        assertEquals(10L, upsertedSubject.id)
+        assertEquals("FunProg1", upsertedSubject.code)
+        assertEquals(1, newSlots.size)
+        val slot = newSlots[0]
+        assertEquals(java.time.DayOfWeek.TUESDAY, slot.dayOfWeek)
+        assertEquals(java.time.LocalTime.of(10, 0), slot.startTime)
+        assertEquals(java.time.LocalTime.of(11, 30), slot.endTime)
+        assertEquals("A1.1", slot.classroom)
+        assertEquals("Prof. Serrano", slot.professor)
+    }
 }
 
 class FakeScheduleDaoForRepositoryTest(

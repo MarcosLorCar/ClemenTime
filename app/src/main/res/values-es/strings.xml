@@ -346,5 +346,28 @@
     <string name="content_description_add_subject">Añadir Asignatura</string>
     <string name="content_description_undo">Deshacer</string>
     <string name="content_description_ignored">Ignorado</string>
+
+    <!-- Schedule Auto-Update strings -->
+    <string name="auto_update_interval_title">Intervalo de actualización de horario</string>
+    <string name="auto_update_interval_off">Desactivado</string>
+    <string name="auto_update_interval_6h">Cada 6 horas</string>
+    <string name="auto_update_interval_12h">Cada 12 horas</string>
+    <string name="auto_update_interval_24h">Cada 24 horas</string>
+    <string name="check_updates_now_title">Buscar actualizaciones de horario ahora</string>
+    <string name="checking_updates">Buscando actualizaciones de horario…</string>
+    <string name="no_schedule_updates_found">No hay actualizaciones de horario.</string>
+    <string name="schedule_updates_found">Cambios de horario en: %1$s</string>
+
+    <!-- Schedule Diff Bottom Sheet strings -->
+    <string name="schedule_changes_detected_title">Cambios detectados en el horario</string>
+    <string name="schedule_changes_detected_desc">El horario oficial ESI se ha actualizado con cambios en tus asignaturas activas.</string>
+    <string name="apply_updates">Aplicar cambios</string>
+    <string name="dismiss">Descartar</string>
+    <string name="diff_badge_modified">MODIFICADO</string>
+    <string name="diff_badge_added">AÑADIDO</string>
+    <string name="diff_badge_removed">ELIMINADO</string>
+    <string name="diff_previous_detail">Anterior: %1$s</string>
+    <string name="diff_new_detail">Nuevo: %1$s</string>
+    <string name="schedule_updated_success">Horario actualizado con éxito.</string>
 </resources>
 

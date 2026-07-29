@@ -41,8 +41,10 @@ import androidx.compose.material.icons.filled.InvertColors
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Policy
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material.icons.filled.ViewCompact
 import androidx.compose.material.icons.filled.Widgets
@@ -101,9 +103,13 @@ import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
+import androidx.compose.runtime.LaunchedEffect
+import com.marcoslorcar.clementime.ui.screens.scheduleimport.ScheduleDiffBottomSheet
+
 @Composable
 fun MoreScreen(
     onNavigateToImport: () -> Unit,
+    showDiffOnLaunch: Boolean = false,
     viewModel: MoreViewModel = hiltViewModel(
         checkNotNull(
             LocalViewModelStoreOwner.current
@@ -114,6 +120,28 @@ fun MoreScreen(
     onMenuClick: (() -> Unit)? = null
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+
+    LaunchedEffect(showDiffOnLaunch) {
+        if (showDiffOnLaunch) {
+            viewModel.checkScheduleUpdatesNow()
+        }
+    }
+
+    val updatedSuccessMsg = stringResource(R.string.schedule_updated_success)
+    val noUpdatesMsg = stringResource(R.string.no_schedule_updates_found)
+
+    if (uiState.showDiffBottomSheet && uiState.pendingDiffs.isNotEmpty()) {
+        ScheduleDiffBottomSheet(
+            diffs = uiState.pendingDiffs,
+            onApply = {
+                viewModel.applyPendingSlotDiffs {
+                    Toast.makeText(context, updatedSuccessMsg, Toast.LENGTH_SHORT).show()
+                }
+            },
+            onDismiss = { viewModel.dismissDiffBottomSheet() }
+        )
+    }
 
     MoreContent(
         uiState = uiState,
@@ -130,6 +158,12 @@ fun MoreScreen(
         onToggleOnboardingTooltips = viewModel::setOnboardingTooltipsEnabled,
         onExportData = viewModel::exportData,
         onExportIcs = viewModel::exportFullYearToIcs,
+        onAutoUpdateIntervalChanged = viewModel::setAutoUpdateIntervalHours,
+        onCheckUpdatesNow = {
+            viewModel.checkScheduleUpdatesNow {
+                Toast.makeText(context, noUpdatesMsg, Toast.LENGTH_SHORT).show()
+            }
+        },
         onImportClick = onNavigateToImport,
         onMenuClick = onMenuClick
     )
@@ -152,6 +186,8 @@ fun MoreContent(
     onToggleOnboardingTooltips: (Boolean) -> Unit,
     onExportData: (android.content.Context, Uri, (ExportStatus) -> Unit) -> Unit,
     onExportIcs: (android.content.Context, Uri, LocalDate, LocalDate, LocalDate, LocalDate, (ExportStatus) -> Unit) -> Unit,
+    onAutoUpdateIntervalChanged: (Int) -> Unit = {},
+    onCheckUpdatesNow: () -> Unit = {},
     onImportClick: () -> Unit,
     onMenuClick: (() -> Unit)? = null
 ) {
@@ -638,6 +674,70 @@ fun MoreContent(
                     onClick = {
                         tempRepoUrl = uiState.githubRepoBaseUrl
                         showRepoUrlDialog = true
+                    }
+                )
+
+                // Auto-Update Interval Setting
+                var showAutoUpdateMenu by remember { mutableStateOf(false) }
+                val autoUpdateLabel = when (uiState.autoUpdateIntervalHours) {
+                    6 -> stringResource(R.string.auto_update_interval_6h)
+                    12 -> stringResource(R.string.auto_update_interval_12h)
+                    24 -> stringResource(R.string.auto_update_interval_24h)
+                    else -> stringResource(R.string.auto_update_interval_off)
+                }
+
+                SettingItem(
+                    icon = Icons.Default.Sync,
+                    title = stringResource(R.string.auto_update_interval_title),
+                    trailingContent = {
+                        Box {
+                            OutlinedButton(
+                                onClick = { showAutoUpdateMenu = true },
+                                modifier = Modifier.widthIn(max = 160.dp)
+                            ) {
+                                Text(
+                                    text = autoUpdateLabel,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                            }
+                            DropdownMenu(
+                                expanded = showAutoUpdateMenu,
+                                onDismissRequest = { showAutoUpdateMenu = false }
+                            ) {
+                                listOf(6, 12, 24, 0).forEach { hours ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                when (hours) {
+                                                    6 -> stringResource(R.string.auto_update_interval_6h)
+                                                    12 -> stringResource(R.string.auto_update_interval_12h)
+                                                    24 -> stringResource(R.string.auto_update_interval_24h)
+                                                    else -> stringResource(R.string.auto_update_interval_off)
+                                                }
+                                            )
+                                        },
+                                        onClick = {
+                                            onAutoUpdateIntervalChanged(hours)
+                                            showAutoUpdateMenu = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                )
+
+                // Check for Updates Now Button
+                SettingItem(
+                    icon = Icons.Default.Refresh,
+                    title = stringResource(R.string.check_updates_now_title),
+                    subtitle = if (uiState.isCheckingUpdates) stringResource(R.string.checking_updates) else null,
+                    onClick = {
+                        if (!uiState.isCheckingUpdates) {
+                            onCheckUpdatesNow()
+                        }
                     }
                 )
             }

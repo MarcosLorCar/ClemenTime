@@ -83,7 +83,7 @@ fun ClemenTimeNavigationBar(
             labelResId = R.string.more_screen_title,
             selectedIcon = PageInfoFilled,
             unselectedIcon = PageInfoOutlined,
-            route = MoreRoute,
+            route = MoreRoute(),
             routeClass = MoreRoute::class
         )
     )

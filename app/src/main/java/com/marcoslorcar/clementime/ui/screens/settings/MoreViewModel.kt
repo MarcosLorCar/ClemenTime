@@ -10,9 +10,12 @@ import com.marcoslorcar.clementime.R
 import com.marcoslorcar.clementime.data.EntryType
 import com.marcoslorcar.clementime.data.ScheduleDao
 import com.marcoslorcar.clementime.data.SettingsRepository
+import com.marcoslorcar.clementime.data.api.GitHubScheduleApiService
 import com.marcoslorcar.clementime.data.importing.parser.JsonScheduleParser
+import com.marcoslorcar.clementime.data.importing.repository.ImportRepository
 import com.marcoslorcar.clementime.ui.widget.ScheduleWidgetUtils
 import com.marcoslorcar.clementime.utils.IcsExporter
+import com.marcoslorcar.clementime.worker.ScheduleUpdateWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,6 +30,9 @@ import java.time.LocalTime
 import java.util.Locale
 import javax.inject.Inject
 
+import com.marcoslorcar.clementime.data.importing.model.JsonFlatSlot
+import com.marcoslorcar.clementime.utils.SlotDiff
+
 data class MoreUiState(
     val themeMode: String = "system",
     val appLanguage: String = "en",
@@ -38,7 +44,13 @@ data class MoreUiState(
     val githubRepoBaseUrl: String = SettingsRepository.DEFAULT_GITHUB_REPO_BASE_URL,
     val onboardingTooltipsEnabled: Boolean = true,
     val dayStartTime: LocalTime = LocalTime.of(8, 30),
-    val dayEndTime: LocalTime = LocalTime.of(21, 30)
+    val dayEndTime: LocalTime = LocalTime.of(21, 30),
+    val autoUpdateIntervalHours: Int = 6,
+    val lastScheduleSyncTimestamp: Long = 0L,
+    val isCheckingUpdates: Boolean = false,
+    val pendingDiffs: List<SlotDiff> = emptyList(),
+    val pendingRemoteSlots: List<JsonFlatSlot> = emptyList(),
+    val showDiffBottomSheet: Boolean = false
 )
 
 sealed interface ExportStatus {
@@ -52,10 +64,16 @@ class MoreViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val scheduleDao: ScheduleDao,
     private val jsonScheduleParser: JsonScheduleParser,
+    private val importRepository: ImportRepository,
+    private val apiService: GitHubScheduleApiService? = null,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _appLanguage = MutableStateFlow(getCurrentLanguage())
+    private val _isCheckingUpdates = MutableStateFlow(false)
+    private val _pendingDiffs = MutableStateFlow<List<SlotDiff>>(emptyList())
+    private val _pendingRemoteSlots = MutableStateFlow<List<JsonFlatSlot>>(emptyList())
+    private val _showDiffBottomSheet = MutableStateFlow(false)
 
     val uiState: StateFlow<MoreUiState> = combine(
         settingsRepository.themeFlow,
@@ -70,8 +88,15 @@ class MoreViewModel @Inject constructor(
         settingsRepository.dayStartMinuteFlow,
         settingsRepository.dayEndHourFlow,
         settingsRepository.dayEndMinuteFlow,
-        _appLanguage
+        settingsRepository.autoUpdateIntervalHoursFlow,
+        settingsRepository.lastScheduleSyncTimestampFlow,
+        _isCheckingUpdates,
+        _appLanguage,
+        _pendingDiffs,
+        _pendingRemoteSlots,
+        _showDiffBottomSheet
     ) { args: Array<Any?> ->
+        @Suppress("UNCHECKED_CAST")
         MoreUiState(
             themeMode = args[0] as String,
             scrollableTabs = args[1] as Boolean,
@@ -83,7 +108,13 @@ class MoreViewModel @Inject constructor(
             onboardingTooltipsEnabled = args[7] as Boolean,
             dayStartTime = LocalTime.of(args[8] as Int, args[9] as Int),
             dayEndTime = LocalTime.of(args[10] as Int, args[11] as Int),
-            appLanguage = args[12] as String
+            autoUpdateIntervalHours = args[12] as Int,
+            lastScheduleSyncTimestamp = args[13] as Long,
+            isCheckingUpdates = args[14] as Boolean,
+            appLanguage = args[15] as String,
+            pendingDiffs = args[16] as List<SlotDiff>,
+            pendingRemoteSlots = args[17] as List<JsonFlatSlot>,
+            showDiffBottomSheet = args[18] as Boolean
         )
     }.stateIn(
         scope = viewModelScope,
@@ -119,14 +150,12 @@ class MoreViewModel @Inject constructor(
         }
     }
 
-
     fun setShowNowLine(show: Boolean) {
         viewModelScope.launch {
             settingsRepository.setShowNowLine(show)
             ScheduleWidgetUtils.updateWidget(context)
         }
     }
-
 
     fun setNowLineStyle(style: String) {
         viewModelScope.launch {
@@ -135,14 +164,12 @@ class MoreViewModel @Inject constructor(
         }
     }
 
-
     fun setHighContrast(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setHighContrast(enabled)
             ScheduleWidgetUtils.updateWidget(context)
         }
     }
-
 
     fun setSelectedTheme(theme: String) {
         viewModelScope.launch {
@@ -172,6 +199,59 @@ class MoreViewModel @Inject constructor(
         }
     }
 
+    fun setAutoUpdateIntervalHours(hours: Int) {
+        viewModelScope.launch {
+            settingsRepository.setAutoUpdateIntervalHours(hours)
+            ScheduleUpdateWorker.schedulePeriodicWork(context, hours)
+        }
+    }
+
+    fun checkScheduleUpdatesNow(onNoUpdatesFound: (() -> Unit)? = null) {
+        viewModelScope.launch {
+            _isCheckingUpdates.value = true
+            try {
+                val syncResult = ScheduleUpdateWorker.performSync(
+                    context = context,
+                    settingsRepository = settingsRepository,
+                    importRepository = importRepository,
+                    apiService = apiService,
+                    ignoreInterval = true
+                )
+                _isCheckingUpdates.value = false
+                if (syncResult.diffs.isNotEmpty()) {
+                    _pendingDiffs.value = syncResult.diffs
+                    _pendingRemoteSlots.value = syncResult.remoteSlots
+                    _showDiffBottomSheet.value = true
+                } else {
+                    onNoUpdatesFound?.invoke()
+                }
+            } catch (_: Exception) {
+                _isCheckingUpdates.value = false
+                onNoUpdatesFound?.invoke()
+            }
+        }
+    }
+
+    fun dismissDiffBottomSheet() {
+        _showDiffBottomSheet.value = false
+    }
+
+    fun applyPendingSlotDiffs(onSuccess: (() -> Unit)? = null) {
+        viewModelScope.launch {
+            try {
+                val currentSemester = settingsRepository.currentSemesterFlow.first()
+                importRepository.applySlotDiffs(_pendingDiffs.value, _pendingRemoteSlots.value, currentSemester)
+                ScheduleWidgetUtils.updateWidget(context)
+                _showDiffBottomSheet.value = false
+                _pendingDiffs.value = emptyList()
+                _pendingRemoteSlots.value = emptyList()
+                onSuccess?.invoke()
+            } catch (_: Exception) {
+                _showDiffBottomSheet.value = false
+            }
+        }
+    }
+
     private fun snapTo30Minutes(time: LocalTime): LocalTime {
         return when (time.minute) {
             in 0..14 -> time.withMinute(0)
@@ -192,7 +272,7 @@ class MoreViewModel @Inject constructor(
             try {
                 val subjects = scheduleDao.getAllSubjectsWithSlots().first()
                 val jsonString = jsonScheduleParser.exportToJson("ClemenTime Export", subjects)
-                
+
                 context.contentResolver.openOutputStream(customUri)?.use { out ->
                     out.write(jsonString.toByteArray())
                 }
@@ -223,9 +303,9 @@ class MoreViewModel @Inject constructor(
                         sws.copy(
                             slots = sws.slots.filter { slot ->
                                 !slot.isIgnored && (
-                                    slot.entryType == EntryType.THEORY || 
-                                    slot.labGroupName == sws.subject.selectedLabGroup
-                                )
+                                        slot.entryType == EntryType.THEORY ||
+                                                slot.labGroupName == sws.subject.selectedLabGroup
+                                        )
                             }
                         )
                     }
@@ -237,7 +317,7 @@ class MoreViewModel @Inject constructor(
                 )
 
                 val icsString = IcsExporter.generateIcsContent(semesters)
-                
+
                 context.contentResolver.openOutputStream(customUri)?.use { out ->
                     out.write(icsString.toByteArray())
                 }

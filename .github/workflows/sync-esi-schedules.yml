@@ -1,0 +1,47 @@
+name: Sync ESI Schedules
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  check-and-sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Check ESI Update
+        id: check
+        run: |
+          OUTPUT=$(python3 schedules/script/check_esi_update.py)
+          echo "$OUTPUT"
+          if [[ "$OUTPUT" == *"[Update Detected]"* ]]; then
+            echo "has_update=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Process Schedules
+        if: steps.check.outputs.has_update == 'true' || github.event_name == 'workflow_dispatch'
+        run: |
+          python3 process_schedules.py --strict
+
+      - name: Commit and Push
+        if: steps.check.outputs.has_update == 'true' || github.event_name == 'workflow_dispatch'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add schedules/
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: auto-sync ESI schedules [skip ci]"
+            git push
+          fi

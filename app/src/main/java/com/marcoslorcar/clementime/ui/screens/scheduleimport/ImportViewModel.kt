@@ -10,6 +10,7 @@ import com.marcoslorcar.clementime.data.Subject
 import com.marcoslorcar.clementime.data.SubjectWithSlots
 import com.marcoslorcar.clementime.data.importing.model.ImportFile
 import com.marcoslorcar.clementime.data.importing.model.ImportSourceType
+import com.marcoslorcar.clementime.data.importing.model.JsonFlatSlot
 import com.marcoslorcar.clementime.data.importing.model.JsonSubject
 import com.marcoslorcar.clementime.data.importing.model.ScheduleJsonSchema
 import com.marcoslorcar.clementime.data.importing.model.SelectedSubject
@@ -20,6 +21,7 @@ import com.marcoslorcar.clementime.ui.screens.scheduleimport.model.ConflictStatu
 import com.marcoslorcar.clementime.ui.screens.scheduleimport.model.TheoryOverlap
 import com.marcoslorcar.clementime.ui.widget.ScheduleWidgetUtils
 import com.marcoslorcar.clementime.utils.ConflictSolver
+import com.marcoslorcar.clementime.utils.SlotDiff
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -300,6 +302,7 @@ class ImportViewModel @Inject constructor(
         }
     }
 
+    @Suppress("unused")
     fun selectAllSubjects(subjects: Collection<SelectedSubject>? = null) {
         val currentState = _uiState.value
         if (currentState is ImportUiState.Selection) {
@@ -469,6 +472,24 @@ class ImportViewModel @Inject constructor(
     fun markPreviewTooltipSeen() {
         viewModelScope.launch {
             settingsRepository.setHasSeenImportPreviewTooltip(true)
+        }
+    }
+
+    @Suppress("unused")
+    fun applySlotDiffs(
+        diffs: List<SlotDiff>,
+        remoteSlots: List<JsonFlatSlot> = emptyList(),
+        onSuccess: (() -> Unit)? = null
+    ) {
+        viewModelScope.launch {
+            try {
+                val currentSemester = settingsRepository.currentSemesterFlow.first()
+                repository.applySlotDiffs(diffs, remoteSlots, currentSemester)
+                context?.let { ScheduleWidgetUtils.updateWidget(it) }
+                onSuccess?.invoke()
+            } catch (_: Exception) {
+                // Log or handle error
+            }
         }
     }
 

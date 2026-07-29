@@ -36,13 +36,27 @@ def generate_index(dist_dir=None):
                 data = json.load(f)
 
             schedule_id = os.path.splitext(filename)[0]
-            title = data.get("title", filename)
+            
+            if isinstance(data, dict):
+                title = data.get("title", filename)
+                description = data.get("description", "Horario oficial")
+            else:
+                if schedule_id.upper() == "1C":
+                    title = "Primer Cuatrimestre"
+                    description = "Horario oficial ESI UCLM - 1º Cuatrimestre"
+                elif schedule_id.upper() == "2C":
+                    title = "Segundo Cuatrimestre"
+                    description = "Horario oficial ESI UCLM - 2º Cuatrimestre"
+                else:
+                    title = f"Cuatrimestre {schedule_id}"
+                    description = "Horario oficial"
+
             file_hash = get_file_hash(file_path)
 
             index_entries.append({
                 "id": schedule_id,
                 "title": title,
-                "description": "Horario oficial",
+                "description": description,
                 "path": filename,
                 "hash": file_hash,
                 "updatedTime": datetime.now().strftime("%Y-%m-%d")

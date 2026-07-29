@@ -2,15 +2,19 @@ package com.marcoslorcar.clementime.data.importing.repository
 
 import android.content.Context
 import android.net.Uri
+import com.marcoslorcar.clementime.data.ClassSlot
 import com.marcoslorcar.clementime.data.EntryType
 import com.marcoslorcar.clementime.data.ScheduleDao
+import com.marcoslorcar.clementime.data.SettingsRepository
 import com.marcoslorcar.clementime.data.Subject
 import com.marcoslorcar.clementime.data.api.GitHubScheduleApiService
 import com.marcoslorcar.clementime.data.importing.model.ImportFile
+import com.marcoslorcar.clementime.data.importing.model.JsonFlatSlot
 import com.marcoslorcar.clementime.data.importing.model.RemoteScheduleSummary
 import com.marcoslorcar.clementime.data.importing.model.ScheduleJsonSchema
 import com.marcoslorcar.clementime.data.importing.model.SelectedSubject
 import com.marcoslorcar.clementime.data.importing.parser.JsonScheduleParser
+import com.marcoslorcar.clementime.utils.SlotDiff
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -18,6 +22,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.security.MessageDigest
+import java.time.LocalTime
 import javax.inject.Inject
 
 @Serializable
@@ -199,7 +204,102 @@ class ImportRepository @Inject constructor(
 
             dao.upsertSubjectWithSlots(subject, theorySlots + labSlots)
         }
-     }
+    }
+
+    suspend fun applySlotDiffs(
+        diffs: List<SlotDiff>,
+        remoteSlots: List<JsonFlatSlot> = emptyList(),
+        semester: Int
+    ) = withContext(Dispatchers.IO) {
+        if (diffs.isEmpty()) return@withContext
+
+        var slotsToUse = remoteSlots
+        if (slotsToUse.isEmpty()) {
+            val baseUrl = SettingsRepository.DEFAULT_GITHUB_REPO_BASE_URL
+            val summaries = fetchRemoteSchedules(baseUrl).getOrNull().orEmpty()
+            val targetSemesterId = "${semester}C"
+            val summary = summaries.find {
+                it.id.equals(targetSemesterId, ignoreCase = true) ||
+                        it.path.contains(targetSemesterId, ignoreCase = true)
+            } ?: summaries.firstOrNull()
+
+            if (summary != null && apiService != null) {
+                val fullUrl = normalizeGitHubUrl(
+                    if (baseUrl.endsWith("/")) "${baseUrl}${summary.path}" else "${baseUrl}/${summary.path}"
+                )
+                val resp = apiService.getRawScheduleSchema(fullUrl)
+                if (resp.isSuccessful) {
+                    val jsonString = resp.body()?.string().orEmpty()
+                    slotsToUse = runCatching { json.decodeFromString<List<JsonFlatSlot>>(jsonString) }.getOrDefault(emptyList())
+                }
+            }
+        }
+
+        if (slotsToUse.isEmpty()) return@withContext
+
+        val affectedKeys = diffs.map { it.subjectCode.ifBlank { it.subjectName }.trim() }.distinct()
+        val existingSubjects = dao.getAllSubjectsWithSlotsBySemester(semester).first()
+
+        val targetSemesterCode = "${semester}C"
+        val semesterRemoteSlots = slotsToUse.filter { slot ->
+            val slotCuat = slot.cuatrimestre.trim()
+            slotCuat.equals(targetSemesterCode, ignoreCase = true) || slotCuat == "$semester"
+        }
+
+        for (affectedKey in affectedKeys) {
+            val existingSws = existingSubjects.find { sws ->
+                sws.subject.code.trim().equals(affectedKey, ignoreCase = true) ||
+                        sws.subject.name.trim().equals(affectedKey, ignoreCase = true)
+            } ?: continue
+
+            val subject = existingSws.subject
+
+            val matchedJsonSlots = semesterRemoteSlots.filter { rSlot ->
+                val asig = rSlot.asignatura.trim()
+                val codeMatch = asig.equals(subject.code.trim(), ignoreCase = true)
+                val nameMatch = asig.equals(subject.name.trim(), ignoreCase = true)
+                val groupMatch = subject.courseGroup.isNullOrBlank() || rSlot.grupo.isBlank() ||
+                        normalizeGroup(subject.courseGroup) == normalizeGroup(rSlot.grupo)
+                (codeMatch || nameMatch) && groupMatch
+            }
+
+            val newClassSlots = matchedJsonSlots.map { rSlot ->
+                val isLab = rSlot.esLaboratorio ||
+                        rSlot.tipo.contains("laboratorio", ignoreCase = true) ||
+                        rSlot.tipo.contains("lab", ignoreCase = true)
+
+                ClassSlot(
+                    subjectId = subject.id,
+                    dayOfWeek = parser.parseDayOfWeek(rSlot.dia),
+                    startTime = parseLocalTime(rSlot.horaInicio),
+                    endTime = parseLocalTime(rSlot.horaFin),
+                    classroom = rSlot.aula.trim().ifEmpty { null },
+                    labGroupName = rSlot.grupoPracticas.trim().ifEmpty { null },
+                    entryType = if (isLab) EntryType.LAB else EntryType.THEORY,
+                    professor = rSlot.profesor.trim().ifEmpty { null }
+                )
+            }
+
+            dao.upsertSubjectWithSlots(subject, newClassSlots)
+        }
+    }
+
+    private fun normalizeGroup(group: String?): String {
+        if (group.isNullOrBlank()) return ""
+        return group.replace("º", "").replace("ª", "").replace(" ", "").uppercase()
+    }
+
+    private fun parseLocalTime(timeStr: String): LocalTime {
+        val trimmed = timeStr.trim()
+        if (trimmed.isBlank()) return LocalTime.MIDNIGHT
+        val parts = trimmed.split(":")
+        if (parts.size == 2) {
+            val h = parts[0].toIntOrNull() ?: 0
+            val m = parts[1].toIntOrNull() ?: 0
+            return LocalTime.of(h, m)
+        }
+        return runCatching { LocalTime.parse(trimmed) }.getOrDefault(LocalTime.MIDNIGHT)
+    }
 
     suspend fun getExistingActiveSubjects(semester: Int): List<com.marcoslorcar.clementime.data.SubjectWithSlots> = withContext(Dispatchers.IO) {
         dao.getAllSubjectsWithSlotsBySemester(semester).first().filter { it.subject.isActive }

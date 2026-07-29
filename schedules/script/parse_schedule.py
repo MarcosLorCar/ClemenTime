@@ -11,22 +11,6 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 MAPPINGS_FILE = os.path.join(SCRIPT_DIR, "mappings.json")
 DEFAULT_DIST_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "dist"))
 
-# Weekday translation mapping
-WEEKDAY_MAP = {
-    "LUNES": "MONDAY",
-    "MARTES": "TUESDAY",
-    "MIÉRCOLES": "WEDNESDAY",
-    "MIERCOLES": "WEDNESDAY",
-    "JUEVES": "THURSDAY",
-    "VIERNES": "FRIDAY",
-    "SÁBADO": "SATURDAY",
-    "SABADO": "SATURDAY",
-    "DOMINGO": "SUNDAY"
-}
-
-# Global root-level subjects
-GLOBAL_SUBJECTS = {"Pruebas de Progreso", "Conferencias", "PruebasProgreso"}
-
 def remove_accents(text: str) -> str:
     """Normalize unicode characters to remove accents for fuzzy key comparison."""
     if not text:
@@ -121,7 +105,7 @@ def get_mapping(code: str, category: str, mappings: Dict, interactive: bool = Tr
 
 def resolve_professors(prof_str: str, mappings: Dict, interactive: bool) -> str:
     if not prof_str:
-        return None
+        return ""
 
     prof_str = prof_str.strip()
 
@@ -162,80 +146,13 @@ def format_time(time_str: str, is_end_time: bool = False) -> str:
         return f"{hours:02d}:{minutes:02d}"
     return time_str
 
-def parse_year_and_group(grupo_str: str):
-    """
-    Parses 'grupo' string into year name and group name without repeating the year.
-    Example: '1A' -> ('1º', 'A'), '3º ISO' -> ('3º ISO', None)
-    """
-    grupo_str = grupo_str.strip()
-    match = re.match(r"^(\d+)([A-Z])$", grupo_str)
-    if match:
-        year_num, group_char = match.groups()
-        year_name = f"{year_num}º"
-        group_name = group_char
-        return year_name, group_name
-
-    if not grupo_str.endswith("º") and not grupo_str[0].isdigit():
-        return grupo_str, None
-    return grupo_str, None
-
-def transform_slot(entry: Dict, mappings: Dict, interactive: bool) -> Dict:
-    day = WEEKDAY_MAP.get(entry.get("dia", "").upper(), entry.get("dia", "").upper())
-    start_time = format_time(entry.get("hora_inicio", ""), is_end_time=False)
-    end_time = format_time(entry.get("hora_fin", ""), is_end_time=True)
-
-    entry_type = "LAB" if entry.get("es_laboratorio", False) else "THEORY"
-
-    prof_raw = entry.get("profesor", "")
-    prof = resolve_professors(prof_raw, mappings, interactive) if prof_raw else None
-
-    aula_raw = entry.get("aula", "")
-    classroom = get_mapping(aula_raw, "classrooms", mappings, interactive) if aula_raw else None
-
-    return {
-        "dayOfWeek": day,
-        "startTime": start_time,
-        "endTime": end_time,
-        "classroom": classroom,
-        "groupName": entry.get("grupo_practicas") or None,
-        "entryType": entry_type,
-        "professor": prof
-    }
-
-def merge_subject_dicts(target: Dict, source: Dict):
-    """Merges source subject slots into target subject."""
-    for slot in source.get("theorySlots", []):
-        if slot not in target["theorySlots"]:
-            target["theorySlots"].append(slot)
-
-    for v_name, slots in source.get("labVariants", {}).items():
-        if v_name not in target["labVariants"]:
-            target["labVariants"][v_name] = []
-        for slot in slots:
-            if slot not in target["labVariants"][v_name]:
-                target["labVariants"][v_name].append(slot)
-
-def consolidate_subjects(subject_map: Dict[str, Dict]) -> List[Dict]:
-    """Ensures subjects with identical canonical full names are merged into a single subject."""
-    merged: Dict[str, Dict] = {}
-    for sub_code, subj in subject_map.items():
-        key = subj["name"]
-        if key not in merged:
-            merged[key] = subj
-        else:
-            merge_subject_dicts(merged[key], subj)
-    return list(merged.values())
-
-def process_raw_json(raw_entries: List[Dict], interactive: bool = True) -> Dict[str, Dict]:
+def process_raw_json(raw_entries: List[Dict], interactive: bool = True) -> Dict[str, List[Dict]]:
     mappings = load_mappings()
 
-    semesters: Dict[str, Dict] = {
-        "1C": {"version": 1, "title": None, "semester": 1, "matters": [], "years": []},
-        "2C": {"version": 1, "title": None, "semester": 2, "matters": [], "years": []}
+    semesters: Dict[str, List[Dict]] = {
+        "1C": [],
+        "2C": []
     }
-
-    global_matters: Dict[str, Dict[str, Dict]] = {"1C": {}, "2C": {}}
-    structured_years: Dict[str, Dict[str, Any]] = {"1C": {}, "2C": {}}
 
     for entry in raw_entries:
         raw_asig = entry.get("asignatura", "").strip()
@@ -244,84 +161,37 @@ def process_raw_json(raw_entries: List[Dict], interactive: bool = True) -> Dict[
         if "universidad de mayores" in raw_asig.lower() or "univmayores" in raw_asig.lower():
             continue
 
-        sem_key = entry.get("cuatrimestre", "1C").upper()
-        if sem_key not in semesters:
-            sem_key = "1C"
+        cuatrimestre_val = entry.get("cuatrimestre", "1C").strip()
+        sem_key = "2C" if "2" in cuatrimestre_val else "1C"
 
-        clean_code = clean_subject_code(raw_asig)
-        canonical_code, full_name = resolve_mapping(clean_code, "matters", mappings, interactive)
-        slot = transform_slot(entry, mappings, interactive)
+        prof_raw = entry.get("profesor", "")
+        prof = resolve_professors(prof_raw, mappings, interactive) if prof_raw else ""
 
-        def get_or_create_subject(container: Dict[str, Dict], sub_code: str, sub_name: str, sem_num: int) -> Dict:
-            if sub_name not in container:
-                container[sub_name] = {
-                    "code": sub_code,
-                    "name": sub_name,
-                    "color": None,
-                    "semester": sem_num,
-                    "theorySlots": [],
-                    "labVariants": {},
-                    "isDummy": False
-                }
-            return container[sub_name]
+        aula_raw = entry.get("aula", "")
+        classroom = get_mapping(aula_raw, "classrooms", mappings, interactive) if aula_raw else ""
 
-        def add_slot_to_subject(subject: Dict, slot_data: Dict):
-            if slot_data["entryType"] == "LAB":
-                variant_name = entry.get("grupo_practicas") or "Lab"
-                if variant_name not in subject["labVariants"]:
-                    subject["labVariants"][variant_name] = []
-                if slot_data not in subject["labVariants"][variant_name]:
-                    subject["labVariants"][variant_name].append(slot_data)
-            else:
-                if slot_data not in subject["theorySlots"]:
-                    subject["theorySlots"].append(slot_data)
+        asig_normalized = get_mapping(raw_asig, "matters", mappings, interactive) if raw_asig else raw_asig
 
-        # 2. Global subjects
-        if canonical_code in GLOBAL_SUBJECTS or clean_code in GLOBAL_SUBJECTS or raw_asig in GLOBAL_SUBJECTS:
-            subj = get_or_create_subject(global_matters[sem_key], canonical_code, full_name, 1 if sem_key == "1C" else 2)
-            add_slot_to_subject(subj, slot)
-            continue
+        clean_slot = {
+            "grupo": entry.get("grupo", ""),
+            "cuatrimestre": sem_key,
+            "dia": entry.get("dia", ""),
+            "hora_inicio": format_time(entry.get("hora_inicio", ""), is_end_time=False),
+            "hora_fin": format_time(entry.get("hora_fin", ""), is_end_time=True),
+            "asignatura": asig_normalized,
+            "tipo": entry.get("tipo", "teoría"),
+            "aula": classroom,
+            "profesor": prof,
+            "es_laboratorio": bool(entry.get("es_laboratorio", False)),
+            "grupo_practicas": entry.get("grupo_practicas", "")
+        }
 
-        # 3. Standard subjects
-        year_name, group_name = parse_year_and_group(entry.get("grupo", ""))
-
-        if year_name not in structured_years[sem_key]:
-            structured_years[sem_key][year_name] = {"matters": {}, "groups": {}}
-
-        year_entry = structured_years[sem_key][year_name]
-
-        if group_name:
-            if group_name not in year_entry["groups"]:
-                year_entry["groups"][group_name] = {}
-            subj = get_or_create_subject(year_entry["groups"][group_name], canonical_code, full_name, 1 if sem_key == "1C" else 2)
-        else:
-            subj = get_or_create_subject(year_entry["matters"], canonical_code, full_name, 1 if sem_key == "1C" else 2)
-
-        add_slot_to_subject(subj, slot)
-
-    # Build output schemas
-    for sem_key, schema in semesters.items():
-        schema["matters"] = consolidate_subjects(global_matters[sem_key])
-
-        for y_name, y_data in structured_years[sem_key].items():
-            year_matters = consolidate_subjects(y_data["matters"])
-            groups_list = []
-            for g_name, g_matters in y_data["groups"].items():
-                groups_list.append({
-                    "name": g_name,
-                    "matters": consolidate_subjects(g_matters)
-                })
-
-            schema["years"].append({
-                "name": y_name,
-                "matters": year_matters,
-                "groups": groups_list
-            })
+        semesters[sem_key].append(clean_slot)
 
     return semesters
 
 def main():
-    parser = argparse.ArgumentParser(description="Process combined schedule JSON into semester schemas.")
+    parser = argparse.ArgumentParser(description="Process raw schedule JSON into flat array semester JSONs.")
     parser.add_argument("input_json", help="Path to input raw JSON file.")
     parser.add_argument("--non-interactive", action="store_true", help="Run without interactive prompts.")
     args = parser.parse_args()
@@ -339,28 +209,12 @@ def main():
     os.makedirs(DEFAULT_DIST_DIR, exist_ok=True)
 
     print("\n--- Output Configuration ---")
-    for sem_key, schema in results.items():
-        default_title = f"Cuatrimestre {1 if sem_key == '1C' else 2}"
-        default_filename = f"{sem_key}.json"
-
-        if interactive:
-            print(f"\n[{sem_key}]")
-            user_title = input(f"  Enter schedule title (default: '{default_title}'): ").strip()
-            schema["title"] = user_title if user_title else default_title
-
-            user_filename = input(f"  Enter output filename (default: '{default_filename}'): ").strip()
-            filename = user_filename if user_filename else default_filename
-        else:
-            schema["title"] = default_title
-            filename = default_filename
-
-        if not filename.endswith(".json"):
-            filename += ".json"
-
+    for sem_key, slots in results.items():
+        filename = f"{sem_key}.json"
         out_file = os.path.join(DEFAULT_DIST_DIR, filename)
         with open(out_file, "w", encoding="utf-8") as f:
-            json.dump(schema, f, indent=2, ensure_ascii=False)
-        print(f"  -> Saved: {out_file}")
+            json.dump(slots, f, indent=2, ensure_ascii=False)
+        print(f"  -> Saved {len(slots)} slots to: {out_file}")
 
 if __name__ == "__main__":
     main()
