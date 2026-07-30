@@ -703,51 +703,40 @@ fun MoreContent(
                     else -> stringResource(R.string.auto_update_interval_off)
                 }
 
-                SettingItem(
-                    icon = Icons.Default.Sync,
-                    title = stringResource(R.string.auto_update_interval_title),
-                    trailingContent = {
-                        Box {
-                            OutlinedButton(
-                                onClick = { showAutoUpdateMenu = true },
-                                modifier = Modifier.widthIn(max = 160.dp)
-                            ) {
-                                Text(
-                                    text = autoUpdateLabel,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-                            }
-                            DropdownMenu(
-                                expanded = showAutoUpdateMenu,
-                                onDismissRequest = { showAutoUpdateMenu = false }
-                            ) {
-                                listOf(6, 12, 24, 0).forEach { hours ->
-                                    DropdownMenuItem(
-                                        text = {
-                                            Text(
-                                                when (hours) {
-                                                    6 -> stringResource(R.string.auto_update_interval_6h)
-                                                    12 -> stringResource(R.string.auto_update_interval_12h)
-                                                    24 -> stringResource(R.string.auto_update_interval_24h)
-                                                    else -> stringResource(R.string.auto_update_interval_off)
-                                                }
-                                            )
-                                        },
-                                        onClick = {
-                                            if (hours > 0) {
-                                                requestNotificationPermissionIfNeeded()
-                                            }
-                                            onAutoUpdateIntervalChanged(hours)
-                                            showAutoUpdateMenu = false
+                Box {
+                    SettingItem(
+                        icon = Icons.Default.Sync,
+                        title = stringResource(R.string.auto_update_interval_title),
+                        subtitle = autoUpdateLabel,
+                        onClick = { showAutoUpdateMenu = true }
+                    )
+                    DropdownMenu(
+                        expanded = showAutoUpdateMenu,
+                        onDismissRequest = { showAutoUpdateMenu = false }
+                    ) {
+                        listOf(6, 12, 24, 0).forEach { hours ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        when (hours) {
+                                            6 -> stringResource(R.string.auto_update_interval_6h)
+                                            12 -> stringResource(R.string.auto_update_interval_12h)
+                                            24 -> stringResource(R.string.auto_update_interval_24h)
+                                            else -> stringResource(R.string.auto_update_interval_off)
                                         }
                                     )
+                                },
+                                onClick = {
+                                    if (hours > 0) {
+                                        requestNotificationPermissionIfNeeded()
+                                    }
+                                    onAutoUpdateIntervalChanged(hours)
+                                    showAutoUpdateMenu = false
                                 }
-                            }
+                            )
                         }
                     }
-                )
+                }
 
                 // Check for Updates Now Button
                 SettingItem(
@@ -853,7 +842,7 @@ fun SettingItem(
                     Text(
                         text = title,
                         style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.SemiBold
                     )
                     if (subtitle != null) {
                         Text(

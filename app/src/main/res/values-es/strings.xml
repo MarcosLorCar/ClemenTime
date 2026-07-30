@@ -370,6 +370,12 @@
     <string name="diff_new_detail">Nuevo: %1$s</string>
     <string name="diff_previous_label">ANTERIOR</string>
     <string name="diff_new_label">NUEVO</string>
+    <string name="onboarding_autoupdate_title">Actualización automática</string>
+    <string name="onboarding_autoupdate_desc">Recibe avisos cuando la ESI actualice las aulas, profesores o tramos horarios.</string>
+    <string name="onboarding_autoupdate_frequency">Frecuencia de comprobación</string>
+    <string name="onboarding_notifications_permission_btn">Permitir notificaciones</string>
+    <string name="onboarding_notifications_permission_granted">Notificaciones permitidas ✓</string>
+    <string name="auto_update_interval_off_short">Off</string>
     <string name="schedule_updated_success">Horario actualizado con éxito.</string>
 </resources>
 

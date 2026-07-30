@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.marcoslorcar.clementime.BuildConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -272,10 +273,10 @@ open class SettingsRepository @Inject constructor(
     open val autoUpdateIntervalHoursFlow: Flow<Int>
         get() = try {
             context?.dataStore?.data?.map { preferences ->
-                preferences[autoUpdateIntervalHoursKey] ?: 6
-            } ?: kotlinx.coroutines.flow.flowOf(6)
+                preferences[autoUpdateIntervalHoursKey] ?: 0
+            } ?: kotlinx.coroutines.flow.flowOf(0)
         } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(6)
+            kotlinx.coroutines.flow.flowOf(0)
         }
 
     open fun getLastKnownScheduleHashFlow(semester: Int): Flow<String> = try {
@@ -504,7 +505,7 @@ open class SettingsRepository @Inject constructor(
     }
 
     companion object {
-        const val DEFAULT_GITHUB_REPO_BASE_URL = "https://raw.githubusercontent.com/MarcosLorCar/ClemenTime/master/schedules/dist/"
+        const val DEFAULT_GITHUB_REPO_BASE_URL = BuildConfig.DEFAULT_GITHUB_REPO_BASE_URL
     }
 }
 

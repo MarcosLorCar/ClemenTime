@@ -34,6 +34,17 @@ android {
         versionCode = passedVersionCode ?: (1000 + gitCommitCount)
         versionName = passedVersionName ?: gitVersionName
 
+        // Dynamic Git branch detection for local builds base URL
+        val gitBranch = providers.exec {
+            commandLine("git", "rev-parse", "--abbrev-ref", "HEAD")
+            isIgnoreExitValue = true
+        }.standardOutput.asText.map { it.trim() }.getOrElse("master")
+
+        val effectiveBranch = if (gitBranch.isBlank() || gitBranch == "HEAD") "master" else gitBranch
+        val defaultGithubRepoBaseUrl = "https://raw.githubusercontent.com/MarcosLorCar/ClemenTime/$effectiveBranch/schedules/dist/"
+
+        buildConfigField("String", "DEFAULT_GITHUB_REPO_BASE_URL", "\"$defaultGithubRepoBaseUrl\"")
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

@@ -25,11 +25,13 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -40,10 +42,14 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -64,12 +70,9 @@ fun OnboardingScreen(
     viewModel: OnboardingViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val pagerState = rememberPagerState(pageCount = { 4 })
+    val pagerState = rememberPagerState(pageCount = { 5 })
     val coroutineScope = rememberCoroutineScope()
-
-    // pagerState should automatically persist its page during recreation.
-    // If it doesn't, we can add a listener to sync it with ViewModel, 
-    // but rememberPagerState is annotated with @Stable and uses rememberSaveable internally.
+    val context = LocalContext.current
 
     Scaffold { paddingValues ->
         Column(
@@ -94,7 +97,11 @@ fun OnboardingScreen(
                         onThemeModeSelected = viewModel::setThemeMode,
                         onColorThemeSelected = viewModel::setSelectedTheme
                     )
-                    3 -> ReadyPage()
+                    3 -> AutoUpdatePage(
+                        selectedInterval = uiState.autoUpdateIntervalHours,
+                        onIntervalSelected = { hours -> viewModel.setAutoUpdateIntervalHours(hours, context) }
+                    )
+                    4 -> ReadyPage()
                 }
             }
 
@@ -203,7 +210,7 @@ fun ThemePage(
     onThemeModeSelected: (String) -> Unit,
     onColorThemeSelected: (String) -> Unit
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -321,6 +328,123 @@ fun ReadyPage() {
         title = stringResource(R.string.onboarding_ready_title),
         description = stringResource(R.string.onboarding_ready_desc)
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AutoUpdatePage(
+    selectedInterval: Int,
+    onIntervalSelected: (Int) -> Unit
+) {
+    val context = LocalContext.current
+    var isPermissionGranted by remember {
+        mutableStateOf(
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                androidx.core.content.ContextCompat.checkSelfPermission(
+                    context,
+                    android.Manifest.permission.POST_NOTIFICATIONS
+                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            } else true
+        )
+    }
+
+    val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        isPermissionGranted = granted
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = Icons.Default.Sync,
+            contentDescription = null,
+            modifier = Modifier.size(80.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(
+            text = stringResource(R.string.onboarding_autoupdate_title),
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            text = stringResource(R.string.onboarding_autoupdate_desc),
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            lineHeight = 22.sp
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Text(
+            text = stringResource(R.string.onboarding_autoupdate_frequency),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.secondary,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        SingleChoiceSegmentedButtonRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp)
+        ) {
+            val intervals = listOf(6, 12, 24, 0)
+            intervals.forEachIndexed { index, hours ->
+                val label = when (hours) {
+                    6 -> "6h"
+                    12 -> "12h"
+                    24 -> "24h"
+                    else -> stringResource(R.string.auto_update_interval_off_short)
+                }
+                SegmentedButton(
+                    selected = selectedInterval == hours,
+                    onClick = {
+                        onIntervalSelected(hours)
+                        if (hours > 0 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !isPermissionGranted) {
+                            permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                    },
+                    shape = SegmentedButtonDefaults.itemShape(index = index, count = intervals.size)
+                ) {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelMedium,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1
+                    )
+                }
+            }
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && selectedInterval > 0) {
+            Spacer(modifier = Modifier.height(24.dp))
+            OutlinedButton(
+                onClick = {
+                    if (!isPermissionGranted) {
+                        permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = if (isPermissionGranted) {
+                        stringResource(R.string.onboarding_notifications_permission_granted)
+                    } else {
+                        stringResource(R.string.onboarding_notifications_permission_btn)
+                    }
+                )
+            }
+        }
+    }
 }
 
 @Composable

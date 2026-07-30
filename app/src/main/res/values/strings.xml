@@ -368,5 +368,11 @@
     <string name="diff_new_detail">New: %1$s</string>
     <string name="diff_previous_label">BEFORE</string>
     <string name="diff_new_label">AFTER</string>
+    <string name="onboarding_autoupdate_title">Automatic Updates</string>
+    <string name="onboarding_autoupdate_desc">Get notified whenever your school updates classrooms, professors, or time slots.</string>
+    <string name="onboarding_autoupdate_frequency">Check frequency</string>
+    <string name="onboarding_notifications_permission_btn">Enable Notifications</string>
+    <string name="onboarding_notifications_permission_granted">Notifications Enabled ✓</string>
+    <string name="auto_update_interval_off_short">Off</string>
     <string name="schedule_updated_success">Schedule updated successfully.</string>
 </resources>

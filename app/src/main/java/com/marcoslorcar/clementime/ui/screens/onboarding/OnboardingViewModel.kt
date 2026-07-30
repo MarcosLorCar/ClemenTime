@@ -18,7 +18,8 @@ import javax.inject.Inject
 data class OnboardingUiState(
     val themeMode: String = "system",
     val selectedTheme: String = "clementine",
-    val appLanguage: String = "en"
+    val appLanguage: String = "en",
+    val autoUpdateIntervalHours: Int = 0
 )
 
 @HiltViewModel
@@ -31,12 +32,14 @@ class OnboardingViewModel @Inject constructor(
     val uiState: StateFlow<OnboardingUiState> = combine(
         settingsRepository.themeFlow,
         settingsRepository.selectedThemeFlow,
+        settingsRepository.autoUpdateIntervalHoursFlow,
         _appLanguage
-    ) { theme: String, selectedTheme: String, lang: String ->
+    ) { theme: String, selectedTheme: String, interval: Int, lang: String ->
         OnboardingUiState(
             themeMode = theme,
             selectedTheme = selectedTheme,
-            appLanguage = lang
+            appLanguage = lang,
+            autoUpdateIntervalHours = interval
         )
     }.stateIn(
         scope = viewModelScope,
@@ -70,6 +73,13 @@ class OnboardingViewModel @Inject constructor(
         _appLanguage.value = lang
         val localeList = LocaleListCompat.forLanguageTags(lang)
         AppCompatDelegate.setApplicationLocales(localeList)
+    }
+
+    fun setAutoUpdateIntervalHours(hours: Int, context: android.content.Context) {
+        viewModelScope.launch {
+            settingsRepository.setAutoUpdateIntervalHours(hours)
+            com.marcoslorcar.clementime.worker.ScheduleUpdateWorker.schedulePeriodicWork(context, hours)
+        }
     }
 
     suspend fun completeOnboarding() {
