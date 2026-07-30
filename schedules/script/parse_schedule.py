@@ -109,7 +109,7 @@ def resolve_mapping(code: str, category: str, mappings: Dict, interactive: bool 
     if not interactive:
         return code, code
 
-    print(f"\n[?] Unknown {category[:-1]} found: '{code}'")
+    print(f"\n[?] Unknown {category[:-1]} found: '{code}'", flush=True)
     val = input(f"    Enter full name for '{code}' (or press Enter to use as is): ").strip()
     val = val if val else code
     category_map[code] = val
@@ -215,6 +215,12 @@ def process_pdf_schedule(
     model_id: str = None,
     clear_cache: bool = False
 ) -> List[Dict]:
+    try:
+        sys.stdout.reconfigure(line_buffering=True)
+        sys.stderr.reconfigure(line_buffering=True)
+    except Exception:
+        pass
+
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         print("[Error] GEMINI_API_KEY environment variable not set.")
@@ -263,7 +269,7 @@ def process_pdf_schedule(
         cache_path = get_page_cache_path(page_img)
 
         if not clear_cache and os.path.exists(cache_path):
-            print(f"  -> Page {i + 1}/{len(pages)}: Loaded from cache.")
+            print(f"  -> Page {i + 1}/{len(pages)}: Loaded from cache.", flush=True)
             with open(cache_path, "r", encoding="utf-8") as f:
                 page_data = json.load(f)
         else:
@@ -273,7 +279,7 @@ def process_pdf_schedule(
 
             for attempt in range(max_retries):
                 try:
-                    print(f"  -> Page {i + 1}/{len(pages)}: Parsing with Gemini ({model_id}, attempt {attempt + 1})...")
+                    print(f"  -> Page {i + 1}/{len(pages)}: Parsing with Gemini ({model_id}, attempt {attempt + 1})...", flush=True)
                     response = client.models.generate_content(
                         model=model_id,
                         contents=[page_img, prompt],
@@ -296,11 +302,11 @@ def process_pdf_schedule(
                     status = error_data.get("status", "")
 
                     if is_daily_quota_exhausted(error_data) or is_daily_quota_exhausted(str(e)):
-                        print(f"\n[!] CRITICAL: Daily quota for model '{model_id}' exhausted.")
+                        print(f"\n[!] CRITICAL: Daily quota for model '{model_id}' exhausted.", flush=True)
                         sys.exit(1)
 
                     if "404" in str(e) or "not found" in str(e).lower() or "no longer available" in str(e).lower():
-                        print(f"\n[!] ERROR: Model '{model_id}' is not found or no longer available.")
+                        print(f"\n[!] ERROR: Model '{model_id}' is not found or no longer available.", flush=True)
                         sys.exit(1)
 
                     wait_time = None
@@ -315,20 +321,20 @@ def process_pdf_schedule(
                     if status == "RESOURCE_EXHAUSTED" or "429" in str(e):
                         if wait_time is None:
                             wait_time = base_delay * (2 ** attempt) + random.uniform(0, 5)
-                        print(f"     Rate limit reached (429/RESOURCE_EXHAUSTED). Waiting {wait_time:.1f}s before retry...")
+                        print(f"     Rate limit reached (429/RESOURCE_EXHAUSTED). Waiting {wait_time:.1f}s before retry...", flush=True)
                         time.sleep(wait_time)
                     else:
                         if wait_time:
-                            print(f"     Client error ({status}). Waiting {wait_time:.1f}s before retry...")
+                            print(f"     Client error ({status}). Waiting {wait_time:.1f}s before retry...", flush=True)
                             time.sleep(wait_time)
                         else:
-                            print(f"     Fatal Client error: {e}")
+                            print(f"     Fatal Client error: {e}", flush=True)
                             sys.exit(1)
 
                 except Exception as e:
-                    print(f"     [Warning] Attempt {attempt + 1} failed: {e}")
+                    print(f"     [Warning] Attempt {attempt + 1} failed: {e}", flush=True)
                     if attempt == max_retries - 1:
-                        print(f"     [Error] Skipping page {i + 1} after {max_retries} attempts.")
+                        print(f"     [Error] Skipping page {i + 1} after {max_retries} attempts.", flush=True)
                         break
                     time.sleep(5)
 

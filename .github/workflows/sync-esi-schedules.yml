@@ -17,6 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      PYTHONUNBUFFERED: "1"
 
     steps:
       - uses: actions/checkout@v4
@@ -39,7 +41,8 @@ jobs:
       - name: Check PDF Update
         id: check
         run: |
-          OUTPUT=$(python3 schedules/script/check_pdf_update.py)
+          export PYTHONUNBUFFERED=1
+          OUTPUT=$(python3 -u schedules/script/check_pdf_update.py)
           echo "$OUTPUT"
           if [[ "$OUTPUT" == *"[Update Detected]"* ]]; then
             echo "has_update=true" >> $GITHUB_OUTPUT
@@ -50,8 +53,10 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
+          PYTHONUNBUFFERED: "1"
         run: |
-          python3 process_schedules.py --strict
+          export PYTHONUNBUFFERED=1
+          python3 -u process_schedules.py --strict
 
       - name: Commit and Push
         if: steps.check.outputs.has_update == 'true' || github.event_name == 'workflow_dispatch'

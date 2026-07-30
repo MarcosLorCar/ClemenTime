@@ -21,6 +21,12 @@ import argparse
 
 def main():
     try:
+        sys.stdout.reconfigure(line_buffering=True)
+        sys.stderr.reconfigure(line_buffering=True)
+    except Exception:
+        pass
+
+    try:
         from dotenv import load_dotenv
         root_dir = os.path.dirname(os.path.abspath(__file__))
         load_dotenv(os.path.join(root_dir, ".env"))
@@ -51,19 +57,19 @@ def main():
         if os.path.exists(args.pdf):
             pdfs_to_process.append(args.pdf)
         else:
-            print(f"[Error] File '{args.pdf}' not found.")
+            print(f"[Error] File '{args.pdf}' not found.", flush=True)
             sys.exit(1)
     else:
         pdfs_to_process = sorted(glob.glob(os.path.join(pdf_dir, "*.pdf")))
         if not pdfs_to_process:
-            print(f"[Warning] No PDFs found in {pdf_dir}")
+            print(f"[Warning] No PDFs found in {pdf_dir}", flush=True)
 
     if not pdfs_to_process:
-        print("[Info] No files to process.")
+        print("[Info] No files to process.", flush=True)
     else:
         # 2. Run schedule parsing for each PDF
         for pdf in pdfs_to_process:
-            cmd = [sys.executable, parse_script, pdf]
+            cmd = [sys.executable, "-u", parse_script, pdf]
             if args.strict:
                 cmd.append("--non-interactive")
             if args.model:
@@ -71,22 +77,24 @@ def main():
             if args.clear_cache:
                 cmd.append("--clear-cache")
 
-            print(f"\n[Run] Processing {os.path.basename(pdf)} with Gemini ({args.model})...")
+            print(f"\n[Run] Processing {os.path.basename(pdf)} with Gemini ({args.model})...", flush=True)
+            sys.stdout.flush()
             res = subprocess.run(cmd)
             if res.returncode != 0:
-                print(f"[Error] Parsing failed for {pdf}")
+                print(f"[Error] Parsing failed for {pdf}", flush=True)
                 if args.strict:
                     sys.exit(res.returncode)
 
     # 3. Regenerate index
     if os.path.exists(index_script):
-        print("\n[Run] Regenerating index...")
-        res_index = subprocess.run([sys.executable, index_script])
+        print("\n[Run] Regenerating index...", flush=True)
+        sys.stdout.flush()
+        res_index = subprocess.run([sys.executable, "-u", index_script])
         if res_index.returncode != 0:
-            print("[Error] Schedule index generation failed.")
+            print("[Error] Schedule index generation failed.", flush=True)
             sys.exit(res_index.returncode)
 
-    print("\n[Done] Pipeline finished successfully!")
+    print("\n[Done] Pipeline finished successfully!", flush=True)
 
 if __name__ == "__main__":
     main()
