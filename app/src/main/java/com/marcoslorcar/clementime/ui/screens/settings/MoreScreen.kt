@@ -139,7 +139,8 @@ fun MoreScreen(
                     Toast.makeText(context, updatedSuccessMsg, Toast.LENGTH_SHORT).show()
                 }
             },
-            onDismiss = { viewModel.dismissDiffBottomSheet() }
+            onIgnore = { viewModel.ignorePendingSlotDiffs() },
+            onDismissRequest = { viewModel.dismissDiffBottomSheet() }
         )
     }
 

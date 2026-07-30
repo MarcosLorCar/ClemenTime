@@ -34,7 +34,8 @@ import java.util.concurrent.TimeUnit
 
 data class SyncResult(
     val diffs: List<SlotDiff> = emptyList(),
-    val remoteSlots: List<JsonFlatSlot> = emptyList()
+    val remoteSlots: List<JsonFlatSlot> = emptyList(),
+    val remoteHash: String = ""
 )
 
 @HiltWorker
@@ -182,9 +183,8 @@ class ScheduleUpdateWorker @AssistedInject constructor(
             val diffs = ScheduleDiffChecker.findDiffs(existingActiveSubjects, remoteSlots, currentSemester)
 
             settingsRepository.setLastScheduleSyncTimestamp(System.currentTimeMillis())
-            settingsRepository.setLastKnownScheduleHash(currentSemester, remoteHash)
 
-            return SyncResult(diffs = diffs, remoteSlots = remoteSlots)
+            return SyncResult(diffs = diffs, remoteSlots = remoteSlots, remoteHash = remoteHash)
         }
 
         @SuppressLint("MissingPermission")

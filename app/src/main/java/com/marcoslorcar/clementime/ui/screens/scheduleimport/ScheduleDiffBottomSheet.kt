@@ -41,13 +41,14 @@ import com.marcoslorcar.clementime.utils.SlotDiff
 fun ScheduleDiffBottomSheet(
     diffs: List<SlotDiff>,
     onApply: () -> Unit,
-    onDismiss: () -> Unit,
+    onIgnore: () -> Unit,
+    onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = onDismissRequest,
         sheetState = sheetState,
         modifier = modifier
     ) {
@@ -96,7 +97,7 @@ fun ScheduleDiffBottomSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 OutlinedButton(
-                    onClick = onDismiss,
+                    onClick = onIgnore,
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(text = stringResource(R.string.dismiss))

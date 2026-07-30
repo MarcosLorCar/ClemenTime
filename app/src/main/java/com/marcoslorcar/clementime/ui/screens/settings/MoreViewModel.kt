@@ -73,6 +73,7 @@ class MoreViewModel @Inject constructor(
     private val _isCheckingUpdates = MutableStateFlow(false)
     private val _pendingDiffs = MutableStateFlow<List<SlotDiff>>(emptyList())
     private val _pendingRemoteSlots = MutableStateFlow<List<JsonFlatSlot>>(emptyList())
+    private val _pendingRemoteHash = MutableStateFlow("")
     private val _showDiffBottomSheet = MutableStateFlow(false)
 
     val uiState: StateFlow<MoreUiState> = combine(
@@ -222,6 +223,7 @@ class MoreViewModel @Inject constructor(
                 if (syncResult.diffs.isNotEmpty()) {
                     _pendingDiffs.value = syncResult.diffs
                     _pendingRemoteSlots.value = syncResult.remoteSlots
+                    _pendingRemoteHash.value = syncResult.remoteHash
                     _showDiffBottomSheet.value = true
                 } else {
                     onNoUpdatesFound?.invoke()
@@ -237,15 +239,34 @@ class MoreViewModel @Inject constructor(
         _showDiffBottomSheet.value = false
     }
 
+    fun ignorePendingSlotDiffs() {
+        viewModelScope.launch {
+            try {
+                if (_pendingRemoteHash.value.isNotBlank()) {
+                    val currentSemester = settingsRepository.currentSemesterFlow.first()
+                    settingsRepository.setLastKnownScheduleHash(currentSemester, _pendingRemoteHash.value)
+                }
+            } catch (_: Exception) {}
+            _showDiffBottomSheet.value = false
+            _pendingDiffs.value = emptyList()
+            _pendingRemoteSlots.value = emptyList()
+            _pendingRemoteHash.value = ""
+        }
+    }
+
     fun applyPendingSlotDiffs(onSuccess: (() -> Unit)? = null) {
         viewModelScope.launch {
             try {
                 val currentSemester = settingsRepository.currentSemesterFlow.first()
                 importRepository.applySlotDiffs(_pendingDiffs.value, _pendingRemoteSlots.value, currentSemester)
+                if (_pendingRemoteHash.value.isNotBlank()) {
+                    settingsRepository.setLastKnownScheduleHash(currentSemester, _pendingRemoteHash.value)
+                }
                 ScheduleWidgetUtils.updateWidget(context)
                 _showDiffBottomSheet.value = false
                 _pendingDiffs.value = emptyList()
                 _pendingRemoteSlots.value = emptyList()
+                _pendingRemoteHash.value = ""
                 onSuccess?.invoke()
             } catch (_: Exception) {
                 _showDiffBottomSheet.value = false
