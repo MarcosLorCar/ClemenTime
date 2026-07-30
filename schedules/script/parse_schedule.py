@@ -316,7 +316,7 @@ def process_pdf_schedule(
     2. CUATRIMESTRE: Identify if this page belongs to '1C' (Primer Cuatrimestre) or '2C' (Segundo Cuatrimestre). Use '1C' or '2C'.
     3. DIA: Name of day in Spanish (Lunes, Martes, Miércoles, Jueves, Viernes).
     4. HORA INICIO & FIN: Format HH:mm (e.g. 08:30, 10:00).
-    5. GRUPO: Group or specialization code (e.g. '1A', '2B', '3IC', '3ISO', '3TI', '3CO', '4IC', '4ISO', '4TI', '4CO'). Use 'IC' for Ingeniería de Computadores, 'ISO' for Software, 'TI' for Tecnologías de la Información, and 'CO' for Computación.
+    5. GRUPO: Group or specialization code matching the page header (e.g. '1A', '1B', '1C', '1D', '2A', '2B', '2C', '2D', '3A', '3B', '3C', '3IC', '3ISO', '3TI', '3CO', '4IC', '4ISO', '4TI', '4CO'). Pay close attention to page group headers: 1st year has 1A (Page 1), 1B (Page 2), 1C (Page 3), 1D (Page 4). Use 'IC' for Ingeniería de Computadores, 'ISO' for Software, 'TI' for Tecnologías de la Información, and 'CO' for Computación.
     6. ASIGNATURA: Subject name or code ONLY (e.g. 'Álgebra', 'Calculo', 'Pruebas de Progreso'). DO NOT include classroom numbers or names in ASIGNATURA.
     7. TIPO: 'teoría' for lectures, 'laboratorio' for labs, 'evento' for exams/events.
     8. AULA: Classroom code or name (e.g. 'A1.1', 'Charles Babbage - 0.02+3').

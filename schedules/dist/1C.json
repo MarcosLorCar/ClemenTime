@@ -15,32 +15,6 @@
   {
     "grupo": "1A",
     "cuatrimestre": "1C",
-    "dia": "Lunes",
-    "hora_inicio": "10:00",
-    "hora_fin": "11:30",
-    "asignatura": "Fundamentos de Programacion I",
-    "tipo": "teoría",
-    "aula": "A1.1-John Von Neumann",
-    "profesor": "Jesus Serrano",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "1A",
-    "cuatrimestre": "1C",
-    "dia": "Lunes",
-    "hora_inicio": "11:30",
-    "hora_fin": "14:30",
-    "asignatura": "Calculo",
-    "tipo": "laboratorio",
-    "aula": "A1.1-John Von Neumann",
-    "profesor": "Maria Luz Lopez",
-    "es_laboratorio": true,
-    "grupo_practicas": "Lab-A1/A2"
-  },
-  {
-    "grupo": "1A",
-    "cuatrimestre": "1C",
     "dia": "Martes",
     "hora_inicio": "08:30",
     "hora_fin": "10:00",
@@ -48,6 +22,45 @@
     "tipo": "teoría",
     "aula": "A1.1-John Von Neumann",
     "profesor": "Antonio Adan",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "1A",
+    "cuatrimestre": "1C",
+    "dia": "Miércoles",
+    "hora_inicio": "08:30",
+    "hora_fin": "10:00",
+    "asignatura": "Calculo",
+    "tipo": "teoría",
+    "aula": "A1.1-John Von Neumann",
+    "profesor": "Maria Luz Lopez",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "1A",
+    "cuatrimestre": "1C",
+    "dia": "Viernes",
+    "hora_inicio": "08:30",
+    "hora_fin": "10:00",
+    "asignatura": "Pruebas de Progreso",
+    "tipo": "evento",
+    "aula": "0.02-Charles Babbage",
+    "profesor": "",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "1A",
+    "cuatrimestre": "1C",
+    "dia": "Lunes",
+    "hora_inicio": "10:00",
+    "hora_fin": "11:30",
+    "asignatura": "Fundamentos de Programacion I",
+    "tipo": "teoría",
+    "aula": "A1.1-John Von Neumann",
+    "profesor": "Jesus Serrano",
     "es_laboratorio": false,
     "grupo_practicas": ""
   },
@@ -67,45 +80,6 @@
   {
     "grupo": "1A",
     "cuatrimestre": "1C",
-    "dia": "Martes",
-    "hora_inicio": "11:30",
-    "hora_fin": "13:00",
-    "asignatura": "Calculo",
-    "tipo": "teoría",
-    "aula": "A1.1-John Von Neumann",
-    "profesor": "Maria Luz Lopez",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "1A",
-    "cuatrimestre": "1C",
-    "dia": "Martes",
-    "hora_inicio": "13:00",
-    "hora_fin": "14:30",
-    "asignatura": "Fisica",
-    "tipo": "teoría",
-    "aula": "A1.1-John Von Neumann",
-    "profesor": "Peter Stephen Normile",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "1A",
-    "cuatrimestre": "1C",
-    "dia": "Miércoles",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Calculo",
-    "tipo": "teoría",
-    "aula": "A1.1-John Von Neumann",
-    "profesor": "Maria Luz Lopez",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "1A",
-    "cuatrimestre": "1C",
     "dia": "Miércoles",
     "hora_inicio": "10:00",
     "hora_fin": "11:30",
@@ -119,32 +93,6 @@
   {
     "grupo": "1A",
     "cuatrimestre": "1C",
-    "dia": "Miércoles",
-    "hora_inicio": "11:30",
-    "hora_fin": "13:00",
-    "asignatura": "Conferencias",
-    "tipo": "evento",
-    "aula": "Alan Turing",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "1A",
-    "cuatrimestre": "1C",
-    "dia": "Miércoles",
-    "hora_inicio": "13:00",
-    "hora_fin": "14:30",
-    "asignatura": "Fundamentos de Programacion I",
-    "tipo": "teoría",
-    "aula": "A1.1-John Von Neumann",
-    "profesor": "Jesus Serrano",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "1A",
-    "cuatrimestre": "1C",
     "dia": "Jueves",
     "hora_inicio": "08:30",
     "hora_fin": "11:30",
@@ -152,71 +100,6 @@
     "tipo": "teoría",
     "aula": "A1.1-John Von Neumann",
     "profesor": "Manuel Villasalero",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "1A",
-    "cuatrimestre": "1C",
-    "dia": "Jueves",
-    "hora_inicio": "11:30",
-    "hora_fin": "13:00",
-    "asignatura": "Fisica",
-    "tipo": "laboratorio",
-    "aula": "LD1-Ignacio Cirac",
-    "profesor": "P.Grammatikopol",
-    "es_laboratorio": true,
-    "grupo_practicas": "Lab-A2"
-  },
-  {
-    "grupo": "1A",
-    "cuatrimestre": "1C",
-    "dia": "Jueves",
-    "hora_inicio": "11:30",
-    "hora_fin": "13:00",
-    "asignatura": "Fundamentos de Gestion Empresarial",
-    "tipo": "laboratorio",
-    "aula": "A1.1-John Von Neumann",
-    "profesor": "Manuel Villasalero",
-    "es_laboratorio": true,
-    "grupo_practicas": "Lab-A1"
-  },
-  {
-    "grupo": "1A",
-    "cuatrimestre": "1C",
-    "dia": "Jueves",
-    "hora_inicio": "13:00",
-    "hora_fin": "14:30",
-    "asignatura": "Fisica",
-    "tipo": "laboratorio",
-    "aula": "LD1-Ignacio Cirac",
-    "profesor": "P.Grammatikopol",
-    "es_laboratorio": true,
-    "grupo_practicas": "Lab-A3"
-  },
-  {
-    "grupo": "1A",
-    "cuatrimestre": "1C",
-    "dia": "Jueves",
-    "hora_inicio": "13:00",
-    "hora_fin": "14:30",
-    "asignatura": "Fundamentos de Gestion Empresarial",
-    "tipo": "laboratorio",
-    "aula": "A1.1-John Von Neumann",
-    "profesor": "Manuel Villasalero",
-    "es_laboratorio": true,
-    "grupo_practicas": "Lab-A2"
-  },
-  {
-    "grupo": "1A",
-    "cuatrimestre": "1C",
-    "dia": "Viernes",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Pruebas de Progreso",
-    "tipo": "evento",
-    "aula": "0.02-Charles Babbage",
-    "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
   },
@@ -245,6 +128,71 @@
     "profesor": "Javier Verdugo",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-A2"
+  },
+  {
+    "grupo": "1A",
+    "cuatrimestre": "1C",
+    "dia": "Lunes",
+    "hora_inicio": "11:30",
+    "hora_fin": "14:30",
+    "asignatura": "Calculo",
+    "tipo": "laboratorio",
+    "aula": "A1.1-John Von Neumann",
+    "profesor": "Maria Luz Lopez",
+    "es_laboratorio": true,
+    "grupo_practicas": "Lab-A1/A2"
+  },
+  {
+    "grupo": "1A",
+    "cuatrimestre": "1C",
+    "dia": "Martes",
+    "hora_inicio": "11:30",
+    "hora_fin": "13:00",
+    "asignatura": "Calculo",
+    "tipo": "teoría",
+    "aula": "A1.1-John Von Neumann",
+    "profesor": "Maria Luz Lopez",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "1A",
+    "cuatrimestre": "1C",
+    "dia": "Miércoles",
+    "hora_inicio": "11:30",
+    "hora_fin": "13:00",
+    "asignatura": "Conferencias",
+    "tipo": "evento",
+    "aula": "Alan Turing",
+    "profesor": "",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "1A",
+    "cuatrimestre": "1C",
+    "dia": "Jueves",
+    "hora_inicio": "11:30",
+    "hora_fin": "13:00",
+    "asignatura": "Fisica",
+    "tipo": "laboratorio",
+    "aula": "LD1-Ignacio Cirac",
+    "profesor": "P.Grammatikopol",
+    "es_laboratorio": true,
+    "grupo_practicas": "Lab-A2"
+  },
+  {
+    "grupo": "1A",
+    "cuatrimestre": "1C",
+    "dia": "Jueves",
+    "hora_inicio": "11:30",
+    "hora_fin": "13:00",
+    "asignatura": "Fundamentos de Gestion Empresarial",
+    "tipo": "laboratorio",
+    "aula": "A1.1-John Von Neumann",
+    "profesor": "Manuel Villasalero",
+    "es_laboratorio": true,
+    "grupo_practicas": "Lab-A1"
   },
   {
     "grupo": "1A",
@@ -271,6 +219,58 @@
     "profesor": "Javier Verdugo",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-A1"
+  },
+  {
+    "grupo": "1A",
+    "cuatrimestre": "1C",
+    "dia": "Martes",
+    "hora_inicio": "13:00",
+    "hora_fin": "14:30",
+    "asignatura": "Fisica",
+    "tipo": "teoría",
+    "aula": "A1.1-John Von Neumann",
+    "profesor": "Peter Stephen Normile",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "1A",
+    "cuatrimestre": "1C",
+    "dia": "Miércoles",
+    "hora_inicio": "13:00",
+    "hora_fin": "14:30",
+    "asignatura": "Fundamentos de Programacion I",
+    "tipo": "teoría",
+    "aula": "A1.1-John Von Neumann",
+    "profesor": "Jesus Serrano",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "1A",
+    "cuatrimestre": "1C",
+    "dia": "Jueves",
+    "hora_inicio": "13:00",
+    "hora_fin": "14:30",
+    "asignatura": "Fisica",
+    "tipo": "laboratorio",
+    "aula": "LD1-Ignacio Cirac",
+    "profesor": "P.Grammatikopol",
+    "es_laboratorio": true,
+    "grupo_practicas": "Lab-A3"
+  },
+  {
+    "grupo": "1A",
+    "cuatrimestre": "1C",
+    "dia": "Jueves",
+    "hora_inicio": "13:00",
+    "hora_fin": "14:30",
+    "asignatura": "Fundamentos de Gestion Empresarial",
+    "tipo": "laboratorio",
+    "aula": "A1.1-John Von Neumann",
+    "profesor": "Manuel Villasalero",
+    "es_laboratorio": true,
+    "grupo_practicas": "Lab-A2"
   },
   {
     "grupo": "1A",
@@ -409,10 +409,10 @@
     "hora_inicio": "11:30",
     "hora_fin": "13:00",
     "asignatura": "Fundamentos de Gestion Empresarial",
-    "tipo": "teoría",
+    "tipo": "laboratorio",
     "aula": "A2.2-Grace Murray",
     "profesor": "Isidro Peña",
-    "es_laboratorio": false,
+    "es_laboratorio": true,
     "grupo_practicas": "Lab-BC"
   },
   {
@@ -513,10 +513,10 @@
     "hora_inicio": "17:00",
     "hora_fin": "18:30",
     "asignatura": "Fundamentos de Gestion Empresarial",
-    "tipo": "laboratorio",
+    "tipo": "teoría",
     "aula": "0.07-Claude Shannon",
     "profesor": "Andres Javier Prado",
-    "es_laboratorio": true,
+    "es_laboratorio": false,
     "grupo_practicas": ""
   },
   {
@@ -524,7 +524,7 @@
     "cuatrimestre": "1C",
     "dia": "Jueves",
     "hora_inicio": "08:30",
-    "hora_fin": "10:00",
+    "hora_fin": "11:30",
     "asignatura": "Calculo",
     "tipo": "laboratorio",
     "aula": "A2.2-Grace Murray",
@@ -611,7 +611,20 @@
     "grupo_practicas": "Lab-B1"
   },
   {
-    "grupo": "1A",
+    "grupo": "1C",
+    "cuatrimestre": "1C",
+    "dia": "Lunes",
+    "hora_inicio": "08:30",
+    "hora_fin": "10:00",
+    "asignatura": "Pruebas de Progreso",
+    "tipo": "evento",
+    "aula": "0.02-Charles Babbage",
+    "profesor": "",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "1C",
     "cuatrimestre": "1C",
     "dia": "Lunes",
     "hora_inicio": "10:00",
@@ -624,7 +637,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "1A",
+    "grupo": "1C",
     "cuatrimestre": "1C",
     "dia": "Lunes",
     "hora_inicio": "11:30",
@@ -637,7 +650,7 @@
     "grupo_practicas": "Lab-C2"
   },
   {
-    "grupo": "1A",
+    "grupo": "1C",
     "cuatrimestre": "1C",
     "dia": "Lunes",
     "hora_inicio": "11:30",
@@ -650,7 +663,7 @@
     "grupo_practicas": "Lab-C1"
   },
   {
-    "grupo": "1A",
+    "grupo": "1C",
     "cuatrimestre": "1C",
     "dia": "Lunes",
     "hora_inicio": "13:00",
@@ -660,10 +673,10 @@
     "aula": "A1.2-Tim Berners-Lee",
     "profesor": "Ester Castillo",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-BC"
+    "grupo_practicas": "Lab-BC."
   },
   {
-    "grupo": "1A",
+    "grupo": "1C",
     "cuatrimestre": "1C",
     "dia": "Lunes",
     "hora_inicio": "15:30",
@@ -673,10 +686,10 @@
     "aula": "LD1-Ignacio Cirac",
     "profesor": "Fernando Teran",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-BC"
+    "grupo_practicas": "Lab-BC."
   },
   {
-    "grupo": "1A",
+    "grupo": "1C",
     "cuatrimestre": "1C",
     "dia": "Lunes",
     "hora_inicio": "17:00",
@@ -689,7 +702,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "1A",
+    "grupo": "1C",
     "cuatrimestre": "1C",
     "dia": "Martes",
     "hora_inicio": "08:30",
@@ -702,7 +715,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "1A",
+    "grupo": "1C",
     "cuatrimestre": "1C",
     "dia": "Martes",
     "hora_inicio": "10:00",
@@ -715,7 +728,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "1A",
+    "grupo": "1C",
     "cuatrimestre": "1C",
     "dia": "Martes",
     "hora_inicio": "11:30",
@@ -725,10 +738,10 @@
     "aula": "A2.2-Grace Murray",
     "profesor": "Isidro Peña",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-BC"
+    "grupo_practicas": "Lab-BC."
   },
   {
-    "grupo": "1A",
+    "grupo": "1C",
     "cuatrimestre": "1C",
     "dia": "Martes",
     "hora_inicio": "13:00",
@@ -741,20 +754,20 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "1A",
+    "grupo": "1C",
     "cuatrimestre": "1C",
     "dia": "Martes",
     "hora_inicio": "17:00",
-    "hora_fin": "18:30",
+    "hora_fin": "20:00",
     "asignatura": "Calculo",
     "tipo": "laboratorio",
     "aula": "0.07-Claude Shannon",
     "profesor": "Asociado MAT",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-C1/C2"
+    "grupo_practicas": "Lab-C1/C2."
   },
   {
-    "grupo": "1A",
+    "grupo": "1C",
     "cuatrimestre": "1C",
     "dia": "Miércoles",
     "hora_inicio": "08:30",
@@ -767,7 +780,7 @@
     "grupo_practicas": "Lab-C2"
   },
   {
-    "grupo": "1A",
+    "grupo": "1C",
     "cuatrimestre": "1C",
     "dia": "Miércoles",
     "hora_inicio": "08:30",
@@ -780,7 +793,7 @@
     "grupo_practicas": "Lab-C1"
   },
   {
-    "grupo": "1A",
+    "grupo": "1C",
     "cuatrimestre": "1C",
     "dia": "Miércoles",
     "hora_inicio": "10:00",
@@ -790,10 +803,10 @@
     "aula": "LD3-Bill Gates",
     "profesor": "Inocente Sanchez",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-BC"
+    "grupo_practicas": "Lab-BC."
   },
   {
-    "grupo": "1A",
+    "grupo": "1C",
     "cuatrimestre": "1C",
     "dia": "Miércoles",
     "hora_inicio": "10:00",
@@ -806,7 +819,20 @@
     "grupo_practicas": "Lab-C2"
   },
   {
-    "grupo": "1A",
+    "grupo": "1C",
+    "cuatrimestre": "1C",
+    "dia": "Miércoles",
+    "hora_inicio": "11:30",
+    "hora_fin": "13:00",
+    "asignatura": "Conferencias",
+    "tipo": "evento",
+    "aula": "Alan Turing",
+    "profesor": "",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "1C",
     "cuatrimestre": "1C",
     "dia": "Miércoles",
     "hora_inicio": "13:00",
@@ -819,7 +845,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "1A",
+    "grupo": "1C",
     "cuatrimestre": "1C",
     "dia": "Jueves",
     "hora_inicio": "08:30",
@@ -832,7 +858,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "1A",
+    "grupo": "1C",
     "cuatrimestre": "1C",
     "dia": "Jueves",
     "hora_inicio": "10:00",
@@ -845,7 +871,7 @@
     "grupo_practicas": "Lab-C1"
   },
   {
-    "grupo": "1A",
+    "grupo": "1C",
     "cuatrimestre": "1C",
     "dia": "Jueves",
     "hora_inicio": "11:30",
@@ -858,7 +884,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "1A",
+    "grupo": "1C",
     "cuatrimestre": "1C",
     "dia": "Jueves",
     "hora_inicio": "13:00",
@@ -871,7 +897,20 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "1A",
+    "grupo": "1C",
+    "cuatrimestre": "1C",
+    "dia": "Viernes",
+    "hora_inicio": "08:30",
+    "hora_fin": "10:00",
+    "asignatura": "Pruebas de Progreso",
+    "tipo": "evento",
+    "aula": "0.02-Charles Babbage",
+    "profesor": "",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "1C",
     "cuatrimestre": "1C",
     "dia": "Viernes",
     "hora_inicio": "10:00",
@@ -884,7 +923,7 @@
     "grupo_practicas": "Lab-C1"
   },
   {
-    "grupo": "1A",
+    "grupo": "1C",
     "cuatrimestre": "1C",
     "dia": "Viernes",
     "hora_inicio": "11:30",
@@ -1887,45 +1926,6 @@
   {
     "grupo": "2C",
     "cuatrimestre": "1C",
-    "dia": "Martes",
-    "hora_inicio": "15:30",
-    "hora_fin": "17:00",
-    "asignatura": "Ingenieria del Software I",
-    "tipo": "teoría",
-    "aula": "A2.2-Grace Murray",
-    "profesor": "Ignacio Garcia Rodriguez",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "1C",
-    "dia": "Miércoles",
-    "hora_inicio": "15:30",
-    "hora_fin": "17:00",
-    "asignatura": "Sistemas Operativos I",
-    "tipo": "teoría",
-    "aula": "A2.2-Grace Murray",
-    "profesor": "Yoel Arroyo",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "1C",
-    "dia": "Jueves",
-    "hora_inicio": "15:30",
-    "hora_fin": "17:00",
-    "asignatura": "Estructura de Datos",
-    "tipo": "teoría",
-    "aula": "A2.2-Grace Murray",
-    "profesor": "Crescencio Bravo",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "1C",
     "dia": "Lunes",
     "hora_inicio": "17:00",
     "hora_fin": "18:30",
@@ -1939,6 +1939,45 @@
   {
     "grupo": "2C",
     "cuatrimestre": "1C",
+    "dia": "Lunes",
+    "hora_inicio": "18:30",
+    "hora_fin": "20:00",
+    "asignatura": "Organizacion de Computadores",
+    "tipo": "teoría",
+    "aula": "A2.2-Grace Murray",
+    "profesor": "Santiago Garcia",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "2C",
+    "cuatrimestre": "1C",
+    "dia": "Lunes",
+    "hora_inicio": "20:00",
+    "hora_fin": "21:30",
+    "asignatura": "Organizacion de Computadores",
+    "tipo": "laboratorio",
+    "aula": "A2.2-Grace Murray",
+    "profesor": "Santiago Garcia",
+    "es_laboratorio": true,
+    "grupo_practicas": "Lab-C1"
+  },
+  {
+    "grupo": "2C",
+    "cuatrimestre": "1C",
+    "dia": "Martes",
+    "hora_inicio": "15:30",
+    "hora_fin": "17:00",
+    "asignatura": "Ingenieria del Software I",
+    "tipo": "teoría",
+    "aula": "A2.2-Grace Murray",
+    "profesor": "Ignacio Garcia Rodriguez",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "2C",
+    "cuatrimestre": "1C",
     "dia": "Martes",
     "hora_inicio": "17:00",
     "hora_fin": "18:30",
@@ -1946,6 +1985,45 @@
     "tipo": "teoría",
     "aula": "A2.2-Grace Murray",
     "profesor": "Pascual Julian",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "2C",
+    "cuatrimestre": "1C",
+    "dia": "Martes",
+    "hora_inicio": "18:30",
+    "hora_fin": "20:00",
+    "asignatura": "Estructura de Datos",
+    "tipo": "teoría",
+    "aula": "A2.2-Grace Murray",
+    "profesor": "Crescencio Bravo",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "2C",
+    "cuatrimestre": "1C",
+    "dia": "Martes",
+    "hora_inicio": "20:00",
+    "hora_fin": "21:30",
+    "asignatura": "Estructura de Datos",
+    "tipo": "laboratorio",
+    "aula": "A2.2-Grace Murray",
+    "profesor": "Crescencio Bravo",
+    "es_laboratorio": true,
+    "grupo_practicas": "Lab-C1"
+  },
+  {
+    "grupo": "2C",
+    "cuatrimestre": "1C",
+    "dia": "Miércoles",
+    "hora_inicio": "15:30",
+    "hora_fin": "17:00",
+    "asignatura": "Sistemas Operativos I",
+    "tipo": "teoría",
+    "aula": "A2.2-Grace Murray",
+    "profesor": "Yoel Arroyo",
     "es_laboratorio": false,
     "grupo_practicas": ""
   },
@@ -1974,6 +2052,58 @@
     "profesor": "Yoel Arroyo",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-C2"
+  },
+  {
+    "grupo": "2C",
+    "cuatrimestre": "1C",
+    "dia": "Miércoles",
+    "hora_inicio": "18:30",
+    "hora_fin": "20:00",
+    "asignatura": "Organizacion de Computadores",
+    "tipo": "teoría",
+    "aula": "A2.2-Grace Murray",
+    "profesor": "Santiago Garcia",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "2C",
+    "cuatrimestre": "1C",
+    "dia": "Miércoles",
+    "hora_inicio": "20:00",
+    "hora_fin": "21:30",
+    "asignatura": "Ingenieria del Software I",
+    "tipo": "laboratorio",
+    "aula": "A2.2-Grace Murray",
+    "profesor": "Jesus Ramon Oviedo",
+    "es_laboratorio": true,
+    "grupo_practicas": "Lab-C2"
+  },
+  {
+    "grupo": "2C",
+    "cuatrimestre": "1C",
+    "dia": "Miércoles",
+    "hora_inicio": "20:00",
+    "hora_fin": "21:30",
+    "asignatura": "Logica",
+    "tipo": "laboratorio",
+    "aula": "LD3-Bill Gates",
+    "profesor": "Ruben Rodriguez",
+    "es_laboratorio": true,
+    "grupo_practicas": "Lab-C1"
+  },
+  {
+    "grupo": "2C",
+    "cuatrimestre": "1C",
+    "dia": "Jueves",
+    "hora_inicio": "15:30",
+    "hora_fin": "17:00",
+    "asignatura": "Estructura de Datos",
+    "tipo": "teoría",
+    "aula": "A2.2-Grace Murray",
+    "profesor": "Crescencio Bravo",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
   },
   {
     "grupo": "2C",
@@ -2004,45 +2134,6 @@
   {
     "grupo": "2C",
     "cuatrimestre": "1C",
-    "dia": "Lunes",
-    "hora_inicio": "18:30",
-    "hora_fin": "20:00",
-    "asignatura": "Organizacion de Computadores",
-    "tipo": "teoría",
-    "aula": "A2.2-Grace Murray",
-    "profesor": "Santiago Garcia",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "1C",
-    "dia": "Martes",
-    "hora_inicio": "18:30",
-    "hora_fin": "20:00",
-    "asignatura": "Estructura de Datos",
-    "tipo": "teoría",
-    "aula": "A2.2-Grace Murray",
-    "profesor": "Crescencio Bravo",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "1C",
-    "dia": "Miércoles",
-    "hora_inicio": "18:30",
-    "hora_fin": "20:00",
-    "asignatura": "Organizacion de Computadores",
-    "tipo": "teoría",
-    "aula": "A2.2-Grace Murray",
-    "profesor": "Santiago Garcia",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "1C",
     "dia": "Jueves",
     "hora_inicio": "18:30",
     "hora_fin": "20:00",
@@ -2052,58 +2143,6 @@
     "profesor": "Pascual Julian",
     "es_laboratorio": false,
     "grupo_practicas": ""
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "1C",
-    "dia": "Lunes",
-    "hora_inicio": "20:00",
-    "hora_fin": "21:30",
-    "asignatura": "Organizacion de Computadores",
-    "tipo": "laboratorio",
-    "aula": "A2.2-Grace Murray",
-    "profesor": "Santiago Garcia",
-    "es_laboratorio": true,
-    "grupo_practicas": "Lab-C1"
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "1C",
-    "dia": "Martes",
-    "hora_inicio": "20:00",
-    "hora_fin": "21:30",
-    "asignatura": "Estructura de Datos",
-    "tipo": "laboratorio",
-    "aula": "A2.2-Grace Murray",
-    "profesor": "Crescencio Bravo",
-    "es_laboratorio": true,
-    "grupo_practicas": "Lab-C1"
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "1C",
-    "dia": "Miércoles",
-    "hora_inicio": "20:00",
-    "hora_fin": "21:30",
-    "asignatura": "Ingenieria del Software I",
-    "tipo": "laboratorio",
-    "aula": "A2.2-Grace Murray",
-    "profesor": "Jesus Ramon Oviedo",
-    "es_laboratorio": true,
-    "grupo_practicas": "Lab-C2"
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "1C",
-    "dia": "Miércoles",
-    "hora_inicio": "20:00",
-    "hora_fin": "21:30",
-    "asignatura": "Logica",
-    "tipo": "laboratorio",
-    "aula": "LD3-Bill Gates",
-    "profesor": "Ruben Rodriguez",
-    "es_laboratorio": true,
-    "grupo_practicas": "Lab-C1"
   },
   {
     "grupo": "2C",
@@ -2155,7 +2194,7 @@
     "aula": "LD2-Dennis Ritchie",
     "profesor": "",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-BD"
+    "grupo_practicas": "Lab-BD."
   },
   {
     "grupo": "2D",
@@ -2217,7 +2256,7 @@
     "hora_fin": "11:30",
     "asignatura": "Sistemas Operativos I",
     "tipo": "laboratorio",
-    "aula": "0.04-Hedy Lamarr",
+    "aula": "LD3-Bill Gates",
     "profesor": "Javier Albusac",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-D1"
@@ -2285,7 +2324,7 @@
     "aula": "0.02-Charles Babbage",
     "profesor": "Crescencio Bravo",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-B2"
+    "grupo_practicas": "Lab-B2."
   },
   {
     "grupo": "2D",
@@ -2298,7 +2337,7 @@
     "aula": "LD3-Bill Gates",
     "profesor": "Jared David",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-BD2"
+    "grupo_practicas": "Lab-BD2."
   },
   {
     "grupo": "2D",
@@ -2311,7 +2350,7 @@
     "aula": "0.02-Charles Babbage",
     "profesor": "Crescencio Bravo",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-B1"
+    "grupo_practicas": "Lab-B1."
   },
   {
     "grupo": "2D",
@@ -2324,7 +2363,7 @@
     "aula": "0.04-Hedy Lamarr",
     "profesor": "Jared David",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-BD1"
+    "grupo_practicas": "Lab-BD1."
   },
   {
     "grupo": "2D",
@@ -2363,7 +2402,7 @@
     "aula": "0.07-Claude Shannon",
     "profesor": "Andres Montoro",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-B2"
+    "grupo_practicas": "Lab-B2."
   },
   {
     "grupo": "2D",
@@ -2376,7 +2415,7 @@
     "aula": "0.02-Charles Babbage",
     "profesor": "Maria Angeles Moraga",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-B1"
+    "grupo_practicas": "Lab-B1."
   },
   {
     "grupo": "2D",
@@ -2428,7 +2467,7 @@
     "aula": "0.02-Charles Babbage",
     "profesor": "Felix Oscar Garcia",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-B2"
+    "grupo_practicas": "Lab-B2."
   },
   {
     "grupo": "2D",
@@ -2441,7 +2480,7 @@
     "aula": "LD4-John Carmack",
     "profesor": "Andres Montoro",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-BD2"
+    "grupo_practicas": "Lab-BD2."
   },
   {
     "grupo": "2D",
@@ -2454,7 +2493,7 @@
     "aula": "0.07-Claude Shannon",
     "profesor": "Andres Montoro",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-B1"
+    "grupo_practicas": "Lab-B1."
   },
   {
     "grupo": "2D",
@@ -2467,7 +2506,7 @@
     "aula": "LD3-Bill Gates",
     "profesor": "Jesus Ramon Oviedo",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-BD1"
+    "grupo_practicas": "Lab-BD1."
   },
   {
     "grupo": "2D",
@@ -2480,7 +2519,7 @@
     "aula": "LD3-Bill Gates",
     "profesor": "Ruben Rodriguez",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-BD1"
+    "grupo_practicas": "Lab-BD1."
   },
   {
     "grupo": "2D",
@@ -2524,15 +2563,106 @@
   {
     "grupo": "3A",
     "cuatrimestre": "1C",
-    "dia": "Viernes",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Pruebas de Progreso",
-    "tipo": "evento",
-    "aula": "0.02-Charles Babbage",
-    "profesor": "",
+    "dia": "Lunes",
+    "hora_inicio": "15:30",
+    "hora_fin": "17:00",
+    "asignatura": "Interaccion Persona-Ordenador",
+    "tipo": "teoría",
+    "aula": "0.04-Hedy Lamarr",
+    "profesor": "Manuel Ortega",
     "es_laboratorio": false,
     "grupo_practicas": ""
+  },
+  {
+    "grupo": "3A",
+    "cuatrimestre": "1C",
+    "dia": "Lunes",
+    "hora_inicio": "17:00",
+    "hora_fin": "18:30",
+    "asignatura": "Interaccion Persona-Ordenador",
+    "tipo": "laboratorio",
+    "aula": "0.04-Hedy Lamarr",
+    "profesor": "Manuel Ortega",
+    "es_laboratorio": true,
+    "grupo_practicas": "Lab-A1"
+  },
+  {
+    "grupo": "3A",
+    "cuatrimestre": "1C",
+    "dia": "Lunes",
+    "hora_inicio": "18:30",
+    "hora_fin": "20:00",
+    "asignatura": "Ingenieria del Software II",
+    "tipo": "teoría",
+    "aula": "0.04-Hedy Lamarr",
+    "profesor": "Ismael Caballero",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "3A",
+    "cuatrimestre": "1C",
+    "dia": "Lunes",
+    "hora_inicio": "20:00",
+    "hora_fin": "21:30",
+    "asignatura": "Sistemas Distribuidos",
+    "tipo": "teoría",
+    "aula": "0.04-Hedy Lamarr",
+    "profesor": "David Villa",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "3A",
+    "cuatrimestre": "1C",
+    "dia": "Martes",
+    "hora_inicio": "15:30",
+    "hora_fin": "17:00",
+    "asignatura": "Sistemas Distribuidos",
+    "tipo": "teoría",
+    "aula": "0.04-Hedy Lamarr",
+    "profesor": "David Villa",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "3A",
+    "cuatrimestre": "1C",
+    "dia": "Martes",
+    "hora_inicio": "17:00",
+    "hora_fin": "18:30",
+    "asignatura": "Sistemas Distribuidos",
+    "tipo": "laboratorio",
+    "aula": "0.04-Hedy Lamarr",
+    "profesor": "David Villa",
+    "es_laboratorio": true,
+    "grupo_practicas": "Lab-A1"
+  },
+  {
+    "grupo": "3A",
+    "cuatrimestre": "1C",
+    "dia": "Martes",
+    "hora_inicio": "18:30",
+    "hora_fin": "20:00",
+    "asignatura": "Ingenieria del Software II",
+    "tipo": "teoría",
+    "aula": "0.04-Hedy Lamarr",
+    "profesor": "Ismael Caballero",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "3A",
+    "cuatrimestre": "1C",
+    "dia": "Martes",
+    "hora_inicio": "20:00",
+    "hora_fin": "21:30",
+    "asignatura": "Ingenieria del Software II",
+    "tipo": "laboratorio",
+    "aula": "0.04-Hedy Lamarr",
+    "profesor": "Ismael Caballero",
+    "es_laboratorio": true,
+    "grupo_practicas": "Lab-A1"
   },
   {
     "grupo": "3A",
@@ -2550,32 +2680,6 @@
   {
     "grupo": "3A",
     "cuatrimestre": "1C",
-    "dia": "Lunes",
-    "hora_inicio": "15:30",
-    "hora_fin": "17:00",
-    "asignatura": "Interaccion Persona-Ordenador",
-    "tipo": "teoría",
-    "aula": "0.04-Hedy Lamarr",
-    "profesor": "Manuel Ortega",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "3A",
-    "cuatrimestre": "1C",
-    "dia": "Martes",
-    "hora_inicio": "15:30",
-    "hora_fin": "17:00",
-    "asignatura": "Sistemas Distribuidos",
-    "tipo": "teoría",
-    "aula": "0.04-Hedy Lamarr",
-    "profesor": "David Villa",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "3A",
-    "cuatrimestre": "1C",
     "dia": "Miércoles",
     "hora_inicio": "15:30",
     "hora_fin": "17:00",
@@ -2585,45 +2689,6 @@
     "profesor": "Fernando Rincon",
     "es_laboratorio": false,
     "grupo_practicas": ""
-  },
-  {
-    "grupo": "3A",
-    "cuatrimestre": "1C",
-    "dia": "Jueves",
-    "hora_inicio": "15:30",
-    "hora_fin": "17:00",
-    "asignatura": "Arquitectura de Computadores",
-    "tipo": "teoría",
-    "aula": "0.04-Hedy Lamarr",
-    "profesor": "Fernando Rincon",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "3A",
-    "cuatrimestre": "1C",
-    "dia": "Lunes",
-    "hora_inicio": "17:00",
-    "hora_fin": "18:30",
-    "asignatura": "Interaccion Persona-Ordenador",
-    "tipo": "laboratorio",
-    "aula": "0.04-Hedy Lamarr",
-    "profesor": "Manuel Ortega",
-    "es_laboratorio": true,
-    "grupo_practicas": "Lab-A1"
-  },
-  {
-    "grupo": "3A",
-    "cuatrimestre": "1C",
-    "dia": "Martes",
-    "hora_inicio": "17:00",
-    "hora_fin": "18:30",
-    "asignatura": "Sistemas Distribuidos",
-    "tipo": "laboratorio",
-    "aula": "0.04-Hedy Lamarr",
-    "profesor": "David Villa",
-    "es_laboratorio": true,
-    "grupo_practicas": "Lab-A1"
   },
   {
     "grupo": "3A",
@@ -2641,45 +2706,6 @@
   {
     "grupo": "3A",
     "cuatrimestre": "1C",
-    "dia": "Jueves",
-    "hora_inicio": "17:00",
-    "hora_fin": "18:30",
-    "asignatura": "Interaccion Persona-Ordenador",
-    "tipo": "teoría",
-    "aula": "0.04-Hedy Lamarr",
-    "profesor": "Manuel Ortega",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "3A",
-    "cuatrimestre": "1C",
-    "dia": "Lunes",
-    "hora_inicio": "18:30",
-    "hora_fin": "20:00",
-    "asignatura": "Ingenieria del Software II",
-    "tipo": "teoría",
-    "aula": "0.04-Hedy Lamarr",
-    "profesor": "Ismael Caballero",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "3A",
-    "cuatrimestre": "1C",
-    "dia": "Martes",
-    "hora_inicio": "18:30",
-    "hora_fin": "20:00",
-    "asignatura": "Ingenieria del Software II",
-    "tipo": "teoría",
-    "aula": "0.04-Hedy Lamarr",
-    "profesor": "Ismael Caballero",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "3A",
-    "cuatrimestre": "1C",
     "dia": "Miércoles",
     "hora_inicio": "18:30",
     "hora_fin": "20:00",
@@ -2689,45 +2715,6 @@
     "profesor": "Sustituto LSI 1",
     "es_laboratorio": false,
     "grupo_practicas": ""
-  },
-  {
-    "grupo": "3A",
-    "cuatrimestre": "1C",
-    "dia": "Jueves",
-    "hora_inicio": "18:30",
-    "hora_fin": "20:00",
-    "asignatura": "Sistemas Inteligentes",
-    "tipo": "teoría",
-    "aula": "0.04-Hedy Lamarr",
-    "profesor": "Sustituto LSI 1",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "3A",
-    "cuatrimestre": "1C",
-    "dia": "Lunes",
-    "hora_inicio": "20:00",
-    "hora_fin": "21:30",
-    "asignatura": "Sistemas Distribuidos",
-    "tipo": "teoría",
-    "aula": "0.04-Hedy Lamarr",
-    "profesor": "David Villa",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "3A",
-    "cuatrimestre": "1C",
-    "dia": "Martes",
-    "hora_inicio": "20:00",
-    "hora_fin": "21:30",
-    "asignatura": "Ingenieria del Software II",
-    "tipo": "laboratorio",
-    "aula": "0.04-Hedy Lamarr",
-    "profesor": "Ismael Caballero",
-    "es_laboratorio": true,
-    "grupo_practicas": "Lab-A1"
   },
   {
     "grupo": "3A",
@@ -2746,6 +2733,45 @@
     "grupo": "3A",
     "cuatrimestre": "1C",
     "dia": "Jueves",
+    "hora_inicio": "15:30",
+    "hora_fin": "17:00",
+    "asignatura": "Arquitectura de Computadores",
+    "tipo": "teoría",
+    "aula": "0.04-Hedy Lamarr",
+    "profesor": "Fernando Rincon",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "3A",
+    "cuatrimestre": "1C",
+    "dia": "Jueves",
+    "hora_inicio": "17:00",
+    "hora_fin": "18:30",
+    "asignatura": "Interaccion Persona-Ordenador",
+    "tipo": "teoría",
+    "aula": "0.04-Hedy Lamarr",
+    "profesor": "Manuel Ortega",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "3A",
+    "cuatrimestre": "1C",
+    "dia": "Jueves",
+    "hora_inicio": "18:30",
+    "hora_fin": "20:00",
+    "asignatura": "Sistemas Inteligentes",
+    "tipo": "teoría",
+    "aula": "0.04-Hedy Lamarr",
+    "profesor": "Sustituto LSI 1",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "3A",
+    "cuatrimestre": "1C",
+    "dia": "Jueves",
     "hora_inicio": "20:00",
     "hora_fin": "21:30",
     "asignatura": "Sistemas Inteligentes",
@@ -2754,6 +2780,19 @@
     "profesor": "Sustituto LSI 1",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-A1"
+  },
+  {
+    "grupo": "3A",
+    "cuatrimestre": "1C",
+    "dia": "Viernes",
+    "hora_inicio": "08:30",
+    "hora_fin": "10:00",
+    "asignatura": "Pruebas de Progreso",
+    "tipo": "evento",
+    "aula": "0.02-Charles Babbage",
+    "profesor": "",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
   },
   {
     "grupo": "3B",
@@ -3068,7 +3107,7 @@
     "grupo_practicas": "Lab-B1"
   },
   {
-    "grupo": "3CO",
+    "grupo": "3C",
     "cuatrimestre": "1C",
     "dia": "Lunes",
     "hora_inicio": "08:30",
@@ -3081,7 +3120,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3CO",
+    "grupo": "3C",
     "cuatrimestre": "1C",
     "dia": "Lunes",
     "hora_inicio": "10:00",
@@ -3094,7 +3133,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3CO",
+    "grupo": "3C",
     "cuatrimestre": "1C",
     "dia": "Lunes",
     "hora_inicio": "11:30",
@@ -3107,7 +3146,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3CO",
+    "grupo": "3C",
     "cuatrimestre": "1C",
     "dia": "Lunes",
     "hora_inicio": "13:00",
@@ -3120,7 +3159,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3CO",
+    "grupo": "3C",
     "cuatrimestre": "1C",
     "dia": "Martes",
     "hora_inicio": "10:00",
@@ -3133,7 +3172,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3CO",
+    "grupo": "3C",
     "cuatrimestre": "1C",
     "dia": "Martes",
     "hora_inicio": "11:30",
@@ -3146,7 +3185,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3CO",
+    "grupo": "3C",
     "cuatrimestre": "1C",
     "dia": "Martes",
     "hora_inicio": "13:00",
@@ -3159,7 +3198,7 @@
     "grupo_practicas": "Lab-C2"
   },
   {
-    "grupo": "3CO",
+    "grupo": "3C",
     "cuatrimestre": "1C",
     "dia": "Martes",
     "hora_inicio": "13:00",
@@ -3172,7 +3211,7 @@
     "grupo_practicas": "Lab-C2"
   },
   {
-    "grupo": "3CO",
+    "grupo": "3C",
     "cuatrimestre": "1C",
     "dia": "Miércoles",
     "hora_inicio": "08:30",
@@ -3185,7 +3224,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3CO",
+    "grupo": "3C",
     "cuatrimestre": "1C",
     "dia": "Miércoles",
     "hora_inicio": "10:00",
@@ -3198,7 +3237,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3CO",
+    "grupo": "3C",
     "cuatrimestre": "1C",
     "dia": "Miércoles",
     "hora_inicio": "11:30",
@@ -3211,7 +3250,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3CO",
+    "grupo": "3C",
     "cuatrimestre": "1C",
     "dia": "Miércoles",
     "hora_inicio": "13:00",
@@ -3224,7 +3263,7 @@
     "grupo_practicas": "Lab-C2"
   },
   {
-    "grupo": "3CO",
+    "grupo": "3C",
     "cuatrimestre": "1C",
     "dia": "Miércoles",
     "hora_inicio": "13:00",
@@ -3237,7 +3276,7 @@
     "grupo_practicas": "Lab-C1"
   },
   {
-    "grupo": "3CO",
+    "grupo": "3C",
     "cuatrimestre": "1C",
     "dia": "Miércoles",
     "hora_inicio": "17:00",
@@ -3250,7 +3289,7 @@
     "grupo_practicas": "Lab-C2"
   },
   {
-    "grupo": "3CO",
+    "grupo": "3C",
     "cuatrimestre": "1C",
     "dia": "Miércoles",
     "hora_inicio": "18:30",
@@ -3263,7 +3302,7 @@
     "grupo_practicas": "Lab-C2"
   },
   {
-    "grupo": "3CO",
+    "grupo": "3C",
     "cuatrimestre": "1C",
     "dia": "Miércoles",
     "hora_inicio": "18:30",
@@ -3276,7 +3315,7 @@
     "grupo_practicas": "Lab-C1"
   },
   {
-    "grupo": "3CO",
+    "grupo": "3C",
     "cuatrimestre": "1C",
     "dia": "Jueves",
     "hora_inicio": "08:30",
@@ -3289,7 +3328,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3CO",
+    "grupo": "3C",
     "cuatrimestre": "1C",
     "dia": "Jueves",
     "hora_inicio": "10:00",
@@ -3302,20 +3341,20 @@
     "grupo_practicas": "Lab-C1"
   },
   {
-    "grupo": "3CO",
+    "grupo": "3C",
     "cuatrimestre": "1C",
     "dia": "Jueves",
     "hora_inicio": "11:30",
     "hora_fin": "13:00",
     "asignatura": "Ingenieria del Software II",
     "tipo": "laboratorio",
-    "aula": "A2.1-George Boole",
+    "aula": "Lab-C1",
     "profesor": "Jared David",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-C1"
   },
   {
-    "grupo": "3CO",
+    "grupo": "3C",
     "cuatrimestre": "1C",
     "dia": "Jueves",
     "hora_inicio": "11:30",
@@ -3325,10 +3364,10 @@
     "aula": "LD3-Bill Gates",
     "profesor": "Luis Jimenez",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-BC"
+    "grupo_practicas": "Lab-BC."
   },
   {
-    "grupo": "3CO",
+    "grupo": "3C",
     "cuatrimestre": "1C",
     "dia": "Jueves",
     "hora_inicio": "13:00",
@@ -3341,7 +3380,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3CO",
+    "grupo": "3C",
     "cuatrimestre": "1C",
     "dia": "Viernes",
     "hora_inicio": "08:30",
@@ -3354,7 +3393,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3CO",
+    "grupo": "3C",
     "cuatrimestre": "1C",
     "dia": "Viernes",
     "hora_inicio": "11:30",
@@ -3367,7 +3406,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3CO",
+    "grupo": "3C",
     "cuatrimestre": "1C",
     "dia": "Viernes",
     "hora_inicio": "13:00",
@@ -4495,6 +4534,6 @@
     "aula": "LD4-John Carmack",
     "profesor": "Juan Carlos Lopez",
     "es_laboratorio": true,
-    "grupo_practicas": "Labs"
+    "grupo_practicas": ""
   }
 ]
