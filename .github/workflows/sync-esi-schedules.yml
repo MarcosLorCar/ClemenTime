@@ -49,6 +49,7 @@ jobs:
         if: steps.check.outputs.has_update == 'true' || github.event_name == 'workflow_dispatch'
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
         run: |
           python3 process_schedules.py --strict
 

@@ -174,6 +174,31 @@ def normalize_spanish_day(day: str) -> str:
     }
     return mapping.get(d_clean, d)
 
+# --- Error Handling Utilities ---
+
+def is_daily_quota_exhausted(error_obj: Any) -> bool:
+    """Recursively search for indicators that the DAILY quota is exhausted."""
+    data_str = str(error_obj).lower()
+
+    if "per_day" in data_str or "perday" in data_str:
+        return True
+
+    if "limit: 0" in data_str and "requests" in data_str:
+        return True
+
+    if isinstance(error_obj, dict):
+        for k, v in error_obj.items():
+            if k == "quotaId" and isinstance(v, str) and "perday" in v.lower():
+                return True
+            if is_daily_quota_exhausted(v):
+                return True
+    elif isinstance(error_obj, list):
+        for item in error_obj:
+            if is_daily_quota_exhausted(item):
+                return True
+
+    return False
+
 # --- Cache Utilities ---
 
 def get_page_cache_path(page_img) -> str:
@@ -195,8 +220,9 @@ def process_pdf_schedule(
         print("[Error] GEMINI_API_KEY environment variable not set.")
         sys.exit(1)
 
+    env_model = os.getenv("GEMINI_MODEL")
     if not model_id:
-        model_id = DEFAULT_MODEL
+        model_id = env_model if env_model else DEFAULT_MODEL
 
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(CACHE_DIR, exist_ok=True)
@@ -204,7 +230,6 @@ def process_pdf_schedule(
     client = genai.Client(api_key=api_key)
     mappings = load_mappings()
 
-    # Determine default semester from filename
     filename = os.path.basename(pdf_path)
     default_semester = "1C"
     if "2C" in filename.upper() or "2_CUATRIMESTRE" in filename.upper():
@@ -242,7 +267,8 @@ def process_pdf_schedule(
             with open(cache_path, "r", encoding="utf-8") as f:
                 page_data = json.load(f)
         else:
-            max_retries = 5
+            max_retries = 10
+            base_delay = 15
             page_data = None
 
             for attempt in range(max_retries):
@@ -264,12 +290,47 @@ def process_pdf_schedule(
                         json.dump(page_data, f, indent=2, ensure_ascii=False)
 
                     break
+
+                except errors.ClientError as e:
+                    error_data = e.args[1] if len(e.args) > 1 else {}
+                    status = error_data.get("status", "")
+
+                    if is_daily_quota_exhausted(error_data) or is_daily_quota_exhausted(str(e)):
+                        print(f"\n[!] CRITICAL: Daily quota for model '{model_id}' exhausted.")
+                        sys.exit(1)
+
+                    if "404" in str(e) or "not found" in str(e).lower() or "no longer available" in str(e).lower():
+                        print(f"\n[!] ERROR: Model '{model_id}' is not found or no longer available.")
+                        sys.exit(1)
+
+                    wait_time = None
+                    error_info = error_data.get("error", {})
+                    retry_info = next((d for d in error_info.get("details", []) if "retryDelay" in d), None)
+
+                    if retry_info:
+                        delay_match = re.search(r"(\d+\.?\d*)", str(retry_info["retryDelay"]))
+                        if delay_match:
+                            wait_time = float(delay_match.group(1)) + 1.5
+
+                    if status == "RESOURCE_EXHAUSTED" or "429" in str(e):
+                        if wait_time is None:
+                            wait_time = base_delay * (2 ** attempt) + random.uniform(0, 5)
+                        print(f"     Rate limit reached (429/RESOURCE_EXHAUSTED). Waiting {wait_time:.1f}s before retry...")
+                        time.sleep(wait_time)
+                    else:
+                        if wait_time:
+                            print(f"     Client error ({status}). Waiting {wait_time:.1f}s before retry...")
+                            time.sleep(wait_time)
+                        else:
+                            print(f"     Fatal Client error: {e}")
+                            sys.exit(1)
+
                 except Exception as e:
                     print(f"     [Warning] Attempt {attempt + 1} failed: {e}")
                     if attempt == max_retries - 1:
                         print(f"     [Error] Skipping page {i + 1} after {max_retries} attempts.")
                         break
-                    time.sleep(3)
+                    time.sleep(5)
 
         if page_data and "slots" in page_data:
             all_raw_slots.extend(page_data["slots"])
@@ -302,7 +363,6 @@ def process_pdf_schedule(
 
         group = (slot.get("grupo") or "").strip()
 
-        # Deduplication key
         slot_key = (
             group,
             sem_key,
@@ -340,7 +400,7 @@ def main():
     parser = argparse.ArgumentParser(description="Parse schedule PDF files directly into flat schedule JSONs.")
     parser.add_argument("pdf_file", help="Path to PDF schedule file.")
     parser.add_argument("--non-interactive", action="store_true", help="Run without interactive mapping prompts.")
-    parser.add_argument("--model", default=DEFAULT_MODEL, help=f"Gemini model ID (default: {DEFAULT_MODEL}).")
+    parser.add_argument("--model", default=None, help=f"Gemini model ID (default: {DEFAULT_MODEL}).")
     parser.add_argument("--clear-cache", action="store_true", help="Clear page response cache before running.")
     args = parser.parse_args()
 
@@ -356,7 +416,6 @@ def main():
         clear_cache=args.clear_cache
     )
 
-    # Group by semester and save
     by_semester: Dict[str, List[Dict]] = {"1C": [], "2C": []}
     for s in slots:
         sem = s.get("cuatrimestre", "1C")

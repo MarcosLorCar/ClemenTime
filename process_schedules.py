@@ -18,18 +18,17 @@ import os
 import subprocess
 import glob
 import argparse
-import json
 
 def main():
     try:
         from dotenv import load_dotenv
         root_dir = os.path.dirname(os.path.abspath(__file__))
         load_dotenv(os.path.join(root_dir, ".env"))
-        load_dotenv(os.path.join(root_dir, "schedules", "script", ".env"))
     except ImportError:
         pass
 
-    default_model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+    env_model = os.getenv("GEMINI_MODEL")
+    default_model = env_model if env_model else "gemini-2.0-flash"
 
     parser = argparse.ArgumentParser(description="Process schedule PDF files into flat semester JSONs.")
     parser.add_argument("pdf", nargs="?", help="Specific PDF to process. If omitted, processes all in schedules/pdf/")
@@ -42,7 +41,6 @@ def main():
     root_dir = os.path.dirname(os.path.abspath(__file__))
     script_dir = os.path.join(root_dir, "schedules", "script")
     pdf_dir = os.path.join(root_dir, "schedules", "pdf")
-    dist_dir = os.path.join(root_dir, "schedules", "dist")
 
     parse_script = os.path.join(script_dir, "parse_schedule.py")
     index_script = os.path.join(script_dir, "generate_index.py")
