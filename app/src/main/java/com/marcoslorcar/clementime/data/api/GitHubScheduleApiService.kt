@@ -4,20 +4,24 @@ import com.marcoslorcar.clementime.data.importing.model.RemoteScheduleSummary
 import com.marcoslorcar.clementime.data.importing.model.ScheduleJsonSchema
 import retrofit2.Response
 import retrofit2.http.GET
+import retrofit2.http.Headers
 import retrofit2.http.Url
 
 interface GitHubScheduleApiService {
 
+    @Headers("Cache-Control: no-cache, no-store", "Pragma: no-cache")
     @GET
     suspend fun getScheduleIndex(
         @Url url: String
     ): Response<List<RemoteScheduleSummary>>
 
+    @Headers("Cache-Control: no-cache, no-store", "Pragma: no-cache")
     @GET
     suspend fun getScheduleSchema(
         @Url url: String
     ): Response<ScheduleJsonSchema>
 
+    @Headers("Cache-Control: no-cache, no-store", "Pragma: no-cache")
     @GET
     suspend fun getRawScheduleSchema(
         @Url url: String

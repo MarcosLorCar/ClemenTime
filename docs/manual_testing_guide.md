@@ -11,16 +11,16 @@ Run the ESI checker script without flags:
 ```bash
 python3 schedules/script/check_esi_update.py
 ```
-* **Expected Output**: `[No Update] ESI schedule headers unchanged.`
-* **Check File**: Inspect `schedules/input/esi_meta.json`. It should contain `last_modified` and `etag` fields.
+* **Expected Output**: `[No Update] ESI schedule files unchanged.`
+* **Check File**: Inspect `schedules/input/esi_meta.json`. It should contain entries for `1C` and `2C` with `url`, `last_modified`, `etag`, and `sha256` fields.
 
-### 2. Test Simulating an ESI Schedule Update (Mock Header)
+### 2. Test Simulating an ESI Schedule Update (Mock Header / Force Flag)
 Run the script with a mock ETag flag:
 ```bash
 python3 schedules/script/check_esi_update.py --mock-etag "test-etag-manual-check"
 ```
-* **Expected Output**: `[Update Detected] Downloading https://esi.uclm.es/TV/hall/horarios.json...`
-* **Check File**: `schedules/input/schedules.json` is re-downloaded, and `esi_meta.json` reflects `"etag": "test-etag-manual-check"`.
+* **Expected Output**: `[Update Detected] ESI schedule PDFs updated or force flag enabled.`
+* **Check Files**: Fresh semester PDFs are downloaded into `schedules/pdf/`, older semester PDF versions are purged (non-cumulative), and `esi_meta.json` reflects `"etag": "test-etag-manual-check"`.
 
 ### 3. Test Running the Processing Pipeline
 Run `process_schedules.py`:

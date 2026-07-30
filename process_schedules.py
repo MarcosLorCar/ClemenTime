@@ -41,6 +41,7 @@ def main():
     parser.add_argument("--strict", action="store_true", help="Non-interactive mode (CI)")
     parser.add_argument("--model", default=default_model, help=f"Gemini model ID to use (default: {default_model}).")
     parser.add_argument("--clear-cache", action="store_true", help="Clear AI response cache before running.")
+    parser.add_argument("--check-esi", action="store_true", help="Check live ESI web page for updated PDFs before processing.")
 
     args, unknown = parser.parse_known_args()
 
@@ -50,7 +51,16 @@ def main():
 
     parse_script = os.path.join(script_dir, "parse_schedule.py")
     index_script = os.path.join(script_dir, "generate_index.py")
+    check_esi_script = os.path.join(script_dir, "check_esi_update.py")
     check_meta_script = os.path.join(script_dir, "check_pdf_update.py")
+
+    # 0. Check live ESI web page if requested
+    if args.check_esi and os.path.exists(check_esi_script):
+        print("\n[Run] Checking live ESI web page for schedule updates...", flush=True)
+        sys.stdout.flush()
+        res_esi = subprocess.run([sys.executable, "-u", check_esi_script])
+        if res_esi.returncode != 0:
+            print("[Warning] Live ESI check encountered an error.", flush=True)
 
     # 1. Determine PDFs to process
     pdfs_to_process = []

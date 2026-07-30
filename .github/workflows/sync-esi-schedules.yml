@@ -46,11 +46,13 @@ jobs:
           restore-keys: |
             gemini-cache-${{ runner.os }}-
 
-      - name: Check PDF Update
+      - name: Check ESI Web Page for Schedule Updates
         id: check
+        env:
+          SCHEDULE_SOURCE_URL: ${{ secrets.SCHEDULE_SOURCE_URL }}
+          PYTHONUNBUFFERED: "1"
         run: |
-          export PYTHONUNBUFFERED=1
-          OUTPUT=$(python3 -u schedules/script/check_pdf_update.py)
+          OUTPUT=$(python3 -u schedules/script/check_esi_update.py)
           echo "$OUTPUT"
           if [[ "$OUTPUT" == *"[Update Detected]"* ]]; then
             echo "has_update=true" >> $GITHUB_OUTPUT
