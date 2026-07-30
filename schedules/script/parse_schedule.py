@@ -451,7 +451,10 @@ def process_pdf_schedule(
         asig_norm = get_mapping(clean_asig, "matters", mappings, interactive) if clean_asig else clean_asig
         day_norm = normalize_spanish_day(slot.get("dia", ""))
 
+        group = normalize_group_name(slot.get("grupo") or "")
+
         if asig_norm in ["Pruebas de Progreso", "Conferencias", "PruebasProgreso"]:
+            group = "GENERAL"
             prof = ""
             if "pruebas" in asig_norm.lower():
                 classroom = "0.02-Charles Babbage"
@@ -460,7 +463,6 @@ def process_pdf_schedule(
 
         start_time = format_time(slot.get("hora_inicio", ""), is_end_time=False)
         end_time = format_time(slot.get("hora_fin", ""), is_end_time=True)
-        group = normalize_group_name(slot.get("grupo") or "")
 
         slot_key = (
             group,

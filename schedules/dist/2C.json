@@ -1,6 +1,6 @@
 [
   {
-    "grupo": "1A",
+    "grupo": "GENERAL",
     "cuatrimestre": "2C",
     "dia": "Lunes",
     "hora_inicio": "08:30",
@@ -93,7 +93,7 @@
   {
     "grupo": "1A",
     "cuatrimestre": "2C",
-    "dia": "Martes",
+    "dia": "Lunes",
     "hora_inicio": "10:00",
     "hora_fin": "11:30",
     "asignatura": "Fundamentos de Programacion II",
@@ -106,7 +106,7 @@
   {
     "grupo": "1A",
     "cuatrimestre": "2C",
-    "dia": "Martes",
+    "dia": "Lunes",
     "hora_inicio": "10:00",
     "hora_fin": "11:30",
     "asignatura": "Estructura de computadores",
@@ -158,7 +158,7 @@
   {
     "grupo": "1A",
     "cuatrimestre": "2C",
-    "dia": "Miércoles",
+    "dia": "Martes",
     "hora_inicio": "10:00",
     "hora_fin": "11:30",
     "asignatura": "Fundamentos de Programacion II",
@@ -171,7 +171,7 @@
   {
     "grupo": "1A",
     "cuatrimestre": "2C",
-    "dia": "Miércoles",
+    "dia": "Martes",
     "hora_inicio": "10:00",
     "hora_fin": "11:30",
     "asignatura": "Estructura de computadores",
@@ -182,7 +182,7 @@
     "grupo_practicas": "Lab-A1"
   },
   {
-    "grupo": "1A",
+    "grupo": "GENERAL",
     "cuatrimestre": "2C",
     "dia": "Miércoles",
     "hora_inicio": "11:30",
@@ -236,7 +236,7 @@
   {
     "grupo": "1A",
     "cuatrimestre": "2C",
-    "dia": "Jueves",
+    "dia": "Miércoles",
     "hora_inicio": "10:00",
     "hora_fin": "11:30",
     "asignatura": "Sistemas de Informacion",
@@ -249,7 +249,7 @@
   {
     "grupo": "1A",
     "cuatrimestre": "2C",
-    "dia": "Jueves",
+    "dia": "Miércoles",
     "hora_inicio": "10:00",
     "hora_fin": "11:30",
     "asignatura": "Algebra",
@@ -286,22 +286,9 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "1A",
+    "grupo": "GENERAL",
     "cuatrimestre": "2C",
     "dia": "Viernes",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Pruebas de Progreso",
-    "tipo": "evento",
-    "aula": "0.02-Charles Babbage",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "1B",
-    "cuatrimestre": "2C",
-    "dia": "Lunes",
     "hora_inicio": "08:30",
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
@@ -471,19 +458,6 @@
     "grupo": "1B",
     "cuatrimestre": "2C",
     "dia": "Miércoles",
-    "hora_inicio": "11:30",
-    "hora_fin": "13:00",
-    "asignatura": "Conferencias",
-    "tipo": "evento",
-    "aula": "Alan Turing",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "1B",
-    "cuatrimestre": "2C",
-    "dia": "Miércoles",
     "hora_inicio": "13:00",
     "hora_fin": "14:30",
     "asignatura": "Redes I",
@@ -588,38 +562,12 @@
     "grupo": "1B",
     "cuatrimestre": "2C",
     "dia": "Viernes",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Pruebas de Progreso",
-    "tipo": "evento",
-    "aula": "0.02-Charles Babbage",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "1B",
-    "cuatrimestre": "2C",
-    "dia": "Viernes",
     "hora_inicio": "11:30",
     "hora_fin": "13:00",
     "asignatura": "Sistemas de Informacion",
     "tipo": "teoría",
     "aula": "A2.2-Grace Murray",
     "profesor": "Moises Rodriguez",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "1C",
-    "cuatrimestre": "2C",
-    "dia": "Lunes",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Pruebas de Progreso",
-    "tipo": "evento",
-    "aula": "0.02-Charles Babbage",
-    "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
   },
@@ -659,19 +607,6 @@
     "tipo": "teoría",
     "aula": "A1.2-Tim Berners-Lee",
     "profesor": "Juan Carlos Lopez",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "1C",
-    "cuatrimestre": "2C",
-    "dia": "Viernes",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Pruebas de Progreso",
-    "tipo": "evento",
-    "aula": "0.02-Charles Babbage",
-    "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
   },
@@ -765,19 +700,6 @@
     "profesor": "Cristina Bolaños",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-C1"
-  },
-  {
-    "grupo": "1C",
-    "cuatrimestre": "2C",
-    "dia": "Miércoles",
-    "hora_inicio": "11:30",
-    "hora_fin": "13:00",
-    "asignatura": "Conferencias",
-    "tipo": "evento",
-    "aula": "Alan Turing",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
   },
   {
     "grupo": "1C",
@@ -908,45 +830,6 @@
     "profesor": "Asociado MAT",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-C1"
-  },
-  {
-    "grupo": "1D",
-    "cuatrimestre": "2C",
-    "dia": "Lunes",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Pruebas de Progreso",
-    "tipo": "evento",
-    "aula": "0.02-Charles Babbage",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "1D",
-    "cuatrimestre": "2C",
-    "dia": "Viernes",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Pruebas de Progreso",
-    "tipo": "evento",
-    "aula": "0.02-Charles Babbage",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "1D",
-    "cuatrimestre": "2C",
-    "dia": "Miércoles",
-    "hora_inicio": "11:30",
-    "hora_fin": "13:00",
-    "asignatura": "Conferencias",
-    "tipo": "evento",
-    "aula": "Alan Turing",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
   },
   {
     "grupo": "1D",
@@ -1186,19 +1069,6 @@
     "grupo": "2A",
     "cuatrimestre": "2C",
     "dia": "Lunes",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Pruebas de Progreso",
-    "tipo": "evento",
-    "aula": "0.02-Charles Babbage",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "2A",
-    "cuatrimestre": "2C",
-    "dia": "Lunes",
     "hora_inicio": "10:00",
     "hora_fin": "11:30",
     "asignatura": "Programacion Concurrente y de Tiempo Real",
@@ -1329,19 +1199,6 @@
     "grupo": "2A",
     "cuatrimestre": "2C",
     "dia": "Miércoles",
-    "hora_inicio": "11:30",
-    "hora_fin": "13:00",
-    "asignatura": "Conferencias",
-    "tipo": "evento",
-    "aula": "Alan Turing",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "2A",
-    "cuatrimestre": "2C",
-    "dia": "Miércoles",
     "hora_inicio": "13:00",
     "hora_fin": "14:30",
     "asignatura": "Metodologia de la Programacion",
@@ -1380,7 +1237,7 @@
   {
     "grupo": "2A",
     "cuatrimestre": "2C",
-    "dia": "Jueves",
+    "dia": "Martes",
     "hora_inicio": "11:30",
     "hora_fin": "13:00",
     "asignatura": "Programacion Concurrente y de Tiempo Real",
@@ -1393,7 +1250,7 @@
   {
     "grupo": "2A",
     "cuatrimestre": "2C",
-    "dia": "Jueves",
+    "dia": "Martes",
     "hora_inicio": "11:30",
     "hora_fin": "13:00",
     "asignatura": "Bases de Datos",
@@ -1420,19 +1277,6 @@
     "grupo": "2A",
     "cuatrimestre": "2C",
     "dia": "Viernes",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Pruebas de Progreso",
-    "tipo": "evento",
-    "aula": "0.02-Charles Babbage",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "2A",
-    "cuatrimestre": "2C",
-    "dia": "Viernes",
     "hora_inicio": "10:00",
     "hora_fin": "11:30",
     "asignatura": "Redes II",
@@ -1445,7 +1289,7 @@
   {
     "grupo": "2A",
     "cuatrimestre": "2C",
-    "dia": "Viernes",
+    "dia": "Miércoles",
     "hora_inicio": "11:30",
     "hora_fin": "13:00",
     "asignatura": "Redes I",
@@ -1456,7 +1300,7 @@
     "grupo_practicas": "Lab-A1"
   },
   {
-    "grupo": "2B",
+    "grupo": "GENERAL",
     "cuatrimestre": "2C",
     "dia": "Lunes",
     "hora_inicio": "08:30",
@@ -1549,7 +1393,7 @@
   {
     "grupo": "2B",
     "cuatrimestre": "2C",
-    "dia": "Martes",
+    "dia": "Lunes",
     "hora_inicio": "13:00",
     "hora_fin": "14:30",
     "asignatura": "Bases de Datos",
@@ -1568,7 +1412,7 @@
     "asignatura": "Redes II",
     "tipo": "laboratorio",
     "aula": "LD4-John Carmack",
-    "profesor": "Jose Luis Ruiz",
+    "profesor": "",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-BCD1"
   },
@@ -1627,20 +1471,7 @@
   {
     "grupo": "2B",
     "cuatrimestre": "2C",
-    "dia": "Miércoles",
-    "hora_inicio": "11:30",
-    "hora_fin": "13:00",
-    "asignatura": "Conferencias",
-    "tipo": "evento",
-    "aula": "Alan Turing",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "2B",
-    "cuatrimestre": "2C",
-    "dia": "Miércoles",
+    "dia": "Martes",
     "hora_inicio": "13:00",
     "hora_fin": "14:30",
     "asignatura": "Metodologia de la Programacion",
@@ -1653,7 +1484,7 @@
   {
     "grupo": "2B",
     "cuatrimestre": "2C",
-    "dia": "Miércoles",
+    "dia": "Martes",
     "hora_inicio": "13:00",
     "hora_fin": "14:30",
     "asignatura": "Programacion Concurrente y de Tiempo Real",
@@ -1742,7 +1573,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "2B",
+    "grupo": "GENERAL",
     "cuatrimestre": "2C",
     "dia": "Viernes",
     "hora_inicio": "08:30",
@@ -1796,7 +1627,7 @@
   {
     "grupo": "2B",
     "cuatrimestre": "2C",
-    "dia": "Viernes",
+    "dia": "Miércoles",
     "hora_inicio": "13:00",
     "hora_fin": "14:30",
     "asignatura": "Redes II",
@@ -1809,7 +1640,7 @@
   {
     "grupo": "2B",
     "cuatrimestre": "2C",
-    "dia": "Viernes",
+    "dia": "Miércoles",
     "hora_inicio": "13:00",
     "hora_fin": "14:30",
     "asignatura": "Estadistica",
@@ -1818,32 +1649,6 @@
     "profesor": "Ayudante",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-B2"
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "2C",
-    "dia": "Lunes",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Pruebas de Progreso",
-    "tipo": "evento",
-    "aula": "0.02-Charles Babbage",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "2C",
-    "dia": "Miércoles",
-    "hora_inicio": "11:30",
-    "hora_fin": "13:00",
-    "asignatura": "Conferencias",
-    "tipo": "evento",
-    "aula": "Alan Turing",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
   },
   {
     "grupo": "2C",
@@ -1887,19 +1692,6 @@
   {
     "grupo": "2C",
     "cuatrimestre": "2C",
-    "dia": "Viernes",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Pruebas de Progreso",
-    "tipo": "evento",
-    "aula": "0.02-Charles Babbage",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "2C",
     "dia": "Lunes",
     "hora_inicio": "15:30",
     "hora_fin": "17:00",
@@ -1919,7 +1711,7 @@
     "asignatura": "Bases de Datos",
     "tipo": "laboratorio",
     "aula": "LD2-Dennis Ritchie",
-    "profesor": "Jose Luis Ruiz",
+    "profesor": "",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-C2"
   },
@@ -1997,7 +1789,7 @@
     "asignatura": "Redes I",
     "tipo": "laboratorio",
     "aula": "LD4-John Carmack",
-    "profesor": "Jose Luis Ruiz",
+    "profesor": "",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-BCD1"
   },
@@ -2062,7 +1854,7 @@
     "asignatura": "Redes I",
     "tipo": "laboratorio",
     "aula": "LD2-Dennis Ritchie",
-    "profesor": "Jose Luis Ruiz",
+    "profesor": "",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-C1"
   },
@@ -2166,22 +1958,9 @@
     "asignatura": "Redes I",
     "tipo": "laboratorio",
     "aula": "A2.2-Grace Murray",
-    "profesor": "Jose Luis Ruiz",
+    "profesor": "",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-C2"
-  },
-  {
-    "grupo": "2D",
-    "cuatrimestre": "2C",
-    "dia": "Lunes",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Pruebas de Progreso",
-    "tipo": "evento",
-    "aula": "0.02-Charles Babbage",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
   },
   {
     "grupo": "2D",
@@ -2251,7 +2030,7 @@
   {
     "grupo": "2D",
     "cuatrimestre": "2C",
-    "dia": "Martes",
+    "dia": "Lunes",
     "hora_inicio": "11:30",
     "hora_fin": "13:00",
     "asignatura": "Bases de Datos",
@@ -2283,7 +2062,7 @@
     "asignatura": "Redes II",
     "tipo": "laboratorio",
     "aula": "LD4-John Carmack",
-    "profesor": "Jose Luis Ruiz",
+    "profesor": "",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-BCD1"
   },
@@ -2323,19 +2102,6 @@
     "tipo": "teoría",
     "aula": "0.02-Charles Babbage",
     "profesor": "Carmen Lacave",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "2D",
-    "cuatrimestre": "2C",
-    "dia": "Miércoles",
-    "hora_inicio": "11:30",
-    "hora_fin": "13:00",
-    "asignatura": "Conferencias",
-    "tipo": "evento",
-    "aula": "Alan Turing",
-    "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
   },
@@ -2407,7 +2173,7 @@
   {
     "grupo": "2D",
     "cuatrimestre": "2C",
-    "dia": "Jueves",
+    "dia": "Martes",
     "hora_inicio": "11:30",
     "hora_fin": "13:00",
     "asignatura": "Metodologia de la Programacion",
@@ -2420,7 +2186,7 @@
   {
     "grupo": "2D",
     "cuatrimestre": "2C",
-    "dia": "Jueves",
+    "dia": "Martes",
     "hora_inicio": "11:30",
     "hora_fin": "13:00",
     "asignatura": "Metodologia de la Programacion",
@@ -2447,19 +2213,6 @@
     "grupo": "2D",
     "cuatrimestre": "2C",
     "dia": "Viernes",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Pruebas de Progreso",
-    "tipo": "evento",
-    "aula": "0.02-Charles Babbage",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "2D",
-    "cuatrimestre": "2C",
-    "dia": "Viernes",
     "hora_inicio": "10:00",
     "hora_fin": "11:30",
     "asignatura": "Programacion Concurrente y de Tiempo Real",
@@ -2472,7 +2225,7 @@
   {
     "grupo": "2D",
     "cuatrimestre": "2C",
-    "dia": "Viernes",
+    "dia": "Miércoles",
     "hora_inicio": "11:30",
     "hora_fin": "13:00",
     "asignatura": "Redes II",
@@ -2485,7 +2238,7 @@
   {
     "grupo": "2D",
     "cuatrimestre": "2C",
-    "dia": "Viernes",
+    "dia": "Miércoles",
     "hora_inicio": "11:30",
     "hora_fin": "13:00",
     "asignatura": "Estadistica",
@@ -2520,45 +2273,6 @@
     "profesor": "Ayudante",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-B2"
-  },
-  {
-    "grupo": "3CO",
-    "cuatrimestre": "2C",
-    "dia": "Lunes",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Pruebas de Progreso",
-    "tipo": "evento",
-    "aula": "0.02-Charles Babbage",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "3CO",
-    "cuatrimestre": "2C",
-    "dia": "Viernes",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Pruebas de Progreso",
-    "tipo": "evento",
-    "aula": "0.02-Charles Babbage",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "3CO",
-    "cuatrimestre": "2C",
-    "dia": "Miércoles",
-    "hora_inicio": "11:30",
-    "hora_fin": "13:00",
-    "asignatura": "Conferencias",
-    "tipo": "evento",
-    "aula": "Alan Turing",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
   },
   {
     "grupo": "3CO",
@@ -2767,45 +2481,6 @@
     "profesor": "Pascual Julian",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-CO"
-  },
-  {
-    "grupo": "3IC",
-    "cuatrimestre": "2C",
-    "dia": "Lunes",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Pruebas de Progreso",
-    "tipo": "evento",
-    "aula": "0.02-Charles Babbage",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "3IC",
-    "cuatrimestre": "2C",
-    "dia": "Viernes",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Pruebas de Progreso",
-    "tipo": "evento",
-    "aula": "0.02-Charles Babbage",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "3IC",
-    "cuatrimestre": "2C",
-    "dia": "Miércoles",
-    "hora_inicio": "11:30",
-    "hora_fin": "13:00",
-    "asignatura": "Conferencias",
-    "tipo": "evento",
-    "aula": "Alan Turing",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
   },
   {
     "grupo": "3IC",
@@ -3019,45 +2694,6 @@
     "grupo": "3ISO",
     "cuatrimestre": "2C",
     "dia": "Lunes",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Pruebas de Progreso",
-    "tipo": "evento",
-    "aula": "0.02-Charles Babbage",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "3ISO",
-    "cuatrimestre": "2C",
-    "dia": "Viernes",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Pruebas de Progreso",
-    "tipo": "evento",
-    "aula": "0.02-Charles Babbage",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "3ISO",
-    "cuatrimestre": "2C",
-    "dia": "Miércoles",
-    "hora_inicio": "11:30",
-    "hora_fin": "13:00",
-    "asignatura": "Conferencias",
-    "tipo": "evento",
-    "aula": "Alan Turing",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "3ISO",
-    "cuatrimestre": "2C",
-    "dia": "Lunes",
     "hora_inicio": "15:30",
     "hora_fin": "17:00",
     "asignatura": "Aspectos Profesionales de la Informática",
@@ -3261,19 +2897,6 @@
     "profesor": "David Garcia Rosado",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-IS"
-  },
-  {
-    "grupo": "3TI",
-    "cuatrimestre": "2C",
-    "dia": "Lunes",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Pruebas de Progreso",
-    "tipo": "evento",
-    "aula": "0.02-Charles Babbage",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
   },
   {
     "grupo": "3TI",
@@ -3383,19 +3006,6 @@
     "grupo": "3TI",
     "cuatrimestre": "2C",
     "dia": "Miércoles",
-    "hora_inicio": "11:30",
-    "hora_fin": "13:00",
-    "asignatura": "Conferencias",
-    "tipo": "evento",
-    "aula": "Alan Turing",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "3TI",
-    "cuatrimestre": "2C",
-    "dia": "Miércoles",
     "hora_inicio": "15:30",
     "hora_fin": "17:00",
     "asignatura": "Gestion de Sistemas de Informacion",
@@ -3497,32 +3107,6 @@
     "grupo_practicas": "Lab-IC/TI2"
   },
   {
-    "grupo": "3TI",
-    "cuatrimestre": "2C",
-    "dia": "Viernes",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Pruebas de Progreso",
-    "tipo": "evento",
-    "aula": "0.02-Charles Babbage",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "4OPT",
-    "cuatrimestre": "2C",
-    "dia": "Lunes",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Pruebas de Progreso",
-    "tipo": "teoría",
-    "aula": "0.02-Charles Babbage",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
     "grupo": "4OPT",
     "cuatrimestre": "2C",
     "dia": "Lunes",
@@ -3630,19 +3214,6 @@
     "grupo": "4OPT",
     "cuatrimestre": "2C",
     "dia": "Miércoles",
-    "hora_inicio": "11:30",
-    "hora_fin": "13:00",
-    "asignatura": "Conferencias",
-    "tipo": "evento",
-    "aula": "Alan Turing",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "4OPT",
-    "cuatrimestre": "2C",
-    "dia": "Miércoles",
     "hora_inicio": "13:00",
     "hora_fin": "14:30",
     "asignatura": "Desarrollo de Sistemas Web",
@@ -3708,19 +3279,6 @@
     "grupo": "4OPT",
     "cuatrimestre": "2C",
     "dia": "Viernes",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Pruebas de Progreso",
-    "tipo": "teoría",
-    "aula": "0.02-Charles Babbage",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "4OPT",
-    "cuatrimestre": "2C",
-    "dia": "Viernes",
     "hora_inicio": "10:00",
     "hora_fin": "11:30",
     "asignatura": "Redes y Servicios Moviles",
@@ -3742,18 +3300,5 @@
     "profesor": "Sustituto ATC",
     "es_laboratorio": true,
     "grupo_practicas": "Lab"
-  },
-  {
-    "grupo": "UnivMay",
-    "cuatrimestre": "2C",
-    "dia": "Miércoles",
-    "hora_inicio": "11:30",
-    "hora_fin": "13:00",
-    "asignatura": "Conferencias",
-    "tipo": "evento",
-    "aula": "Alan Turing",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
   }
 ]
