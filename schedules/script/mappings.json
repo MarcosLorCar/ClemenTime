@@ -1,6 +1,9 @@
 {
   "matters": {
     "PruebasProgreso": "Pruebas de Progreso",
+    "Pruebas de.": "Pruebas de Progreso",
+    "Pruebas de": "Pruebas de Progreso",
+    "Pruebas. ESI": "Pruebas de Progreso",
     "TeCo": "Tecnologia de Computadores",
     "Calculo": "Calculo",
     "FunGesEmpr": "Fundamentos de Gestion Empresarial",
@@ -128,6 +131,9 @@
     "JesusB.Rodrigue": "Jesus Blanco Rodriguez",
     "Luis.Rodriguez": "Luis Rodriguez",
     "AnaIsabel.Molina": "Ana Isabel Molina",
+    "Anals": "Ana Isabel Molina",
+    "AnaIs": "Ana Isabel Molina",
+    "AnaIsabel": "Ana Isabel Molina",
     "Tobias.Diaz": "Tobias Diaz",
     "JoseJ.Castro": "Jose Jesus Castro",
     "Ramon.Hervas": "Ramon Hervas",
@@ -174,6 +180,9 @@
     "Profesor": "Profesor",
     "Sustituto": "Sustituto",
     "Sustitulo": "Sustituto",
+    "Sustuto": "Sustituto",
+    "Sustituto ATC": "Sustituto ATC",
+    "Sustuto ATC": "Sustituto ATC",
     "Ayuda": "Ayudante",
     "ESI": "ESI",
     "Pruebas. ESI": "Pruebas. ESI",
@@ -204,9 +213,13 @@
     "Sánchez": "Sánchez",
     "JoseA": "Jose Angel",
     "Antoni": "Antonio",
-    "Javier": "javier"
+    "Javier": "javier",
+    "Alan Turing": "Alan Turing",
+    "Ángela Rui": "Ángela Ruiz Robles",
+    "Ángela Ruiz": "Ángela Ruiz Robles"
   },
   "classrooms": {
+    "ESI": "ESI",
     "0.02+3-Charles": "0.02+3-Charles",
     "0.02+3-": "0.02+3-Charles",
     "0.04-Hedy": "0.04-Hedy Lamarr",

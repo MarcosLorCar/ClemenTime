@@ -1,18 +1,18 @@
 [
   {
-    "id": "ESI2026-27-GRADO_1C_Grupos_v1.3",
-    "title": "ESI2026-27-GRADO_1C_Grupos_v1.3",
-    "description": "Horario oficial",
-    "path": "ESI2026-27-GRADO_1C_Grupos_v1.3.json",
-    "hash": "557f9887c4c5b0476292ed59588fb10fd22515d9cc9c0803b24b23e425a75a49",
-    "updatedTime": "2026-07-27"
+    "id": "1C",
+    "title": "Primer Cuatrimestre",
+    "description": "Horario oficial ESI UCLM - 1º Cuatrimestre",
+    "path": "1C.json",
+    "hash": "db026ef373a5edc1d5ecd4b2bf9b53f72a944ba0a7d7138a9e73f9f921e52977",
+    "updatedTime": "2026-07-30"
   },
   {
-    "id": "ESI2026-27-GRADO_2C_Grupos_v1.3",
-    "title": "ESI2026-27-GRADO_2C_Grupos_v1.3",
-    "description": "Horario oficial",
-    "path": "ESI2026-27-GRADO_2C_Grupos_v1.3.json",
-    "hash": "17dafcd7fc33b208820efb894725c7402e851aef39d063beff86b8ac7c5e5625",
-    "updatedTime": "2026-07-27"
+    "id": "2C",
+    "title": "Segundo Cuatrimestre",
+    "description": "Horario oficial ESI UCLM - 2º Cuatrimestre",
+    "path": "2C.json",
+    "hash": "e2476776526ae0a6355034af7aaa08f55ff0790cabe705b0c3d03250e03481fa",
+    "updatedTime": "2026-07-30"
   }
 ]

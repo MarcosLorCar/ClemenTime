@@ -1,34 +1,53 @@
+#!/usr/bin/env python3
 import json
 import os
 import sys
 import argparse
+import random
 import re
+import hashlib
+import time
 import unicodedata
 from difflib import SequenceMatcher
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Optional, Tuple, Any
+from pydantic import BaseModel, Field
+from pdf2image import convert_from_path
+from google import genai
+from google.genai import types, errors
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 MAPPINGS_FILE = os.path.join(SCRIPT_DIR, "mappings.json")
+CACHE_DIR = os.path.join(SCRIPT_DIR, ".cache")
 DEFAULT_DIST_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "dist"))
+DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 
-# Weekday translation mapping
-WEEKDAY_MAP = {
-    "LUNES": "MONDAY",
-    "MARTES": "TUESDAY",
-    "MIÉRCOLES": "WEDNESDAY",
-    "MIERCOLES": "WEDNESDAY",
-    "JUEVES": "THURSDAY",
-    "VIERNES": "FRIDAY",
-    "SÁBADO": "SATURDAY",
-    "SABADO": "SATURDAY",
-    "DOMINGO": "SUNDAY"
-}
+# --- Pydantic Schema for Direct Flat Output ---
 
-# Global root-level subjects
-GLOBAL_SUBJECTS = {"Pruebas de Progreso", "Conferencias", "PruebasProgreso"}
+class JsonFlatSlot(BaseModel):
+    grupo: str = Field(default="", description="Group code, e.g. '1A', '1º A', '3º ISO'")
+    cuatrimestre: str = Field(default="1C", description="'1C' or '2C'")
+    dia: str = Field(default="", description="Day of week in Spanish: 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'")
+    hora_inicio: str = Field(default="", description="Start time in HH:mm format, e.g. '08:30'")
+    hora_fin: str = Field(default="", description="End time in HH:mm format, e.g. '10:00'")
+    asignatura: str = Field(default="", description="Subject name or shorthand code")
+    tipo: str = Field(default="teoría", description="'teoría', 'laboratorio', or 'evento'")
+    aula: str = Field(default="", description="Classroom name or code")
+    profesor: Optional[str] = Field(default="", description="Professor name if present")
+    es_laboratorio: bool = Field(default=False, description="True if entry is a laboratory session")
+    grupo_practicas: Optional[str] = Field(default="", description="Lab group variant if present, e.g. 'Lab-A1' or 'Lab-A1/A2'")
+
+class PageFlatSchedule(BaseModel):
+    slots: List[JsonFlatSlot] = []
+
+# --- Mapping Utilities ---
 
 def remove_accents(text: str) -> str:
-    """Normalize unicode characters to remove accents for fuzzy key comparison."""
     if not text:
         return ""
     nfkd_form = unicodedata.normalize('NFKD', text)
@@ -44,59 +63,42 @@ def save_mappings(mappings: Dict):
     with open(MAPPINGS_FILE, "w", encoding="utf-8") as f:
         json.dump(mappings, f, indent=2, ensure_ascii=False)
 
-def clean_subject_code(code: str) -> str:
-    """Removes laboratory suffixes like '-L', '-Lab', '(L)' from subject codes."""
-    if not code:
-        return code
-    return re.sub(r'(-L|\(L\)|-Lab)$', '', code.strip(), flags=re.IGNORECASE)
-
 def resolve_mapping(code: str, category: str, mappings: Dict, interactive: bool = True) -> Tuple[str, str]:
-    """
-    Resolves code against mappings and returns a tuple of (canonical_key, full_name).
-    """
     if not code:
         return code, code
 
     category_map = mappings.get(category, {})
 
-    # 1. Exact Key Match
     if code in category_map:
         return code, category_map[code]
 
-    # 2. Exact Value Match
     for k, v in category_map.items():
         if v == code:
             return k, v
 
-    # 3. Case & Accent Insensitive Match
     norm_code = remove_accents(code).lower()
     for key, val in category_map.items():
         if remove_accents(key).lower() == norm_code or remove_accents(val).lower() == norm_code:
             return key, val
 
-    # 4. Substring / Token Matching
     code_tokens = set(re.findall(r'\w+', norm_code))
     for key, val in category_map.items():
         key_norm = remove_accents(key).lower()
         val_norm = remove_accents(val).lower()
-
         if key_norm and (key_norm in norm_code or norm_code in key_norm):
             return key, val
         if val_norm and (val_norm in norm_code or norm_code in val_norm):
             return key, val
-
         key_tokens = set(re.findall(r'\w+', key_norm))
         if key_tokens and key_tokens.issubset(code_tokens):
             return key, val
 
-    # 5. Fuzzy Matching (Threshold 0.8)
     best_key, best_val = None, None
     best_score = 0.0
     for key, val in category_map.items():
         score_key = SequenceMatcher(None, norm_code, remove_accents(key).lower()).ratio()
         score_val = SequenceMatcher(None, norm_code, remove_accents(val).lower()).ratio()
         max_score = max(score_key, score_val)
-
         if max_score > best_score:
             best_score = max_score
             best_key, best_val = key, val
@@ -104,11 +106,10 @@ def resolve_mapping(code: str, category: str, mappings: Dict, interactive: bool 
     if best_score >= 0.8:
         return best_key, best_val
 
-    # 6. Fallback to Prompt
     if not interactive:
         return code, code
 
-    print(f"\n[?] Unknown {category[:-1]} found: '{code}'")
+    print(f"\n[?] Unknown {category[:-1]} found: '{code}'", flush=True)
     val = input(f"    Enter full name for '{code}' (or press Enter to use as is): ").strip()
     val = val if val else code
     category_map[code] = val
@@ -121,16 +122,11 @@ def get_mapping(code: str, category: str, mappings: Dict, interactive: bool = Tr
 
 def resolve_professors(prof_str: str, mappings: Dict, interactive: bool) -> str:
     if not prof_str:
-        return None
-
+        return ""
     prof_str = prof_str.strip()
-
-    # Step 1: Full string match without prompting
     full_match = get_mapping(prof_str, "professors", mappings, interactive=False)
     if full_match != prof_str:
         return full_match
-
-    # Step 2: Separate multi-teacher string if needed
     tokens = prof_str.split()
     if len(tokens) > 1 and any('.' in t for t in tokens):
         resolved = []
@@ -139,228 +135,363 @@ def resolve_professors(prof_str: str, mappings: Dict, interactive: bool) -> str:
             resolved.append(name)
         if all(r != t for r, t in zip(resolved, tokens)):
             return " ".join(resolved)
-
     return get_mapping(prof_str, "professors", mappings, interactive)
 
 def format_time(time_str: str, is_end_time: bool = False) -> str:
-    """
-    Format H:MM to HH:MM.
-    If is_end_time is True and minutes are 50 (e.g. 09:50), round up to next hour (e.g. 10:00).
-    """
     if not time_str:
         return time_str
-
     parts = time_str.split(":")
     if len(parts) == 2:
-        hours = int(parts[0])
-        minutes = int(parts[1])
-
-        if is_end_time and minutes == 50:
-            hours = (hours + 1) % 24
-            minutes = 0
-
-        return f"{hours:02d}:{minutes:02d}"
+        try:
+            hours = int(parts[0])
+            minutes = int(parts[1])
+            if is_end_time and minutes == 50:
+                hours = (hours + 1) % 24
+                minutes = 0
+            return f"{hours:02d}:{minutes:02d}"
+        except ValueError:
+            pass
     return time_str
 
-def parse_year_and_group(grupo_str: str):
-    """
-    Parses 'grupo' string into year name and group name without repeating the year.
-    Example: '1A' -> ('1º', 'A'), '3º ISO' -> ('3º ISO', None)
-    """
-    grupo_str = grupo_str.strip()
-    match = re.match(r"^(\d+)([A-Z])$", grupo_str)
-    if match:
-        year_num, group_char = match.groups()
-        year_name = f"{year_num}º"
-        group_name = group_char
-        return year_name, group_name
-
-    if not grupo_str.endswith("º") and not grupo_str[0].isdigit():
-        return grupo_str, None
-    return grupo_str, None
-
-def transform_slot(entry: Dict, mappings: Dict, interactive: bool) -> Dict:
-    day = WEEKDAY_MAP.get(entry.get("dia", "").upper(), entry.get("dia", "").upper())
-    start_time = format_time(entry.get("hora_inicio", ""), is_end_time=False)
-    end_time = format_time(entry.get("hora_fin", ""), is_end_time=True)
-
-    entry_type = "LAB" if entry.get("es_laboratorio", False) else "THEORY"
-
-    prof_raw = entry.get("profesor", "")
-    prof = resolve_professors(prof_raw, mappings, interactive) if prof_raw else None
-
-    aula_raw = entry.get("aula", "")
-    classroom = get_mapping(aula_raw, "classrooms", mappings, interactive) if aula_raw else None
-
-    return {
-        "dayOfWeek": day,
-        "startTime": start_time,
-        "endTime": end_time,
-        "classroom": classroom,
-        "groupName": entry.get("grupo_practicas") or None,
-        "entryType": entry_type,
-        "professor": prof
+def normalize_spanish_day(day: str) -> str:
+    if not day:
+        return ""
+    d = day.strip().capitalize()
+    d_clean = remove_accents(d).lower()
+    mapping = {
+        "lunes": "Lunes",
+        "martes": "Martes",
+        "miercoles": "Miércoles",
+        "jueves": "Jueves",
+        "viernes": "Viernes",
+        "sabado": "Sábado",
+        "domingo": "Domingo",
+        "monday": "Lunes",
+        "tuesday": "Martes",
+        "wednesday": "Miércoles",
+        "thursday": "Jueves",
+        "friday": "Viernes"
     }
+    return mapping.get(d_clean, d)
 
-def merge_subject_dicts(target: Dict, source: Dict):
-    """Merges source subject slots into target subject."""
-    for slot in source.get("theorySlots", []):
-        if slot not in target["theorySlots"]:
-            target["theorySlots"].append(slot)
+# --- Error Handling Utilities ---
 
-    for v_name, slots in source.get("labVariants", {}).items():
-        if v_name not in target["labVariants"]:
-            target["labVariants"][v_name] = []
-        for slot in slots:
-            if slot not in target["labVariants"][v_name]:
-                target["labVariants"][v_name].append(slot)
+def is_daily_quota_exhausted(error_obj: Any) -> bool:
+    """Recursively search for indicators that the DAILY quota is exhausted."""
+    data_str = str(error_obj).lower()
 
-def consolidate_subjects(subject_map: Dict[str, Dict]) -> List[Dict]:
-    """Ensures subjects with identical canonical full names are merged into a single subject."""
-    merged: Dict[str, Dict] = {}
-    for sub_code, subj in subject_map.items():
-        key = subj["name"]
-        if key not in merged:
-            merged[key] = subj
-        else:
-            merge_subject_dicts(merged[key], subj)
-    return list(merged.values())
+    if "per_day" in data_str or "perday" in data_str:
+        return True
 
-def process_raw_json(raw_entries: List[Dict], interactive: bool = True) -> Dict[str, Dict]:
-    mappings = load_mappings()
+    if "limit: 0" in data_str and "requests" in data_str:
+        return True
 
-    semesters: Dict[str, Dict] = {
-        "1C": {"version": 1, "title": None, "semester": 1, "matters": [], "years": []},
-        "2C": {"version": 1, "title": None, "semester": 2, "matters": [], "years": []}
-    }
+    if isinstance(error_obj, dict):
+        for k, v in error_obj.items():
+            if k == "quotaId" and isinstance(v, str) and "perday" in v.lower():
+                return True
+            if is_daily_quota_exhausted(v):
+                return True
+    elif isinstance(error_obj, list):
+        for item in error_obj:
+            if is_daily_quota_exhausted(item):
+                return True
 
-    global_matters: Dict[str, Dict[str, Dict]] = {"1C": {}, "2C": {}}
-    structured_years: Dict[str, Dict[str, Any]] = {"1C": {}, "2C": {}}
+    return False
 
-    for entry in raw_entries:
-        raw_asig = entry.get("asignatura", "").strip()
+# --- Cache Utilities ---
 
-        # 1. Ignore Universidad de Mayores
-        if "universidad de mayores" in raw_asig.lower() or "univmayores" in raw_asig.lower():
-            continue
+def get_page_cache_path(page_img) -> str:
+    img_bytes = page_img.tobytes()
+    content_hash = hashlib.sha256(img_bytes).hexdigest()
+    return os.path.join(CACHE_DIR, f"{content_hash}.json")
 
-        sem_key = entry.get("cuatrimestre", "1C").upper()
-        if sem_key not in semesters:
-            sem_key = "1C"
+def sanitize_subject_and_classroom(raw_asig: str, raw_aula: str) -> Tuple[str, str]:
+    if not raw_asig:
+        return "", raw_aula.strip()
 
-        clean_code = clean_subject_code(raw_asig)
-        canonical_code, full_name = resolve_mapping(clean_code, "matters", mappings, interactive)
-        slot = transform_slot(entry, mappings, interactive)
+    asig = raw_asig.strip()
+    aula = raw_aula.strip()
 
-        def get_or_create_subject(container: Dict[str, Dict], sub_code: str, sub_name: str, sem_num: int) -> Dict:
-            if sub_name not in container:
-                container[sub_name] = {
-                    "code": sub_code,
-                    "name": sub_name,
-                    "color": None,
-                    "semester": sem_num,
-                    "theorySlots": [],
-                    "labVariants": {},
-                    "isDummy": False
-                }
-            return container[sub_name]
+    # 1. Catch "Pruebas de...", "Pruebas. ESI", or "Pruebas..."
+    if re.search(r'pruebas', asig, re.IGNORECASE):
+        room_match = re.search(r'(\d+\.\d+[\w\+\-\.\s]*|A\d\.\d+[\w\+\-\.\s]*|F\d\.\d+[\w\+\-\.\s]*|LD\d[\w\+\-\.\s]*)', asig, re.IGNORECASE)
+        if room_match and not aula:
+            aula = room_match.group(1).strip()
+        return "Pruebas de Progreso", aula
 
-        def add_slot_to_subject(subject: Dict, slot_data: Dict):
-            if slot_data["entryType"] == "LAB":
-                variant_name = entry.get("grupo_practicas") or "Lab"
-                if variant_name not in subject["labVariants"]:
-                    subject["labVariants"][variant_name] = []
-                if slot_data not in subject["labVariants"][variant_name]:
-                    subject["labVariants"][variant_name].append(slot_data)
-            else:
-                if slot_data not in subject["theorySlots"]:
-                    subject["theorySlots"].append(slot_data)
+    # 2. Separate appended classroom code (e.g. "Algebra 0.04-Hedy" or "Algebra A1.1")
+    room_match = re.search(r'\s+(\d+\.\d+[\w\+\-\.\s]*|[A-Z]\d\.\d+[\w\+\-\.\s]*|LD\d[\w\+\-\.\s]*)$', asig)
+    if room_match:
+        if not aula:
+            aula = room_match.group(1).strip()
+        asig = asig[:room_match.start()].strip()
 
-        # 2. Global subjects
-        if canonical_code in GLOBAL_SUBJECTS or clean_code in GLOBAL_SUBJECTS or raw_asig in GLOBAL_SUBJECTS:
-            subj = get_or_create_subject(global_matters[sem_key], canonical_code, full_name, 1 if sem_key == "1C" else 2)
-            add_slot_to_subject(subj, slot)
-            continue
+    return asig, aula
 
-        # 3. Standard subjects
-        year_name, group_name = parse_year_and_group(entry.get("grupo", ""))
+def normalize_group_name(group: str) -> str:
+    if not group:
+        return ""
+    g = group.strip()
+    m = re.search(r'(\d+)\s*º?\s*([A-Za-z]+)', g)
+    if m:
+        year = m.group(1)
+        spec = m.group(2).upper()
+        spec_map = {
+            "ING": "IC",
+            "IS": "ISO",
+            "TECNOL": "TI",
+            "TECNOLOGIA": "TI",
+            "TECNOLOGIAS": "TI",
+            "COMP": "CO",
+        }
+        spec = spec_map.get(spec, spec)
+        return f"{year}{spec}"
+    return g
 
-        if year_name not in structured_years[sem_key]:
-            structured_years[sem_key][year_name] = {"matters": {}, "groups": {}}
+def sanitize_professor(prof_raw: str) -> str:
+    if not prof_raw:
+        return ""
+    p = prof_raw.strip()
+    p_lower = p.lower()
+    room_or_event_keywords = [
+        "pruebas", "conferencias", "univmayores", "grado",
+        "turing", "babbage", "hedy", "lamarr", "boole", "neumann",
+        "knuth", "dijkstra", "ritchie", "hopper", "lovelace", "aula"
+    ]
+    if any(kw in p_lower for kw in room_or_event_keywords):
+        return ""
+    return p
 
-        year_entry = structured_years[sem_key][year_name]
+# --- Core PDF Processor ---
 
-        if group_name:
-            if group_name not in year_entry["groups"]:
-                year_entry["groups"][group_name] = {}
-            subj = get_or_create_subject(year_entry["groups"][group_name], canonical_code, full_name, 1 if sem_key == "1C" else 2)
-        else:
-            subj = get_or_create_subject(year_entry["matters"], canonical_code, full_name, 1 if sem_key == "1C" else 2)
+def process_pdf_schedule(
+    pdf_path: str,
+    output_dir: str = DEFAULT_DIST_DIR,
+    interactive: bool = True,
+    model_id: str = None,
+    clear_cache: bool = False
+) -> List[Dict]:
+    try:
+        sys.stdout.reconfigure(line_buffering=True)
+        sys.stderr.reconfigure(line_buffering=True)
+    except Exception:
+        pass
 
-        add_slot_to_subject(subj, slot)
-
-    # Build output schemas
-    for sem_key, schema in semesters.items():
-        schema["matters"] = consolidate_subjects(global_matters[sem_key])
-
-        for y_name, y_data in structured_years[sem_key].items():
-            year_matters = consolidate_subjects(y_data["matters"])
-            groups_list = []
-            for g_name, g_matters in y_data["groups"].items():
-                groups_list.append({
-                    "name": g_name,
-                    "matters": consolidate_subjects(g_matters)
-                })
-
-            schema["years"].append({
-                "name": y_name,
-                "matters": year_matters,
-                "groups": groups_list
-            })
-
-    return semesters
-
-def main():
-    parser = argparse.ArgumentParser(description="Process combined schedule JSON into semester schemas.")
-    parser.add_argument("input_json", help="Path to input raw JSON file.")
-    parser.add_argument("--non-interactive", action="store_true", help="Run without interactive prompts.")
-    args = parser.parse_args()
-
-    if not os.path.exists(args.input_json):
-        print(f"Error: File '{args.input_json}' not found.")
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        print("[Error] GEMINI_API_KEY environment variable not set.")
         sys.exit(1)
 
-    with open(args.input_json, "r", encoding="utf-8") as f:
-        raw_data = json.load(f)
+    env_model = os.getenv("GEMINI_MODEL")
+    if not model_id:
+        model_id = env_model if env_model else DEFAULT_MODEL
+
+    os.makedirs(output_dir, exist_ok=True)
+    os.makedirs(CACHE_DIR, exist_ok=True)
+
+    client = genai.Client(api_key=api_key)
+    mappings = load_mappings()
+
+    filename = os.path.basename(pdf_path)
+    default_semester = "1C"
+    if "2C" in filename.upper() or "2_CUATRIMESTRE" in filename.upper():
+        default_semester = "2C"
+    elif "1C" in filename.upper() or "1_CUATRIMESTRE" in filename.upper():
+        default_semester = "1C"
+
+    print(f"\n[PDF] Converting '{filename}' to images (Default semester: {default_semester})...", flush=True)
+    pages = convert_from_path(pdf_path, dpi=200)
+
+    prompt = """
+    Extract all course schedule time slots from this university schedule page into a flat list of JSON objects matching the schema.
+
+    RULES:
+    1. EXTRACT ALL SLOTS: Extract every class slot (Theory, Laboratory, Exams/Events) shown on this page.
+    2. CUATRIMESTRE: Identify if this page belongs to '1C' (Primer Cuatrimestre) or '2C' (Segundo Cuatrimestre). Use '1C' or '2C'.
+    3. DIA: Name of day in Spanish (Lunes, Martes, Miércoles, Jueves, Viernes).
+    4. HORA INICIO & FIN: Format HH:mm (e.g. 08:30, 10:00).
+    5. GRUPO: Group or specialization code (e.g. '1A', '2B', '3IC', '3ISO', '3TI', '3CO', '4IC', '4ISO', '4TI', '4CO'). Use 'IC' for Ingeniería de Computadores, 'ISO' for Software, 'TI' for Tecnologías de la Información, and 'CO' for Computación.
+    6. ASIGNATURA: Subject name or code ONLY (e.g. 'Álgebra', 'Calculo', 'Pruebas de Progreso'). DO NOT include classroom numbers or names in ASIGNATURA.
+    7. TIPO: 'teoría' for lectures, 'laboratorio' for labs, 'evento' for exams/events.
+    8. AULA: Classroom code or name (e.g. 'A1.1', 'Charles Babbage - 0.02+3').
+    9. PROFESOR: Professor name if listed (e.g. 'Jose Angel Martin'). DO NOT put exam/event titles like 'Pruebas de Progreso' in PROFESOR. Use empty string if none.
+    10. ES_LABORATORIO: true if laboratory session, false otherwise.
+    11. GRUPO_PRACTICAS: Lab variant name (e.g. 'Lab-A1', 'Lab-A1/A2') if applicable, else empty string.
+    """
+
+    all_raw_slots = []
+
+    for i, page_img in enumerate(pages):
+        cache_path = get_page_cache_path(page_img)
+
+        if not clear_cache and os.path.exists(cache_path):
+            print(f"  -> Page {i + 1}/{len(pages)}: Loaded from cache.", flush=True)
+            with open(cache_path, "r", encoding="utf-8") as f:
+                page_data = json.load(f)
+        else:
+            max_retries = 10
+            base_delay = 15
+            page_data = None
+
+            for attempt in range(max_retries):
+                try:
+                    print(f"  -> Page {i + 1}/{len(pages)}: Parsing with Gemini ({model_id}, attempt {attempt + 1})...", flush=True)
+                    response = client.models.generate_content(
+                        model=model_id,
+                        contents=[page_img, prompt],
+                        config=types.GenerateContentConfig(
+                            response_mime_type="application/json",
+                            response_schema=PageFlatSchedule,
+                            temperature=0.1
+                        ),
+                    )
+
+                    page_data = json.loads(response.text)
+
+                    with open(cache_path, "w", encoding="utf-8") as f:
+                        json.dump(page_data, f, indent=2, ensure_ascii=False)
+
+                    break
+
+                except errors.ClientError as e:
+                    error_data = e.args[1] if len(e.args) > 1 else {}
+                    status = error_data.get("status", "")
+
+                    if is_daily_quota_exhausted(error_data) or is_daily_quota_exhausted(str(e)):
+                        print(f"\n[!] CRITICAL: Daily quota for model '{model_id}' exhausted.", flush=True)
+                        sys.exit(1)
+
+                    if "404" in str(e) or "not found" in str(e).lower() or "no longer available" in str(e).lower():
+                        print(f"\n[!] ERROR: Model '{model_id}' is not found or no longer available.", flush=True)
+                        sys.exit(1)
+
+                    wait_time = None
+                    error_info = error_data.get("error", {})
+                    retry_info = next((d for d in error_info.get("details", []) if "retryDelay" in d), None)
+
+                    if retry_info:
+                        delay_match = re.search(r"(\d+\.?\d*)", str(retry_info["retryDelay"]))
+                        if delay_match:
+                            wait_time = float(delay_match.group(1)) + 1.5
+
+                    if status == "RESOURCE_EXHAUSTED" or "429" in str(e):
+                        if wait_time is None:
+                            wait_time = base_delay * (2 ** attempt) + random.uniform(0, 5)
+                        print(f"     Rate limit reached (429/RESOURCE_EXHAUSTED). Waiting {wait_time:.1f}s before retry...", flush=True)
+                        time.sleep(wait_time)
+                    else:
+                        if wait_time:
+                            print(f"     Client error ({status}). Waiting {wait_time:.1f}s before retry...", flush=True)
+                            time.sleep(wait_time)
+                        else:
+                            print(f"     Fatal Client error: {e}", flush=True)
+                            sys.exit(1)
+
+                except Exception as e:
+                    print(f"     [Warning] Attempt {attempt + 1} failed: {e}", flush=True)
+                    if attempt == max_retries - 1:
+                        print(f"     [Error] Skipping page {i + 1} after {max_retries} attempts.", flush=True)
+                        break
+                    time.sleep(5)
+
+        if page_data and "slots" in page_data:
+            all_raw_slots.extend(page_data["slots"])
+
+    print(f"[Extracted] {len(all_raw_slots)} raw slots across {len(pages)} pages.", flush=True)
+
+    # Post-processing & Deduplication
+    processed_slots = []
+    seen_keys = set()
+
+    for slot in all_raw_slots:
+        raw_asig = (slot.get("asignatura") or "").strip()
+        raw_aula = (slot.get("aula") or "").strip()
+
+        clean_asig, clean_aula = sanitize_subject_and_classroom(raw_asig, raw_aula)
+
+        if not clean_asig or "universidad de mayores" in clean_asig.lower() or "univmayores" in clean_asig.lower():
+            continue
+
+        sem_val = (slot.get("cuatrimestre") or default_semester).strip().upper()
+        sem_key = "2C" if "2" in sem_val else "1C"
+
+        prof_raw = sanitize_professor(slot.get("profesor") or "")
+        prof = resolve_professors(prof_raw, mappings, interactive) if prof_raw else ""
+
+        classroom = get_mapping(clean_aula, "classrooms", mappings, interactive) if clean_aula else ""
+        asig_norm = get_mapping(clean_asig, "matters", mappings, interactive) if clean_asig else clean_asig
+        day_norm = normalize_spanish_day(slot.get("dia", ""))
+
+        start_time = format_time(slot.get("hora_inicio", ""), is_end_time=False)
+        end_time = format_time(slot.get("hora_fin", ""), is_end_time=True)
+
+        group = normalize_group_name(slot.get("grupo") or "")
+
+        slot_key = (
+            group,
+            sem_key,
+            day_norm,
+            start_time,
+            end_time,
+            asig_norm,
+            slot.get("tipo", "teoría"),
+            classroom,
+            prof,
+            bool(slot.get("es_laboratorio", False)),
+            (slot.get("grupo_practicas") or "").strip()
+        )
+
+        if slot_key not in seen_keys:
+            seen_keys.add(slot_key)
+            processed_slots.append({
+                "grupo": group,
+                "cuatrimestre": sem_key,
+                "dia": day_norm,
+                "hora_inicio": start_time,
+                "hora_fin": end_time,
+                "asignatura": asig_norm,
+                "tipo": slot.get("tipo", "teoría"),
+                "aula": classroom,
+                "profesor": prof,
+                "es_laboratorio": bool(slot.get("es_laboratorio", False)),
+                "grupo_practicas": (slot.get("grupo_practicas") or "").strip()
+            })
+
+    print(f"[Deduplicated] {len(processed_slots)} unique slots remaining.")
+    return processed_slots
+
+def main():
+    parser = argparse.ArgumentParser(description="Parse schedule PDF files directly into flat schedule JSONs.")
+    parser.add_argument("pdf_file", help="Path to PDF schedule file.")
+    parser.add_argument("--non-interactive", action="store_true", help="Run without interactive mapping prompts.")
+    parser.add_argument("--model", default=None, help=f"Gemini model ID (default: {DEFAULT_MODEL}).")
+    parser.add_argument("--clear-cache", action="store_true", help="Clear page response cache before running.")
+    args = parser.parse_args()
+
+    if not os.path.exists(args.pdf_file):
+        print(f"[Error] File '{args.pdf_file}' not found.")
+        sys.exit(1)
 
     interactive = not args.non_interactive
-    results = process_raw_json(raw_data, interactive=interactive)
+    slots = process_pdf_schedule(
+        pdf_path=args.pdf_file,
+        interactive=interactive,
+        model_id=args.model,
+        clear_cache=args.clear_cache
+    )
 
-    os.makedirs(DEFAULT_DIST_DIR, exist_ok=True)
+    by_semester: Dict[str, List[Dict]] = {"1C": [], "2C": []}
+    for s in slots:
+        sem = s.get("cuatrimestre", "1C")
+        by_semester[sem].append(s)
 
-    print("\n--- Output Configuration ---")
-    for sem_key, schema in results.items():
-        default_title = f"Cuatrimestre {1 if sem_key == '1C' else 2}"
-        default_filename = f"{sem_key}.json"
-
-        if interactive:
-            print(f"\n[{sem_key}]")
-            user_title = input(f"  Enter schedule title (default: '{default_title}'): ").strip()
-            schema["title"] = user_title if user_title else default_title
-
-            user_filename = input(f"  Enter output filename (default: '{default_filename}'): ").strip()
-            filename = user_filename if user_filename else default_filename
-        else:
-            schema["title"] = default_title
-            filename = default_filename
-
-        if not filename.endswith(".json"):
-            filename += ".json"
-
-        out_file = os.path.join(DEFAULT_DIST_DIR, filename)
-        with open(out_file, "w", encoding="utf-8") as f:
-            json.dump(schema, f, indent=2, ensure_ascii=False)
-        print(f"  -> Saved: {out_file}")
+    for sem_key, sem_slots in by_semester.items():
+        if sem_slots:
+            out_file = os.path.join(DEFAULT_DIST_DIR, f"{sem_key}.json")
+            with open(out_file, "w", encoding="utf-8") as f:
+                json.dump(sem_slots, f, indent=2, ensure_ascii=False)
+            print(f"  -> Wrote {len(sem_slots)} slots to {out_file}")
 
 if __name__ == "__main__":
     main()

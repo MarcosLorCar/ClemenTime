@@ -6,8 +6,10 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.marcoslorcar.clementime.BuildConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -43,6 +45,9 @@ open class SettingsRepository @Inject constructor(
     private val dayStartMinuteKey = intPreferencesKey("day_start_minute")
     private val dayEndHourKey = intPreferencesKey("day_end_hour")
     private val dayEndMinuteKey = intPreferencesKey("day_end_minute")
+    private val autoUpdateIntervalHoursKey = intPreferencesKey("auto_update_interval_hours")
+    private val lastScheduleSyncTimestampKey = longPreferencesKey("last_schedule_sync_timestamp")
+    private fun lastKnownScheduleHashKey(semester: Int) = stringPreferencesKey("last_known_schedule_hash_$semester")
 
 
     open val themeFlow: Flow<String>
@@ -265,6 +270,32 @@ open class SettingsRepository @Inject constructor(
             kotlinx.coroutines.flow.flowOf(30)
         }
 
+    open val autoUpdateIntervalHoursFlow: Flow<Int>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[autoUpdateIntervalHoursKey] ?: 0
+            } ?: kotlinx.coroutines.flow.flowOf(0)
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf(0)
+        }
+
+    open fun getLastKnownScheduleHashFlow(semester: Int): Flow<String> = try {
+        context?.dataStore?.data?.map { preferences ->
+            preferences[lastKnownScheduleHashKey(semester)] ?: ""
+        } ?: kotlinx.coroutines.flow.flowOf("")
+    } catch (_: Throwable) {
+        kotlinx.coroutines.flow.flowOf("")
+    }
+
+    open val lastScheduleSyncTimestampFlow: Flow<Long>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[lastScheduleSyncTimestampKey] ?: 0L
+            } ?: kotlinx.coroutines.flow.flowOf(0L)
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf(0L)
+        }
+
 
     open suspend fun setThemeMode(theme: String) {
         try {
@@ -449,8 +480,32 @@ open class SettingsRepository @Inject constructor(
         } catch (_: Throwable) {}
     }
 
+    open suspend fun setAutoUpdateIntervalHours(hours: Int) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[autoUpdateIntervalHoursKey] = hours
+            }
+        } catch (_: Throwable) {}
+    }
+
+    open suspend fun setLastKnownScheduleHash(semester: Int, hash: String) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[lastKnownScheduleHashKey(semester)] = hash
+            }
+        } catch (_: Throwable) {}
+    }
+
+    open suspend fun setLastScheduleSyncTimestamp(timestamp: Long) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[lastScheduleSyncTimestampKey] = timestamp
+            }
+        } catch (_: Throwable) {}
+    }
+
     companion object {
-        const val DEFAULT_GITHUB_REPO_BASE_URL = "https://raw.githubusercontent.com/MarcosLorCar/ClemenTime/master/schedules/dist/"
+        const val DEFAULT_GITHUB_REPO_BASE_URL = BuildConfig.DEFAULT_GITHUB_REPO_BASE_URL
     }
 }
 

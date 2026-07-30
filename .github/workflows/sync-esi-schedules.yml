@@ -1,0 +1,82 @@
+name: Sync ESI Schedules
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  push:
+    branches: ['**']
+    paths:
+      - 'schedules/pdf/**'
+      - 'schedules/script/**'
+      - 'process_schedules.py'
+      - '.github/workflows/sync-esi-schedules.yml'
+  workflow_dispatch:
+
+jobs:
+  check-and-sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      PYTHONUNBUFFERED: "1"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install google-genai pdf2image pillow pydantic python-dotenv
+
+      - name: Cache Gemini AI Responses
+        uses: actions/cache@v4
+        with:
+          path: schedules/script/.cache
+          key: gemini-cache-${{ runner.os }}-${{ hashFiles('schedules/pdf/*.pdf') }}
+          restore-keys: |
+            gemini-cache-${{ runner.os }}-
+
+      - name: Check ESI Web Page for Schedule Updates
+        id: check
+        env:
+          SCHEDULE_SOURCE_URL: ${{ secrets.SCHEDULE_SOURCE_URL }}
+          PYTHONUNBUFFERED: "1"
+        run: |
+          OUTPUT=$(python3 -u schedules/script/check_esi_update.py)
+          echo "$OUTPUT"
+          if [[ "$OUTPUT" == *"[Update Detected]"* ]]; then
+            echo "has_update=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Process Schedules
+        if: steps.check.outputs.has_update == 'true' || github.event_name == 'workflow_dispatch'
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
+          PYTHONUNBUFFERED: "1"
+        run: |
+          export PYTHONUNBUFFERED=1
+          python3 -u process_schedules.py --strict
+
+      - name: Commit and Push
+        if: steps.check.outputs.has_update == 'true' || github.event_name == 'workflow_dispatch'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add schedules/
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: auto-sync ESI schedules from PDF via AI pipeline [skip ci]"
+            git push
+          fi

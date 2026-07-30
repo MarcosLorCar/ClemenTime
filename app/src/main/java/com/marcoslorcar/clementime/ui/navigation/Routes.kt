@@ -12,7 +12,9 @@ data class ScheduleListRoute(
 
 @Keep
 @Serializable
-object MoreRoute
+data class MoreRoute(
+    val showDiff: Boolean = false
+)
 
 @Keep
 @Serializable

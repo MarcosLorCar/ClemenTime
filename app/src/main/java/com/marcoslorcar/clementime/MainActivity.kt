@@ -92,8 +92,12 @@ class MainActivity : AppCompatActivity() {
                     color = MaterialTheme.colorScheme.background,
                 ) {
                     if (isOnboardingCompleted != null) {
+                        val showScheduleDiff = intent?.getBooleanExtra("SHOW_SCHEDULE_DIFF", false) == true
                         key(isOnboardingCompleted) {
-                            ClemenTimeApp(isOnboardingCompleted!!)
+                            ClemenTimeApp(
+                                isOnboardingCompleted = isOnboardingCompleted!!,
+                                showScheduleDiffOnLaunch = showScheduleDiff
+                            )
                         }
                     }
                 }
@@ -122,10 +126,19 @@ private fun getTabIndex(entry: NavBackStackEntry?): Int {
 }
 
 @Composable
-fun ClemenTimeApp(isOnboardingCompleted: Boolean) {
+fun ClemenTimeApp(
+    isOnboardingCompleted: Boolean,
+    showScheduleDiffOnLaunch: Boolean = false
+) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
+
+    androidx.compose.runtime.LaunchedEffect(showScheduleDiffOnLaunch) {
+        if (showScheduleDiffOnLaunch) {
+            navController.navigate(MoreRoute(showDiff = true))
+        }
+    }
 
     val isNavVisible = currentDestination?.let { dest ->
         (dest.hasRoute(ScheduleListRoute::class) || 
@@ -183,7 +196,7 @@ fun ClemenTimeApp(isOnboardingCompleted: Boolean) {
                             val route = when (item.routeClass) {
                                 ScheduleListRoute::class -> ScheduleListRoute()
                                 SubjectsRoute::class -> SubjectsRoute
-                                MoreRoute::class -> MoreRoute
+                                MoreRoute::class -> MoreRoute()
                                 else -> return@item
                             }
                             navigateToTab(route)
@@ -229,7 +242,7 @@ fun ClemenTimeApp(isOnboardingCompleted: Boolean) {
                         fadeOut(tween(300)) + slideOutHorizontally(tween(300)) { it / 3 }
                     }
                 } else {
-                    fadeOut(tween(300)) + slideOutHorizontally(tween(300)) { -it / 3 }
+                    fadeOut(tween(300)) + slideOutHorizontally(tween(300)) { it / 3 }
                 }
             },
             popEnterTransition = {
@@ -305,8 +318,10 @@ fun ClemenTimeApp(isOnboardingCompleted: Boolean) {
                 )
             }
 
-            composable<MoreRoute> {
+            composable<MoreRoute> { backStackEntry ->
+                val route = backStackEntry.toRoute<MoreRoute>()
                 MoreScreen(
+                    showDiffOnLaunch = route.showDiff,
                     onNavigateToImport = {
                         navController.navigate(ImportRoute)
                     }

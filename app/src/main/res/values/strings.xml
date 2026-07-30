@@ -344,4 +344,35 @@
     <string name="content_description_add_subject">Add Subject</string>
     <string name="content_description_undo">Undo</string>
     <string name="content_description_ignored">Ignored</string>
+
+    <!-- Schedule Auto-Update strings -->
+    <string name="auto_update_interval_title">Auto-Update Interval</string>
+    <string name="auto_update_interval_off">Off</string>
+    <string name="auto_update_interval_6h">6 hours</string>
+    <string name="auto_update_interval_12h">12 hours</string>
+    <string name="auto_update_interval_24h">24 hours</string>
+    <string name="check_updates_now_title">Check for Schedule Updates Now</string>
+    <string name="checking_updates">Checking for schedule updates…</string>
+    <string name="no_schedule_updates_found">No schedule updates found.</string>
+    <string name="schedule_updates_found">Schedule changes in: %1$s</string>
+
+    <!-- Schedule Diff Bottom Sheet strings -->
+    <string name="schedule_changes_detected_title">Schedule Changes Detected</string>
+    <string name="schedule_changes_detected_desc">The official ESI schedule has been updated with changes affecting your active subjects.</string>
+    <string name="apply_updates">Apply Updates</string>
+    <string name="dismiss">Dismiss</string>
+    <string name="diff_badge_modified">MODIFIED</string>
+    <string name="diff_badge_added">ADDED</string>
+    <string name="diff_badge_removed">REMOVED</string>
+    <string name="diff_previous_detail">Previous: %1$s</string>
+    <string name="diff_new_detail">New: %1$s</string>
+    <string name="diff_previous_label">BEFORE</string>
+    <string name="diff_new_label">AFTER</string>
+    <string name="onboarding_autoupdate_title">Automatic Updates</string>
+    <string name="onboarding_autoupdate_desc">Get notified whenever your school updates classrooms, professors, or time slots.</string>
+    <string name="onboarding_autoupdate_frequency">Check frequency</string>
+    <string name="onboarding_notifications_permission_btn">Enable Notifications</string>
+    <string name="onboarding_notifications_permission_granted">Notifications Enabled ✓</string>
+    <string name="auto_update_interval_off_short">Off</string>
+    <string name="schedule_updated_success">Schedule updated successfully.</string>
 </resources>
