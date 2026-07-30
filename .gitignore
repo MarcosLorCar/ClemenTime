@@ -34,3 +34,8 @@ schedules/script/.cache/
 # Signing files
 *.jks
 *.keystore
+
+# Release build outputs & binaries
+*.apk
+*.aab
+/app/release/
