@@ -582,7 +582,7 @@
     "aula": "A1.1-John Von Neumann",
     "profesor": "",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-BD1"
+    "grupo_practicas": "Lab-BD1."
   },
   {
     "grupo": "1B",
@@ -626,6 +626,58 @@
   {
     "grupo": "1C",
     "cuatrimestre": "2C",
+    "dia": "Martes",
+    "hora_inicio": "08:30",
+    "hora_fin": "10:00",
+    "asignatura": "Fundamentos de Programacion II",
+    "tipo": "teoría",
+    "aula": "A1.2-Tim Berners-Lee",
+    "profesor": "Ayudante Doctor LSI",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "1C",
+    "cuatrimestre": "2C",
+    "dia": "Miércoles",
+    "hora_inicio": "08:30",
+    "hora_fin": "10:00",
+    "asignatura": "Fundamentos de Programacion II",
+    "tipo": "teoría",
+    "aula": "A1.2-Tim Berners-Lee",
+    "profesor": "Ayudante Doctor LSI",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "1C",
+    "cuatrimestre": "2C",
+    "dia": "Jueves",
+    "hora_inicio": "08:30",
+    "hora_fin": "10:00",
+    "asignatura": "Estructura de computadores",
+    "tipo": "teoría",
+    "aula": "A1.2-Tim Berners-Lee",
+    "profesor": "Juan Carlos Lopez",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "1C",
+    "cuatrimestre": "2C",
+    "dia": "Viernes",
+    "hora_inicio": "08:30",
+    "hora_fin": "10:00",
+    "asignatura": "Pruebas de Progreso",
+    "tipo": "evento",
+    "aula": "0.02-Charles Babbage",
+    "profesor": "",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "1C",
+    "cuatrimestre": "2C",
     "dia": "Lunes",
     "hora_inicio": "10:00",
     "hora_fin": "11:30",
@@ -633,6 +685,45 @@
     "tipo": "teoría",
     "aula": "A1.2-Tim Berners-Lee",
     "profesor": "Cristina Bolaños",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "1C",
+    "cuatrimestre": "2C",
+    "dia": "Martes",
+    "hora_inicio": "10:00",
+    "hora_fin": "11:30",
+    "asignatura": "Sistemas de Informacion",
+    "tipo": "teoría",
+    "aula": "A1.2-Tim Berners-Lee",
+    "profesor": "Coral Calero",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "1C",
+    "cuatrimestre": "2C",
+    "dia": "Miércoles",
+    "hora_inicio": "10:00",
+    "hora_fin": "11:30",
+    "asignatura": "Sistemas de Informacion",
+    "tipo": "teoría",
+    "aula": "A1.2-Tim Berners-Lee",
+    "profesor": "Coral Calero",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "1C",
+    "cuatrimestre": "2C",
+    "dia": "Jueves",
+    "hora_inicio": "10:00",
+    "hora_fin": "11:30",
+    "asignatura": "Algebra",
+    "tipo": "teoría",
+    "aula": "A1.2-Tim Berners-Lee",
+    "profesor": "Eusebio Angulo",
     "es_laboratorio": false,
     "grupo_practicas": ""
   },
@@ -652,45 +743,6 @@
   {
     "grupo": "1C",
     "cuatrimestre": "2C",
-    "dia": "Lunes",
-    "hora_inicio": "13:00",
-    "hora_fin": "14:30",
-    "asignatura": "Estructura de computadores",
-    "tipo": "laboratorio",
-    "aula": "LD3-Bill Gates",
-    "profesor": "Javier Dorado",
-    "es_laboratorio": true,
-    "grupo_practicas": "Lab-C1"
-  },
-  {
-    "grupo": "1C",
-    "cuatrimestre": "2C",
-    "dia": "Martes",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Fundamentos de Programacion II",
-    "tipo": "teoría",
-    "aula": "A1.2-Tim Berners-Lee",
-    "profesor": "Ayudante Doctor LSI",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "1C",
-    "cuatrimestre": "2C",
-    "dia": "Martes",
-    "hora_inicio": "10:00",
-    "hora_fin": "11:30",
-    "asignatura": "Sistemas de Informacion",
-    "tipo": "teoría",
-    "aula": "A1.2-Tim Berners-Lee",
-    "profesor": "Coral Calero",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "1C",
-    "cuatrimestre": "2C",
     "dia": "Martes",
     "hora_inicio": "11:30",
     "hora_fin": "13:00",
@@ -713,58 +765,6 @@
     "profesor": "Cristina Bolaños",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-C1"
-  },
-  {
-    "grupo": "1C",
-    "cuatrimestre": "2C",
-    "dia": "Martes",
-    "hora_inicio": "13:00",
-    "hora_fin": "14:30",
-    "asignatura": "Fundamentos de Programacion II",
-    "tipo": "laboratorio",
-    "aula": "A1.2-Tim Berners-Lee",
-    "profesor": "Ana Isabel Molina",
-    "es_laboratorio": true,
-    "grupo_practicas": "Lab-C2"
-  },
-  {
-    "grupo": "1C",
-    "cuatrimestre": "2C",
-    "dia": "Martes",
-    "hora_inicio": "13:00",
-    "hora_fin": "14:30",
-    "asignatura": "Redes I",
-    "tipo": "laboratorio",
-    "aula": "LD2-Dennis Ritchie",
-    "profesor": "Cristina Bolaños",
-    "es_laboratorio": true,
-    "grupo_practicas": "Lab-C2"
-  },
-  {
-    "grupo": "1C",
-    "cuatrimestre": "2C",
-    "dia": "Miércoles",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Fundamentos de Programacion II",
-    "tipo": "teoría",
-    "aula": "A1.2-Tim Berners-Lee",
-    "profesor": "Ayudante Doctor LSI",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "1C",
-    "cuatrimestre": "2C",
-    "dia": "Miércoles",
-    "hora_inicio": "10:00",
-    "hora_fin": "11:30",
-    "asignatura": "Sistemas de Informacion",
-    "tipo": "teoría",
-    "aula": "A1.2-Tim Berners-Lee",
-    "profesor": "Coral Calero",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
   },
   {
     "grupo": "1C",
@@ -782,6 +782,58 @@
   {
     "grupo": "1C",
     "cuatrimestre": "2C",
+    "dia": "Jueves",
+    "hora_inicio": "11:30",
+    "hora_fin": "13:00",
+    "asignatura": "Algebra",
+    "tipo": "laboratorio",
+    "aula": "A1.2-Tim Berners-Lee",
+    "profesor": "AyudanteDr.MAT",
+    "es_laboratorio": true,
+    "grupo_practicas": "Lab-C2"
+  },
+  {
+    "grupo": "1C",
+    "cuatrimestre": "2C",
+    "dia": "Lunes",
+    "hora_inicio": "13:00",
+    "hora_fin": "14:30",
+    "asignatura": "Estructura de computadores",
+    "tipo": "laboratorio",
+    "aula": "LD3-Bill Gates",
+    "profesor": "Javier Dorado",
+    "es_laboratorio": true,
+    "grupo_practicas": "Lab-C1"
+  },
+  {
+    "grupo": "1C",
+    "cuatrimestre": "2C",
+    "dia": "Martes",
+    "hora_inicio": "13:00",
+    "hora_fin": "14:30",
+    "asignatura": "Fundamentos de Programacion II",
+    "tipo": "laboratorio",
+    "aula": "A1.2-Tim Berners-Lee",
+    "profesor": "Ana Isabel Molina",
+    "es_laboratorio": true,
+    "grupo_practicas": "Lab-C2"
+  },
+  {
+    "grupo": "1C",
+    "cuatrimestre": "2C",
+    "dia": "Martes",
+    "hora_inicio": "13:00",
+    "hora_fin": "14:30",
+    "asignatura": "Redes I",
+    "tipo": "laboratorio",
+    "aula": "LD2-Dennis Ritchie",
+    "profesor": "Cristina Bolaños",
+    "es_laboratorio": true,
+    "grupo_practicas": "Lab-C2"
+  },
+  {
+    "grupo": "1C",
+    "cuatrimestre": "2C",
     "dia": "Miércoles",
     "hora_inicio": "13:00",
     "hora_fin": "14:30",
@@ -789,6 +841,19 @@
     "tipo": "teoría",
     "aula": "A1.2-Tim Berners-Lee",
     "profesor": "Juan Carlos Lopez",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "1C",
+    "cuatrimestre": "2C",
+    "dia": "Jueves",
+    "hora_inicio": "13:00",
+    "hora_fin": "14:30",
+    "asignatura": "Redes I",
+    "tipo": "teoría",
+    "aula": "A1.2-Tim Berners-Lee",
+    "profesor": "Cristina Bolaños",
     "es_laboratorio": false,
     "grupo_practicas": ""
   },
@@ -843,71 +908,6 @@
     "profesor": "Asociado MAT",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-C1"
-  },
-  {
-    "grupo": "1C",
-    "cuatrimestre": "2C",
-    "dia": "Jueves",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Estructura de computadores",
-    "tipo": "teoría",
-    "aula": "A1.2-Tim Berners-Lee",
-    "profesor": "Juan Carlos Lopez",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "1C",
-    "cuatrimestre": "2C",
-    "dia": "Jueves",
-    "hora_inicio": "10:00",
-    "hora_fin": "11:30",
-    "asignatura": "Algebra",
-    "tipo": "teoría",
-    "aula": "A1.2-Tim Berners-Lee",
-    "profesor": "Eusebio Angulo",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "1C",
-    "cuatrimestre": "2C",
-    "dia": "Jueves",
-    "hora_inicio": "11:30",
-    "hora_fin": "13:00",
-    "asignatura": "Algebra",
-    "tipo": "laboratorio",
-    "aula": "A1.2-Tim Berners-Lee",
-    "profesor": "AyudanteDr.MAT",
-    "es_laboratorio": true,
-    "grupo_practicas": "Lab-C2"
-  },
-  {
-    "grupo": "1C",
-    "cuatrimestre": "2C",
-    "dia": "Jueves",
-    "hora_inicio": "13:00",
-    "hora_fin": "14:30",
-    "asignatura": "Redes I",
-    "tipo": "teoría",
-    "aula": "A1.2-Tim Berners-Lee",
-    "profesor": "Cristina Bolaños",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "1C",
-    "cuatrimestre": "2C",
-    "dia": "Viernes",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Pruebas de Progreso",
-    "tipo": "evento",
-    "aula": "0.02-Charles Babbage",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
   },
   {
     "grupo": "1D",
@@ -1037,7 +1037,7 @@
     "aula": "A1.1-John Von Neumann",
     "profesor": "Julian Caba",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-BD1"
+    "grupo_practicas": "Lab-BD1."
   },
   {
     "grupo": "1D",
@@ -1230,7 +1230,7 @@
     "asignatura": "Programacion Concurrente y de Tiempo Real",
     "tipo": "laboratorio",
     "aula": "LD3-Bill Gates",
-    "profesor": "Jared David",
+    "profesor": "David Villa",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-A1"
   },
@@ -1386,7 +1386,7 @@
     "asignatura": "Programacion Concurrente y de Tiempo Real",
     "tipo": "laboratorio",
     "aula": "LD3-Bill Gates",
-    "profesor": "Jared David",
+    "profesor": "David Villa",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-A2"
   },
@@ -1835,71 +1835,6 @@
   {
     "grupo": "2C",
     "cuatrimestre": "2C",
-    "dia": "Miércoles",
-    "hora_inicio": "11:30",
-    "hora_fin": "13:00",
-    "asignatura": "Conferencias",
-    "tipo": "evento",
-    "aula": "Alan Turing",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "2C",
-    "dia": "Miércoles",
-    "hora_inicio": "13:00",
-    "hora_fin": "14:30",
-    "asignatura": "Metodologia de la Programacion",
-    "tipo": "laboratorio",
-    "aula": "LD3-Bill Gates",
-    "profesor": "Julio Alberto Lopez",
-    "es_laboratorio": true,
-    "grupo_practicas": "Lab-C1"
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "2C",
-    "dia": "Jueves",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Programacion Concurrente y de Tiempo Real",
-    "tipo": "laboratorio",
-    "aula": "LD3-Bill Gates",
-    "profesor": "Ayudante Doctor LSI",
-    "es_laboratorio": true,
-    "grupo_practicas": "Lab-BCD2"
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "2C",
-    "dia": "Jueves",
-    "hora_inicio": "13:00",
-    "hora_fin": "14:30",
-    "asignatura": "Programacion Concurrente y de Tiempo Real",
-    "tipo": "laboratorio",
-    "aula": "LD4-John Carmack",
-    "profesor": "Ayudante",
-    "es_laboratorio": true,
-    "grupo_practicas": "Lab-BCD1"
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "2C",
-    "dia": "Viernes",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Pruebas de Progreso",
-    "tipo": "evento",
-    "aula": "0.02-Charles Babbage",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "2C",
     "dia": "Lunes",
     "hora_inicio": "15:30",
     "hora_fin": "17:00",
@@ -1909,6 +1844,45 @@
     "profesor": "Fernando Gualo",
     "es_laboratorio": false,
     "grupo_practicas": ""
+  },
+  {
+    "grupo": "2C",
+    "cuatrimestre": "2C",
+    "dia": "Lunes",
+    "hora_inicio": "17:00",
+    "hora_fin": "18:30",
+    "asignatura": "Redes II",
+    "tipo": "teoría",
+    "aula": "A2.2-Grace Murray",
+    "profesor": "Sustituto ATC",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "2C",
+    "cuatrimestre": "2C",
+    "dia": "Lunes",
+    "hora_inicio": "18:30",
+    "hora_fin": "20:00",
+    "asignatura": "Estadistica",
+    "tipo": "teoría",
+    "aula": "A2.2-Grace Murray",
+    "profesor": "AyudanteDr.MAT",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "2C",
+    "cuatrimestre": "2C",
+    "dia": "Lunes",
+    "hora_inicio": "20:00",
+    "hora_fin": "21:30",
+    "asignatura": "Estadistica",
+    "tipo": "laboratorio",
+    "aula": "A2.2-Grace Murray",
+    "profesor": "AyudanteDr.MAT",
+    "es_laboratorio": true,
+    "grupo_practicas": "Lab-C1"
   },
   {
     "grupo": "2C",
@@ -1939,45 +1913,6 @@
   {
     "grupo": "2C",
     "cuatrimestre": "2C",
-    "dia": "Miércoles",
-    "hora_inicio": "15:30",
-    "hora_fin": "17:00",
-    "asignatura": "Metodologia de la Programacion",
-    "tipo": "teoría",
-    "aula": "A2.2-Grace Murray",
-    "profesor": "Julio Alberto Lopez",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "2C",
-    "dia": "Jueves",
-    "hora_inicio": "15:30",
-    "hora_fin": "17:00",
-    "asignatura": "Estadistica",
-    "tipo": "teoría",
-    "aula": "A2.2-Grace Murray",
-    "profesor": "AyudanteDr.MAT",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "2C",
-    "dia": "Lunes",
-    "hora_inicio": "17:00",
-    "hora_fin": "18:30",
-    "asignatura": "Redes II",
-    "tipo": "teoría",
-    "aula": "A2.2-Grace Murray",
-    "profesor": "Sustituto ATC",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "2C",
     "dia": "Martes",
     "hora_inicio": "17:00",
     "hora_fin": "18:30",
@@ -1999,46 +1934,7 @@
     "aula": "LD4-John Carmack",
     "profesor": "Jose Luis Ruiz",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-BCD1"
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "2C",
-    "dia": "Miércoles",
-    "hora_inicio": "17:00",
-    "hora_fin": "18:30",
-    "asignatura": "Bases de Datos",
-    "tipo": "teoría",
-    "aula": "A2.2-Grace Murray",
-    "profesor": "Fernando Gualo",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "2C",
-    "dia": "Jueves",
-    "hora_inicio": "17:00",
-    "hora_fin": "18:30",
-    "asignatura": "Metodologia de la Programacion",
-    "tipo": "teoría",
-    "aula": "A2.2-Grace Murray",
-    "profesor": "Julio Alberto Lopez",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "2C",
-    "dia": "Lunes",
-    "hora_inicio": "18:30",
-    "hora_fin": "20:00",
-    "asignatura": "Estadistica",
-    "tipo": "teoría",
-    "aula": "A2.2-Grace Murray",
-    "profesor": "AyudanteDr.MAT",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
+    "grupo_practicas": "Lab-BCD1."
   },
   {
     "grupo": "2C",
@@ -2051,7 +1947,7 @@
     "aula": "LD4-John Carmack",
     "profesor": "Tobias Diaz",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-BD2"
+    "grupo_practicas": "Lab-BD2."
   },
   {
     "grupo": "2C",
@@ -2069,6 +1965,84 @@
   {
     "grupo": "2C",
     "cuatrimestre": "2C",
+    "dia": "Martes",
+    "hora_inicio": "20:00",
+    "hora_fin": "21:30",
+    "asignatura": "Programacion Concurrente y de Tiempo Real",
+    "tipo": "teoría",
+    "aula": "A2.2-Grace Murray",
+    "profesor": "Santiago Sanchez",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "2C",
+    "cuatrimestre": "2C",
+    "dia": "Miércoles",
+    "hora_inicio": "11:30",
+    "hora_fin": "13:00",
+    "asignatura": "Conferencias",
+    "tipo": "evento",
+    "aula": "Alan Turing",
+    "profesor": "",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "2C",
+    "cuatrimestre": "2C",
+    "dia": "Miércoles",
+    "hora_inicio": "13:00",
+    "hora_fin": "14:30",
+    "asignatura": "Metodologia de la Programacion",
+    "tipo": "laboratorio",
+    "aula": "LD3-Bill Gates",
+    "profesor": "Julio Alberto Lopez",
+    "es_laboratorio": true,
+    "grupo_practicas": "Lab-C1"
+  },
+  {
+    "grupo": "2C",
+    "cuatrimestre": "2C",
+    "dia": "Miércoles",
+    "hora_inicio": "13:00",
+    "hora_fin": "14:30",
+    "asignatura": "Programacion Concurrente y de Tiempo Real",
+    "tipo": "laboratorio",
+    "aula": "LD4-John Carmack",
+    "profesor": "Ayudante",
+    "es_laboratorio": true,
+    "grupo_practicas": "Lab-BCD1."
+  },
+  {
+    "grupo": "2C",
+    "cuatrimestre": "2C",
+    "dia": "Miércoles",
+    "hora_inicio": "15:30",
+    "hora_fin": "17:00",
+    "asignatura": "Metodologia de la Programacion",
+    "tipo": "teoría",
+    "aula": "A2.2-Grace Murray",
+    "profesor": "Julio Alberto Lopez",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "2C",
+    "cuatrimestre": "2C",
+    "dia": "Miércoles",
+    "hora_inicio": "17:00",
+    "hora_fin": "18:30",
+    "asignatura": "Bases de Datos",
+    "tipo": "teoría",
+    "aula": "A2.2-Grace Murray",
+    "profesor": "Fernando Gualo",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "2C",
+    "cuatrimestre": "2C",
     "dia": "Miércoles",
     "hora_inicio": "18:30",
     "hora_fin": "20:00",
@@ -2076,6 +2050,58 @@
     "tipo": "teoría",
     "aula": "A2.2-Grace Murray",
     "profesor": "Santiago Sanchez",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "2C",
+    "cuatrimestre": "2C",
+    "dia": "Miércoles",
+    "hora_inicio": "20:00",
+    "hora_fin": "21:30",
+    "asignatura": "Redes II",
+    "tipo": "teoría",
+    "aula": "A2.2-Grace Murray",
+    "profesor": "Sustituto ATC",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "2C",
+    "cuatrimestre": "2C",
+    "dia": "Jueves",
+    "hora_inicio": "08:30",
+    "hora_fin": "10:00",
+    "asignatura": "Programacion Concurrente y de Tiempo Real",
+    "tipo": "laboratorio",
+    "aula": "LD3-Bill Gates",
+    "profesor": "Ayudante Doctor LSI",
+    "es_laboratorio": true,
+    "grupo_practicas": "Lab-BCD2."
+  },
+  {
+    "grupo": "2C",
+    "cuatrimestre": "2C",
+    "dia": "Jueves",
+    "hora_inicio": "15:30",
+    "hora_fin": "17:00",
+    "asignatura": "Estadistica",
+    "tipo": "teoría",
+    "aula": "A2.2-Grace Murray",
+    "profesor": "AyudanteDr.MAT",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "2C",
+    "cuatrimestre": "2C",
+    "dia": "Jueves",
+    "hora_inicio": "17:00",
+    "hora_fin": "18:30",
+    "asignatura": "Metodologia de la Programacion",
+    "tipo": "teoría",
+    "aula": "A2.2-Grace Murray",
+    "profesor": "Julio Alberto Lopez",
     "es_laboratorio": false,
     "grupo_practicas": ""
   },
@@ -2108,45 +2134,6 @@
   {
     "grupo": "2C",
     "cuatrimestre": "2C",
-    "dia": "Lunes",
-    "hora_inicio": "20:00",
-    "hora_fin": "21:30",
-    "asignatura": "Estadistica",
-    "tipo": "laboratorio",
-    "aula": "A2.2-Grace Murray",
-    "profesor": "AyudanteDr.MAT",
-    "es_laboratorio": true,
-    "grupo_practicas": "Lab-C1"
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "2C",
-    "dia": "Martes",
-    "hora_inicio": "20:00",
-    "hora_fin": "21:30",
-    "asignatura": "Programacion Concurrente y de Tiempo Real",
-    "tipo": "teoría",
-    "aula": "A2.2-Grace Murray",
-    "profesor": "Santiago Sanchez",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "2C",
-    "dia": "Miércoles",
-    "hora_inicio": "20:00",
-    "hora_fin": "21:30",
-    "asignatura": "Redes II",
-    "tipo": "teoría",
-    "aula": "A2.2-Grace Murray",
-    "profesor": "Sustituto ATC",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "2C",
     "dia": "Jueves",
     "hora_inicio": "20:00",
     "hora_fin": "21:30",
@@ -2169,6 +2156,19 @@
     "profesor": "Jose Luis Ruiz",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-C2"
+  },
+  {
+    "grupo": "2C",
+    "cuatrimestre": "2C",
+    "dia": "Viernes",
+    "hora_inicio": "08:30",
+    "hora_fin": "10:00",
+    "asignatura": "Pruebas de Progreso",
+    "tipo": "evento",
+    "aula": "0.02-Charles Babbage",
+    "profesor": "",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
   },
   {
     "grupo": "2D",
@@ -2784,6 +2784,19 @@
   {
     "grupo": "3IC",
     "cuatrimestre": "2C",
+    "dia": "Viernes",
+    "hora_inicio": "08:30",
+    "hora_fin": "10:00",
+    "asignatura": "Pruebas de Progreso",
+    "tipo": "evento",
+    "aula": "0.02-Charles Babbage",
+    "profesor": "",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "3IC",
+    "cuatrimestre": "2C",
     "dia": "Miércoles",
     "hora_inicio": "11:30",
     "hora_fin": "13:00",
@@ -2805,7 +2818,7 @@
     "aula": "F1.1-Ángela Ruiz",
     "profesor": "Felix Oscar Garcia",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-IC/TI1"
+    "grupo_practicas": "Lab-IC/TI1."
   },
   {
     "grupo": "3IC",
@@ -3000,20 +3013,7 @@
     "aula": "A2.1-George Boole",
     "profesor": "Jesus Ramon Oviedo",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-IC/TI2"
-  },
-  {
-    "grupo": "3IC",
-    "cuatrimestre": "2C",
-    "dia": "Viernes",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Pruebas de Progreso",
-    "tipo": "evento",
-    "aula": "0.02-Charles Babbage",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
+    "grupo_practicas": "Lab-IC/TI2."
   },
   {
     "grupo": "3ISO",
@@ -3598,7 +3598,7 @@
     "aula": "A2.1-George Boole",
     "profesor": "",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab"
+    "grupo_practicas": ""
   },
   {
     "grupo": "4OPT",
@@ -3624,7 +3624,7 @@
     "aula": "A2.1-George Boole",
     "profesor": "Ignacio Garcia Rodriguez",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab"
+    "grupo_practicas": ""
   },
   {
     "grupo": "4OPT",
@@ -3676,7 +3676,7 @@
     "aula": "A2.1-George Boole",
     "profesor": "Manuel Angel Serrano",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab"
+    "grupo_practicas": ""
   },
   {
     "grupo": "4OPT",
@@ -3702,7 +3702,7 @@
     "aula": "A2.1-George Boole",
     "profesor": "David Garcia Rosado",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab"
+    "grupo_practicas": ""
   },
   {
     "grupo": "4OPT",
@@ -3741,7 +3741,7 @@
     "aula": "A2.1-George Boole",
     "profesor": "Sustituto ATC",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab"
+    "grupo_practicas": ""
   },
   {
     "grupo": "UnivMay",
@@ -3753,6 +3753,19 @@
     "tipo": "evento",
     "aula": "Alan Turing",
     "profesor": "",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "UnivMay",
+    "cuatrimestre": "2C",
+    "dia": "Lunes",
+    "hora_inicio": "15:30",
+    "hora_fin": "20:00",
+    "asignatura": "Universidad",
+    "tipo": "teoría",
+    "aula": "LD4-John Carmack",
+    "profesor": "Coord.UnivMay",
     "es_laboratorio": false,
     "grupo_practicas": ""
   }
