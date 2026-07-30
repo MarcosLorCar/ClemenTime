@@ -2,8 +2,8 @@
 """
 process_schedules.py
 
-Project-root wrapper script to process PDF schedule files (PDF -> flat JSON)
-and regenerate the schedule index.
+Project-root wrapper script to process PDF schedule files (PDF -> flat JSON),
+regenerate the schedule index, and update PDF metadata hashes.
 
 Usage:
   python3 process_schedules.py               # Process all PDFs in schedules/pdf/
@@ -50,6 +50,7 @@ def main():
 
     parse_script = os.path.join(script_dir, "parse_schedule.py")
     index_script = os.path.join(script_dir, "generate_index.py")
+    check_meta_script = os.path.join(script_dir, "check_pdf_update.py")
 
     # 1. Determine PDFs to process
     pdfs_to_process = []
@@ -93,6 +94,12 @@ def main():
         if res_index.returncode != 0:
             print("[Error] Schedule index generation failed.", flush=True)
             sys.exit(res_index.returncode)
+
+    # 4. Update PDF metadata hashes
+    if os.path.exists(check_meta_script):
+        print("\n[Run] Updating PDF metadata hash file...", flush=True)
+        sys.stdout.flush()
+        subprocess.run([sys.executable, "-u", check_meta_script])
 
     print("\n[Done] Pipeline finished successfully!", flush=True)
 

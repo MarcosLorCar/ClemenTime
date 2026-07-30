@@ -38,6 +38,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install google-genai pdf2image pillow pydantic python-dotenv
 
+      - name: Cache Gemini AI Responses
+        uses: actions/cache@v4
+        with:
+          path: schedules/script/.cache
+          key: gemini-cache-${{ runner.os }}-${{ hashFiles('schedules/pdf/*.pdf') }}
+          restore-keys: |
+            gemini-cache-${{ runner.os }}-
+
       - name: Check PDF Update
         id: check
         run: |

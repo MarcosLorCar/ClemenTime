@@ -206,6 +206,52 @@ def get_page_cache_path(page_img) -> str:
     content_hash = hashlib.sha256(img_bytes).hexdigest()
     return os.path.join(CACHE_DIR, f"{content_hash}.json")
 
+def sanitize_subject_and_classroom(raw_asig: str, raw_aula: str) -> Tuple[str, str]:
+    if not raw_asig:
+        return "", raw_aula.strip()
+
+    asig = raw_asig.strip()
+    aula = raw_aula.strip()
+
+    # 1. Catch "Pruebas de...", "Pruebas. ESI", or "Pruebas..."
+    if re.search(r'pruebas', asig, re.IGNORECASE):
+        room_match = re.search(r'(\d+\.\d+[\w\+\-\.\s]*|A\d\.\d+[\w\+\-\.\s]*|F\d\.\d+[\w\+\-\.\s]*|LD\d[\w\+\-\.\s]*)', asig, re.IGNORECASE)
+        if room_match and not aula:
+            aula = room_match.group(1).strip()
+        return "Pruebas de Progreso", aula
+
+    # 2. Separate appended classroom code (e.g. "Algebra 0.04-Hedy" or "Algebra A1.1")
+    room_match = re.search(r'\s+(\d+\.\d+[\w\+\-\.\s]*|[A-Z]\d\.\d+[\w\+\-\.\s]*|LD\d[\w\+\-\.\s]*)$', asig)
+    if room_match:
+        if not aula:
+            aula = room_match.group(1).strip()
+        asig = asig[:room_match.start()].strip()
+
+    return asig, aula
+
+def normalize_group_name(group: str) -> str:
+    if not group:
+        return ""
+    g = group.strip()
+    m = re.search(r'(\d+)\s*º?\s*([A-Za-z]+)', g)
+    if m:
+        return f"{m.group(1)}{m.group(2).upper()}"
+    return g
+
+def sanitize_professor(prof_raw: str) -> str:
+    if not prof_raw:
+        return ""
+    p = prof_raw.strip()
+    p_lower = p.lower()
+    room_or_event_keywords = [
+        "pruebas", "conferencias", "univmayores", "grado",
+        "turing", "babbage", "hedy", "lamarr", "boole", "neumann",
+        "knuth", "dijkstra", "ritchie", "hopper", "lovelace", "aula"
+    ]
+    if any(kw in p_lower for kw in room_or_event_keywords):
+        return ""
+    return p
+
 # --- Core PDF Processor ---
 
 def process_pdf_schedule(
@@ -243,7 +289,7 @@ def process_pdf_schedule(
     elif "1C" in filename.upper() or "1_CUATRIMESTRE" in filename.upper():
         default_semester = "1C"
 
-    print(f"\n[PDF] Converting '{filename}' to images (Default semester: {default_semester})...")
+    print(f"\n[PDF] Converting '{filename}' to images (Default semester: {default_semester})...", flush=True)
     pages = convert_from_path(pdf_path, dpi=200)
 
     prompt = """
@@ -255,10 +301,10 @@ def process_pdf_schedule(
     3. DIA: Name of day in Spanish (Lunes, Martes, Miércoles, Jueves, Viernes).
     4. HORA INICIO & FIN: Format HH:mm (e.g. 08:30, 10:00).
     5. GRUPO: Group name (e.g. '1A', '1º A', '2B', '3º ISO').
-    6. ASIGNATURA: Subject name or code (e.g. 'Álgebra', 'Calculo', 'Pruebas de Progreso').
+    6. ASIGNATURA: Subject name or code ONLY (e.g. 'Álgebra', 'Calculo', 'Pruebas de Progreso'). DO NOT include classroom numbers or names in ASIGNATURA.
     7. TIPO: 'teoría' for lectures, 'laboratorio' for labs, 'evento' for exams/events.
     8. AULA: Classroom code or name (e.g. 'A1.1', 'Charles Babbage - 0.02+3').
-    9. PROFESOR: Professor name if listed, otherwise empty string.
+    9. PROFESOR: Professor name if listed (e.g. 'Jose Angel Martin'). DO NOT put exam/event titles like 'Pruebas de Progreso' in PROFESOR. Use empty string if none.
     10. ES_LABORATORIO: true if laboratory session, false otherwise.
     11. GRUPO_PRACTICAS: Lab variant name (e.g. 'Lab-A1', 'Lab-A1/A2') if applicable, else empty string.
     """
@@ -341,7 +387,7 @@ def process_pdf_schedule(
         if page_data and "slots" in page_data:
             all_raw_slots.extend(page_data["slots"])
 
-    print(f"[Extracted] {len(all_raw_slots)} raw slots across {len(pages)} pages.")
+    print(f"[Extracted] {len(all_raw_slots)} raw slots across {len(pages)} pages.", flush=True)
 
     # Post-processing & Deduplication
     processed_slots = []
@@ -349,25 +395,27 @@ def process_pdf_schedule(
 
     for slot in all_raw_slots:
         raw_asig = (slot.get("asignatura") or "").strip()
-        if not raw_asig or "universidad de mayores" in raw_asig.lower() or "univmayores" in raw_asig.lower():
+        raw_aula = (slot.get("aula") or "").strip()
+
+        clean_asig, clean_aula = sanitize_subject_and_classroom(raw_asig, raw_aula)
+
+        if not clean_asig or "universidad de mayores" in clean_asig.lower() or "univmayores" in clean_asig.lower():
             continue
 
         sem_val = (slot.get("cuatrimestre") or default_semester).strip().upper()
         sem_key = "2C" if "2" in sem_val else "1C"
 
-        prof_raw = (slot.get("profesor") or "").strip()
+        prof_raw = sanitize_professor(slot.get("profesor") or "")
         prof = resolve_professors(prof_raw, mappings, interactive) if prof_raw else ""
 
-        aula_raw = (slot.get("aula") or "").strip()
-        classroom = get_mapping(aula_raw, "classrooms", mappings, interactive) if aula_raw else ""
-
-        asig_norm = get_mapping(raw_asig, "matters", mappings, interactive) if raw_asig else raw_asig
+        classroom = get_mapping(clean_aula, "classrooms", mappings, interactive) if clean_aula else ""
+        asig_norm = get_mapping(clean_asig, "matters", mappings, interactive) if clean_asig else clean_asig
         day_norm = normalize_spanish_day(slot.get("dia", ""))
 
         start_time = format_time(slot.get("hora_inicio", ""), is_end_time=False)
         end_time = format_time(slot.get("hora_fin", ""), is_end_time=True)
 
-        group = (slot.get("grupo") or "").strip()
+        group = normalize_group_name(slot.get("grupo") or "")
 
         slot_key = (
             group,

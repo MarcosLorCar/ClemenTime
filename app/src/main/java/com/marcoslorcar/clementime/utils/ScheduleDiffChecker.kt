@@ -49,11 +49,21 @@ object ScheduleDiffChecker {
             val existingSlots = subjectWithSlots.slots
 
             val matchedJsonSlots = semesterRemoteSlots.filter { rSlot ->
-                val asig = rSlot.asignatura.trim()
-                val codeMatch = asig.equals(subject.code.trim(), ignoreCase = true)
-                val nameMatch = asig.equals(subject.name.trim(), ignoreCase = true)
-                val groupMatch = subject.courseGroup.isNullOrBlank() || rSlot.grupo.isBlank() ||
-                        normalizeGroup(subject.courseGroup) == normalizeGroup(rSlot.grupo)
+                val asigNorm = normalizeText(rSlot.asignatura)
+                val codeNorm = normalizeText(subject.code)
+                val nameNorm = normalizeText(subject.name)
+
+                val codeMatch = codeNorm.isNotBlank() && asigNorm == codeNorm
+                val nameMatch = nameNorm.isNotBlank() && asigNorm == nameNorm
+
+                val subjectGroupNorm = normalizeGroup(subject.courseGroup)
+                val rSlotGroupNorm = normalizeGroup(rSlot.grupo)
+                val groupMatch = subject.courseGroup.isNullOrBlank() ||
+                        rSlot.grupo.isBlank() ||
+                        subjectGroupNorm == rSlotGroupNorm ||
+                        (subjectGroupNorm.isNotBlank() && rSlotGroupNorm.contains(subjectGroupNorm)) ||
+                        (rSlotGroupNorm.isNotBlank() && subjectGroupNorm.contains(rSlotGroupNorm))
+
                 (codeMatch || nameMatch) && groupMatch
             }
 
@@ -198,9 +208,25 @@ object ScheduleDiffChecker {
         return diffs
     }
 
+    private fun normalizeText(text: String?): String {
+        if (text.isNullOrBlank()) return ""
+        val nfkd = java.text.Normalizer.normalize(text.trim(), java.text.Normalizer.Form.NFD)
+        return nfkd.replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "").uppercase()
+    }
+
     private fun normalizeGroup(group: String?): String {
         if (group.isNullOrBlank()) return ""
-        return group.replace("º", "").replace("ª", "").replace(" ", "").uppercase()
+        return group.uppercase()
+            .replace("GRUPO", "")
+            .replace("GRADO", "")
+            .replace("BILINGÜE", "")
+            .replace("BILINGUE", "")
+            .replace("º", "")
+            .replace("ª", "")
+            .replace("-", "")
+            .replace(".", "")
+            .replace(" ", "")
+            .trim()
     }
 
     private fun parseDayOfWeek(dayStr: String): DayOfWeek {
