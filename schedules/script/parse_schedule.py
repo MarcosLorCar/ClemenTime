@@ -532,6 +532,7 @@ def process_pdf_schedule(
                 "dia": day_norm,
                 "hora_inicio": start_time,
                 "hora_fin": end_time,
+                "codigo": clean_asig,
                 "asignatura": asig_norm,
                 "tipo": slot_type,
                 "aula": classroom,

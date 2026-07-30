@@ -12,8 +12,8 @@
     <string name="delete_subject_confirm">Eliminar</string>
     <string name="cancel">Cancelar</string>
     <string name="no_subjects_title">Aún no hay asignaturas</string>
-    <string name="no_subjects_subtitle">Importa un horario o toca + para crear uno.</string>
-    <string name="add_subject_manually_button">Crear Manualmente</string>
+    <string name="no_subjects_subtitle">Importa un horario o añade asignaturas manualmente para empezar.</string>
+    <string name="add_subject_manually_button">Añadir Asignatura Manualmente</string>
     <string name="no_search_results">Ninguna asignatura coincide con tu búsqueda.</string>
     <plurals name="slots_count">
         <item quantity="one">%1$d clase</item>
@@ -119,7 +119,7 @@
     <string name="import_delete_confirm_title">Eliminar Archivo de Importación</string>
     <string name="import_delete_confirm_message">¿Estás seguro de que deseas eliminar \"%1$s\" de tu biblioteca de importación?</string>
     <string name="no_schedule_data">Sin datos de horario</string>
-    <string name="no_schedule_data_subtitle">Importa un horario o añade asignaturas para empezar.</string>
+    <string name="no_schedule_data_subtitle">Importa un horario o añade asignaturas manualmente para empezar.</string>
     <string name="import_screen_prompt">Selecciona qué asignaturas importar</string>
     <string name="import_preview_tooltip_title">Vista Previa</string>
     <string name="import_preview_tooltip_desc">Mantén pulsada cualquier asignatura para ver cómo encajan sus clases en tu horario actual.</string>
@@ -187,8 +187,8 @@
     <string name="new_subject_title">Nueva Asignatura</string>
     <string name="view_subject_title">Detalles de Asignatura</string>
     <string name="schedule_preview_header">Previsualización Semanal</string>
-    <string name="slot_editor_title_add">Añadir Horario</string>
-    <string name="slot_editor_title_edit">Editar Horario</string>
+    <string name="slot_editor_title_add">Añadir franja/clase</string>
+    <string name="slot_editor_title_edit">Editar franja/clase</string>
     <string name="total_weekly_hours">%1$.1f hrs/semana</string>
     <string name="total_slots_metric">%1$d Clases</string>
     <string name="edit_subject_button">Editar Asignatura</string>
@@ -197,9 +197,9 @@
     <!-- Class Slot / Subject Editor strings -->
     <string name="theory_label">Teoría</string>
     <string name="lab_label">Laboratorio</string>
-    <string name="class_slots_header">Horarios de Clase (%1$d)</string>
-    <string name="add_slot_button">Añadir Horario</string>
-    <string name="no_slots_message">Aún no hay horarios añadidos.\nToca \'+ Añadir Horario\' para crear uno.</string>
+    <string name="class_slots_header">Franjas de Clase (%1$d)</string>
+    <string name="add_slot_button">Añadir franja/clase</string>
+    <string name="no_slots_message">Aún no hay horarios añadidos.\nToca \'+ Añadir franja/clase\' para crear uno.</string>
     <string name="code_label">Código</string>
     <string name="name_label">Nombre</string>
     <string name="color_badge_label">Distintivo de Color</string>
@@ -215,8 +215,8 @@
     <string name="ignore_label">Ignorar</string>
     <string name="ignore_help_title">Ignorar Conflictos</string>
     <string name="ignore_help_desc">Marcar esta opción excluye esta clase de los cálculos de solapamientos. Úsala para clases a las que no planees asistir o no te importe que coincidan con otras.</string>
-    <string name="delete_slot_label">Eliminar Horario</string>
-    <string name="duplicate_slot_label">Duplicar Horario</string>
+    <string name="delete_slot_label">Eliminar franja</string>
+    <string name="duplicate_slot_label">Duplicar franja</string>
     <string name="show_in_schedule_label">Mostrar en Horario</string>
     <string name="mon_label">Lun</string>
     <string name="tue_label">Mar</string>
@@ -278,8 +278,8 @@
     <string name="search_schedules_placeholder">Buscar horarios…</string>
     <string name="import_schedule_instructions">Elige una plantilla de la biblioteca o importa un archivo JSON para empezar.</string>
     <string name="day_of_week_label">Día de la semana</string>
-    <string name="no_slots_assigned">Aún no hay horarios asignados.</string>
-    <string name="no_slots_preview_placeholder">Añade un horario para ver la previsualización</string>
+    <string name="no_slots_assigned">Aún no hay franjas asignadas.</string>
+    <string name="no_slots_preview_placeholder">Añade una franja para ver la previsualización</string>
     <string name="online_repository_title">Repositorio en línea</string>
     <string name="online_repository_url_setting_title">URL del repositorio en línea</string>
     <string name="github_repository_url_description">Introduce la URL base de contenido raw de GitHub para horarios en línea:</string>

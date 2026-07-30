@@ -156,10 +156,13 @@ class ImportRepository @Inject constructor(
         selectedSubjects.forEach { selected ->
             val jsonSubject = selected.subject
             
-            // Find existing subject with same code (or name) to replace it
+            // Find existing subject with same code (or name) AND semester to replace it
+            val targetSemester = jsonSubject.semester ?: 1
             val existing = existingSubjects.find { 
-                (it.subject.code.isNotBlank() && it.subject.code.equals(jsonSubject.code, ignoreCase = true)) ||
-                (it.subject.code.isBlank() && it.subject.name.equals(jsonSubject.name, ignoreCase = true))
+                it.subject.semester == targetSemester && (
+                    (it.subject.code.isNotBlank() && it.subject.code.equals(jsonSubject.code, ignoreCase = true)) ||
+                    (it.subject.code.isBlank() && it.subject.name.equals(jsonSubject.name, ignoreCase = true))
+                )
             }?.subject
 
             // Auto-select lab group if only one variant exists
@@ -256,11 +259,12 @@ class ImportRepository @Inject constructor(
 
             val matchedJsonSlots = semesterRemoteSlots.filter { rSlot ->
                 val asig = rSlot.asignatura.trim()
-                val codeMatch = asig.equals(subject.code.trim(), ignoreCase = true)
-                val nameMatch = asig.equals(subject.name.trim(), ignoreCase = true)
+                val codeMatch = rSlot.codigo?.trim()?.equals(subject.code.trim(), ignoreCase = true) ?: false
+                val asigMatch = asig.equals(subject.code.trim(), ignoreCase = true) || asig.equals(subject.name.trim(), ignoreCase = true)
+                
                 val groupMatch = subject.courseGroup.isNullOrBlank() || rSlot.grupo.isBlank() ||
                         normalizeGroup(subject.courseGroup) == normalizeGroup(rSlot.grupo)
-                (codeMatch || nameMatch) && groupMatch
+                (codeMatch || asigMatch) && groupMatch
             }
 
             val newClassSlots = matchedJsonSlots.map { rSlot ->

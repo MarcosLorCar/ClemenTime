@@ -335,13 +335,15 @@ class ImportViewModel @Inject constructor(
         var slotIdCounter = 1L
         val subjectsWithSlots = selected.map { selectedSubject ->
             val jsonSubject = selectedSubject.subject
-            val subjectId = jsonSubject.code.hashCode().toLong()
+            val semester = jsonSubject.semester ?: 1
+            val subjectId = (jsonSubject.code + semester).hashCode().toLong()
             val subject = Subject(
                 id = subjectId,
                 code = jsonSubject.code,
                 name = jsonSubject.name,
                 color = jsonSubject.color ?: Subject.PRESET_COLORS.indices.random(), // Random preset if null
-                isActive = true
+                isActive = true,
+                semester = semester
             )
             val theorySlots = jsonSubject.theorySlots.map { 
                 with(parser) { it.toClassSlot(subjectId).copy(id = slotIdCounter++) }
@@ -432,18 +434,36 @@ class ImportViewModel @Inject constructor(
             viewModelScope.launch {
                 _uiState.value = ImportUiState.Importing
                 try {
-                    repository.importSubjects(currentState.selectedSubjects.toList())
-                    // Set the current semester from the schema if available
-                    currentState.schema.semester?.let { importedSemester ->
-                        val currentSemester = settingsRepository.currentSemesterFlow.first()
-                        if (importedSemester != currentSemester) {
-                            settingsRepository.setCurrentSemester(importedSemester)
-                            val hasManuallyChanged = settingsRepository.hasManuallyChangedSemesterFlow.first()
-                            if (!hasManuallyChanged) {
-                                settingsRepository.setWasSemesterAutoChanged(true)
-                            }
+                    val importedSubjects = currentState.selectedSubjects.toList()
+                    repository.importSubjects(importedSubjects)
+                    
+                    val currentSemester = settingsRepository.currentSemesterFlow.first()
+                    var shouldAutoChangeSemester = false
+                    
+                    // 1. Check if the schema explicitly defines a semester
+                    currentState.schema.semester?.let { schemaSemester ->
+                        if (schemaSemester != currentSemester) {
+                            settingsRepository.setCurrentSemester(schemaSemester)
+                            shouldAutoChangeSemester = true
                         }
                     }
+                    
+                    // 2. Even if schema doesn't define it, if ALL imported subjects are for a different semester, switch
+                    if (!shouldAutoChangeSemester) {
+                        val distinctSemesters = importedSubjects.map { it.subject.semester ?: 1 }.distinct()
+                        if (distinctSemesters.size == 1 && distinctSemesters.first() != currentSemester) {
+                            settingsRepository.setCurrentSemester(distinctSemesters.first())
+                            shouldAutoChangeSemester = true
+                        }
+                    }
+
+                    if (shouldAutoChangeSemester) {
+                        val hasManuallyChanged = settingsRepository.hasManuallyChangedSemesterFlow.first()
+                        if (!hasManuallyChanged) {
+                            settingsRepository.setWasSemesterAutoChanged(true)
+                        }
+                    }
+                    
                     settingsRepository.setHasSeenAddSlotTooltip(true)
                     ScheduleWidgetUtils.updateWidget(context)
                     _uiState.value = ImportUiState.Success

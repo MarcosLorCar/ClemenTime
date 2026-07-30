@@ -35,6 +35,8 @@ data class AddEditSubjectUiState(
     val isEditMode: Boolean = true,
     val editingSlotIndex: Int? = null,
     val isSlotEditorOpen: Boolean = false,
+    val isNewSubject: Boolean = false,
+    val canSave: Boolean = false,
     val code: String = "",
     val name: String = "",
     val color: Int = Subject.PRESET_COLORS.first(),
@@ -73,10 +75,10 @@ class AddEditSubjectViewModel @Inject constructor(
         val highlightSlotId = route?.highlightSlotId
 
         if (routeSubjectId != null && routeSubjectId > 0) {
-            _uiState.update { it.copy(isEditMode = false) }
+            _uiState.update { it.copy(isEditMode = false, isNewSubject = false) }
             loadSubject(routeSubjectId, highlightSlotId)
         } else {
-            _uiState.update { it.copy(isEditMode = true) }
+            _uiState.update { it.copy(isEditMode = true, isNewSubject = true) }
         }
 
         viewModelScope.launch {
@@ -132,6 +134,7 @@ class AddEditSubjectViewModel @Inject constructor(
                         attachedFiles = subject.attachedFiles,
                         slots = subjectWithSlots.slots.map { slot -> slot.toUiModel() },
                         selectedLabGroup = subject.selectedLabGroup,
+                        canSave = true,
                         isLoading = false
                     )
                 }
@@ -190,7 +193,11 @@ class AddEditSubjectViewModel @Inject constructor(
             } else {
                 state.code
             }
-            state.copy(name = name, code = newCode)
+            state.copy(
+                name = name,
+                code = newCode,
+                canSave = name.isNotBlank()
+            )
         }
     }
 

@@ -40,7 +40,8 @@ class JsonScheduleParser @Inject constructor() {
             val (subject, slots) = subjectWithSlots
             val fullGroup = subject.courseGroup?.trim() ?: ""
             val cuatrimestreStr = if (subject.semester == 2) "2C" else "1C"
-            val asignaturaStr = subject.code.ifBlank { subject.name }
+            val asignaturaStr = subject.name
+            val codigoStr = subject.code
 
             slots.forEach { slot ->
                 val isLab = slot.entryType == EntryType.LAB
@@ -50,6 +51,7 @@ class JsonScheduleParser @Inject constructor() {
                     dia = dayOfWeekToSpanish(slot.dayOfWeek),
                     horaInicio = slot.startTime.toString(),
                     horaFin = slot.endTime.toString(),
+                    codigo = codigoStr,
                     asignatura = asignaturaStr,
                     tipo = if (isLab) "laboratorio" else "teoría",
                     aula = slot.classroom ?: "",
@@ -140,7 +142,8 @@ class JsonScheduleParser @Inject constructor() {
             }
 
             val subjectAcc = targetSubjectMap.getOrPut(asig) {
-                SubjectAccumulator(code = asig, name = asig, semester = semesterInt)
+                val resolvedCode = slot.codigo ?: generateCode(asig)
+                SubjectAccumulator(code = resolvedCode, name = asig, semester = semesterInt)
             }
             if (isEvento) {
                 subjectAcc.isDummy = true
@@ -258,6 +261,13 @@ class JsonScheduleParser @Inject constructor() {
             DayOfWeek.SATURDAY -> "Sábado"
             DayOfWeek.SUNDAY -> "Domingo"
         }
+    }
+
+    private fun generateCode(name: String): String {
+        return name.split(" ")
+            .filter { it.length > 2 }
+            .joinToString("") { it.take(3).uppercase() }
+            .ifBlank { name.take(5).uppercase().trim() }
     }
 
     // Mapping Helpers

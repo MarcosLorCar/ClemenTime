@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -24,7 +25,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
-import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -187,12 +187,20 @@ fun AddEditSubjectContent(
     Scaffold(
         topBar = {
             ClemenTimeTopBar(
-                title = stringResource(if (uiState.isEditMode) R.string.edit_subject_title else R.string.add_subject_title),
+                title = stringResource(if (uiState.isNewSubject) R.string.add_subject_title else if (uiState.isEditMode) R.string.edit_subject_title else R.string.view_subject_title),
                 onNavigateBack = onBack,
                 actions = {
                     if (uiState.isEditMode) {
-                        IconButton(onClick = onSaveSubject) {
-                            Icon(Icons.Default.Save, contentDescription = stringResource(R.string.save_button))
+                        TextButton(
+                            onClick = onSaveSubject,
+                            enabled = uiState.canSave
+                        ) {
+                            Text(
+                                text = stringResource(R.string.save_button),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = if (uiState.canSave) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                            )
                         }
                     } else {
                         IconButton(onClick = onToggleEditMode) {
@@ -203,7 +211,7 @@ fun AddEditSubjectContent(
             )
         },
         floatingActionButton = {
-            if (uiState.isEditMode) {
+            if (uiState.isEditMode && uiState.slots.isNotEmpty()) {
                 ExtendedFloatingActionButton(
                     onClick = onAddSlot,
                     icon = { Icon(Icons.Default.Add, contentDescription = null) },
@@ -231,23 +239,28 @@ fun AddEditSubjectContent(
                 onUpdateName = onUpdateName,
                 onUpdateColor = onUpdateColor,
                 onUpdateSemester = onUpdateSemester,
-                onUpdateActive = onUpdateActive
+                onUpdateActive = onUpdateActive,
+                showActiveToggle = !uiState.isNewSubject
             )
 
-            ScheduleMiniPreview(
-                slots = previewSlots,
-                startTime = uiState.dayStartTime,
-                endTime = uiState.dayEndTime,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(150.dp)
-            )
+            if (previewSlots.isNotEmpty()) {
+                ScheduleMiniPreview(
+                    slots = previewSlots,
+                    startTime = uiState.dayStartTime,
+                    endTime = uiState.dayEndTime,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(150.dp)
+                )
+            }
 
-            SubjectNotesAndFilesSummary(
-                notesText = uiState.notesText,
-                attachedFiles = uiState.attachedFiles,
-                onClick = { showNotesSheet = true }
-            )
+            if (!uiState.isNewSubject) {
+                SubjectNotesAndFilesSummary(
+                    notesText = uiState.notesText,
+                    attachedFiles = uiState.attachedFiles,
+                    onClick = { showNotesSheet = true }
+                )
+            }
 
             if (!uiState.isEditMode && labGroups.isNotEmpty()) {
                 Column {
@@ -329,11 +342,19 @@ fun AddEditSubjectContent(
                         .padding(vertical = 32.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = stringResource(R.string.no_slots_assigned),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    if (uiState.isEditMode) {
+                        TextButton(onClick = onAddSlot) {
+                            Icon(Icons.Default.Add, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.add_slot_button))
+                        }
+                    } else {
+                        Text(
+                            text = stringResource(R.string.no_slots_assigned),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             } else {
                 uiState.slots.forEachIndexed { index, slot ->

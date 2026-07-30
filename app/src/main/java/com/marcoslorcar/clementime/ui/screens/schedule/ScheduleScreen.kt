@@ -242,7 +242,8 @@ fun ScheduleContent(
                 ) {
                     SemesterSwitcher(
                         selectedSemester = uiState.selectedSemester,
-                        onSemesterSelected = onSemesterSelected
+                        onSemesterSelected = onSemesterSelected,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
                 }
 

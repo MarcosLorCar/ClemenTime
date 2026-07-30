@@ -56,6 +56,7 @@ private data class SettingsAndHighlight(
     val hasSeenOptimizerTooltip: Boolean,
     val selectedSemester: Int,
     val wasSemesterAutoChanged: Boolean,
+    val hasManuallyChangedSemester: Boolean,
     val dayStartTime: LocalTime,
     val dayEndTime: LocalTime
 )
@@ -111,6 +112,7 @@ class ScheduleViewModel @Inject constructor(
             settingsRepository.hasSeenOptimizerTooltipFlow,
             settingsRepository.currentSemesterFlow,
             settingsRepository.wasSemesterAutoChangedFlow,
+            settingsRepository.hasManuallyChangedSemesterFlow,
             settingsRepository.dayStartHourFlow,
             settingsRepository.dayStartMinuteFlow,
             settingsRepository.dayEndHourFlow,
@@ -126,8 +128,9 @@ class ScheduleViewModel @Inject constructor(
                 hasSeenOptimizerTooltip = args[6] as Boolean,
                 selectedSemester = args[7] as Int,
                 wasSemesterAutoChanged = args[8] as Boolean,
-                dayStartTime = LocalTime.of(args[9] as Int, args[10] as Int),
-                dayEndTime = LocalTime.of(args[11] as Int, args[12] as Int)
+                hasManuallyChangedSemester = args[9] as Boolean,
+                dayStartTime = LocalTime.of(args[10] as Int, args[11] as Int),
+                dayEndTime = LocalTime.of(args[12] as Int, args[13] as Int)
             )
         }
     ) { allSubjects, selectedTab, isSwitcherVisible, settings ->
@@ -142,6 +145,9 @@ class ScheduleViewModel @Inject constructor(
         }
 
         val hasOverlaps = detectAnyOverlap(filteredSubjects)
+        
+        val hasSubjectsInOtherSemesters = allSubjects.any { it.subject.semester != settings.selectedSemester }
+        val showAutoChangeTooltip = settings.wasSemesterAutoChanged || (hasSubjectsInOtherSemesters && !settings.hasManuallyChangedSemester)
 
         ScheduleUiState(
             isLoading = false,
@@ -158,7 +164,7 @@ class ScheduleViewModel @Inject constructor(
             hasAnySubjects = allSubjects.isNotEmpty(),
             onboardingTooltipsEnabled = settings.onboardingTooltipsEnabled,
             hasSeenOptimizerTooltip = settings.hasSeenOptimizerTooltip,
-            showAutoChangeTooltip = settings.wasSemesterAutoChanged,
+            showAutoChangeTooltip = showAutoChangeTooltip,
             dayStartTime = settings.dayStartTime,
             dayEndTime = settings.dayEndTime
         )

@@ -10,6 +10,7 @@ data class JsonFlatSlot(
     val dia: String = "",
     @SerialName("hora_inicio") val horaInicio: String = "",
     @SerialName("hora_fin") val horaFin: String = "",
+    val codigo: String? = null,
     val asignatura: String = "",
     val tipo: String = "teoría",
     val aula: String = "",

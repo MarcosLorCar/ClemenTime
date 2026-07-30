@@ -245,7 +245,8 @@ fun SubjectsContent(
                 ) {
                     SemesterSwitcher(
                         selectedSemester = uiState.selectedSemester,
-                        onSemesterSelected = { onEvent(SubjectsUiEvent.SemesterChanged(it)) }
+                        onSemesterSelected = { onEvent(SubjectsUiEvent.SemesterChanged(it)) },
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
                 }
             }

@@ -97,7 +97,8 @@ fun SubjectBasicDetailsCard(
     onUpdateName: (String) -> Unit,
     onUpdateColor: (Int) -> Unit,
     onUpdateSemester: (Int) -> Unit,
-    onUpdateActive: (Boolean) -> Unit = {}
+    onUpdateActive: (Boolean) -> Unit = {},
+    showActiveToggle: Boolean = true
 ) {
     if (!isEditMode) {
         Card(
@@ -147,10 +148,12 @@ fun SubjectBasicDetailsCard(
                         )
                     }
 
-                    Switch(
-                        checked = isActive,
-                        onCheckedChange = onUpdateActive
-                    )
+                    if (showActiveToggle) {
+                        Switch(
+                            checked = isActive,
+                            onCheckedChange = onUpdateActive
+                        )
+                    }
                 }
             }
         }
@@ -229,41 +232,42 @@ fun SubjectBasicDetailsCard(
 
             SemesterSwitcher(
                 selectedSemester = selectedSemester,
-                onSemesterSelected = onUpdateSemester,
-                modifier = Modifier.padding(horizontal = 0.dp)
+                onSemesterSelected = onUpdateSemester
             )
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+            if (showActiveToggle) {
+                HorizontalDivider()
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = if (isActive) Icons.Default.Check else Icons.Default.Close,
-                        contentDescription = null,
-                        tint = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    Column {
-                        Text(
-                            text = stringResource(if (isActive) R.string.active else R.string.inactive),
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = if (isActive) Icons.Default.Check else Icons.Default.Close,
+                            contentDescription = null,
+                            tint = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                         )
-                        Text(
-                            text = if (isActive) stringResource(R.string.visible_in_schedule) else stringResource(R.string.hidden_from_schedule),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Spacer(Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = stringResource(if (isActive) R.string.active else R.string.inactive),
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = if (isActive) stringResource(R.string.visible_in_schedule) else stringResource(R.string.hidden_from_schedule),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
+                    Switch(
+                        checked = isActive,
+                        onCheckedChange = onUpdateActive
+                    )
                 }
-                Switch(
-                    checked = isActive,
-                    onCheckedChange = onUpdateActive
-                )
             }
 
             Row(

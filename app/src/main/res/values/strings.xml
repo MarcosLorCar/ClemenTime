@@ -11,8 +11,8 @@
     <string name="delete_subject_confirm">Delete</string>
     <string name="cancel">Cancel</string>
     <string name="no_subjects_title">No subjects added yet</string>
-    <string name="no_subjects_subtitle">Import a schedule or tap + to create one.</string>
-    <string name="add_subject_manually_button">Create Manually</string>
+    <string name="no_subjects_subtitle">Import a schedule or add subjects manually to get started.</string>
+    <string name="add_subject_manually_button">Add Subject Manually</string>
     <string name="no_search_results">No subjects match your search.</string>
     <plurals name="slots_count">
         <item quantity="one">%1$d slot</item>
@@ -116,7 +116,7 @@
     <string name="import_delete_confirm_title">Delete Import File</string>
     <string name="import_delete_confirm_message">Are you sure you want to remove \"%1$s\" from your import library?</string>
     <string name="no_schedule_data">No schedule data</string>
-    <string name="no_schedule_data_subtitle">Import a schedule or add subjects to get started.</string>
+    <string name="no_schedule_data_subtitle">Import a schedule or add subjects manually to get started.</string>
     <string name="import_screen_prompt">Select subjects to import</string>
     <string name="import_preview_tooltip_title">Subject Preview</string>
     <string name="import_preview_tooltip_desc">Long press any subject to see how its classes fit into your current schedule.</string>
