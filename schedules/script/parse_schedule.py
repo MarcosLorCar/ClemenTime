@@ -330,7 +330,11 @@ def process_pdf_schedule(
     BE EXTREMELY CAREFUL: Do not confuse 3rd column (Miércoles) with 4th column (Jueves)! Always verify which header column is directly above the box.
 
     RULES FOR TIME DURATION:
-    Format HH:mm (e.g. 08:30, 10:00). If a laboratory box spans across 2 time rows (e.g. 11:30 to 14:30, 17:00 to 20:00, 18:30 to 21:30), output the full start and end time (e.g. 18:30 to 21:30).
+    1. Format HH:mm (e.g. 08:30, 10:00).
+    2. UNIFIED MULTI-ROW BOXES (NO INTERNAL HORIZONTAL LINE):
+       If a single unified box with NO internal horizontal line spans across 2 time rows (e.g. 08:30 to 11:30, 18:30 to 21:30), output the full start and end time (e.g. 08:30 to 11:30 or 18:30 to 21:30).
+    3. SEPARATE ADJACENT 1.5-HOUR SUB-BOXES:
+       If two adjacent time rows (e.g. 11:30-13:00 and 13:00-14:30) are separated by a horizontal dividing line and contain different lab variant codes (e.g. Lab-A1 vs Lab-A2), extract them as TWO SEPARATE 1.5-hour slots (11:30-13:00 for Lab-A1 and 13:00-14:30 for Lab-A2)! DO NOT truncate a 3-hour unified box like 08:30-11:30 to 1.5 hours!
 
     OTHER RULES:
     1. GRUPO: Group or specialization code matching page header (e.g. '1A', '1B', '1C', '1D', '2A', '2B', '2C', '2D', '3A', '3B', '3C', '3IC', '3ISO', '3TI', '3CO', '4IC', '4ISO', '4TI', '4CO'). Pay close attention: Page 1 = 1A, Page 2 = 1B, Page 3 = 1C, Page 4 = 1D.
