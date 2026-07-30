@@ -42,8 +42,15 @@ def main():
     parser.add_argument("--model", default=default_model, help=f"Gemini model ID to use (default: {default_model}).")
     parser.add_argument("--clear-cache", action="store_true", help="Clear AI response cache before running.")
     parser.add_argument("--check-esi", action="store_true", help="Check live ESI web page for updated PDFs before processing.")
+    parser.add_argument("--page", type=int, action="append", dest="target_pages", help="Specific 1-based page number to re-parse (e.g. --page 10).")
+    parser.add_argument("--pages", type=int, nargs="+", dest="target_pages_list", help="Specific 1-based page numbers to re-parse (e.g. --pages 10 11).")
 
     args, unknown = parser.parse_known_args()
+
+    target_pages = args.target_pages or []
+    if args.target_pages_list:
+        target_pages.extend(args.target_pages_list)
+    target_pages = list(set(target_pages)) if target_pages else None
 
     root_dir = os.path.dirname(os.path.abspath(__file__))
     script_dir = os.path.join(root_dir, "schedules", "script")
@@ -87,6 +94,9 @@ def main():
                 cmd.extend(["--model", args.model])
             if args.clear_cache:
                 cmd.append("--clear-cache")
+            if target_pages:
+                for p in target_pages:
+                    cmd.extend(["--page", str(p)])
 
             print(f"\n[Run] Processing {os.path.basename(pdf)} with Gemini ({args.model})...", flush=True)
             sys.stdout.flush()

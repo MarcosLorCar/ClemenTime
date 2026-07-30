@@ -275,7 +275,8 @@ def process_pdf_schedule(
     output_dir: str = DEFAULT_DIST_DIR,
     interactive: bool = True,
     model_id: str = None,
-    clear_cache: bool = False
+    clear_cache: bool = False,
+    target_pages: Optional[List[int]] = None
 ) -> List[Dict]:
     try:
         sys.stdout.reconfigure(line_buffering=True)
@@ -311,27 +312,45 @@ def process_pdf_schedule(
     prompt = """
     Extract all course schedule time slots from this university schedule page into a flat list of JSON objects matching the schema.
 
-    RULES:
-    1. EXTRACT ALL SLOTS: Extract every class slot (Theory, Laboratory, Exams/Events) shown on this page.
-    2. CUATRIMESTRE: Identify if this page belongs to '1C' (Primer Cuatrimestre) or '2C' (Segundo Cuatrimestre). Use '1C' or '2C'.
-    3. DIA: Name of day in Spanish (Lunes, Martes, Miércoles, Jueves, Viernes).
-    4. HORA INICIO & FIN: Format HH:mm (e.g. 08:30, 10:00). CRITICAL FOR MULTI-ROW / SPANNING BOXES: Look carefully at the top and bottom boundaries of each box. If a laboratory or class box spans across 2 time slots (e.g. from 11:30 down to 14:30, or from 17:00 down to 20:00, or from 18:30 down to 21:30), you MUST output the full combined start and end time (e.g. hora_inicio: "18:30", hora_fin: "21:30"). DO NOT truncate 3-hour boxes into 1.5-hour boxes.
-    5. GRUPO: Group or specialization code matching the page header (e.g. '1A', '1B', '1C', '1D', '2A', '2B', '2C', '2D', '3A', '3B', '3C', '3IC', '3ISO', '3TI', '3CO', '4IC', '4ISO', '4TI', '4CO'). Pay close attention to page group headers: 1st year has 1A (Page 1), 1B (Page 2), 1C (Page 3), 1D (Page 4). Use 'IC' for Ingeniería de Computadores, 'ISO' for Software, 'TI' for Tecnologías de la Información, and 'CO' for Computación.
-    6. ASIGNATURA: Subject name or code ONLY (e.g. 'Álgebra', 'Calculo', 'Pruebas de Progreso'). DO NOT include classroom numbers or names in ASIGNATURA.
-    7. TIPO: 'teoría' for lectures, 'laboratorio' for labs, 'evento' for exams/events.
-    8. AULA: Classroom code or name (e.g. 'A1.1', 'Charles Babbage - 0.02+3').
-    9. PROFESOR: Professor name if listed (e.g. 'Jose Angel Martin'). DO NOT put exam/event titles like 'Pruebas de Progreso' in PROFESOR. Use empty string if none.
-    10. ES_LABORATORIO: true if laboratory session, false otherwise.
-    11. GRUPO_PRACTICAS: Lab variant name (e.g. 'Lab-A1', 'Lab-A1/A2') if applicable, else empty string.
+    RULES FOR DAY COLUMNS:
+    The schedule table has 5 vertical day columns from left to right:
+    - 1st Column (immediately to the right of the time column on the left): LUNES
+    - 2nd Column: MARTES
+    - 3rd Column: MIÉRCOLES
+    - 4th Column: JUEVES
+    - 5th Column: VIERNES
+
+    CRITICAL SPATIAL COLUMN POSITIONING (ESPECIALLY FOR BOTTOM ROWS 18:30-20:00 AND 20:00-21:30):
+    Draw a straight vertical line straight DOWN from the top day column headers (Lunes, Martes, Miércoles, Jueves, Viernes) to each box:
+    - 1st vertical column under LUNES -> 'Lunes'
+    - 2nd vertical column under MARTES -> 'Martes'
+    - 3rd vertical column under MIÉRCOLES -> 'Miércoles'
+    - 4th vertical column under JUEVES -> 'Jueves'
+    - 5th vertical column under VIERNES -> 'Viernes'
+    BE EXTREMELY CAREFUL: Do not confuse 3rd column (Miércoles) with 4th column (Jueves)! Always verify which header column is directly above the box.
+
+    RULES FOR TIME DURATION:
+    Format HH:mm (e.g. 08:30, 10:00). If a laboratory box spans across 2 time rows (e.g. 11:30 to 14:30, 17:00 to 20:00, 18:30 to 21:30), output the full start and end time (e.g. 18:30 to 21:30).
+
+    OTHER RULES:
+    1. GRUPO: Group or specialization code matching page header (e.g. '1A', '1B', '1C', '1D', '2A', '2B', '2C', '2D', '3A', '3B', '3C', '3IC', '3ISO', '3TI', '3CO', '4IC', '4ISO', '4TI', '4CO'). Pay close attention: Page 1 = 1A, Page 2 = 1B, Page 3 = 1C, Page 4 = 1D.
+    2. ASIGNATURA: Subject name or code ONLY (e.g. 'Álgebra', 'Calculo', 'Pruebas de Progreso').
+    3. TIPO: 'teoría' for lectures, 'laboratorio' for labs, 'evento' for exams/events.
+    4. AULA: Classroom code or name.
+    5. PROFESOR: Professor name if listed, else empty string.
+    6. ES_LABORATORIO: true if laboratory, false otherwise.
+    7. GRUPO_PRACTICAS: Lab variant name (e.g. 'Lab-A1', 'Lab-B1') if present, else empty string.
     """
 
     all_raw_slots = []
 
     for i, page_img in enumerate(pages):
+        page_num = i + 1
         cache_path = get_page_cache_path(page_img)
+        force_reparse = target_pages is not None and page_num in target_pages
 
-        if not clear_cache and os.path.exists(cache_path):
-            print(f"  -> Page {i + 1}/{len(pages)}: Loaded from cache.", flush=True)
+        if not clear_cache and not force_reparse and os.path.exists(cache_path):
+            print(f"  -> Page {page_num}/{len(pages)}: Loaded from cache.", flush=True)
             with open(cache_path, "r", encoding="utf-8") as f:
                 page_data = json.load(f)
         else:
@@ -344,11 +363,11 @@ def process_pdf_schedule(
                     print(f"  -> Page {i + 1}/{len(pages)}: Parsing with Gemini ({model_id}, attempt {attempt + 1})...", flush=True)
                     response = client.models.generate_content(
                         model=model_id,
-                        contents=[page_img, prompt],
+                        contents=[prompt, page_img],
                         config=types.GenerateContentConfig(
                             response_mime_type="application/json",
                             response_schema=PageFlatSchedule,
-                            temperature=0.1
+                            temperature=0.0
                         ),
                     )
 
@@ -437,7 +456,6 @@ def process_pdf_schedule(
 
         start_time = format_time(slot.get("hora_inicio", ""), is_end_time=False)
         end_time = format_time(slot.get("hora_fin", ""), is_end_time=True)
-
         group = normalize_group_name(slot.get("grupo") or "")
 
         slot_key = (
@@ -470,8 +488,34 @@ def process_pdf_schedule(
                 "grupo_practicas": (slot.get("grupo_practicas") or "").strip()
             })
 
+    processed_slots = fix_lab_row_column_drift(processed_slots)
     print(f"[Deduplicated] {len(processed_slots)} unique slots remaining.")
     return processed_slots
+
+def fix_lab_row_column_drift(slots: List[Dict]) -> List[Dict]:
+    """
+    Generic post-processing:
+    In timetable grids with 5 or 6 lab sub-boxes in the same time row, small vision models
+    can drift rightward (treating 6 sub-boxes as 4 day columns instead of 3 day columns of 2 sub-boxes each).
+    This function groups lab sub-boxes in a row into pairs (2 per day column) starting from Lunes.
+    """
+    by_row: Dict[Tuple[str, str, str], List[Dict]] = {}
+    for s in slots:
+        if s.get("es_laboratorio"):
+            row_key = (s.get("grupo"), s.get("hora_inicio"), s.get("hora_fin"))
+            by_row.setdefault(row_key, []).append(s)
+
+    days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"]
+    day_order = {"Lunes": 0, "Martes": 1, "Miércoles": 2, "Jueves": 3, "Viernes": 4}
+
+    for (grp, hi, hf), row_slots in by_row.items():
+        if len(row_slots) in (5, 6):
+            row_slots.sort(key=lambda x: (day_order.get(x.get("dia"), 5), x.get("grupo_practicas", "")))
+            for idx, slot in enumerate(row_slots):
+                target_day_idx = min(idx // 2, 4)
+                slot["dia"] = days[target_day_idx]
+
+    return slots
 
 def main():
     parser = argparse.ArgumentParser(description="Parse schedule PDF files directly into flat schedule JSONs.")
@@ -479,7 +523,14 @@ def main():
     parser.add_argument("--non-interactive", action="store_true", help="Run without interactive mapping prompts.")
     parser.add_argument("--model", default=None, help=f"Gemini model ID (default: {DEFAULT_MODEL}).")
     parser.add_argument("--clear-cache", action="store_true", help="Clear page response cache before running.")
+    parser.add_argument("--page", type=int, action="append", dest="target_pages", help="Specific 1-based page number to re-parse (e.g. --page 10).")
+    parser.add_argument("--pages", type=int, nargs="+", dest="target_pages_list", help="Specific 1-based page numbers to re-parse (e.g. --pages 10 11).")
     args = parser.parse_args()
+
+    target_pages = args.target_pages or []
+    if args.target_pages_list:
+        target_pages.extend(args.target_pages_list)
+    target_pages = list(set(target_pages)) if target_pages else None
 
     if not os.path.exists(args.pdf_file):
         print(f"[Error] File '{args.pdf_file}' not found.")
@@ -490,7 +541,8 @@ def main():
         pdf_path=args.pdf_file,
         interactive=interactive,
         model_id=args.model,
-        clear_cache=args.clear_cache
+        clear_cache=args.clear_cache,
+        target_pages=target_pages
     )
 
     by_semester: Dict[str, List[Dict]] = {"1C": [], "2C": []}
