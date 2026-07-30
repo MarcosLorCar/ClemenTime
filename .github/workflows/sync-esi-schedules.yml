@@ -62,6 +62,7 @@ jobs:
         if: steps.check.outputs.has_update == 'true' || github.event_name == 'workflow_dispatch'
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY_ALT: ${{ secrets.GEMINI_API_KEY_ALT }}
           GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
           PYTHONUNBUFFERED: "1"
         run: |

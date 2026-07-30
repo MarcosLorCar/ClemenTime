@@ -270,6 +270,19 @@ def sanitize_professor(prof_raw: str) -> str:
 
 # --- Core PDF Processor ---
 
+def load_env_file():
+    for path in [".env", "schedules/script/.env", os.path.join(os.path.dirname(__file__), ".env"), os.path.join(os.path.dirname(__file__), "..", "..", ".env")]:
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        k = k.strip()
+                        v = v.strip().strip('"').strip("'")
+                        if k not in os.environ:
+                            os.environ[k] = v
+
 def process_pdf_schedule(
     pdf_path: str,
     output_dir: str = DEFAULT_DIST_DIR,
@@ -284,10 +297,15 @@ def process_pdf_schedule(
     except Exception:
         pass
 
+    load_env_file()
     api_key = os.getenv("GEMINI_API_KEY")
+    api_key_alt = os.getenv("GEMINI_API_KEY_ALT")
     if not api_key:
         print("[Error] GEMINI_API_KEY environment variable not set.")
         sys.exit(1)
+
+    active_api_key = api_key
+    used_alt_key = False
 
     env_model = os.getenv("GEMINI_MODEL")
     if not model_id:
@@ -296,7 +314,7 @@ def process_pdf_schedule(
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(CACHE_DIR, exist_ok=True)
 
-    client = genai.Client(api_key=api_key)
+    client = genai.Client(api_key=active_api_key)
     mappings = load_mappings()
 
     filename = os.path.basename(pdf_path)
@@ -312,43 +330,52 @@ def process_pdf_schedule(
     prompt = """
     Extract all course schedule time slots from this university schedule page into a flat list of JSON objects matching the schema.
 
-    RULES FOR DAY COLUMNS:
-    The schedule table has 5 vertical day columns from left to right:
-    - 1st Column (immediately to the right of the time column on the left): LUNES
+    === TABLE STRUCTURE & DAY COLUMNS ===
+    The schedule table contains 5 vertical day columns from left to right:
+    - 1st Column (immediately right of the time column): LUNES
     - 2nd Column: MARTES
     - 3rd Column: MIÉRCOLES
     - 4th Column: JUEVES
     - 5th Column: VIERNES
 
-    CRITICAL SPATIAL COLUMN POSITIONING (ESPECIALLY FOR BOTTOM ROWS 18:30-20:00 AND 20:00-21:30):
-    Draw a straight vertical line straight DOWN from the top day column headers (Lunes, Martes, Miércoles, Jueves, Viernes) to each box:
-    - 1st vertical column under LUNES -> 'Lunes'
-    - 2nd vertical column under MARTES -> 'Martes'
-    - 3rd vertical column under MIÉRCOLES -> 'Miércoles'
-    - 4th vertical column under JUEVES -> 'Jueves'
-    - 5th vertical column under VIERNES -> 'Viernes'
-    BE EXTREMELY CAREFUL FOR ROW 20:00-21:30:
-    When 6 lab sub-boxes are arranged in 3 pairs of 2:
-    - 1st pair of sub-boxes (under LUNES) -> 'Lunes'
-    - 2nd pair of sub-boxes (under MARTES) -> 'Martes'
-    - 3rd pair of sub-boxes (under MIÉRCOLES) -> 'Miércoles'
-    - Column 4 (JUEVES) and Column 5 (VIERNES) are COMPLETELY EMPTY! DO NOT shift 3rd pair sub-boxes into Jueves!
+    SPATIAL COLUMN ALIGNMENT (CRITICAL):
+    1. Always trace straight UP to the top day header (Lunes, Martes, Miércoles, Jueves, Viernes) to verify the day column for each box.
+    2. SUB-DIVIDED LAB CELLS: Inside a day column, a cell may be split vertically into 2 sub-boxes (e.g., left half for Lab-1/Lab-B1, right half for Lab-2/Lab-B2). Sub-boxes sharing the same main column borders belong to the SAME day.
+    3. DO NOT drift Column 3 (Miércoles) slots into Column 4 (Jueves). Check column line alignment from the top header to the bottom of the table.
 
-    RULES FOR TIME DURATION:
-    1. Format HH:mm (e.g. 08:30, 10:00).
-    2. UNIFIED MULTI-ROW BOXES (NO INTERNAL HORIZONTAL LINE):
-       If a single unified box with NO internal horizontal line spans across 2 time rows (e.g. 08:30 to 11:30, 18:30 to 21:30), output the full start and end time (e.g. 08:30 to 11:30 or 18:30 to 21:30).
+    === TIME DURATION & BOX BOUNDARIES ===
+    1. Time format: HH:mm (e.g., 08:30, 10:00, 11:30, 13:00, 14:30, 15:30, 17:00, 18:30, 20:00, 21:30).
+    2. UNIFIED MULTI-ROW BOXES (3-HOUR SESSIONS):
+       If a single unified box with NO internal horizontal line spans across 2 time rows (e.g. 08:30 to 11:30, 18:30 to 21:30, 11:30 to 14:30), output the full start and end time (e.g. hora_inicio: "08:30", hora_fin: "11:30" or hora_inicio: "18:30", hora_fin: "21:30"). DO NOT split or truncate a unified 3-hour box.
     3. SEPARATE ADJACENT 1.5-HOUR SUB-BOXES:
-       If two adjacent time rows (e.g. 11:30-13:00 and 13:00-14:30) are separated by a horizontal dividing line and contain different lab variant codes (e.g. Lab-A1 vs Lab-A2), extract them as TWO SEPARATE 1.5-hour slots (11:30-13:00 for Lab-A1 and 13:00-14:30 for Lab-A2)! DO NOT truncate a 3-hour unified box like 08:30-11:30 to 1.5 hours!
+       If two adjacent time rows (e.g. 11:30-13:00 and 13:00-14:30) have separate sub-boxes divided by a horizontal line, or have different lab variant codes (e.g. Lab-A1 vs Lab-A2), extract them as TWO SEPARATE 1.5-hour slots (11:30-13:00 and 13:00-14:30).
 
-    OTHER RULES:
-    1. GRUPO: Group or specialization code matching page header (e.g. '1A', '1B', '1C', '1D', '2A', '2B', '2C', '2D', '3A', '3B', '3C', '3IC', '3ISO', '3TI', '3CO', '4IC', '4ISO', '4TI', '4CO'). Pay close attention: Page 1 = 1A, Page 2 = 1B, Page 3 = 1C, Page 4 = 1D.
-    2. ASIGNATURA: Subject name or code ONLY (e.g. 'Álgebra', 'Calculo', 'Pruebas de Progreso').
+    === GLOBAL FACULTY EVENTS ('GENERAL') ===
+    1. 'Pruebas de Progreso' (or 'Pruebas de.', 'PruebasProgreso', 'Pruebas...') and 'Conferencias' are general faculty-wide events.
+    2. For 'Pruebas de Progreso':
+       - asignatura: "Pruebas de Progreso"
+       - tipo: "evento"
+       - es_laboratorio: false
+       - grupo: "GENERAL"
+       - aula: "0.02-Charles Babbage"
+       - profesor: ""
+    3. For 'Conferencias':
+       - asignatura: "Conferencias"
+       - tipo: "evento"
+       - es_laboratorio: false
+       - grupo: "GENERAL"
+       - aula: "Alan Turing"
+       - profesor: ""
+
+    === FIELD EXTRACTION RULES ===
+    1. GRUPO: Group or specialization code matching the page header (e.g. '1A', '1B', '1C', '1D', '2A', '2B', '2C', '2D', '3A', '3B', '3C', '3IC', '3ISO', '3TI', '3CO', '4IC', '4ISO', '4TI', '4CO').
+       Pay attention: Page 1 = 1A, Page 2 = 1B, Page 3 = 1C, Page 4 = 1D.
+    2. ASIGNATURA: Subject name or code ONLY (e.g. 'Álgebra', 'Cálculo', 'Física', 'Fundamentos de Programación I', 'Sistemas Operativos I').
     3. TIPO: 'teoría' for lectures, 'laboratorio' for labs, 'evento' for exams/events.
-    4. AULA: Classroom code or name.
-    5. PROFESOR: Professor name if listed, else empty string.
+    4. AULA: Classroom code or name (e.g. 'A1.1-John Von Neumann', 'A2.2-Grace Murray', '0.02-Charles Babbage', 'LD1-Ignacio Cirac', 'LD2-Dennis Ritchie', 'LD3-Bill Gates', 'LD4-John Carmack', '0.07-Claude Shannon', '0.04-Hedy Lamarr').
+    5. PROFESOR: Full professor name if listed, else empty string.
     6. ES_LABORATORIO: true if laboratory, false otherwise.
-    7. GRUPO_PRACTICAS: Lab variant name (e.g. 'Lab-A1', 'Lab-B1') if present, else empty string.
+    7. GRUPO_PRACTICAS: Lab variant code (e.g. 'Lab-A1', 'Lab-A2', 'Lab-B1', 'Lab-B2', 'Lab-BC') if present, else empty string.
     """
 
     all_raw_slots = []
@@ -392,8 +419,16 @@ def process_pdf_schedule(
                     status = error_data.get("status", "")
 
                     if is_daily_quota_exhausted(error_data) or is_daily_quota_exhausted(str(e)):
-                        print(f"\n[!] CRITICAL: Daily quota for model '{model_id}' exhausted.", flush=True)
-                        sys.exit(1)
+                        if api_key_alt and not used_alt_key:
+                            print(f"\n[!] Daily quota exhausted for primary API key. Switching to GEMINI_API_KEY_ALT...", flush=True)
+                            active_api_key = api_key_alt
+                            client = genai.Client(api_key=active_api_key)
+                            used_alt_key = True
+                            time.sleep(2)
+                            continue
+                        else:
+                            print(f"\n[!] CRITICAL: Daily quota for model '{model_id}' exhausted.", flush=True)
+                            sys.exit(1)
 
                     if "404" in str(e) or "not found" in str(e).lower() or "no longer available" in str(e).lower():
                         print(f"\n[!] ERROR: Model '{model_id}' is not found or no longer available.", flush=True)
