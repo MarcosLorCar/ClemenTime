@@ -3,6 +3,13 @@ name: Sync ESI Schedules
 on:
   schedule:
     - cron: '0 */6 * * *'
+  push:
+    branches: ['**']
+    paths:
+      - 'schedules/pdf/**'
+      - 'schedules/script/**'
+      - 'process_schedules.py'
+      - '.github/workflows/sync-esi-schedules.yml'
   workflow_dispatch:
 
 jobs:
@@ -17,12 +24,22 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
+          python-version: '3.11'
 
-      - name: Check ESI Update
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install google-genai pdf2image pillow pydantic python-dotenv
+
+      - name: Check PDF Update
         id: check
         run: |
-          OUTPUT=$(python3 schedules/script/check_esi_update.py)
+          OUTPUT=$(python3 schedules/script/check_pdf_update.py)
           echo "$OUTPUT"
           if [[ "$OUTPUT" == *"[Update Detected]"* ]]; then
             echo "has_update=true" >> $GITHUB_OUTPUT
@@ -30,6 +47,8 @@ jobs:
 
       - name: Process Schedules
         if: steps.check.outputs.has_update == 'true' || github.event_name == 'workflow_dispatch'
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           python3 process_schedules.py --strict
 
@@ -42,6 +61,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "chore: auto-sync ESI schedules [skip ci]"
+            git commit -m "chore: auto-sync ESI schedules from PDF via AI pipeline [skip ci]"
             git push
           fi

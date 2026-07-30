@@ -1,18 +1,53 @@
+#!/usr/bin/env python3
 import json
 import os
 import sys
 import argparse
+import random
 import re
+import hashlib
+import time
 import unicodedata
 from difflib import SequenceMatcher
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Optional, Tuple, Any
+from pydantic import BaseModel, Field
+from pdf2image import convert_from_path
+from google import genai
+from google.genai import types, errors
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 MAPPINGS_FILE = os.path.join(SCRIPT_DIR, "mappings.json")
+CACHE_DIR = os.path.join(SCRIPT_DIR, ".cache")
 DEFAULT_DIST_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "dist"))
+DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+
+# --- Pydantic Schema for Direct Flat Output ---
+
+class JsonFlatSlot(BaseModel):
+    grupo: str = Field(default="", description="Group code, e.g. '1A', '1º A', '3º ISO'")
+    cuatrimestre: str = Field(default="1C", description="'1C' or '2C'")
+    dia: str = Field(default="", description="Day of week in Spanish: 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'")
+    hora_inicio: str = Field(default="", description="Start time in HH:mm format, e.g. '08:30'")
+    hora_fin: str = Field(default="", description="End time in HH:mm format, e.g. '10:00'")
+    asignatura: str = Field(default="", description="Subject name or shorthand code")
+    tipo: str = Field(default="teoría", description="'teoría', 'laboratorio', or 'evento'")
+    aula: str = Field(default="", description="Classroom name or code")
+    profesor: Optional[str] = Field(default="", description="Professor name if present")
+    es_laboratorio: bool = Field(default=False, description="True if entry is a laboratory session")
+    grupo_practicas: Optional[str] = Field(default="", description="Lab group variant if present, e.g. 'Lab-A1' or 'Lab-A1/A2'")
+
+class PageFlatSchedule(BaseModel):
+    slots: List[JsonFlatSlot] = []
+
+# --- Mapping Utilities ---
 
 def remove_accents(text: str) -> str:
-    """Normalize unicode characters to remove accents for fuzzy key comparison."""
     if not text:
         return ""
     nfkd_form = unicodedata.normalize('NFKD', text)
@@ -28,59 +63,42 @@ def save_mappings(mappings: Dict):
     with open(MAPPINGS_FILE, "w", encoding="utf-8") as f:
         json.dump(mappings, f, indent=2, ensure_ascii=False)
 
-def clean_subject_code(code: str) -> str:
-    """Removes laboratory suffixes like '-L', '-Lab', '(L)' from subject codes."""
-    if not code:
-        return code
-    return re.sub(r'(-L|\(L\)|-Lab)$', '', code.strip(), flags=re.IGNORECASE)
-
 def resolve_mapping(code: str, category: str, mappings: Dict, interactive: bool = True) -> Tuple[str, str]:
-    """
-    Resolves code against mappings and returns a tuple of (canonical_key, full_name).
-    """
     if not code:
         return code, code
 
     category_map = mappings.get(category, {})
 
-    # 1. Exact Key Match
     if code in category_map:
         return code, category_map[code]
 
-    # 2. Exact Value Match
     for k, v in category_map.items():
         if v == code:
             return k, v
 
-    # 3. Case & Accent Insensitive Match
     norm_code = remove_accents(code).lower()
     for key, val in category_map.items():
         if remove_accents(key).lower() == norm_code or remove_accents(val).lower() == norm_code:
             return key, val
 
-    # 4. Substring / Token Matching
     code_tokens = set(re.findall(r'\w+', norm_code))
     for key, val in category_map.items():
         key_norm = remove_accents(key).lower()
         val_norm = remove_accents(val).lower()
-
         if key_norm and (key_norm in norm_code or norm_code in key_norm):
             return key, val
         if val_norm and (val_norm in norm_code or norm_code in val_norm):
             return key, val
-
         key_tokens = set(re.findall(r'\w+', key_norm))
         if key_tokens and key_tokens.issubset(code_tokens):
             return key, val
 
-    # 5. Fuzzy Matching (Threshold 0.8)
     best_key, best_val = None, None
     best_score = 0.0
     for key, val in category_map.items():
         score_key = SequenceMatcher(None, norm_code, remove_accents(key).lower()).ratio()
         score_val = SequenceMatcher(None, norm_code, remove_accents(val).lower()).ratio()
         max_score = max(score_key, score_val)
-
         if max_score > best_score:
             best_score = max_score
             best_key, best_val = key, val
@@ -88,7 +106,6 @@ def resolve_mapping(code: str, category: str, mappings: Dict, interactive: bool 
     if best_score >= 0.8:
         return best_key, best_val
 
-    # 6. Fallback to Prompt
     if not interactive:
         return code, code
 
@@ -106,15 +123,10 @@ def get_mapping(code: str, category: str, mappings: Dict, interactive: bool = Tr
 def resolve_professors(prof_str: str, mappings: Dict, interactive: bool) -> str:
     if not prof_str:
         return ""
-
     prof_str = prof_str.strip()
-
-    # Step 1: Full string match without prompting
     full_match = get_mapping(prof_str, "professors", mappings, interactive=False)
     if full_match != prof_str:
         return full_match
-
-    # Step 2: Separate multi-teacher string if needed
     tokens = prof_str.split()
     if len(tokens) > 1 and any('.' in t for t in tokens):
         resolved = []
@@ -123,98 +135,239 @@ def resolve_professors(prof_str: str, mappings: Dict, interactive: bool) -> str:
             resolved.append(name)
         if all(r != t for r, t in zip(resolved, tokens)):
             return " ".join(resolved)
-
     return get_mapping(prof_str, "professors", mappings, interactive)
 
 def format_time(time_str: str, is_end_time: bool = False) -> str:
-    """
-    Format H:MM to HH:MM.
-    If is_end_time is True and minutes are 50 (e.g. 09:50), round up to next hour (e.g. 10:00).
-    """
     if not time_str:
         return time_str
-
     parts = time_str.split(":")
     if len(parts) == 2:
-        hours = int(parts[0])
-        minutes = int(parts[1])
-
-        if is_end_time and minutes == 50:
-            hours = (hours + 1) % 24
-            minutes = 0
-
-        return f"{hours:02d}:{minutes:02d}"
+        try:
+            hours = int(parts[0])
+            minutes = int(parts[1])
+            if is_end_time and minutes == 50:
+                hours = (hours + 1) % 24
+                minutes = 0
+            return f"{hours:02d}:{minutes:02d}"
+        except ValueError:
+            pass
     return time_str
 
-def process_raw_json(raw_entries: List[Dict], interactive: bool = True) -> Dict[str, List[Dict]]:
-    mappings = load_mappings()
-
-    semesters: Dict[str, List[Dict]] = {
-        "1C": [],
-        "2C": []
+def normalize_spanish_day(day: str) -> str:
+    if not day:
+        return ""
+    d = day.strip().capitalize()
+    d_clean = remove_accents(d).lower()
+    mapping = {
+        "lunes": "Lunes",
+        "martes": "Martes",
+        "miercoles": "Miércoles",
+        "jueves": "Jueves",
+        "viernes": "Viernes",
+        "sabado": "Sábado",
+        "domingo": "Domingo",
+        "monday": "Lunes",
+        "tuesday": "Martes",
+        "wednesday": "Miércoles",
+        "thursday": "Jueves",
+        "friday": "Viernes"
     }
+    return mapping.get(d_clean, d)
 
-    for entry in raw_entries:
-        raw_asig = entry.get("asignatura", "").strip()
+# --- Cache Utilities ---
 
-        # 1. Ignore Universidad de Mayores
-        if "universidad de mayores" in raw_asig.lower() or "univmayores" in raw_asig.lower():
-            continue
+def get_page_cache_path(page_img) -> str:
+    img_bytes = page_img.tobytes()
+    content_hash = hashlib.sha256(img_bytes).hexdigest()
+    return os.path.join(CACHE_DIR, f"{content_hash}.json")
 
-        cuatrimestre_val = entry.get("cuatrimestre", "1C").strip()
-        sem_key = "2C" if "2" in cuatrimestre_val else "1C"
+# --- Core PDF Processor ---
 
-        prof_raw = entry.get("profesor", "")
-        prof = resolve_professors(prof_raw, mappings, interactive) if prof_raw else ""
-
-        aula_raw = entry.get("aula", "")
-        classroom = get_mapping(aula_raw, "classrooms", mappings, interactive) if aula_raw else ""
-
-        asig_normalized = get_mapping(raw_asig, "matters", mappings, interactive) if raw_asig else raw_asig
-
-        clean_slot = {
-            "grupo": entry.get("grupo", ""),
-            "cuatrimestre": sem_key,
-            "dia": entry.get("dia", ""),
-            "hora_inicio": format_time(entry.get("hora_inicio", ""), is_end_time=False),
-            "hora_fin": format_time(entry.get("hora_fin", ""), is_end_time=True),
-            "asignatura": asig_normalized,
-            "tipo": entry.get("tipo", "teoría"),
-            "aula": classroom,
-            "profesor": prof,
-            "es_laboratorio": bool(entry.get("es_laboratorio", False)),
-            "grupo_practicas": entry.get("grupo_practicas", "")
-        }
-
-        semesters[sem_key].append(clean_slot)
-
-    return semesters
-
-def main():
-    parser = argparse.ArgumentParser(description="Process raw schedule JSON into flat array semester JSONs.")
-    parser.add_argument("input_json", help="Path to input raw JSON file.")
-    parser.add_argument("--non-interactive", action="store_true", help="Run without interactive prompts.")
-    args = parser.parse_args()
-
-    if not os.path.exists(args.input_json):
-        print(f"Error: File '{args.input_json}' not found.")
+def process_pdf_schedule(
+    pdf_path: str,
+    output_dir: str = DEFAULT_DIST_DIR,
+    interactive: bool = True,
+    model_id: str = None,
+    clear_cache: bool = False
+) -> List[Dict]:
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        print("[Error] GEMINI_API_KEY environment variable not set.")
         sys.exit(1)
 
-    with open(args.input_json, "r", encoding="utf-8") as f:
-        raw_data = json.load(f)
+    if not model_id:
+        model_id = DEFAULT_MODEL
+
+    os.makedirs(output_dir, exist_ok=True)
+    os.makedirs(CACHE_DIR, exist_ok=True)
+
+    client = genai.Client(api_key=api_key)
+    mappings = load_mappings()
+
+    # Determine default semester from filename
+    filename = os.path.basename(pdf_path)
+    default_semester = "1C"
+    if "2C" in filename.upper() or "2_CUATRIMESTRE" in filename.upper():
+        default_semester = "2C"
+    elif "1C" in filename.upper() or "1_CUATRIMESTRE" in filename.upper():
+        default_semester = "1C"
+
+    print(f"\n[PDF] Converting '{filename}' to images (Default semester: {default_semester})...")
+    pages = convert_from_path(pdf_path, dpi=200)
+
+    prompt = """
+    Extract all course schedule time slots from this university schedule page into a flat list of JSON objects matching the schema.
+
+    RULES:
+    1. EXTRACT ALL SLOTS: Extract every class slot (Theory, Laboratory, Exams/Events) shown on this page.
+    2. CUATRIMESTRE: Identify if this page belongs to '1C' (Primer Cuatrimestre) or '2C' (Segundo Cuatrimestre). Use '1C' or '2C'.
+    3. DIA: Name of day in Spanish (Lunes, Martes, Miércoles, Jueves, Viernes).
+    4. HORA INICIO & FIN: Format HH:mm (e.g. 08:30, 10:00).
+    5. GRUPO: Group name (e.g. '1A', '1º A', '2B', '3º ISO').
+    6. ASIGNATURA: Subject name or code (e.g. 'Álgebra', 'Calculo', 'Pruebas de Progreso').
+    7. TIPO: 'teoría' for lectures, 'laboratorio' for labs, 'evento' for exams/events.
+    8. AULA: Classroom code or name (e.g. 'A1.1', 'Charles Babbage - 0.02+3').
+    9. PROFESOR: Professor name if listed, otherwise empty string.
+    10. ES_LABORATORIO: true if laboratory session, false otherwise.
+    11. GRUPO_PRACTICAS: Lab variant name (e.g. 'Lab-A1', 'Lab-A1/A2') if applicable, else empty string.
+    """
+
+    all_raw_slots = []
+
+    for i, page_img in enumerate(pages):
+        cache_path = get_page_cache_path(page_img)
+
+        if not clear_cache and os.path.exists(cache_path):
+            print(f"  -> Page {i + 1}/{len(pages)}: Loaded from cache.")
+            with open(cache_path, "r", encoding="utf-8") as f:
+                page_data = json.load(f)
+        else:
+            max_retries = 5
+            page_data = None
+
+            for attempt in range(max_retries):
+                try:
+                    print(f"  -> Page {i + 1}/{len(pages)}: Parsing with Gemini ({model_id}, attempt {attempt + 1})...")
+                    response = client.models.generate_content(
+                        model=model_id,
+                        contents=[page_img, prompt],
+                        config=types.GenerateContentConfig(
+                            response_mime_type="application/json",
+                            response_schema=PageFlatSchedule,
+                            temperature=0.1
+                        ),
+                    )
+
+                    page_data = json.loads(response.text)
+
+                    with open(cache_path, "w", encoding="utf-8") as f:
+                        json.dump(page_data, f, indent=2, ensure_ascii=False)
+
+                    break
+                except Exception as e:
+                    print(f"     [Warning] Attempt {attempt + 1} failed: {e}")
+                    if attempt == max_retries - 1:
+                        print(f"     [Error] Skipping page {i + 1} after {max_retries} attempts.")
+                        break
+                    time.sleep(3)
+
+        if page_data and "slots" in page_data:
+            all_raw_slots.extend(page_data["slots"])
+
+    print(f"[Extracted] {len(all_raw_slots)} raw slots across {len(pages)} pages.")
+
+    # Post-processing & Deduplication
+    processed_slots = []
+    seen_keys = set()
+
+    for slot in all_raw_slots:
+        raw_asig = (slot.get("asignatura") or "").strip()
+        if not raw_asig or "universidad de mayores" in raw_asig.lower() or "univmayores" in raw_asig.lower():
+            continue
+
+        sem_val = (slot.get("cuatrimestre") or default_semester).strip().upper()
+        sem_key = "2C" if "2" in sem_val else "1C"
+
+        prof_raw = (slot.get("profesor") or "").strip()
+        prof = resolve_professors(prof_raw, mappings, interactive) if prof_raw else ""
+
+        aula_raw = (slot.get("aula") or "").strip()
+        classroom = get_mapping(aula_raw, "classrooms", mappings, interactive) if aula_raw else ""
+
+        asig_norm = get_mapping(raw_asig, "matters", mappings, interactive) if raw_asig else raw_asig
+        day_norm = normalize_spanish_day(slot.get("dia", ""))
+
+        start_time = format_time(slot.get("hora_inicio", ""), is_end_time=False)
+        end_time = format_time(slot.get("hora_fin", ""), is_end_time=True)
+
+        group = (slot.get("grupo") or "").strip()
+
+        # Deduplication key
+        slot_key = (
+            group,
+            sem_key,
+            day_norm,
+            start_time,
+            end_time,
+            asig_norm,
+            slot.get("tipo", "teoría"),
+            classroom,
+            prof,
+            bool(slot.get("es_laboratorio", False)),
+            (slot.get("grupo_practicas") or "").strip()
+        )
+
+        if slot_key not in seen_keys:
+            seen_keys.add(slot_key)
+            processed_slots.append({
+                "grupo": group,
+                "cuatrimestre": sem_key,
+                "dia": day_norm,
+                "hora_inicio": start_time,
+                "hora_fin": end_time,
+                "asignatura": asig_norm,
+                "tipo": slot.get("tipo", "teoría"),
+                "aula": classroom,
+                "profesor": prof,
+                "es_laboratorio": bool(slot.get("es_laboratorio", False)),
+                "grupo_practicas": (slot.get("grupo_practicas") or "").strip()
+            })
+
+    print(f"[Deduplicated] {len(processed_slots)} unique slots remaining.")
+    return processed_slots
+
+def main():
+    parser = argparse.ArgumentParser(description="Parse schedule PDF files directly into flat schedule JSONs.")
+    parser.add_argument("pdf_file", help="Path to PDF schedule file.")
+    parser.add_argument("--non-interactive", action="store_true", help="Run without interactive mapping prompts.")
+    parser.add_argument("--model", default=DEFAULT_MODEL, help=f"Gemini model ID (default: {DEFAULT_MODEL}).")
+    parser.add_argument("--clear-cache", action="store_true", help="Clear page response cache before running.")
+    args = parser.parse_args()
+
+    if not os.path.exists(args.pdf_file):
+        print(f"[Error] File '{args.pdf_file}' not found.")
+        sys.exit(1)
 
     interactive = not args.non_interactive
-    results = process_raw_json(raw_data, interactive=interactive)
+    slots = process_pdf_schedule(
+        pdf_path=args.pdf_file,
+        interactive=interactive,
+        model_id=args.model,
+        clear_cache=args.clear_cache
+    )
 
-    os.makedirs(DEFAULT_DIST_DIR, exist_ok=True)
+    # Group by semester and save
+    by_semester: Dict[str, List[Dict]] = {"1C": [], "2C": []}
+    for s in slots:
+        sem = s.get("cuatrimestre", "1C")
+        by_semester[sem].append(s)
 
-    print("\n--- Output Configuration ---")
-    for sem_key, slots in results.items():
-        filename = f"{sem_key}.json"
-        out_file = os.path.join(DEFAULT_DIST_DIR, filename)
-        with open(out_file, "w", encoding="utf-8") as f:
-            json.dump(slots, f, indent=2, ensure_ascii=False)
-        print(f"  -> Saved {len(slots)} slots to: {out_file}")
+    for sem_key, sem_slots in by_semester.items():
+        if sem_slots:
+            out_file = os.path.join(DEFAULT_DIST_DIR, f"{sem_key}.json")
+            with open(out_file, "w", encoding="utf-8") as f:
+                json.dump(sem_slots, f, indent=2, ensure_ascii=False)
+            print(f"  -> Wrote {len(sem_slots)} slots to {out_file}")
 
 if __name__ == "__main__":
     main()
