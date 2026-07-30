@@ -12,8 +12,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
@@ -25,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.marcoslorcar.clementime.R
@@ -149,7 +153,18 @@ private fun SlotDiffCard(
                 DiffTypeBadge(changeType = diff.changeType)
             }
 
-            // Old Detail
+            val oldTimeStr = extractDayAndTime(diff.oldDetail)
+            val newTimeStr = extractDayAndTime(diff.newDetail)
+            val isTimeSlotChange = (diff.changeType == DiffType.ADDED || diff.changeType == DiffType.REMOVED || oldTimeStr != newTimeStr)
+
+            if (isTimeSlotChange && (oldTimeStr.isNotBlank() || newTimeStr.isNotBlank())) {
+                BeforeAfterTimeSlotPreview(
+                    oldTimeStr = oldTimeStr,
+                    newTimeStr = newTimeStr
+                )
+            }
+
+            // Old Detail Text
             diff.oldDetail?.let { old ->
                 Text(
                     text = stringResource(R.string.diff_previous_detail, old),
@@ -160,7 +175,7 @@ private fun SlotDiffCard(
                 )
             }
 
-            // New Detail
+            // New Detail Text
             diff.newDetail?.let { new ->
                 Text(
                     text = stringResource(R.string.diff_new_detail, new),
@@ -168,6 +183,105 @@ private fun SlotDiffCard(
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
+            }
+        }
+    }
+}
+
+private fun extractDayAndTime(detail: String?): String {
+    if (detail.isNullOrBlank()) return ""
+    val parenIndex = detail.indexOf('(')
+    return if (parenIndex > 0) detail.substring(0, parenIndex).trim() else detail.trim()
+}
+
+@Composable
+private fun BeforeAfterTimeSlotPreview(
+    oldTimeStr: String,
+    newTimeStr: String,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 1.dp,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Before Pill (Old Time)
+            if (oldTimeStr.isNotBlank()) {
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = stringResource(R.string.diff_previous_label),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = oldTimeStr,
+                            style = MaterialTheme.typography.bodySmall.copy(textDecoration = TextDecoration.LineThrough),
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            } else {
+                Spacer(modifier = Modifier.weight(1f))
+            }
+
+            // Arrow
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = 8.dp)
+            )
+
+            // After Pill (New Time)
+            if (newTimeStr.isNotBlank()) {
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = stringResource(R.string.diff_new_label),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = newTimeStr,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            } else {
+                Spacer(modifier = Modifier.weight(1f))
             }
         }
     }

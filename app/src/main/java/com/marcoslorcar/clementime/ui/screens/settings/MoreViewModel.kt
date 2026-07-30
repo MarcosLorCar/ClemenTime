@@ -210,6 +210,7 @@ class MoreViewModel @Inject constructor(
         viewModelScope.launch {
             _isCheckingUpdates.value = true
             try {
+                ScheduleUpdateWorker.enqueueOneTimeWork(context)
                 val syncResult = ScheduleUpdateWorker.performSync(
                     context = context,
                     settingsRepository = settingsRepository,

@@ -195,6 +195,22 @@ fun MoreContent(
     var showRepoUrlDialog by remember { mutableStateOf(false) }
     var tempRepoUrl by remember { mutableStateOf(uiState.githubRepoBaseUrl) }
 
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { _ -> }
+
+    val requestNotificationPermissionIfNeeded: () -> Unit = {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val isGranted = androidx.core.content.ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.POST_NOTIFICATIONS
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            if (!isGranted) {
+                notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
+
     var icsExportStep by remember { mutableIntStateOf(0) } // 0: Idle, 1: Course Start, 2: S2 Start, 3: Course End
     var courseStartDate by remember { mutableStateOf<LocalDate?>(null) }
     var s2StartDate by remember { mutableStateOf<LocalDate?>(null) }
@@ -719,6 +735,9 @@ fun MoreContent(
                                             )
                                         },
                                         onClick = {
+                                            if (hours > 0) {
+                                                requestNotificationPermissionIfNeeded()
+                                            }
                                             onAutoUpdateIntervalChanged(hours)
                                             showAutoUpdateMenu = false
                                         }
@@ -736,6 +755,7 @@ fun MoreContent(
                     subtitle = if (uiState.isCheckingUpdates) stringResource(R.string.checking_updates) else null,
                     onClick = {
                         if (!uiState.isCheckingUpdates) {
+                            requestNotificationPermissionIfNeeded()
                             onCheckUpdatesNow()
                         }
                     }

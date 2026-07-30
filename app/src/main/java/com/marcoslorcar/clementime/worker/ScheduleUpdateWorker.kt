@@ -12,7 +12,9 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
@@ -46,17 +48,12 @@ class ScheduleUpdateWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         return try {
-            val intervalHours = settingsRepository.autoUpdateIntervalHoursFlow.first()
-            if (intervalHours <= 0) {
-                return Result.success()
-            }
-
             val syncResult = performSync(
                 context = context,
                 settingsRepository = settingsRepository,
                 importRepository = importRepository,
                 apiService = apiService,
-                ignoreInterval = false
+                ignoreInterval = true
             )
 
             if (syncResult.diffs.isNotEmpty()) {
@@ -76,6 +73,25 @@ class ScheduleUpdateWorker @AssistedInject constructor(
         const val CHANNEL_ID = "CLEMENTIME_SCHEDULE_UPDATE_CHANNEL"
         const val WORK_TAG = "ScheduleUpdateWorkerTag"
         const val UNIQUE_WORK_NAME = "ScheduleUpdateWork"
+        const val ONE_TIME_WORK_NAME = "ScheduleUpdateWork_OneTime"
+
+        fun enqueueOneTimeWork(context: Context) {
+            val workManager = WorkManager.getInstance(context)
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+
+            val request = OneTimeWorkRequestBuilder<ScheduleUpdateWorker>()
+                .setConstraints(constraints)
+                .addTag(WORK_TAG)
+                .build()
+
+            workManager.enqueueUniqueWork(
+                ONE_TIME_WORK_NAME,
+                ExistingWorkPolicy.REPLACE,
+                request
+            )
+        }
 
         fun schedulePeriodicWork(context: Context, hours: Int) {
             val workManager = WorkManager.getInstance(context)

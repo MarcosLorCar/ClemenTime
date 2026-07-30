@@ -366,5 +366,7 @@
     <string name="diff_badge_removed">REMOVED</string>
     <string name="diff_previous_detail">Previous: %1$s</string>
     <string name="diff_new_detail">New: %1$s</string>
+    <string name="diff_previous_label">BEFORE</string>
+    <string name="diff_new_label">AFTER</string>
     <string name="schedule_updated_success">Schedule updated successfully.</string>
 </resources>

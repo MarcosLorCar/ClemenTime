@@ -368,6 +368,8 @@
     <string name="diff_badge_removed">ELIMINADO</string>
     <string name="diff_previous_detail">Anterior: %1$s</string>
     <string name="diff_new_detail">Nuevo: %1$s</string>
+    <string name="diff_previous_label">ANTERIOR</string>
+    <string name="diff_new_label">NUEVO</string>
     <string name="schedule_updated_success">Horario actualizado con éxito.</string>
 </resources>
 
