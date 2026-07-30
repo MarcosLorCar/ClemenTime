@@ -151,7 +151,7 @@
     "asignatura": "Fundamentos de Gestion Empresarial",
     "tipo": "teoría",
     "aula": "A1.1-John Von N",
-    "profesor": "Jesus Diez",
+    "profesor": "Manuel Villasalero",
     "es_laboratorio": false,
     "grupo_practicas": ""
   },
@@ -164,7 +164,7 @@
     "asignatura": "Fisica",
     "tipo": "laboratorio",
     "aula": "LD1-Ignacio",
-    "profesor": "P.Grammatikopol",
+    "profesor": "",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-A2"
   },
@@ -177,7 +177,7 @@
     "asignatura": "Fundamentos de Gestion Empresarial",
     "tipo": "laboratorio",
     "aula": "A1.1-John Von N",
-    "profesor": "Jesus Diez",
+    "profesor": "Manuel Villasalero",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-A1"
   },
@@ -190,7 +190,7 @@
     "asignatura": "Fisica",
     "tipo": "laboratorio",
     "aula": "LD1-Ignacio",
-    "profesor": "P.Grammatikopol",
+    "profesor": "",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-A3"
   },
@@ -203,7 +203,7 @@
     "asignatura": "Fundamentos de Gestion Empresarial",
     "tipo": "laboratorio",
     "aula": "A1.1-John Von N",
-    "profesor": "Jesus Diez",
+    "profesor": "Manuel Villasalero",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-A2"
   },
@@ -475,7 +475,7 @@
     "hora_fin": "13:00",
     "asignatura": "Conferencias",
     "tipo": "evento",
-    "aula": "Alan Turing",
+    "aula": "ESI",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -514,7 +514,7 @@
     "hora_fin": "18:30",
     "asignatura": "Fundamentos de Gestion Empresarial",
     "tipo": "teoría",
-    "aula": "A2.2-Grace Murray",
+    "aula": "0.07-Claude Shannon",
     "profesor": "Andres Javier Prado",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -758,7 +758,7 @@
     "cuatrimestre": "1C",
     "dia": "Martes",
     "hora_inicio": "17:00",
-    "hora_fin": "18:30",
+    "hora_fin": "20:00",
     "asignatura": "Calculo",
     "tipo": "laboratorio",
     "aula": "0.07-Claude Shannon",
@@ -826,7 +826,7 @@
     "hora_fin": "13:00",
     "asignatura": "Conferencias",
     "tipo": "evento",
-    "aula": "ESI",
+    "aula": "Alan Turing",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1122,7 +1122,7 @@
     "cuatrimestre": "1C",
     "dia": "Lunes",
     "hora_inicio": "18:30",
-    "hora_fin": "21:30",
+    "hora_fin": "20:00",
     "asignatura": "Calculo",
     "tipo": "laboratorio",
     "aula": "A1.2-Tim Berner",
@@ -1419,19 +1419,6 @@
   {
     "grupo": "2A",
     "cuatrimestre": "1C",
-    "dia": "Miércoles",
-    "hora_inicio": "13:00",
-    "hora_fin": "14:30",
-    "asignatura": "Ingenieria del Software I",
-    "tipo": "laboratorio",
-    "aula": "0.05-Edsger W.",
-    "profesor": "Asociado LSI 1",
-    "es_laboratorio": true,
-    "grupo_practicas": "Lab-A1"
-  },
-  {
-    "grupo": "2A",
-    "cuatrimestre": "1C",
     "dia": "Jueves",
     "hora_inicio": "08:30",
     "hora_fin": "10:00",
@@ -1480,6 +1467,19 @@
     "profesor": "Manuel Angel Serrano",
     "es_laboratorio": false,
     "grupo_practicas": ""
+  },
+  {
+    "grupo": "2A",
+    "cuatrimestre": "1C",
+    "dia": "Jueves",
+    "hora_inicio": "18:30",
+    "hora_fin": "20:00",
+    "asignatura": "Ingenieria del Software I",
+    "tipo": "laboratorio",
+    "aula": "0.05-Edsger W.",
+    "profesor": "Jesus Ramon Oviedo",
+    "es_laboratorio": true,
+    "grupo_practicas": "Lab-A1"
   },
   {
     "grupo": "2A",
@@ -1583,7 +1583,7 @@
     "aula": "LD2-Dennis Ritchie",
     "profesor": "Jose Luis Ruiz",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-BD"
+    "grupo_practicas": "Lab-BD."
   },
   {
     "grupo": "2B",
@@ -1671,7 +1671,7 @@
     "hora_fin": "13:00",
     "asignatura": "Conferencias",
     "tipo": "evento",
-    "aula": "ESI",
+    "aula": "Alan Turing",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1688,6 +1688,19 @@
     "profesor": "Felix Oscar Garcia",
     "es_laboratorio": false,
     "grupo_practicas": ""
+  },
+  {
+    "grupo": "2B",
+    "cuatrimestre": "1C",
+    "dia": "Miércoles",
+    "hora_inicio": "18:30",
+    "hora_fin": "20:00",
+    "asignatura": "Ingenieria del Software I",
+    "tipo": "laboratorio",
+    "aula": "LD3-Bill Gates",
+    "profesor": "Jesus Ramon Oviedo",
+    "es_laboratorio": true,
+    "grupo_practicas": "Lab-BD1"
   },
   {
     "grupo": "2B",
@@ -1841,9 +1854,9 @@
     "asignatura": "Ingenieria del Software I",
     "tipo": "laboratorio",
     "aula": "0.02+3-Charles",
-    "profesor": "Asociado LSI 1",
+    "profesor": "Maria Angeles Moraga",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-BD1"
+    "grupo_practicas": "Lab-B1"
   },
   {
     "grupo": "2B",
@@ -1855,19 +1868,6 @@
     "tipo": "laboratorio",
     "aula": "0.07-Claude Shannon",
     "profesor": "Andres Montoro",
-    "es_laboratorio": true,
-    "grupo_practicas": "Lab-B1"
-  },
-  {
-    "grupo": "2B",
-    "cuatrimestre": "1C",
-    "dia": "Viernes",
-    "hora_inicio": "13:00",
-    "hora_fin": "14:30",
-    "asignatura": "Ingenieria del Software I",
-    "tipo": "laboratorio",
-    "aula": "0.02+3-Charles",
-    "profesor": "Maria Angeles Moraga",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-B1"
   },
@@ -1926,9 +1926,22 @@
   {
     "grupo": "2C",
     "cuatrimestre": "1C",
-    "dia": "Lunes",
-    "hora_inicio": "17:00",
-    "hora_fin": "18:30",
+    "dia": "Martes",
+    "hora_inicio": "15:30",
+    "hora_fin": "17:00",
+    "asignatura": "Ingenieria del Software I",
+    "tipo": "teoría",
+    "aula": "A2.2-Grace Murray",
+    "profesor": "Ignacio Garcia Rodriguez",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "2C",
+    "cuatrimestre": "1C",
+    "dia": "Miércoles",
+    "hora_inicio": "15:30",
+    "hora_fin": "17:00",
     "asignatura": "Sistemas Operativos I",
     "tipo": "teoría",
     "aula": "A2.2-Grace Murray",
@@ -1939,13 +1952,13 @@
   {
     "grupo": "2C",
     "cuatrimestre": "1C",
-    "dia": "Lunes",
-    "hora_inicio": "18:30",
-    "hora_fin": "20:00",
-    "asignatura": "Organizacion de Computadores",
+    "dia": "Jueves",
+    "hora_inicio": "15:30",
+    "hora_fin": "17:00",
+    "asignatura": "Estructura de Datos",
     "tipo": "teoría",
     "aula": "A2.2-Grace Murray",
-    "profesor": "Santiago Garcia",
+    "profesor": "Crescencio Bravo",
     "es_laboratorio": false,
     "grupo_practicas": ""
   },
@@ -1953,25 +1966,12 @@
     "grupo": "2C",
     "cuatrimestre": "1C",
     "dia": "Lunes",
-    "hora_inicio": "20:00",
-    "hora_fin": "21:30",
-    "asignatura": "Organizacion de Computadores",
-    "tipo": "laboratorio",
-    "aula": "A2.2-Grace Murray",
-    "profesor": "Santiago Garcia",
-    "es_laboratorio": true,
-    "grupo_practicas": "Lab-C1"
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "1C",
-    "dia": "Martes",
-    "hora_inicio": "15:30",
-    "hora_fin": "17:00",
-    "asignatura": "Ingenieria del Software I",
+    "hora_inicio": "17:00",
+    "hora_fin": "18:30",
+    "asignatura": "Sistemas Operativos I",
     "tipo": "teoría",
     "aula": "A2.2-Grace Murray",
-    "profesor": "Ignacio Garcia Rodriguez",
+    "profesor": "Yoel Arroyo",
     "es_laboratorio": false,
     "grupo_practicas": ""
   },
@@ -1991,41 +1991,15 @@
   {
     "grupo": "2C",
     "cuatrimestre": "1C",
-    "dia": "Martes",
-    "hora_inicio": "18:30",
-    "hora_fin": "20:00",
-    "asignatura": "Estructura de Datos",
-    "tipo": "teoría",
-    "aula": "A2.2-Grace Murray",
-    "profesor": "Crescencio Bravo",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "1C",
-    "dia": "Martes",
-    "hora_inicio": "20:00",
-    "hora_fin": "21:30",
-    "asignatura": "Estructura de Datos",
+    "dia": "Miércoles",
+    "hora_inicio": "17:00",
+    "hora_fin": "18:30",
+    "asignatura": "Organizacion de Computadores",
     "tipo": "laboratorio",
     "aula": "A2.2-Grace Murray",
-    "profesor": "Crescencio Bravo",
+    "profesor": "Santiago Garcia",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-C1"
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "1C",
-    "dia": "Miércoles",
-    "hora_inicio": "15:30",
-    "hora_fin": "17:00",
-    "asignatura": "Sistemas Operativos I",
-    "tipo": "teoría",
-    "aula": "A2.2-Grace Murray",
-    "profesor": "Yoel Arroyo",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
+    "grupo_practicas": "Lab-C2"
   },
   {
     "grupo": "2C",
@@ -2039,58 +2013,6 @@
     "profesor": "Yoel Arroyo",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-C2"
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "1C",
-    "dia": "Miércoles",
-    "hora_inicio": "18:30",
-    "hora_fin": "20:00",
-    "asignatura": "Organizacion de Computadores",
-    "tipo": "teoría",
-    "aula": "A2.2-Grace Murray",
-    "profesor": "Santiago Garcia",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "1C",
-    "dia": "Miércoles",
-    "hora_inicio": "20:00",
-    "hora_fin": "21:30",
-    "asignatura": "Logica",
-    "tipo": "laboratorio",
-    "aula": "LD3-Bill Gates",
-    "profesor": "Ruben Rodriguez",
-    "es_laboratorio": true,
-    "grupo_practicas": "Lab-C1"
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "1C",
-    "dia": "Miércoles",
-    "hora_inicio": "20:00",
-    "hora_fin": "21:30",
-    "asignatura": "Organizacion de Computadores",
-    "tipo": "laboratorio",
-    "aula": "A2.2-Grace Murray",
-    "profesor": "Santiago Garcia",
-    "es_laboratorio": true,
-    "grupo_practicas": "Lab-C2"
-  },
-  {
-    "grupo": "2C",
-    "cuatrimestre": "1C",
-    "dia": "Jueves",
-    "hora_inicio": "15:30",
-    "hora_fin": "17:00",
-    "asignatura": "Estructura de Datos",
-    "tipo": "teoría",
-    "aula": "A2.2-Grace Murray",
-    "profesor": "Crescencio Bravo",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
   },
   {
     "grupo": "2C",
@@ -2121,6 +2043,45 @@
   {
     "grupo": "2C",
     "cuatrimestre": "1C",
+    "dia": "Lunes",
+    "hora_inicio": "18:30",
+    "hora_fin": "20:00",
+    "asignatura": "Organizacion de Computadores",
+    "tipo": "teoría",
+    "aula": "A2.2-Grace Murray",
+    "profesor": "Santiago Garcia",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "2C",
+    "cuatrimestre": "1C",
+    "dia": "Martes",
+    "hora_inicio": "18:30",
+    "hora_fin": "20:00",
+    "asignatura": "Estructura de Datos",
+    "tipo": "teoría",
+    "aula": "A2.2-Grace Murray",
+    "profesor": "Crescencio Bravo",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "2C",
+    "cuatrimestre": "1C",
+    "dia": "Miércoles",
+    "hora_inicio": "18:30",
+    "hora_fin": "20:00",
+    "asignatura": "Organizacion de Computadores",
+    "tipo": "teoría",
+    "aula": "A2.2-Grace Murray",
+    "profesor": "Santiago Garcia",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "2C",
+    "cuatrimestre": "1C",
     "dia": "Jueves",
     "hora_inicio": "18:30",
     "hora_fin": "20:00",
@@ -2134,7 +2095,46 @@
   {
     "grupo": "2C",
     "cuatrimestre": "1C",
-    "dia": "Jueves",
+    "dia": "Lunes",
+    "hora_inicio": "20:00",
+    "hora_fin": "21:30",
+    "asignatura": "Organizacion de Computadores",
+    "tipo": "laboratorio",
+    "aula": "A2.2-Grace Murray",
+    "profesor": "Santiago Garcia",
+    "es_laboratorio": true,
+    "grupo_practicas": "Lab-C1"
+  },
+  {
+    "grupo": "2C",
+    "cuatrimestre": "1C",
+    "dia": "Martes",
+    "hora_inicio": "20:00",
+    "hora_fin": "21:30",
+    "asignatura": "Estructura de Datos",
+    "tipo": "laboratorio",
+    "aula": "A2.2-Grace Murray",
+    "profesor": "Crescencio Bravo",
+    "es_laboratorio": true,
+    "grupo_practicas": "Lab-C1"
+  },
+  {
+    "grupo": "2C",
+    "cuatrimestre": "1C",
+    "dia": "Miércoles",
+    "hora_inicio": "20:00",
+    "hora_fin": "21:30",
+    "asignatura": "Ingenieria del Software I",
+    "tipo": "laboratorio",
+    "aula": "A2.2-Grace Murray",
+    "profesor": "Jesus Ramon Oviedo",
+    "es_laboratorio": true,
+    "grupo_practicas": "Lab-C2"
+  },
+  {
+    "grupo": "2C",
+    "cuatrimestre": "1C",
+    "dia": "Miércoles",
     "hora_inicio": "20:00",
     "hora_fin": "21:30",
     "asignatura": "Logica",
@@ -2142,31 +2142,31 @@
     "aula": "LD3-Bill Gates",
     "profesor": "Ruben Rodriguez",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-C2"
+    "grupo_practicas": "Lab-C1"
   },
   {
     "grupo": "2C",
     "cuatrimestre": "1C",
-    "dia": "Viernes",
-    "hora_inicio": "15:30",
-    "hora_fin": "17:00",
+    "dia": "Jueves",
+    "hora_inicio": "20:00",
+    "hora_fin": "21:30",
     "asignatura": "Ingenieria del Software I",
     "tipo": "laboratorio",
-    "aula": "A2.2-Grace Murray",
-    "profesor": "Asociado LSI 1",
+    "aula": "A2.1-George Boole",
+    "profesor": "Jesus Ramon Oviedo",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-C1"
   },
   {
     "grupo": "2C",
     "cuatrimestre": "1C",
-    "dia": "Viernes",
-    "hora_inicio": "17:00",
-    "hora_fin": "18:30",
-    "asignatura": "Ingenieria del Software I",
+    "dia": "Jueves",
+    "hora_inicio": "20:00",
+    "hora_fin": "21:30",
+    "asignatura": "Logica",
     "tipo": "laboratorio",
-    "aula": "A2.2-Grace Murray",
-    "profesor": "Asociado LSI 1",
+    "aula": "LD3-Bill Gates",
+    "profesor": "Ruben Rodriguez",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-C2"
   },
@@ -2194,7 +2194,7 @@
     "aula": "LD2-Dennis Ritchie",
     "profesor": "Jose Luis Ruiz",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-BD."
+    "grupo_practicas": "Lab-BD"
   },
   {
     "grupo": "2D",
@@ -2324,7 +2324,7 @@
     "aula": "0.02+3-Charles",
     "profesor": "Crescencio Bravo",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-B2."
+    "grupo_practicas": "Lab-B2"
   },
   {
     "grupo": "2D",
@@ -2337,7 +2337,7 @@
     "aula": "LD3-Bill Gates",
     "profesor": "Jared David",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-BD2."
+    "grupo_practicas": "Lab-BD2"
   },
   {
     "grupo": "2D",
@@ -2350,7 +2350,7 @@
     "aula": "0.02+3-Charles",
     "profesor": "Crescencio Bravo",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-B1."
+    "grupo_practicas": "Lab-B1"
   },
   {
     "grupo": "2D",
@@ -2363,7 +2363,7 @@
     "aula": "0.04-Hedy Lamarr",
     "profesor": "Jared David",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-BD1."
+    "grupo_practicas": "Lab-BD1"
   },
   {
     "grupo": "2D",
@@ -2373,7 +2373,7 @@
     "hora_fin": "13:00",
     "asignatura": "Conferencias",
     "tipo": "evento",
-    "aula": "ESI",
+    "aula": "Alan Turing",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -2402,7 +2402,7 @@
     "aula": "0.07-Claude Shannon",
     "profesor": "Andres Montoro",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-B2."
+    "grupo_practicas": "Lab-B2"
   },
   {
     "grupo": "2D",
@@ -2413,9 +2413,9 @@
     "asignatura": "Ingenieria del Software I",
     "tipo": "laboratorio",
     "aula": "0.02+3-Charles",
-    "profesor": "Asociado LSI 1",
+    "profesor": "Maria Angeles Moraga",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-BD1."
+    "grupo_practicas": "Lab-B1"
   },
   {
     "grupo": "2D",
@@ -2467,7 +2467,7 @@
     "aula": "0.02+3-Charles",
     "profesor": "Felix Oscar Garcia",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-B2."
+    "grupo_practicas": "Lab-B2"
   },
   {
     "grupo": "2D",
@@ -2480,7 +2480,7 @@
     "aula": "LD4-John Carmack",
     "profesor": "Andres Montoro",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-BD2."
+    "grupo_practicas": "Lab-BD2"
   },
   {
     "grupo": "2D",
@@ -2493,20 +2493,20 @@
     "aula": "0.07-Claude Shannon",
     "profesor": "Andres Montoro",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-B1."
+    "grupo_practicas": "Lab-B1"
   },
   {
     "grupo": "2D",
     "cuatrimestre": "1C",
-    "dia": "Viernes",
-    "hora_inicio": "13:00",
-    "hora_fin": "14:30",
+    "dia": "Miércoles",
+    "hora_inicio": "18:30",
+    "hora_fin": "20:00",
     "asignatura": "Ingenieria del Software I",
     "tipo": "laboratorio",
-    "aula": "0.02+3-Charles",
-    "profesor": "Maria Angeles Moraga",
+    "aula": "LD3-Bill Gates",
+    "profesor": "Jesus Ramon Oviedo",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-B1."
+    "grupo_practicas": "Lab-BD1"
   },
   {
     "grupo": "2D",
@@ -2519,7 +2519,7 @@
     "aula": "LD3-Bill Gates",
     "profesor": "Ruben Rodriguez",
     "es_laboratorio": true,
-    "grupo_practicas": "Lab-BD1."
+    "grupo_practicas": "Lab-BD1"
   },
   {
     "grupo": "2D",
@@ -3621,7 +3621,7 @@
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
-    "aula": "LD4-John Carmack",
+    "aula": "0.02+3-Charles",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -3803,7 +3803,7 @@
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
-    "aula": "ESI",
+    "aula": "0.02+3-Charles",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -3933,7 +3933,7 @@
     "hora_fin": "13:00",
     "asignatura": "Conferencias",
     "tipo": "evento",
-    "aula": "ESI",
+    "aula": "Alan Turing",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -4140,10 +4140,10 @@
     "hora_inicio": "17:00",
     "hora_fin": "18:30",
     "asignatura": "Ingenieria de Negocio",
-    "tipo": "teoría",
+    "tipo": "laboratorio",
     "aula": "0.05-Edsger W.",
     "profesor": "Felix Oscar Garcia",
-    "es_laboratorio": false,
+    "es_laboratorio": true,
     "grupo_practicas": ""
   },
   {
@@ -4168,7 +4168,7 @@
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
     "aula": "0.02+3-Charles",
-    "profesor": "",
+    "profesor": "Charles",
     "es_laboratorio": false,
     "grupo_practicas": ""
   },
@@ -4202,14 +4202,27 @@
     "grupo": "4TI",
     "cuatrimestre": "1C",
     "dia": "Lunes",
-    "hora_inicio": "13:00",
-    "hora_fin": "14:30",
+    "hora_inicio": "17:00",
+    "hora_fin": "18:30",
     "asignatura": "Multimedia",
     "tipo": "teoría",
-    "aula": "F1.1-Ángela Ruiz",
-    "profesor": "Asociado LSI 2",
+    "aula": "A1.1-John Von N",
+    "profesor": "Jose Ramon Sanchez",
     "es_laboratorio": false,
     "grupo_practicas": ""
+  },
+  {
+    "grupo": "4TI",
+    "cuatrimestre": "1C",
+    "dia": "Lunes",
+    "hora_inicio": "18:30",
+    "hora_fin": "20:00",
+    "asignatura": "Multimedia",
+    "tipo": "laboratorio",
+    "aula": "A1.1-John Von N",
+    "profesor": "Jose Ramon Sanchez",
+    "es_laboratorio": true,
+    "grupo_practicas": "Lab-TI"
   },
   {
     "grupo": "4TI",
@@ -4240,25 +4253,12 @@
   {
     "grupo": "4TI",
     "cuatrimestre": "1C",
-    "dia": "Martes",
-    "hora_inicio": "13:00",
-    "hora_fin": "14:30",
-    "asignatura": "Multimedia",
-    "tipo": "teoría",
-    "aula": "F1.1-Ángela Ruiz",
-    "profesor": "Asociado LSI 2",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "4TI",
-    "cuatrimestre": "1C",
     "dia": "Miércoles",
     "hora_inicio": "08:30",
     "hora_fin": "10:00",
     "asignatura": "Comercio Electronico",
     "tipo": "teoría",
-    "aula": "A1.2-Tim Berner",
+    "aula": "F1.1-Ángela Ruiz",
     "profesor": "Ayudante Doctor LSI",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -4305,6 +4305,19 @@
   {
     "grupo": "4TI",
     "cuatrimestre": "1C",
+    "dia": "Miércoles",
+    "hora_inicio": "17:00",
+    "hora_fin": "18:30",
+    "asignatura": "Multimedia",
+    "tipo": "teoría",
+    "aula": "A1.1-John Von N",
+    "profesor": "Jose Ramon Sanchez",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "4TI",
+    "cuatrimestre": "1C",
     "dia": "Jueves",
     "hora_inicio": "10:00",
     "hora_fin": "11:30",
@@ -4331,26 +4344,13 @@
   {
     "grupo": "4TI",
     "cuatrimestre": "1C",
-    "dia": "Jueves",
-    "hora_inicio": "13:00",
-    "hora_fin": "14:30",
-    "asignatura": "Multimedia",
-    "tipo": "laboratorio",
-    "aula": "F1.1-Ángela Ruiz",
-    "profesor": "Asociado LSI 2",
-    "es_laboratorio": true,
-    "grupo_practicas": "Lab-TI"
-  },
-  {
-    "grupo": "4TI",
-    "cuatrimestre": "1C",
     "dia": "Viernes",
     "hora_inicio": "08:30",
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
     "aula": "0.02+3-Charles",
-    "profesor": "",
+    "profesor": "Charles",
     "es_laboratorio": false,
     "grupo_practicas": ""
   },
@@ -4534,6 +4534,6 @@
     "aula": "LD4-John Carmack",
     "profesor": "Juan Carlos Lopez",
     "es_laboratorio": true,
-    "grupo_practicas": ""
+    "grupo_practicas": "Labs"
   }
 ]
