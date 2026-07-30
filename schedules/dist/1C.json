@@ -2139,7 +2139,7 @@
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
-    "aula": "Alan Turing",
+    "aula": "0.02-Charles Babbage",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -2191,7 +2191,7 @@
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
-    "aula": "Alan Turing",
+    "aula": "0.02-Charles Babbage",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""

@@ -96,8 +96,6 @@ class JsonScheduleParser @Inject constructor() {
         val rootSubjects = mutableMapOf<String, SubjectAccumulator>()
         val years = mutableMapOf<String, YearBucket>()
 
-        val GLOBAL_EVENT_NAMES = setOf("Pruebas de Progreso", "Conferencias", "PruebasProgreso")
-
         for (slot in flatSlots) {
             val asig = slot.asignatura.trim()
             if (asig.isEmpty()) continue
@@ -111,19 +109,14 @@ class JsonScheduleParser @Inject constructor() {
             val startTime = formatTime(slot.horaInicio, isEndTime = false)
             val endTime = formatTime(slot.horaFin, isEndTime = true)
             val isLab = slot.esLaboratorio || slot.tipo.equals("laboratorio", ignoreCase = true) || slot.tipo.equals("LAB", ignoreCase = true)
-            val isEvento = slot.tipo.equals("evento", ignoreCase = true) || asig in GLOBAL_EVENT_NAMES
+            val isEvento = slot.tipo.equals("evento", ignoreCase = true)
             val entryType = if (isLab) "LAB" else "THEORY"
-            var classroom = slot.aula.trim().takeIf { it.isNotEmpty() }
+            val classroom = slot.aula.trim().takeIf { it.isNotEmpty() }
             var professor = slot.profesor.trim().takeIf { it.isNotEmpty() }
             val labGroup = slot.grupoPracticas.trim().takeIf { it.isNotEmpty() }
 
             if (isEvento) {
                 professor = null
-                if (asig.equals("Conferencias", ignoreCase = true) && (classroom == null || classroom.equals("ESI", ignoreCase = true))) {
-                    classroom = "Alan Turing"
-                } else if (asig.contains("Pruebas", ignoreCase = true) && classroom != null && classroom.contains("Charles", ignoreCase = true)) {
-                    classroom = "0.02-Charles Babbage"
-                }
             }
 
             val timeSlot = JsonTimeSlot(
@@ -160,16 +153,7 @@ class JsonScheduleParser @Inject constructor() {
                     slotsList.add(timeSlot)
                 }
             } else {
-                val exists = if (isEvento) {
-                    subjectAcc.theorySlots.any { existing ->
-                        existing.dayOfWeek == timeSlot.dayOfWeek &&
-                        existing.startTime == timeSlot.startTime &&
-                        existing.endTime == timeSlot.endTime
-                    }
-                } else {
-                    timeSlot in subjectAcc.theorySlots
-                }
-                if (!exists) {
+                if (timeSlot !in subjectAcc.theorySlots) {
                     subjectAcc.theorySlots.add(timeSlot)
                 }
             }
@@ -182,7 +166,7 @@ class JsonScheduleParser @Inject constructor() {
                 semester = acc.semester,
                 theorySlots = acc.theorySlots,
                 labVariants = acc.labVariants,
-                isDummy = acc.isDummy || acc.name in GLOBAL_EVENT_NAMES || acc.code in GLOBAL_EVENT_NAMES
+                isDummy = acc.isDummy
             )
         }
 
@@ -252,8 +236,7 @@ class JsonScheduleParser @Inject constructor() {
     }
 
     fun parseDayOfWeek(dayStr: String): DayOfWeek {
-        val clean = dayStr.trim().uppercase()
-        return when (clean) {
+        return when (val clean = dayStr.trim().uppercase()) {
             "LUNES", "MONDAY" -> DayOfWeek.MONDAY
             "MARTES", "TUESDAY" -> DayOfWeek.TUESDAY
             "MIÉRCOLES", "MIERCOLES", "WEDNESDAY" -> DayOfWeek.WEDNESDAY

@@ -430,7 +430,9 @@ def process_pdf_schedule(
 
         if asig_norm in ["Pruebas de Progreso", "Conferencias", "PruebasProgreso"]:
             prof = ""
-            if asig_norm == "Conferencias" and (not classroom or classroom.upper() == "ESI"):
+            if "pruebas" in asig_norm.lower():
+                classroom = "0.02-Charles Babbage"
+            elif asig_norm == "Conferencias":
                 classroom = "Alan Turing"
 
         start_time = format_time(slot.get("hora_inicio", ""), is_end_time=False)

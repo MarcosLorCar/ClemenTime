@@ -152,7 +152,7 @@ class JsonScheduleParserTest {
                 "hora_fin": "10:00",
                 "asignatura": "Pruebas de Progreso",
                 "tipo": "evento",
-                "aula": "0.02+3-Charles",
+                "aula": "0.02-Charles Babbage",
                 "profesor": ""
               },
               {
@@ -185,7 +185,7 @@ class JsonScheduleParserTest {
                 "hora_fin": "13:00",
                 "asignatura": "Conferencias",
                 "tipo": "evento",
-                "aula": "ESI",
+                "aula": "Alan Turing",
                 "profesor": "ESI"
               }
             ]
