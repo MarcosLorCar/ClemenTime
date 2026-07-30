@@ -113,9 +113,18 @@ class JsonScheduleParser @Inject constructor() {
             val isLab = slot.esLaboratorio || slot.tipo.equals("laboratorio", ignoreCase = true) || slot.tipo.equals("LAB", ignoreCase = true)
             val isEvento = slot.tipo.equals("evento", ignoreCase = true) || asig in GLOBAL_EVENT_NAMES
             val entryType = if (isLab) "LAB" else "THEORY"
-            val classroom = slot.aula.trim().takeIf { it.isNotEmpty() }
-            val professor = slot.profesor.trim().takeIf { it.isNotEmpty() }
+            var classroom = slot.aula.trim().takeIf { it.isNotEmpty() }
+            var professor = slot.profesor.trim().takeIf { it.isNotEmpty() }
             val labGroup = slot.grupoPracticas.trim().takeIf { it.isNotEmpty() }
+
+            if (isEvento) {
+                professor = null
+                if (asig.equals("Conferencias", ignoreCase = true) && (classroom == null || classroom.equals("ESI", ignoreCase = true))) {
+                    classroom = "Alan Turing"
+                } else if (asig.contains("Pruebas", ignoreCase = true) && classroom != null && classroom.contains("Charles", ignoreCase = true)) {
+                    classroom = "0.02-Charles Babbage"
+                }
+            }
 
             val timeSlot = JsonTimeSlot(
                 dayOfWeek = dayOfWeek,
@@ -151,7 +160,16 @@ class JsonScheduleParser @Inject constructor() {
                     slotsList.add(timeSlot)
                 }
             } else {
-                if (timeSlot !in subjectAcc.theorySlots) {
+                val exists = if (isEvento) {
+                    subjectAcc.theorySlots.any { existing ->
+                        existing.dayOfWeek == timeSlot.dayOfWeek &&
+                        existing.startTime == timeSlot.startTime &&
+                        existing.endTime == timeSlot.endTime
+                    }
+                } else {
+                    timeSlot in subjectAcc.theorySlots
+                }
+                if (!exists) {
                     subjectAcc.theorySlots.add(timeSlot)
                 }
             }

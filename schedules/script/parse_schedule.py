@@ -67,6 +67,9 @@ def resolve_mapping(code: str, category: str, mappings: Dict, interactive: bool 
     if not code:
         return code, code
 
+    if category == "classrooms" and re.match(r'^lab[-_\s]', remove_accents(code).lower()):
+        return code, code
+
     category_map = mappings.get(category, {})
 
     if code in category_map:
@@ -257,7 +260,9 @@ def sanitize_professor(prof_raw: str) -> str:
     room_or_event_keywords = [
         "pruebas", "conferencias", "univmayores", "grado",
         "turing", "babbage", "hedy", "lamarr", "boole", "neumann",
-        "knuth", "dijkstra", "ritchie", "hopper", "lovelace", "aula"
+        "knuth", "dijkstra", "ritchie", "hopper", "lovelace", "aula",
+        "charles", "esi", "minsky", "jobs", "berners", "lee", "cirac",
+        "carmack", "gates", "ruiz", "shannon", "vonn"
     ]
     if any(kw in p_lower for kw in room_or_event_keywords):
         return ""
@@ -422,6 +427,11 @@ def process_pdf_schedule(
         classroom = get_mapping(clean_aula, "classrooms", mappings, interactive) if clean_aula else ""
         asig_norm = get_mapping(clean_asig, "matters", mappings, interactive) if clean_asig else clean_asig
         day_norm = normalize_spanish_day(slot.get("dia", ""))
+
+        if asig_norm in ["Pruebas de Progreso", "Conferencias", "PruebasProgreso"]:
+            prof = ""
+            if asig_norm == "Conferencias" and (not classroom or classroom.upper() == "ESI"):
+                classroom = "Alan Turing"
 
         start_time = format_time(slot.get("hora_inicio", ""), is_end_time=False)
         end_time = format_time(slot.get("hora_fin", ""), is_end_time=True)

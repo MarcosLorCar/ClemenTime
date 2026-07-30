@@ -7,7 +7,7 @@
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -20,7 +20,7 @@
     "hora_fin": "11:30",
     "asignatura": "Fundamentos de Programacion I",
     "tipo": "teoría",
-    "aula": "A1.1-John Von N",
+    "aula": "A1.1-John Von Neumann",
     "profesor": "Jesus Serrano",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -33,7 +33,7 @@
     "hora_fin": "14:30",
     "asignatura": "Calculo",
     "tipo": "laboratorio",
-    "aula": "A1.1-John Von N",
+    "aula": "A1.1-John Von Neumann",
     "profesor": "Maria Luz Lopez",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-A1/A2"
@@ -46,7 +46,7 @@
     "hora_fin": "10:00",
     "asignatura": "Tecnologia de Computadores",
     "tipo": "teoría",
-    "aula": "A1.1-John Von N",
+    "aula": "A1.1-John Von Neumann",
     "profesor": "Antonio Adan",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -72,7 +72,7 @@
     "hora_fin": "13:00",
     "asignatura": "Calculo",
     "tipo": "teoría",
-    "aula": "A1.1-John Von N",
+    "aula": "A1.1-John Von Neumann",
     "profesor": "Maria Luz Lopez",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -85,7 +85,7 @@
     "hora_fin": "14:30",
     "asignatura": "Fisica",
     "tipo": "teoría",
-    "aula": "A1.1-John Von N",
+    "aula": "A1.1-John Von Neumann",
     "profesor": "Peter Stephen Normile",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -98,7 +98,7 @@
     "hora_fin": "10:00",
     "asignatura": "Calculo",
     "tipo": "teoría",
-    "aula": "A1.1-John Von N",
+    "aula": "A1.1-John Von Neumann",
     "profesor": "Maria Luz Lopez",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -111,7 +111,7 @@
     "hora_fin": "11:30",
     "asignatura": "Fisica",
     "tipo": "teoría",
-    "aula": "A1.1-John Von N",
+    "aula": "A1.1-John Von Neumann",
     "profesor": "Peter Stephen Normile",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -137,7 +137,7 @@
     "hora_fin": "14:30",
     "asignatura": "Fundamentos de Programacion I",
     "tipo": "teoría",
-    "aula": "A1.1-John Von N",
+    "aula": "A1.1-John Von Neumann",
     "profesor": "Jesus Serrano",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -150,7 +150,7 @@
     "hora_fin": "11:30",
     "asignatura": "Fundamentos de Gestion Empresarial",
     "tipo": "teoría",
-    "aula": "A1.1-John Von N",
+    "aula": "A1.1-John Von Neumann",
     "profesor": "Manuel Villasalero",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -163,8 +163,8 @@
     "hora_fin": "13:00",
     "asignatura": "Fisica",
     "tipo": "laboratorio",
-    "aula": "LD1-Ignacio",
-    "profesor": "",
+    "aula": "LD1-Ignacio Cirac",
+    "profesor": "P.Grammatikopol",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-A2"
   },
@@ -176,7 +176,7 @@
     "hora_fin": "13:00",
     "asignatura": "Fundamentos de Gestion Empresarial",
     "tipo": "laboratorio",
-    "aula": "A1.1-John Von N",
+    "aula": "A1.1-John Von Neumann",
     "profesor": "Manuel Villasalero",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-A1"
@@ -189,8 +189,8 @@
     "hora_fin": "14:30",
     "asignatura": "Fisica",
     "tipo": "laboratorio",
-    "aula": "LD1-Ignacio",
-    "profesor": "",
+    "aula": "LD1-Ignacio Cirac",
+    "profesor": "P.Grammatikopol",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-A3"
   },
@@ -202,7 +202,7 @@
     "hora_fin": "14:30",
     "asignatura": "Fundamentos de Gestion Empresarial",
     "tipo": "laboratorio",
-    "aula": "A1.1-John Von N",
+    "aula": "A1.1-John Von Neumann",
     "profesor": "Manuel Villasalero",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-A2"
@@ -215,7 +215,7 @@
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -228,7 +228,7 @@
     "hora_fin": "11:30",
     "asignatura": "Fisica",
     "tipo": "laboratorio",
-    "aula": "LD1-Ignacio",
+    "aula": "LD1-Ignacio Cirac",
     "profesor": "Peter Stephen Normile",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-A1"
@@ -241,7 +241,7 @@
     "hora_fin": "11:30",
     "asignatura": "Fundamentos de Programacion I",
     "tipo": "laboratorio",
-    "aula": "A1.1-John Von N",
+    "aula": "A1.1-John Von Neumann",
     "profesor": "Javier Verdugo",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-A2"
@@ -267,7 +267,7 @@
     "hora_fin": "13:00",
     "asignatura": "Fundamentos de Programacion I",
     "tipo": "laboratorio",
-    "aula": "A1.1-John Von N",
+    "aula": "A1.1-John Von Neumann",
     "profesor": "Javier Verdugo",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-A1"
@@ -280,7 +280,7 @@
     "hora_fin": "14:30",
     "asignatura": "Tecnologia de Computadores",
     "tipo": "teoría",
-    "aula": "A1.1-John Von N",
+    "aula": "A1.1-John Von Neumann",
     "profesor": "Antonio Adan",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -293,7 +293,7 @@
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -332,7 +332,7 @@
     "hora_fin": "14:30",
     "asignatura": "Fisica",
     "tipo": "laboratorio",
-    "aula": "LD1-Ignacio",
+    "aula": "LD1-Ignacio Cirac",
     "profesor": "Peter Stephen Normile",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-B2"
@@ -345,7 +345,7 @@
     "hora_fin": "14:30",
     "asignatura": "Fundamentos de Programacion I",
     "tipo": "laboratorio",
-    "aula": "A1.2-Tim Berner",
+    "aula": "A1.2-Tim Berners-Lee",
     "profesor": "Ester Castillo",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-BC"
@@ -358,7 +358,7 @@
     "hora_fin": "17:00",
     "asignatura": "Fisica",
     "tipo": "laboratorio",
-    "aula": "LD1-Ignacio",
+    "aula": "LD1-Ignacio Cirac",
     "profesor": "Fernando Teran",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-BC"
@@ -397,7 +397,7 @@
     "hora_fin": "13:00",
     "asignatura": "Fisica",
     "tipo": "laboratorio",
-    "aula": "LD1-Ignacio",
+    "aula": "LD1-Ignacio Cirac",
     "profesor": "Peter Stephen Normile",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-B1"
@@ -475,7 +475,7 @@
     "hora_fin": "13:00",
     "asignatura": "Conferencias",
     "tipo": "evento",
-    "aula": "ESI",
+    "aula": "Alan Turing",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -513,10 +513,10 @@
     "hora_inicio": "17:00",
     "hora_fin": "18:30",
     "asignatura": "Fundamentos de Gestion Empresarial",
-    "tipo": "teoría",
+    "tipo": "laboratorio",
     "aula": "0.07-Claude Shannon",
     "profesor": "Andres Javier Prado",
-    "es_laboratorio": false,
+    "es_laboratorio": true,
     "grupo_practicas": ""
   },
   {
@@ -566,7 +566,7 @@
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -611,46 +611,33 @@
     "grupo_practicas": "Lab-B1"
   },
   {
-    "grupo": "1C",
-    "cuatrimestre": "1C",
-    "dia": "Lunes",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Pruebas de Progreso",
-    "tipo": "evento",
-    "aula": "0.02+3-Charles",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "1C",
+    "grupo": "1A",
     "cuatrimestre": "1C",
     "dia": "Lunes",
     "hora_inicio": "10:00",
     "hora_fin": "11:30",
     "asignatura": "Fundamentos de Programacion I",
     "tipo": "teoría",
-    "aula": "A1.2-Tim Berner",
+    "aula": "A1.2-Tim Berners-Lee",
     "profesor": "Ester Castillo",
     "es_laboratorio": false,
     "grupo_practicas": ""
   },
   {
-    "grupo": "1C",
+    "grupo": "1A",
     "cuatrimestre": "1C",
     "dia": "Lunes",
     "hora_inicio": "11:30",
     "hora_fin": "13:00",
     "asignatura": "Fundamentos de Programacion I",
     "tipo": "laboratorio",
-    "aula": "A1.2-Tim Berner",
+    "aula": "A1.2-Tim Berners-Lee",
     "profesor": "Ester Castillo",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-C2"
   },
   {
-    "grupo": "1C",
+    "grupo": "1A",
     "cuatrimestre": "1C",
     "dia": "Lunes",
     "hora_inicio": "11:30",
@@ -663,33 +650,33 @@
     "grupo_practicas": "Lab-C1"
   },
   {
-    "grupo": "1C",
+    "grupo": "1A",
     "cuatrimestre": "1C",
     "dia": "Lunes",
     "hora_inicio": "13:00",
     "hora_fin": "14:30",
     "asignatura": "Fundamentos de Programacion I",
     "tipo": "laboratorio",
-    "aula": "A1.2-Tim Berner",
+    "aula": "A1.2-Tim Berners-Lee",
     "profesor": "Ester Castillo",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-BC"
   },
   {
-    "grupo": "1C",
+    "grupo": "1A",
     "cuatrimestre": "1C",
     "dia": "Lunes",
     "hora_inicio": "15:30",
     "hora_fin": "17:00",
     "asignatura": "Fisica",
     "tipo": "laboratorio",
-    "aula": "LD1-Ignacio",
+    "aula": "LD1-Ignacio Cirac",
     "profesor": "Fernando Teran",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-BC"
   },
   {
-    "grupo": "1C",
+    "grupo": "1A",
     "cuatrimestre": "1C",
     "dia": "Lunes",
     "hora_inicio": "17:00",
@@ -702,33 +689,33 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "1C",
+    "grupo": "1A",
     "cuatrimestre": "1C",
     "dia": "Martes",
     "hora_inicio": "08:30",
     "hora_fin": "10:00",
     "asignatura": "Fundamentos de Programacion I",
     "tipo": "teoría",
-    "aula": "A1.2-Tim Berner",
+    "aula": "A1.2-Tim Berners-Lee",
     "profesor": "Ester Castillo",
     "es_laboratorio": false,
     "grupo_practicas": ""
   },
   {
-    "grupo": "1C",
+    "grupo": "1A",
     "cuatrimestre": "1C",
     "dia": "Martes",
     "hora_inicio": "10:00",
     "hora_fin": "11:30",
     "asignatura": "Calculo",
     "tipo": "teoría",
-    "aula": "A1.2-Tim Berner",
+    "aula": "A1.2-Tim Berners-Lee",
     "profesor": "Maria Luz Lopez",
     "es_laboratorio": false,
     "grupo_practicas": ""
   },
   {
-    "grupo": "1C",
+    "grupo": "1A",
     "cuatrimestre": "1C",
     "dia": "Martes",
     "hora_inicio": "11:30",
@@ -741,24 +728,24 @@
     "grupo_practicas": "Lab-BC"
   },
   {
-    "grupo": "1C",
+    "grupo": "1A",
     "cuatrimestre": "1C",
     "dia": "Martes",
     "hora_inicio": "13:00",
     "hora_fin": "14:30",
     "asignatura": "Fisica",
     "tipo": "teoría",
-    "aula": "A1.2-Tim Berner",
+    "aula": "A1.2-Tim Berners-Lee",
     "profesor": "Victoriano Fernandez",
     "es_laboratorio": false,
     "grupo_practicas": ""
   },
   {
-    "grupo": "1C",
+    "grupo": "1A",
     "cuatrimestre": "1C",
     "dia": "Martes",
     "hora_inicio": "17:00",
-    "hora_fin": "20:00",
+    "hora_fin": "18:30",
     "asignatura": "Calculo",
     "tipo": "laboratorio",
     "aula": "0.07-Claude Shannon",
@@ -767,7 +754,7 @@
     "grupo_practicas": "Lab-C1/C2"
   },
   {
-    "grupo": "1C",
+    "grupo": "1A",
     "cuatrimestre": "1C",
     "dia": "Miércoles",
     "hora_inicio": "08:30",
@@ -780,7 +767,7 @@
     "grupo_practicas": "Lab-C2"
   },
   {
-    "grupo": "1C",
+    "grupo": "1A",
     "cuatrimestre": "1C",
     "dia": "Miércoles",
     "hora_inicio": "08:30",
@@ -793,7 +780,7 @@
     "grupo_practicas": "Lab-C1"
   },
   {
-    "grupo": "1C",
+    "grupo": "1A",
     "cuatrimestre": "1C",
     "dia": "Miércoles",
     "hora_inicio": "10:00",
@@ -806,111 +793,85 @@
     "grupo_practicas": "Lab-BC"
   },
   {
-    "grupo": "1C",
+    "grupo": "1A",
     "cuatrimestre": "1C",
     "dia": "Miércoles",
     "hora_inicio": "10:00",
     "hora_fin": "11:30",
     "asignatura": "Fisica",
     "tipo": "laboratorio",
-    "aula": "LD1-Ignacio",
+    "aula": "LD1-Ignacio Cirac",
     "profesor": "Fernando Teran",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-C2"
   },
   {
-    "grupo": "1C",
-    "cuatrimestre": "1C",
-    "dia": "Miércoles",
-    "hora_inicio": "11:30",
-    "hora_fin": "13:00",
-    "asignatura": "Conferencias",
-    "tipo": "evento",
-    "aula": "Alan Turing",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "1C",
+    "grupo": "1A",
     "cuatrimestre": "1C",
     "dia": "Miércoles",
     "hora_inicio": "13:00",
     "hora_fin": "14:30",
     "asignatura": "Tecnologia de Computadores",
     "tipo": "teoría",
-    "aula": "A1.2-Tim Berner",
+    "aula": "A1.2-Tim Berners-Lee",
     "profesor": "Juan Carlos Lopez",
     "es_laboratorio": false,
     "grupo_practicas": ""
   },
   {
-    "grupo": "1C",
+    "grupo": "1A",
     "cuatrimestre": "1C",
     "dia": "Jueves",
     "hora_inicio": "08:30",
     "hora_fin": "10:00",
     "asignatura": "Tecnologia de Computadores",
     "tipo": "teoría",
-    "aula": "A1.2-Tim Berner",
+    "aula": "A1.2-Tim Berners-Lee",
     "profesor": "Juan Carlos Lopez",
     "es_laboratorio": false,
     "grupo_practicas": ""
   },
   {
-    "grupo": "1C",
+    "grupo": "1A",
     "cuatrimestre": "1C",
     "dia": "Jueves",
     "hora_inicio": "10:00",
     "hora_fin": "11:30",
     "asignatura": "Fisica",
     "tipo": "laboratorio",
-    "aula": "LD1-Ignacio",
+    "aula": "LD1-Ignacio Cirac",
     "profesor": "Victoriano Fernandez",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-C1"
   },
   {
-    "grupo": "1C",
+    "grupo": "1A",
     "cuatrimestre": "1C",
     "dia": "Jueves",
     "hora_inicio": "11:30",
     "hora_fin": "13:00",
     "asignatura": "Fisica",
     "tipo": "teoría",
-    "aula": "A1.2-Tim Berner",
+    "aula": "A1.2-Tim Berners-Lee",
     "profesor": "Victoriano Fernandez",
     "es_laboratorio": false,
     "grupo_practicas": ""
   },
   {
-    "grupo": "1C",
+    "grupo": "1A",
     "cuatrimestre": "1C",
     "dia": "Jueves",
     "hora_inicio": "13:00",
     "hora_fin": "14:30",
     "asignatura": "Calculo",
     "tipo": "teoría",
-    "aula": "A1.2-Tim Berner",
+    "aula": "A1.2-Tim Berners-Lee",
     "profesor": "Maria Luz Lopez",
     "es_laboratorio": false,
     "grupo_practicas": ""
   },
   {
-    "grupo": "1C",
-    "cuatrimestre": "1C",
-    "dia": "Viernes",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Pruebas de Progreso",
-    "tipo": "evento",
-    "aula": "0.02+3-Charles",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "1C",
+    "grupo": "1A",
     "cuatrimestre": "1C",
     "dia": "Viernes",
     "hora_inicio": "10:00",
@@ -923,14 +884,14 @@
     "grupo_practicas": "Lab-C1"
   },
   {
-    "grupo": "1C",
+    "grupo": "1A",
     "cuatrimestre": "1C",
     "dia": "Viernes",
     "hora_inicio": "11:30",
     "hora_fin": "13:00",
     "asignatura": "Fundamentos de Gestion Empresarial",
     "tipo": "teoría",
-    "aula": "A1.2-Tim Berner",
+    "aula": "A1.2-Tim Berners-Lee",
     "profesor": "Isidro Peña",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -943,7 +904,7 @@
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -956,7 +917,7 @@
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -969,7 +930,7 @@
     "hora_fin": "11:30",
     "asignatura": "Fisica",
     "tipo": "laboratorio",
-    "aula": "LD1-Ignacio",
+    "aula": "LD1-Ignacio Cirac",
     "profesor": "Fernando Teran",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-D2"
@@ -995,7 +956,7 @@
     "hora_fin": "14:30",
     "asignatura": "Fisica",
     "tipo": "laboratorio",
-    "aula": "LD1-Ignacio",
+    "aula": "LD1-Ignacio Cirac",
     "profesor": "Fernando Teran",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-D1"
@@ -1008,7 +969,7 @@
     "hora_fin": "17:00",
     "asignatura": "Fundamentos de Gestion Empresarial",
     "tipo": "teoría",
-    "aula": "A1.2-Tim Berner",
+    "aula": "A1.2-Tim Berners-Lee",
     "profesor": "Isidro Peña",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1021,7 +982,7 @@
     "hora_fin": "17:00",
     "asignatura": "Fundamentos de Gestion Empresarial",
     "tipo": "teoría",
-    "aula": "A1.2-Tim Berner",
+    "aula": "A1.2-Tim Berners-Lee",
     "profesor": "Andres Javier Prado",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1034,7 +995,7 @@
     "hora_fin": "17:00",
     "asignatura": "Fundamentos de Programacion I",
     "tipo": "teoría",
-    "aula": "A1.2-Tim Berner",
+    "aula": "A1.2-Tim Berners-Lee",
     "profesor": "Julio Alberto Lopez",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1047,7 +1008,7 @@
     "hora_fin": "17:00",
     "asignatura": "Calculo",
     "tipo": "teoría",
-    "aula": "A1.2-Tim Berner",
+    "aula": "A1.2-Tim Berners-Lee",
     "profesor": "Jose Angel Martin",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1060,7 +1021,7 @@
     "hora_fin": "18:30",
     "asignatura": "Fisica",
     "tipo": "teoría",
-    "aula": "A1.2-Tim Berner",
+    "aula": "A1.2-Tim Berners-Lee",
     "profesor": "Fernando Teran",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1073,7 +1034,7 @@
     "hora_fin": "18:30",
     "asignatura": "Fisica",
     "tipo": "teoría",
-    "aula": "A1.2-Tim Berner",
+    "aula": "A1.2-Tim Berners-Lee",
     "profesor": "Fernando Teran",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1099,7 +1060,7 @@
     "hora_fin": "18:30",
     "asignatura": "Fundamentos de Programacion I",
     "tipo": "laboratorio",
-    "aula": "A1.2-Tim Berner",
+    "aula": "A1.2-Tim Berners-Lee",
     "profesor": "Ester Castillo",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-D2"
@@ -1112,7 +1073,7 @@
     "hora_fin": "18:30",
     "asignatura": "Fundamentos de Programacion I",
     "tipo": "teoría",
-    "aula": "A1.2-Tim Berner",
+    "aula": "A1.2-Tim Berners-Lee",
     "profesor": "Julio Alberto Lopez",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1125,7 +1086,7 @@
     "hora_fin": "20:00",
     "asignatura": "Calculo",
     "tipo": "laboratorio",
-    "aula": "A1.2-Tim Berner",
+    "aula": "A1.2-Tim Berners-Lee",
     "profesor": "Asociado MAT",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-D1/D2"
@@ -1138,7 +1099,7 @@
     "hora_fin": "20:00",
     "asignatura": "Fundamentos de Gestion Empresarial",
     "tipo": "laboratorio",
-    "aula": "A1.2-Tim Berner",
+    "aula": "A1.2-Tim Berners-Lee",
     "profesor": "Isidro Peña",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-D1"
@@ -1151,7 +1112,7 @@
     "hora_fin": "20:00",
     "asignatura": "Tecnologia de Computadores",
     "tipo": "teoría",
-    "aula": "A1.2-Tim Berner",
+    "aula": "A1.2-Tim Berners-Lee",
     "profesor": "Inocente Sanchez",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1164,7 +1125,7 @@
     "hora_fin": "20:00",
     "asignatura": "Tecnologia de Computadores",
     "tipo": "teoría",
-    "aula": "A1.2-Tim Berner",
+    "aula": "A1.2-Tim Berners-Lee",
     "profesor": "Inocente Sanchez",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1177,7 +1138,7 @@
     "hora_fin": "21:30",
     "asignatura": "Fundamentos de Programacion I",
     "tipo": "laboratorio",
-    "aula": "A1.2-Tim Berner",
+    "aula": "A1.2-Tim Berners-Lee",
     "profesor": "Ester Castillo",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-D1"
@@ -1190,7 +1151,7 @@
     "hora_fin": "21:30",
     "asignatura": "Calculo",
     "tipo": "teoría",
-    "aula": "A1.2-Tim Berner",
+    "aula": "A1.2-Tim Berners-Lee",
     "profesor": "Jose Angel Martin",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1216,7 +1177,7 @@
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1229,7 +1190,7 @@
     "hora_fin": "11:30",
     "asignatura": "Logica",
     "tipo": "teoría",
-    "aula": "0.05-Edsger W.",
+    "aula": "0.05-Edsger W. Dijkstra",
     "profesor": "Pascual Julian",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1242,7 +1203,7 @@
     "hora_fin": "13:00",
     "asignatura": "Estructura de Datos",
     "tipo": "laboratorio",
-    "aula": "0.05-Edsger W.",
+    "aula": "0.05-Edsger W. Dijkstra",
     "profesor": "Javier Verdugo",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-A2"
@@ -1268,7 +1229,7 @@
     "hora_fin": "14:30",
     "asignatura": "Estructura de Datos",
     "tipo": "laboratorio",
-    "aula": "0.05-Edsger W.",
+    "aula": "0.05-Edsger W. Dijkstra",
     "profesor": "Javier Verdugo",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-A1"
@@ -1294,7 +1255,7 @@
     "hora_fin": "10:00",
     "asignatura": "Organizacion de Computadores",
     "tipo": "teoría",
-    "aula": "0.05-Edsger W.",
+    "aula": "0.05-Edsger W. Dijkstra",
     "profesor": "Soledad Escolar",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1307,7 +1268,7 @@
     "hora_fin": "11:30",
     "asignatura": "Organizacion de Computadores",
     "tipo": "laboratorio",
-    "aula": "0.05-Edsger W.",
+    "aula": "0.05-Edsger W. Dijkstra",
     "profesor": "Soledad Escolar",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-A1"
@@ -1333,7 +1294,7 @@
     "hora_fin": "13:00",
     "asignatura": "Sistemas Operativos I",
     "tipo": "teoría",
-    "aula": "0.05-Edsger W.",
+    "aula": "0.05-Edsger W. Dijkstra",
     "profesor": "Carlos Gonzalez",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1346,7 +1307,7 @@
     "hora_fin": "14:30",
     "asignatura": "Estructura de Datos",
     "tipo": "teoría",
-    "aula": "0.05-Edsger W.",
+    "aula": "0.05-Edsger W. Dijkstra",
     "profesor": "Manuel Angel Serrano",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1385,7 +1346,7 @@
     "hora_fin": "10:00",
     "asignatura": "Ingenieria del Software I",
     "tipo": "teoría",
-    "aula": "0.05-Edsger W.",
+    "aula": "0.05-Edsger W. Dijkstra",
     "profesor": "Jose Antonio Cruz",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1398,7 +1359,7 @@
     "hora_fin": "11:30",
     "asignatura": "Organizacion de Computadores",
     "tipo": "teoría",
-    "aula": "0.05-Edsger W.",
+    "aula": "0.05-Edsger W. Dijkstra",
     "profesor": "Soledad Escolar",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1424,7 +1385,7 @@
     "hora_fin": "10:00",
     "asignatura": "Ingenieria del Software I",
     "tipo": "teoría",
-    "aula": "0.05-Edsger W.",
+    "aula": "0.05-Edsger W. Dijkstra",
     "profesor": "Jose Antonio Cruz",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1437,7 +1398,7 @@
     "hora_fin": "11:30",
     "asignatura": "Logica",
     "tipo": "teoría",
-    "aula": "0.05-Edsger W.",
+    "aula": "0.05-Edsger W. Dijkstra",
     "profesor": "Pascual Julian",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1450,7 +1411,7 @@
     "hora_fin": "13:00",
     "asignatura": "Sistemas Operativos I",
     "tipo": "teoría",
-    "aula": "0.05-Edsger W.",
+    "aula": "0.05-Edsger W. Dijkstra",
     "profesor": "Carlos Gonzalez",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1463,7 +1424,7 @@
     "hora_fin": "14:30",
     "asignatura": "Estructura de Datos",
     "tipo": "teoría",
-    "aula": "0.05-Edsger W.",
+    "aula": "0.05-Edsger W. Dijkstra",
     "profesor": "Manuel Angel Serrano",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1476,7 +1437,7 @@
     "hora_fin": "20:00",
     "asignatura": "Ingenieria del Software I",
     "tipo": "laboratorio",
-    "aula": "0.05-Edsger W.",
+    "aula": "0.05-Edsger W. Dijkstra",
     "profesor": "Jesus Ramon Oviedo",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-A1"
@@ -1489,7 +1450,7 @@
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1502,7 +1463,7 @@
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1516,7 +1477,7 @@
     "asignatura": "Sistemas Operativos I",
     "tipo": "laboratorio",
     "aula": "LD2-Dennis Ritchie",
-    "profesor": "Jose Luis Ruiz",
+    "profesor": "",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-B2"
   },
@@ -1528,7 +1489,7 @@
     "hora_fin": "13:00",
     "asignatura": "Estructura de Datos",
     "tipo": "laboratorio",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Crescencio Bravo",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-B2"
@@ -1554,7 +1515,7 @@
     "hora_fin": "14:30",
     "asignatura": "Estructura de Datos",
     "tipo": "teoría",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Eduardo Fernandez",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1581,7 +1542,7 @@
     "asignatura": "Sistemas Operativos I",
     "tipo": "laboratorio",
     "aula": "LD2-Dennis Ritchie",
-    "profesor": "Jose Luis Ruiz",
+    "profesor": "",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-BD."
   },
@@ -1593,7 +1554,7 @@
     "hora_fin": "11:30",
     "asignatura": "Sistemas Operativos I",
     "tipo": "teoría",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Miguel Angel Redondo",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1606,7 +1567,7 @@
     "hora_fin": "13:00",
     "asignatura": "Estructura de Datos",
     "tipo": "laboratorio",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Crescencio Bravo",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-B1"
@@ -1632,7 +1593,7 @@
     "hora_fin": "14:30",
     "asignatura": "Estructura de Datos",
     "tipo": "teoría",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Eduardo Fernandez",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1645,7 +1606,7 @@
     "hora_fin": "10:00",
     "asignatura": "Logica",
     "tipo": "teoría",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Jose Angel Olivas",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1658,7 +1619,7 @@
     "hora_fin": "11:30",
     "asignatura": "Organizacion de Computadores",
     "tipo": "teoría",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Julian Caba",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1684,7 +1645,7 @@
     "hora_fin": "14:30",
     "asignatura": "Ingenieria del Software I",
     "tipo": "teoría",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Felix Oscar Garcia",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1710,7 +1671,7 @@
     "hora_fin": "10:00",
     "asignatura": "Logica",
     "tipo": "teoría",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Jose Angel Olivas",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1723,7 +1684,7 @@
     "hora_fin": "11:30",
     "asignatura": "Sistemas Operativos I",
     "tipo": "teoría",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Miguel Angel Redondo",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1736,7 +1697,7 @@
     "hora_fin": "13:00",
     "asignatura": "Ingenieria del Software I",
     "tipo": "teoría",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Felix Oscar Garcia",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1749,7 +1710,7 @@
     "hora_fin": "14:30",
     "asignatura": "Ingenieria del Software I",
     "tipo": "laboratorio",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Felix Oscar Garcia",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-B2"
@@ -1814,7 +1775,7 @@
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1827,7 +1788,7 @@
     "hora_fin": "11:30",
     "asignatura": "Organizacion de Computadores",
     "tipo": "teoría",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Julian Caba",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1853,7 +1814,7 @@
     "hora_fin": "13:00",
     "asignatura": "Ingenieria del Software I",
     "tipo": "laboratorio",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Maria Angeles Moraga",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-B1"
@@ -1879,7 +1840,7 @@
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -1892,7 +1853,7 @@
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -2178,7 +2139,7 @@
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
-    "aula": "0.02+3-Charles",
+    "aula": "Alan Turing",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -2192,7 +2153,7 @@
     "asignatura": "Sistemas Operativos I",
     "tipo": "laboratorio",
     "aula": "LD2-Dennis Ritchie",
-    "profesor": "Jose Luis Ruiz",
+    "profesor": "",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-BD"
   },
@@ -2204,7 +2165,7 @@
     "hora_fin": "10:00",
     "asignatura": "Logica",
     "tipo": "teoría",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Jose Angel Olivas",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -2217,7 +2178,7 @@
     "hora_fin": "10:00",
     "asignatura": "Logica",
     "tipo": "teoría",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Jose Angel Olivas",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -2230,7 +2191,7 @@
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
-    "aula": "0.02+3-Charles",
+    "aula": "Alan Turing",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -2256,7 +2217,7 @@
     "hora_fin": "11:30",
     "asignatura": "Sistemas Operativos I",
     "tipo": "laboratorio",
-    "aula": "LD3-Bill Gates",
+    "aula": "0.04-Hedy Lamarr",
     "profesor": "Javier Albusac",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-D1"
@@ -2270,7 +2231,7 @@
     "asignatura": "Sistemas Operativos I",
     "tipo": "laboratorio",
     "aula": "LD2-Dennis Ritchie",
-    "profesor": "Jose Luis Ruiz",
+    "profesor": "",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-D2"
   },
@@ -2321,7 +2282,7 @@
     "hora_fin": "13:00",
     "asignatura": "Estructura de Datos",
     "tipo": "laboratorio",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Crescencio Bravo",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-B2"
@@ -2347,7 +2308,7 @@
     "hora_fin": "13:00",
     "asignatura": "Estructura de Datos",
     "tipo": "laboratorio",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Crescencio Bravo",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-B1"
@@ -2386,7 +2347,7 @@
     "hora_fin": "13:00",
     "asignatura": "Ingenieria del Software I",
     "tipo": "teoría",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Felix Oscar Garcia",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -2412,7 +2373,7 @@
     "hora_fin": "13:00",
     "asignatura": "Ingenieria del Software I",
     "tipo": "laboratorio",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Maria Angeles Moraga",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-B1"
@@ -2425,7 +2386,7 @@
     "hora_fin": "14:30",
     "asignatura": "Estructura de Datos",
     "tipo": "teoría",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Eduardo Fernandez",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -2438,7 +2399,7 @@
     "hora_fin": "14:30",
     "asignatura": "Estructura de Datos",
     "tipo": "teoría",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Eduardo Fernandez",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -2451,7 +2412,7 @@
     "hora_fin": "14:30",
     "asignatura": "Ingenieria del Software I",
     "tipo": "teoría",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Felix Oscar Garcia",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -2464,7 +2425,7 @@
     "hora_fin": "14:30",
     "asignatura": "Ingenieria del Software I",
     "tipo": "laboratorio",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Felix Oscar Garcia",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-B2"
@@ -2555,7 +2516,7 @@
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -2568,7 +2529,7 @@
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -2802,7 +2763,7 @@
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -2815,7 +2776,7 @@
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -2854,7 +2815,7 @@
     "hora_fin": "17:00",
     "asignatura": "Sistemas Inteligentes",
     "tipo": "teoría",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Luis Jimenez",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -2867,7 +2828,7 @@
     "hora_fin": "17:00",
     "asignatura": "Arquitectura de Computadores",
     "tipo": "teoría",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Jesus Barba",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -2880,7 +2841,7 @@
     "hora_fin": "17:00",
     "asignatura": "Sistemas Distribuidos",
     "tipo": "teoría",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Jesus Fernandez",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -2893,7 +2854,7 @@
     "hora_fin": "17:00",
     "asignatura": "Interaccion Persona-Ordenador",
     "tipo": "teoría",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Yoel Arroyo",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -2906,7 +2867,7 @@
     "hora_fin": "18:30",
     "asignatura": "Sistemas Distribuidos",
     "tipo": "teoría",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Jesus Fernandez",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -2919,7 +2880,7 @@
     "hora_fin": "18:30",
     "asignatura": "Ingenieria del Software II",
     "tipo": "teoría",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Moises Rodriguez",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -2932,7 +2893,7 @@
     "hora_fin": "18:30",
     "asignatura": "Arquitectura de Computadores",
     "tipo": "teoría",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Jesus Barba",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -2945,7 +2906,7 @@
     "hora_fin": "18:30",
     "asignatura": "Arquitectura de Computadores",
     "tipo": "laboratorio",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Fernando Rincon",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-B1"
@@ -2971,7 +2932,7 @@
     "hora_fin": "20:00",
     "asignatura": "Ingenieria del Software II",
     "tipo": "teoría",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Moises Rodriguez",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -2997,7 +2958,7 @@
     "hora_fin": "20:00",
     "asignatura": "Interaccion Persona-Ordenador",
     "tipo": "laboratorio",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Yoel Arroyo",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-B2"
@@ -3010,7 +2971,7 @@
     "hora_fin": "20:00",
     "asignatura": "Interaccion Persona-Ordenador",
     "tipo": "teoría",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Yoel Arroyo",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -3023,7 +2984,7 @@
     "hora_fin": "20:00",
     "asignatura": "Sistemas Inteligentes",
     "tipo": "teoría",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Luis Jimenez",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -3049,7 +3010,7 @@
     "hora_fin": "21:30",
     "asignatura": "Sistemas Inteligentes",
     "tipo": "laboratorio",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Ayudante Doctor LSI",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-B1"
@@ -3101,26 +3062,26 @@
     "hora_fin": "21:30",
     "asignatura": "Interaccion Persona-Ordenador",
     "tipo": "laboratorio",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "Yoel Arroyo",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-B1"
   },
   {
-    "grupo": "3C",
+    "grupo": "3CO",
     "cuatrimestre": "1C",
     "dia": "Lunes",
     "hora_inicio": "08:30",
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
   },
   {
-    "grupo": "3C",
+    "grupo": "3CO",
     "cuatrimestre": "1C",
     "dia": "Lunes",
     "hora_inicio": "10:00",
@@ -3133,7 +3094,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3C",
+    "grupo": "3CO",
     "cuatrimestre": "1C",
     "dia": "Lunes",
     "hora_inicio": "11:30",
@@ -3146,7 +3107,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3C",
+    "grupo": "3CO",
     "cuatrimestre": "1C",
     "dia": "Lunes",
     "hora_inicio": "13:00",
@@ -3159,7 +3120,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3C",
+    "grupo": "3CO",
     "cuatrimestre": "1C",
     "dia": "Martes",
     "hora_inicio": "10:00",
@@ -3172,7 +3133,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3C",
+    "grupo": "3CO",
     "cuatrimestre": "1C",
     "dia": "Martes",
     "hora_inicio": "11:30",
@@ -3185,7 +3146,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3C",
+    "grupo": "3CO",
     "cuatrimestre": "1C",
     "dia": "Martes",
     "hora_inicio": "13:00",
@@ -3198,7 +3159,7 @@
     "grupo_practicas": "Lab-C2"
   },
   {
-    "grupo": "3C",
+    "grupo": "3CO",
     "cuatrimestre": "1C",
     "dia": "Martes",
     "hora_inicio": "13:00",
@@ -3211,7 +3172,7 @@
     "grupo_practicas": "Lab-C2"
   },
   {
-    "grupo": "3C",
+    "grupo": "3CO",
     "cuatrimestre": "1C",
     "dia": "Miércoles",
     "hora_inicio": "08:30",
@@ -3224,7 +3185,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3C",
+    "grupo": "3CO",
     "cuatrimestre": "1C",
     "dia": "Miércoles",
     "hora_inicio": "10:00",
@@ -3237,7 +3198,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3C",
+    "grupo": "3CO",
     "cuatrimestre": "1C",
     "dia": "Miércoles",
     "hora_inicio": "11:30",
@@ -3250,7 +3211,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3C",
+    "grupo": "3CO",
     "cuatrimestre": "1C",
     "dia": "Miércoles",
     "hora_inicio": "13:00",
@@ -3263,7 +3224,7 @@
     "grupo_practicas": "Lab-C2"
   },
   {
-    "grupo": "3C",
+    "grupo": "3CO",
     "cuatrimestre": "1C",
     "dia": "Miércoles",
     "hora_inicio": "13:00",
@@ -3276,7 +3237,7 @@
     "grupo_practicas": "Lab-C1"
   },
   {
-    "grupo": "3C",
+    "grupo": "3CO",
     "cuatrimestre": "1C",
     "dia": "Miércoles",
     "hora_inicio": "17:00",
@@ -3289,7 +3250,7 @@
     "grupo_practicas": "Lab-C2"
   },
   {
-    "grupo": "3C",
+    "grupo": "3CO",
     "cuatrimestre": "1C",
     "dia": "Miércoles",
     "hora_inicio": "18:30",
@@ -3302,7 +3263,7 @@
     "grupo_practicas": "Lab-C2"
   },
   {
-    "grupo": "3C",
+    "grupo": "3CO",
     "cuatrimestre": "1C",
     "dia": "Miércoles",
     "hora_inicio": "18:30",
@@ -3315,7 +3276,7 @@
     "grupo_practicas": "Lab-C1"
   },
   {
-    "grupo": "3C",
+    "grupo": "3CO",
     "cuatrimestre": "1C",
     "dia": "Jueves",
     "hora_inicio": "08:30",
@@ -3328,7 +3289,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3C",
+    "grupo": "3CO",
     "cuatrimestre": "1C",
     "dia": "Jueves",
     "hora_inicio": "10:00",
@@ -3341,7 +3302,7 @@
     "grupo_practicas": "Lab-C1"
   },
   {
-    "grupo": "3C",
+    "grupo": "3CO",
     "cuatrimestre": "1C",
     "dia": "Jueves",
     "hora_inicio": "11:30",
@@ -3354,7 +3315,7 @@
     "grupo_practicas": "Lab-C1"
   },
   {
-    "grupo": "3C",
+    "grupo": "3CO",
     "cuatrimestre": "1C",
     "dia": "Jueves",
     "hora_inicio": "11:30",
@@ -3367,7 +3328,7 @@
     "grupo_practicas": "Lab-BC"
   },
   {
-    "grupo": "3C",
+    "grupo": "3CO",
     "cuatrimestre": "1C",
     "dia": "Jueves",
     "hora_inicio": "13:00",
@@ -3380,20 +3341,20 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3C",
+    "grupo": "3CO",
     "cuatrimestre": "1C",
     "dia": "Viernes",
     "hora_inicio": "08:30",
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
   },
   {
-    "grupo": "3C",
+    "grupo": "3CO",
     "cuatrimestre": "1C",
     "dia": "Viernes",
     "hora_inicio": "11:30",
@@ -3406,7 +3367,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3C",
+    "grupo": "3CO",
     "cuatrimestre": "1C",
     "dia": "Viernes",
     "hora_inicio": "13:00",
@@ -3426,20 +3387,7 @@
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
-    "aula": "0.02+3-Charles",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "4CO",
-    "cuatrimestre": "1C",
-    "dia": "Viernes",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Pruebas de Progreso",
-    "tipo": "evento",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -3460,19 +3408,6 @@
   {
     "grupo": "4CO",
     "cuatrimestre": "1C",
-    "dia": "Martes",
-    "hora_inicio": "10:00",
-    "hora_fin": "11:30",
-    "asignatura": "Procesadores de Lenguajes",
-    "tipo": "teoría",
-    "aula": "F0.1-Marvin Minsky",
-    "profesor": "Jose Jesus Castro",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "4CO",
-    "cuatrimestre": "1C",
     "dia": "Lunes",
     "hora_inicio": "11:30",
     "hora_fin": "13:00",
@@ -3486,84 +3421,6 @@
   {
     "grupo": "4CO",
     "cuatrimestre": "1C",
-    "dia": "Martes",
-    "hora_inicio": "11:30",
-    "hora_fin": "13:00",
-    "asignatura": "Diseño de Sistemas Interactivos",
-    "tipo": "teoría",
-    "aula": "F0.1-Marvin Minsky",
-    "profesor": "Ramon Hervas",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "4CO",
-    "cuatrimestre": "1C",
-    "dia": "Miércoles",
-    "hora_inicio": "11:30",
-    "hora_fin": "13:00",
-    "asignatura": "Conferencias",
-    "tipo": "evento",
-    "aula": "Alan Turing",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "4CO",
-    "cuatrimestre": "1C",
-    "dia": "Martes",
-    "hora_inicio": "13:00",
-    "hora_fin": "14:30",
-    "asignatura": "Diseño de Sistemas Interactivos",
-    "tipo": "laboratorio",
-    "aula": "F0.1-Marvin Minsky",
-    "profesor": "Ramon Hervas",
-    "es_laboratorio": true,
-    "grupo_practicas": "Lab-CO"
-  },
-  {
-    "grupo": "4CO",
-    "cuatrimestre": "1C",
-    "dia": "Miércoles",
-    "hora_inicio": "13:00",
-    "hora_fin": "14:30",
-    "asignatura": "Diseño de Sistemas Interactivos",
-    "tipo": "teoría",
-    "aula": "F0.1-Marvin Minsky",
-    "profesor": "Ramon Hervas",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "4CO",
-    "cuatrimestre": "1C",
-    "dia": "Miércoles",
-    "hora_inicio": "17:00",
-    "hora_fin": "18:30",
-    "asignatura": "Mineria de Datos",
-    "tipo": "teoría",
-    "aula": "F0.1-Marvin Minsky",
-    "profesor": "Arturo Peralta",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "4CO",
-    "cuatrimestre": "1C",
-    "dia": "Jueves",
-    "hora_inicio": "17:00",
-    "hora_fin": "18:30",
-    "asignatura": "Mineria de Datos",
-    "tipo": "teoría",
-    "aula": "F0.1-Marvin Minsky",
-    "profesor": "Arturo Peralta",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "4CO",
-    "cuatrimestre": "1C",
     "dia": "Lunes",
     "hora_inicio": "18:30",
     "hora_fin": "20:00",
@@ -3573,32 +3430,6 @@
     "profesor": "Ruben Rodriguez",
     "es_laboratorio": false,
     "grupo_practicas": ""
-  },
-  {
-    "grupo": "4CO",
-    "cuatrimestre": "1C",
-    "dia": "Miércoles",
-    "hora_inicio": "18:30",
-    "hora_fin": "20:00",
-    "asignatura": "Sistemas Multiagentes",
-    "tipo": "teoría",
-    "aula": "F0.1-Marvin Minsky",
-    "profesor": "Ruben Rodriguez",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
-  },
-  {
-    "grupo": "4CO",
-    "cuatrimestre": "1C",
-    "dia": "Jueves",
-    "hora_inicio": "18:30",
-    "hora_fin": "20:00",
-    "asignatura": "Mineria de Datos",
-    "tipo": "laboratorio",
-    "aula": "F0.1-Marvin Minsky",
-    "profesor": "Arturo Peralta",
-    "es_laboratorio": true,
-    "grupo_practicas": "Lab-CO"
   },
   {
     "grupo": "4CO",
@@ -3614,6 +3445,136 @@
     "grupo_practicas": "Lab-CO"
   },
   {
+    "grupo": "4CO",
+    "cuatrimestre": "1C",
+    "dia": "Martes",
+    "hora_inicio": "10:00",
+    "hora_fin": "11:30",
+    "asignatura": "Procesadores de Lenguajes",
+    "tipo": "teoría",
+    "aula": "F0.1-Marvin Minsky",
+    "profesor": "Jose Jesus Castro",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "4CO",
+    "cuatrimestre": "1C",
+    "dia": "Martes",
+    "hora_inicio": "11:30",
+    "hora_fin": "13:00",
+    "asignatura": "Diseño de Sistemas Interactivos",
+    "tipo": "teoría",
+    "aula": "F0.1-Marvin Minsky",
+    "profesor": "Ramon Hervas",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "4CO",
+    "cuatrimestre": "1C",
+    "dia": "Martes",
+    "hora_inicio": "13:00",
+    "hora_fin": "14:30",
+    "asignatura": "Diseño de Sistemas Interactivos",
+    "tipo": "laboratorio",
+    "aula": "F0.1-Marvin Minsky",
+    "profesor": "Ramon Hervas",
+    "es_laboratorio": true,
+    "grupo_practicas": "Lab-CO"
+  },
+  {
+    "grupo": "4CO",
+    "cuatrimestre": "1C",
+    "dia": "Miércoles",
+    "hora_inicio": "11:30",
+    "hora_fin": "13:00",
+    "asignatura": "Conferencias",
+    "tipo": "evento",
+    "aula": "Alan Turing",
+    "profesor": "",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "4CO",
+    "cuatrimestre": "1C",
+    "dia": "Miércoles",
+    "hora_inicio": "13:00",
+    "hora_fin": "14:30",
+    "asignatura": "Diseño de Sistemas Interactivos",
+    "tipo": "teoría",
+    "aula": "F0.1-Marvin Minsky",
+    "profesor": "Ramon Hervas",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "4CO",
+    "cuatrimestre": "1C",
+    "dia": "Miércoles",
+    "hora_inicio": "17:00",
+    "hora_fin": "18:30",
+    "asignatura": "Mineria de Datos",
+    "tipo": "teoría",
+    "aula": "F0.1-Marvin Minsky",
+    "profesor": "Arturo Peralta",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "4CO",
+    "cuatrimestre": "1C",
+    "dia": "Miércoles",
+    "hora_inicio": "18:30",
+    "hora_fin": "20:00",
+    "asignatura": "Sistemas Multiagentes",
+    "tipo": "teoría",
+    "aula": "F0.1-Marvin Minsky",
+    "profesor": "Ruben Rodriguez",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "4CO",
+    "cuatrimestre": "1C",
+    "dia": "Jueves",
+    "hora_inicio": "17:00",
+    "hora_fin": "18:30",
+    "asignatura": "Mineria de Datos",
+    "tipo": "teoría",
+    "aula": "F0.1-Marvin Minsky",
+    "profesor": "Arturo Peralta",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "4CO",
+    "cuatrimestre": "1C",
+    "dia": "Jueves",
+    "hora_inicio": "18:30",
+    "hora_fin": "20:00",
+    "asignatura": "Mineria de Datos",
+    "tipo": "laboratorio",
+    "aula": "F0.1-Marvin Minsky",
+    "profesor": "Arturo Peralta",
+    "es_laboratorio": true,
+    "grupo_practicas": "Lab-CO"
+  },
+  {
+    "grupo": "4CO",
+    "cuatrimestre": "1C",
+    "dia": "Viernes",
+    "hora_inicio": "08:30",
+    "hora_fin": "10:00",
+    "asignatura": "Pruebas de Progreso",
+    "tipo": "evento",
+    "aula": "0.02-Charles Babbage",
+    "profesor": "",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
     "grupo": "4IC",
     "cuatrimestre": "1C",
     "dia": "Lunes",
@@ -3621,7 +3582,7 @@
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -3738,7 +3699,7 @@
     "hora_fin": "13:00",
     "asignatura": "Conferencias",
     "tipo": "evento",
-    "aula": "ESI",
+    "aula": "Alan Turing",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -3803,7 +3764,7 @@
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -3816,7 +3777,7 @@
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -3998,7 +3959,7 @@
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -4011,7 +3972,7 @@
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -4024,7 +3985,7 @@
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
-    "aula": "0.02+3-Charles",
+    "aula": "0.02-Charles Babbage",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -4050,7 +4011,7 @@
     "hora_fin": "17:00",
     "asignatura": "Aplicaciones Distribuidas en Internet",
     "tipo": "teoría",
-    "aula": "0.05-Edsger W.",
+    "aula": "0.05-Edsger W. Dijkstra",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -4063,8 +4024,8 @@
     "hora_fin": "17:00",
     "asignatura": "Ingenieria de Negocio",
     "tipo": "teoría",
-    "aula": "0.05-Edsger W.",
-    "profesor": "Francisco Ruiz",
+    "aula": "0.05-Edsger W. Dijkstra",
+    "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
   },
@@ -4076,7 +4037,7 @@
     "hora_fin": "17:00",
     "asignatura": "Tecnicas de Aprendizaje Automatico",
     "tipo": "teoría",
-    "aula": "0.05-Edsger W.",
+    "aula": "0.05-Edsger W. Dijkstra",
     "profesor": "Andres Montoro",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -4089,7 +4050,7 @@
     "hora_fin": "17:00",
     "asignatura": "Tecnicas de Aprendizaje Automatico",
     "tipo": "teoría",
-    "aula": "0.05-Edsger W.",
+    "aula": "0.05-Edsger W. Dijkstra",
     "profesor": "Andres Montoro",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -4102,7 +4063,7 @@
     "hora_fin": "18:30",
     "asignatura": "Aplicaciones Distribuidas en Internet",
     "tipo": "laboratorio",
-    "aula": "0.05-Edsger W.",
+    "aula": "0.05-Edsger W. Dijkstra",
     "profesor": "",
     "es_laboratorio": true,
     "grupo_practicas": ""
@@ -4115,7 +4076,7 @@
     "hora_fin": "18:30",
     "asignatura": "Tecnicas de Aprendizaje Automatico",
     "tipo": "laboratorio",
-    "aula": "0.05-Edsger W.",
+    "aula": "0.05-Edsger W. Dijkstra",
     "profesor": "Jared David",
     "es_laboratorio": true,
     "grupo_practicas": ""
@@ -4128,7 +4089,7 @@
     "hora_fin": "18:30",
     "asignatura": "Ingenieria de Negocio",
     "tipo": "laboratorio",
-    "aula": "0.05-Edsger W.",
+    "aula": "0.05-Edsger W. Dijkstra",
     "profesor": "Felix Oscar Garcia",
     "es_laboratorio": true,
     "grupo_practicas": ""
@@ -4140,10 +4101,10 @@
     "hora_inicio": "17:00",
     "hora_fin": "18:30",
     "asignatura": "Ingenieria de Negocio",
-    "tipo": "laboratorio",
-    "aula": "0.05-Edsger W.",
+    "tipo": "teoría",
+    "aula": "0.05-Edsger W. Dijkstra",
     "profesor": "Felix Oscar Garcia",
-    "es_laboratorio": true,
+    "es_laboratorio": false,
     "grupo_practicas": ""
   },
   {
@@ -4154,7 +4115,7 @@
     "hora_fin": "20:00",
     "asignatura": "Aplicaciones Distribuidas en Internet",
     "tipo": "teoría",
-    "aula": "0.05-Edsger W.",
+    "aula": "0.05-Edsger W. Dijkstra",
     "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -4167,8 +4128,8 @@
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
-    "aula": "0.02+3-Charles",
-    "profesor": "Charles",
+    "aula": "0.02-Charles Babbage",
+    "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
   },
@@ -4206,7 +4167,7 @@
     "hora_fin": "18:30",
     "asignatura": "Multimedia",
     "tipo": "teoría",
-    "aula": "A1.1-John Von N",
+    "aula": "A1.1-John Von Neumann",
     "profesor": "Jose Ramon Sanchez",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -4219,7 +4180,7 @@
     "hora_fin": "20:00",
     "asignatura": "Multimedia",
     "tipo": "laboratorio",
-    "aula": "A1.1-John Von N",
+    "aula": "A1.1-John Von Neumann",
     "profesor": "Jose Ramon Sanchez",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-TI"
@@ -4285,7 +4246,7 @@
     "asignatura": "Conferencias",
     "tipo": "evento",
     "aula": "Alan Turing",
-    "profesor": "ESI",
+    "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
   },
@@ -4310,7 +4271,7 @@
     "hora_fin": "18:30",
     "asignatura": "Multimedia",
     "tipo": "teoría",
-    "aula": "A1.1-John Von N",
+    "aula": "A1.1-John Von Neumann",
     "profesor": "Jose Ramon Sanchez",
     "es_laboratorio": false,
     "grupo_practicas": ""
@@ -4349,8 +4310,8 @@
     "hora_fin": "10:00",
     "asignatura": "Pruebas de Progreso",
     "tipo": "evento",
-    "aula": "0.02+3-Charles",
-    "profesor": "Charles",
+    "aula": "0.02-Charles Babbage",
+    "profesor": "",
     "es_laboratorio": false,
     "grupo_practicas": ""
   },
@@ -4524,7 +4485,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "Máster PERTE-CHIP",
+    "grupo": "Máster PERTE CHIP",
     "cuatrimestre": "1C",
     "dia": "Viernes",
     "hora_inicio": "10:00",

@@ -139,4 +139,94 @@ class JsonScheduleParserTest {
         assertTrue(exported.contains("\"asignatura\": \"FP1\""))
         assertTrue(exported.contains("\"dia\": \"Lunes\""))
     }
+
+    @Test
+    fun parseJson_globalEvents_deduplicatesSlots() {
+        val flatJson = """
+            [
+              {
+                "grupo": "1A",
+                "cuatrimestre": "1C",
+                "dia": "Lunes",
+                "hora_inicio": "08:30",
+                "hora_fin": "10:00",
+                "asignatura": "Pruebas de Progreso",
+                "tipo": "evento",
+                "aula": "0.02+3-Charles",
+                "profesor": ""
+              },
+              {
+                "grupo": "1B",
+                "cuatrimestre": "1C",
+                "dia": "Lunes",
+                "hora_inicio": "08:30",
+                "hora_fin": "10:00",
+                "asignatura": "Pruebas de Progreso",
+                "tipo": "evento",
+                "aula": "0.02-Charles Babbage",
+                "profesor": "Charles"
+              },
+              {
+                "grupo": "1A",
+                "cuatrimestre": "1C",
+                "dia": "Miércoles",
+                "hora_inicio": "11:30",
+                "hora_fin": "13:00",
+                "asignatura": "Conferencias",
+                "tipo": "evento",
+                "aula": "Alan Turing",
+                "profesor": ""
+              },
+              {
+                "grupo": "1B",
+                "cuatrimestre": "1C",
+                "dia": "Miércoles",
+                "hora_inicio": "11:30",
+                "hora_fin": "13:00",
+                "asignatura": "Conferencias",
+                "tipo": "evento",
+                "aula": "ESI",
+                "profesor": "ESI"
+              }
+            ]
+        """.trimIndent()
+
+        val result = parser.parseJson(flatJson)
+        assertTrue(result.isSuccess)
+        val schema = result.getOrThrow()
+
+        val pruebas = schema.subjects.find { it.name == "Pruebas de Progreso" }
+        assertNotNull(pruebas)
+        assertEquals(1, pruebas!!.theorySlots.size)
+        assertEquals("0.02-Charles Babbage", pruebas.theorySlots.first().classroom)
+
+        val conferencias = schema.subjects.find { it.name == "Conferencias" }
+        assertNotNull(conferencias)
+        assertEquals(1, conferencias!!.theorySlots.size)
+        assertEquals("Alan Turing", conferencias.theorySlots.first().classroom)
+    }
+
+    @Test
+    fun parseJson_distFiles_noDuplicateEventSlots() {
+        val distDir = java.io.File("schedules/dist")
+        if (!distDir.exists()) return
+
+        for (file in listOf(java.io.File(distDir, "1C.json"), java.io.File(distDir, "2C.json"))) {
+            if (!file.exists()) continue
+            val jsonStr = file.readText()
+            val result = parser.parseJson(jsonStr)
+            assertTrue(result.isSuccess)
+            val schema = result.getOrThrow()
+
+            val pruebas = schema.subjects.find { it.name == "Pruebas de Progreso" }
+            if (pruebas != null) {
+                assertEquals("Expected exactly 2 slots for Pruebas de Progreso in ${file.name}", 2, pruebas.theorySlots.size)
+            }
+
+            val conferencias = schema.subjects.find { it.name == "Conferencias" }
+            if (conferencias != null) {
+                assertEquals("Expected exactly 1 slot for Conferencias in ${file.name}", 1, conferencias.theorySlots.size)
+            }
+        }
+    }
 }
