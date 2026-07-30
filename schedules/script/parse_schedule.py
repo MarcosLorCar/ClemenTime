@@ -327,7 +327,12 @@ def process_pdf_schedule(
     - 3rd vertical column under MIÉRCOLES -> 'Miércoles'
     - 4th vertical column under JUEVES -> 'Jueves'
     - 5th vertical column under VIERNES -> 'Viernes'
-    BE EXTREMELY CAREFUL: Do not confuse 3rd column (Miércoles) with 4th column (Jueves)! Always verify which header column is directly above the box.
+    BE EXTREMELY CAREFUL FOR ROW 20:00-21:30:
+    When 6 lab sub-boxes are arranged in 3 pairs of 2:
+    - 1st pair of sub-boxes (under LUNES) -> 'Lunes'
+    - 2nd pair of sub-boxes (under MARTES) -> 'Martes'
+    - 3rd pair of sub-boxes (under MIÉRCOLES) -> 'Miércoles'
+    - Column 4 (JUEVES) and Column 5 (VIERNES) are COMPLETELY EMPTY! DO NOT shift 3rd pair sub-boxes into Jueves!
 
     RULES FOR TIME DURATION:
     1. Format HH:mm (e.g. 08:30, 10:00).
@@ -452,10 +457,16 @@ def process_pdf_schedule(
         day_norm = normalize_spanish_day(slot.get("dia", ""))
 
         group = normalize_group_name(slot.get("grupo") or "")
+        slot_type = slot.get("tipo", "teoría")
+        is_lab = bool(slot.get("es_laboratorio", False))
+        grupo_prac = (slot.get("grupo_practicas") or "").strip()
 
         if asig_norm in ["Pruebas de Progreso", "Conferencias", "PruebasProgreso"]:
             group = "GENERAL"
             prof = ""
+            slot_type = "evento"
+            is_lab = False
+            grupo_prac = ""
             if "pruebas" in asig_norm.lower():
                 classroom = "0.02-Charles Babbage"
             elif asig_norm == "Conferencias":
@@ -471,11 +482,11 @@ def process_pdf_schedule(
             start_time,
             end_time,
             asig_norm,
-            slot.get("tipo", "teoría"),
+            slot_type,
             classroom,
             prof,
-            bool(slot.get("es_laboratorio", False)),
-            (slot.get("grupo_practicas") or "").strip()
+            is_lab,
+            grupo_prac
         )
 
         if slot_key not in seen_keys:
@@ -487,41 +498,15 @@ def process_pdf_schedule(
                 "hora_inicio": start_time,
                 "hora_fin": end_time,
                 "asignatura": asig_norm,
-                "tipo": slot.get("tipo", "teoría"),
+                "tipo": slot_type,
                 "aula": classroom,
                 "profesor": prof,
-                "es_laboratorio": bool(slot.get("es_laboratorio", False)),
-                "grupo_practicas": (slot.get("grupo_practicas") or "").strip()
+                "es_laboratorio": is_lab,
+                "grupo_practicas": grupo_prac
             })
 
-    processed_slots = fix_lab_row_column_drift(processed_slots)
     print(f"[Deduplicated] {len(processed_slots)} unique slots remaining.")
     return processed_slots
-
-def fix_lab_row_column_drift(slots: List[Dict]) -> List[Dict]:
-    """
-    Generic post-processing:
-    In timetable grids with 5 or 6 lab sub-boxes in the same time row, small vision models
-    can drift rightward (treating 6 sub-boxes as 4 day columns instead of 3 day columns of 2 sub-boxes each).
-    This function groups lab sub-boxes in a row into pairs (2 per day column) starting from Lunes.
-    """
-    by_row: Dict[Tuple[str, str, str], List[Dict]] = {}
-    for s in slots:
-        if s.get("es_laboratorio"):
-            row_key = (s.get("grupo"), s.get("hora_inicio"), s.get("hora_fin"))
-            by_row.setdefault(row_key, []).append(s)
-
-    days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"]
-    day_order = {"Lunes": 0, "Martes": 1, "Miércoles": 2, "Jueves": 3, "Viernes": 4}
-
-    for (grp, hi, hf), row_slots in by_row.items():
-        if len(row_slots) in (5, 6):
-            row_slots.sort(key=lambda x: (day_order.get(x.get("dia"), 5), x.get("grupo_practicas", "")))
-            for idx, slot in enumerate(row_slots):
-                target_day_idx = min(idx // 2, 4)
-                slot["dia"] = days[target_day_idx]
-
-    return slots
 
 def main():
     parser = argparse.ArgumentParser(description="Parse schedule PDF files directly into flat schedule JSONs.")

@@ -93,7 +93,7 @@
   {
     "grupo": "1A",
     "cuatrimestre": "2C",
-    "dia": "Lunes",
+    "dia": "Martes",
     "hora_inicio": "10:00",
     "hora_fin": "11:30",
     "asignatura": "Fundamentos de Programacion II",
@@ -106,7 +106,7 @@
   {
     "grupo": "1A",
     "cuatrimestre": "2C",
-    "dia": "Lunes",
+    "dia": "Martes",
     "hora_inicio": "10:00",
     "hora_fin": "11:30",
     "asignatura": "Estructura de computadores",
@@ -119,7 +119,7 @@
   {
     "grupo": "1A",
     "cuatrimestre": "2C",
-    "dia": "Martes",
+    "dia": "Miércoles",
     "hora_inicio": "10:00",
     "hora_fin": "11:30",
     "asignatura": "Fundamentos de Programacion II",
@@ -132,7 +132,7 @@
   {
     "grupo": "1A",
     "cuatrimestre": "2C",
-    "dia": "Martes",
+    "dia": "Miércoles",
     "hora_inicio": "10:00",
     "hora_fin": "11:30",
     "asignatura": "Estructura de computadores",
@@ -145,7 +145,7 @@
   {
     "grupo": "1A",
     "cuatrimestre": "2C",
-    "dia": "Miércoles",
+    "dia": "Jueves",
     "hora_inicio": "10:00",
     "hora_fin": "11:30",
     "asignatura": "Sistemas de Informacion",
@@ -158,7 +158,7 @@
   {
     "grupo": "1A",
     "cuatrimestre": "2C",
-    "dia": "Miércoles",
+    "dia": "Jueves",
     "hora_inicio": "10:00",
     "hora_fin": "11:30",
     "asignatura": "Algebra",
@@ -1237,7 +1237,7 @@
   {
     "grupo": "2A",
     "cuatrimestre": "2C",
-    "dia": "Martes",
+    "dia": "Jueves",
     "hora_inicio": "11:30",
     "hora_fin": "13:00",
     "asignatura": "Programacion Concurrente y de Tiempo Real",
@@ -1250,7 +1250,7 @@
   {
     "grupo": "2A",
     "cuatrimestre": "2C",
-    "dia": "Martes",
+    "dia": "Jueves",
     "hora_inicio": "11:30",
     "hora_fin": "13:00",
     "asignatura": "Bases de Datos",
@@ -1289,7 +1289,7 @@
   {
     "grupo": "2A",
     "cuatrimestre": "2C",
-    "dia": "Miércoles",
+    "dia": "Viernes",
     "hora_inicio": "11:30",
     "hora_fin": "13:00",
     "asignatura": "Redes I",
@@ -1298,19 +1298,6 @@
     "profesor": "Angel Suarez",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-A1"
-  },
-  {
-    "grupo": "GENERAL",
-    "cuatrimestre": "2C",
-    "dia": "Lunes",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Pruebas de Progreso",
-    "tipo": "teoría",
-    "aula": "0.02-Charles Babbage",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
   },
   {
     "grupo": "2B",
@@ -1393,7 +1380,7 @@
   {
     "grupo": "2B",
     "cuatrimestre": "2C",
-    "dia": "Lunes",
+    "dia": "Martes",
     "hora_inicio": "13:00",
     "hora_fin": "14:30",
     "asignatura": "Bases de Datos",
@@ -1471,7 +1458,7 @@
   {
     "grupo": "2B",
     "cuatrimestre": "2C",
-    "dia": "Martes",
+    "dia": "Miércoles",
     "hora_inicio": "13:00",
     "hora_fin": "14:30",
     "asignatura": "Metodologia de la Programacion",
@@ -1484,7 +1471,7 @@
   {
     "grupo": "2B",
     "cuatrimestre": "2C",
-    "dia": "Martes",
+    "dia": "Miércoles",
     "hora_inicio": "13:00",
     "hora_fin": "14:30",
     "asignatura": "Programacion Concurrente y de Tiempo Real",
@@ -1601,7 +1588,7 @@
   {
     "grupo": "2B",
     "cuatrimestre": "2C",
-    "dia": "Miércoles",
+    "dia": "Jueves",
     "hora_inicio": "13:00",
     "hora_fin": "14:30",
     "asignatura": "Redes I",
@@ -1614,7 +1601,7 @@
   {
     "grupo": "2B",
     "cuatrimestre": "2C",
-    "dia": "Miércoles",
+    "dia": "Jueves",
     "hora_inicio": "13:00",
     "hora_fin": "14:30",
     "asignatura": "Estadistica",
@@ -1623,19 +1610,6 @@
     "profesor": "Ayudante",
     "es_laboratorio": true,
     "grupo_practicas": "Lab-B2"
-  },
-  {
-    "grupo": "GENERAL",
-    "cuatrimestre": "2C",
-    "dia": "Viernes",
-    "hora_inicio": "08:30",
-    "hora_fin": "10:00",
-    "asignatura": "Pruebas de Progreso",
-    "tipo": "teoría",
-    "aula": "0.02-Charles Babbage",
-    "profesor": "",
-    "es_laboratorio": false,
-    "grupo_practicas": ""
   },
   {
     "grupo": "2B",
@@ -2030,7 +2004,7 @@
   {
     "grupo": "2D",
     "cuatrimestre": "2C",
-    "dia": "Lunes",
+    "dia": "Martes",
     "hora_inicio": "11:30",
     "hora_fin": "13:00",
     "asignatura": "Bases de Datos",
@@ -2173,7 +2147,7 @@
   {
     "grupo": "2D",
     "cuatrimestre": "2C",
-    "dia": "Martes",
+    "dia": "Jueves",
     "hora_inicio": "11:30",
     "hora_fin": "13:00",
     "asignatura": "Metodologia de la Programacion",
@@ -2186,7 +2160,7 @@
   {
     "grupo": "2D",
     "cuatrimestre": "2C",
-    "dia": "Martes",
+    "dia": "Jueves",
     "hora_inicio": "11:30",
     "hora_fin": "13:00",
     "asignatura": "Metodologia de la Programacion",
@@ -2225,7 +2199,7 @@
   {
     "grupo": "2D",
     "cuatrimestre": "2C",
-    "dia": "Miércoles",
+    "dia": "Viernes",
     "hora_inicio": "11:30",
     "hora_fin": "13:00",
     "asignatura": "Redes I",
@@ -2238,7 +2212,7 @@
   {
     "grupo": "2D",
     "cuatrimestre": "2C",
-    "dia": "Miércoles",
+    "dia": "Viernes",
     "hora_inicio": "11:30",
     "hora_fin": "13:00",
     "asignatura": "Estadistica",
