@@ -31,6 +31,7 @@ import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
 import java.util.concurrent.TimeUnit
+import androidx.core.graphics.toColorInt
 
 data class SyncResult(
     val diffs: List<SlotDiff> = emptyList(),
@@ -224,7 +225,8 @@ class ScheduleUpdateWorker @AssistedInject constructor(
             )
 
             val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setColor("#f8981d".toColorInt())
                 .setContentTitle(context.getString(R.string.app_name))
                 .setContentText(contentText)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
