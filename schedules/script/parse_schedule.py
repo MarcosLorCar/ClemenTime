@@ -235,7 +235,18 @@ def normalize_group_name(group: str) -> str:
     g = group.strip()
     m = re.search(r'(\d+)\s*º?\s*([A-Za-z]+)', g)
     if m:
-        return f"{m.group(1)}{m.group(2).upper()}"
+        year = m.group(1)
+        spec = m.group(2).upper()
+        spec_map = {
+            "ING": "IC",
+            "IS": "ISO",
+            "TECNOL": "TI",
+            "TECNOLOGIA": "TI",
+            "TECNOLOGIAS": "TI",
+            "COMP": "CO",
+        }
+        spec = spec_map.get(spec, spec)
+        return f"{year}{spec}"
     return g
 
 def sanitize_professor(prof_raw: str) -> str:
@@ -300,7 +311,7 @@ def process_pdf_schedule(
     2. CUATRIMESTRE: Identify if this page belongs to '1C' (Primer Cuatrimestre) or '2C' (Segundo Cuatrimestre). Use '1C' or '2C'.
     3. DIA: Name of day in Spanish (Lunes, Martes, Miércoles, Jueves, Viernes).
     4. HORA INICIO & FIN: Format HH:mm (e.g. 08:30, 10:00).
-    5. GRUPO: Group name (e.g. '1A', '1º A', '2B', '3º ISO').
+    5. GRUPO: Group or specialization code (e.g. '1A', '2B', '3IC', '3ISO', '3TI', '3CO', '4IC', '4ISO', '4TI', '4CO'). Use 'IC' for Ingeniería de Computadores, 'ISO' for Software, 'TI' for Tecnologías de la Información, and 'CO' for Computación.
     6. ASIGNATURA: Subject name or code ONLY (e.g. 'Álgebra', 'Calculo', 'Pruebas de Progreso'). DO NOT include classroom numbers or names in ASIGNATURA.
     7. TIPO: 'teoría' for lectures, 'laboratorio' for labs, 'evento' for exams/events.
     8. AULA: Classroom code or name (e.g. 'A1.1', 'Charles Babbage - 0.02+3').

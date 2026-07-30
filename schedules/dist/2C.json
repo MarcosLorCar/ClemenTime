@@ -2769,7 +2769,7 @@
     "grupo_practicas": "Lab-CO"
   },
   {
-    "grupo": "3ING",
+    "grupo": "3IC",
     "cuatrimestre": "2C",
     "dia": "Lunes",
     "hora_inicio": "08:30",
@@ -2782,7 +2782,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3ING",
+    "grupo": "3IC",
     "cuatrimestre": "2C",
     "dia": "Viernes",
     "hora_inicio": "08:30",
@@ -2795,7 +2795,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3ING",
+    "grupo": "3IC",
     "cuatrimestre": "2C",
     "dia": "Miércoles",
     "hora_inicio": "11:30",
@@ -2808,7 +2808,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3ING",
+    "grupo": "3IC",
     "cuatrimestre": "2C",
     "dia": "Lunes",
     "hora_inicio": "15:30",
@@ -2821,7 +2821,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3ING",
+    "grupo": "3IC",
     "cuatrimestre": "2C",
     "dia": "Martes",
     "hora_inicio": "15:30",
@@ -2834,7 +2834,7 @@
     "grupo_practicas": "Lab-IC/TI2"
   },
   {
-    "grupo": "3ING",
+    "grupo": "3IC",
     "cuatrimestre": "2C",
     "dia": "Miércoles",
     "hora_inicio": "15:30",
@@ -2847,7 +2847,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3ING",
+    "grupo": "3IC",
     "cuatrimestre": "2C",
     "dia": "Jueves",
     "hora_inicio": "15:30",
@@ -2860,7 +2860,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3ING",
+    "grupo": "3IC",
     "cuatrimestre": "2C",
     "dia": "Lunes",
     "hora_inicio": "17:00",
@@ -2873,7 +2873,7 @@
     "grupo_practicas": "Lab-IC"
   },
   {
-    "grupo": "3ING",
+    "grupo": "3IC",
     "cuatrimestre": "2C",
     "dia": "Martes",
     "hora_inicio": "17:00",
@@ -2886,7 +2886,7 @@
     "grupo_practicas": "Lab-IC/TI1"
   },
   {
-    "grupo": "3ING",
+    "grupo": "3IC",
     "cuatrimestre": "2C",
     "dia": "Martes",
     "hora_inicio": "17:00",
@@ -2899,7 +2899,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3ING",
+    "grupo": "3IC",
     "cuatrimestre": "2C",
     "dia": "Miércoles",
     "hora_inicio": "17:00",
@@ -2912,7 +2912,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3ING",
+    "grupo": "3IC",
     "cuatrimestre": "2C",
     "dia": "Jueves",
     "hora_inicio": "17:00",
@@ -2925,7 +2925,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3ING",
+    "grupo": "3IC",
     "cuatrimestre": "2C",
     "dia": "Lunes",
     "hora_inicio": "18:30",
@@ -2938,7 +2938,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3ING",
+    "grupo": "3IC",
     "cuatrimestre": "2C",
     "dia": "Martes",
     "hora_inicio": "18:30",
@@ -2951,7 +2951,7 @@
     "grupo_practicas": "Lab-IC"
   },
   {
-    "grupo": "3ING",
+    "grupo": "3IC",
     "cuatrimestre": "2C",
     "dia": "Miércoles",
     "hora_inicio": "18:30",
@@ -2964,7 +2964,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3ING",
+    "grupo": "3IC",
     "cuatrimestre": "2C",
     "dia": "Jueves",
     "hora_inicio": "18:30",
@@ -2977,7 +2977,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3ING",
+    "grupo": "3IC",
     "cuatrimestre": "2C",
     "dia": "Lunes",
     "hora_inicio": "20:00",
@@ -2990,7 +2990,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3ING",
+    "grupo": "3IC",
     "cuatrimestre": "2C",
     "dia": "Martes",
     "hora_inicio": "20:00",
@@ -3003,7 +3003,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3ING",
+    "grupo": "3IC",
     "cuatrimestre": "2C",
     "dia": "Miércoles",
     "hora_inicio": "20:00",
@@ -3016,7 +3016,7 @@
     "grupo_practicas": "Lab-IC"
   },
   {
-    "grupo": "3IS",
+    "grupo": "3ISO",
     "cuatrimestre": "2C",
     "dia": "Lunes",
     "hora_inicio": "08:30",
@@ -3029,7 +3029,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3IS",
+    "grupo": "3ISO",
     "cuatrimestre": "2C",
     "dia": "Lunes",
     "hora_inicio": "15:30",
@@ -3042,7 +3042,7 @@
     "grupo_practicas": "Lab-CO/IS1"
   },
   {
-    "grupo": "3IS",
+    "grupo": "3ISO",
     "cuatrimestre": "2C",
     "dia": "Lunes",
     "hora_inicio": "17:00",
@@ -3055,7 +3055,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3IS",
+    "grupo": "3ISO",
     "cuatrimestre": "2C",
     "dia": "Lunes",
     "hora_inicio": "18:30",
@@ -3068,7 +3068,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3IS",
+    "grupo": "3ISO",
     "cuatrimestre": "2C",
     "dia": "Lunes",
     "hora_inicio": "20:00",
@@ -3081,7 +3081,7 @@
     "grupo_practicas": "Lab-IS"
   },
   {
-    "grupo": "3IS",
+    "grupo": "3ISO",
     "cuatrimestre": "2C",
     "dia": "Martes",
     "hora_inicio": "15:30",
@@ -3094,7 +3094,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3IS",
+    "grupo": "3ISO",
     "cuatrimestre": "2C",
     "dia": "Martes",
     "hora_inicio": "17:00",
@@ -3107,7 +3107,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3IS",
+    "grupo": "3ISO",
     "cuatrimestre": "2C",
     "dia": "Martes",
     "hora_inicio": "18:30",
@@ -3120,7 +3120,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3IS",
+    "grupo": "3ISO",
     "cuatrimestre": "2C",
     "dia": "Martes",
     "hora_inicio": "20:00",
@@ -3133,7 +3133,7 @@
     "grupo_practicas": "Lab-CO/IS2"
   },
   {
-    "grupo": "3IS",
+    "grupo": "3ISO",
     "cuatrimestre": "2C",
     "dia": "Miércoles",
     "hora_inicio": "11:30",
@@ -3146,7 +3146,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3IS",
+    "grupo": "3ISO",
     "cuatrimestre": "2C",
     "dia": "Miércoles",
     "hora_inicio": "15:30",
@@ -3159,7 +3159,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3IS",
+    "grupo": "3ISO",
     "cuatrimestre": "2C",
     "dia": "Miércoles",
     "hora_inicio": "17:00",
@@ -3172,7 +3172,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3IS",
+    "grupo": "3ISO",
     "cuatrimestre": "2C",
     "dia": "Miércoles",
     "hora_inicio": "18:30",
@@ -3185,7 +3185,7 @@
     "grupo_practicas": "Lab-IS"
   },
   {
-    "grupo": "3IS",
+    "grupo": "3ISO",
     "cuatrimestre": "2C",
     "dia": "Miércoles",
     "hora_inicio": "20:00",
@@ -3198,7 +3198,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3IS",
+    "grupo": "3ISO",
     "cuatrimestre": "2C",
     "dia": "Jueves",
     "hora_inicio": "15:30",
@@ -3211,7 +3211,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3IS",
+    "grupo": "3ISO",
     "cuatrimestre": "2C",
     "dia": "Jueves",
     "hora_inicio": "17:00",
@@ -3224,7 +3224,7 @@
     "grupo_practicas": "Lab-IS"
   },
   {
-    "grupo": "3IS",
+    "grupo": "3ISO",
     "cuatrimestre": "2C",
     "dia": "Jueves",
     "hora_inicio": "18:30",
@@ -3237,7 +3237,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3IS",
+    "grupo": "3ISO",
     "cuatrimestre": "2C",
     "dia": "Jueves",
     "hora_inicio": "20:00",
@@ -3250,7 +3250,7 @@
     "grupo_practicas": "Lab-IS"
   },
   {
-    "grupo": "3IS",
+    "grupo": "3ISO",
     "cuatrimestre": "2C",
     "dia": "Viernes",
     "hora_inicio": "08:30",
@@ -3263,7 +3263,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3TECNOL",
+    "grupo": "3TI",
     "cuatrimestre": "2C",
     "dia": "Lunes",
     "hora_inicio": "08:30",
@@ -3276,7 +3276,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3TECNOL",
+    "grupo": "3TI",
     "cuatrimestre": "2C",
     "dia": "Viernes",
     "hora_inicio": "08:30",
@@ -3289,7 +3289,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3TECNOL",
+    "grupo": "3TI",
     "cuatrimestre": "2C",
     "dia": "Miércoles",
     "hora_inicio": "11:30",
@@ -3302,7 +3302,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3TECNOL",
+    "grupo": "3TI",
     "cuatrimestre": "2C",
     "dia": "Lunes",
     "hora_inicio": "15:30",
@@ -3315,7 +3315,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3TECNOL",
+    "grupo": "3TI",
     "cuatrimestre": "2C",
     "dia": "Martes",
     "hora_inicio": "15:30",
@@ -3328,7 +3328,7 @@
     "grupo_practicas": "Lab-IC/TI2."
   },
   {
-    "grupo": "3TECNOL",
+    "grupo": "3TI",
     "cuatrimestre": "2C",
     "dia": "Miércoles",
     "hora_inicio": "15:30",
@@ -3341,7 +3341,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3TECNOL",
+    "grupo": "3TI",
     "cuatrimestre": "2C",
     "dia": "Jueves",
     "hora_inicio": "15:30",
@@ -3354,7 +3354,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3TECNOL",
+    "grupo": "3TI",
     "cuatrimestre": "2C",
     "dia": "Lunes",
     "hora_inicio": "17:00",
@@ -3367,7 +3367,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3TECNOL",
+    "grupo": "3TI",
     "cuatrimestre": "2C",
     "dia": "Martes",
     "hora_inicio": "17:00",
@@ -3380,7 +3380,7 @@
     "grupo_practicas": "Lab-IC/TI1."
   },
   {
-    "grupo": "3TECNOL",
+    "grupo": "3TI",
     "cuatrimestre": "2C",
     "dia": "Miércoles",
     "hora_inicio": "17:00",
@@ -3393,7 +3393,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3TECNOL",
+    "grupo": "3TI",
     "cuatrimestre": "2C",
     "dia": "Jueves",
     "hora_inicio": "17:00",
@@ -3406,7 +3406,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3TECNOL",
+    "grupo": "3TI",
     "cuatrimestre": "2C",
     "dia": "Lunes",
     "hora_inicio": "18:30",
@@ -3419,7 +3419,7 @@
     "grupo_practicas": "Lab-TI"
   },
   {
-    "grupo": "3TECNOL",
+    "grupo": "3TI",
     "cuatrimestre": "2C",
     "dia": "Martes",
     "hora_inicio": "18:30",
@@ -3432,7 +3432,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3TECNOL",
+    "grupo": "3TI",
     "cuatrimestre": "2C",
     "dia": "Miércoles",
     "hora_inicio": "18:30",
@@ -3445,7 +3445,7 @@
     "grupo_practicas": "Lab-TI"
   },
   {
-    "grupo": "3TECNOL",
+    "grupo": "3TI",
     "cuatrimestre": "2C",
     "dia": "Jueves",
     "hora_inicio": "18:30",
@@ -3458,7 +3458,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3TECNOL",
+    "grupo": "3TI",
     "cuatrimestre": "2C",
     "dia": "Lunes",
     "hora_inicio": "20:00",
@@ -3471,7 +3471,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3TECNOL",
+    "grupo": "3TI",
     "cuatrimestre": "2C",
     "dia": "Martes",
     "hora_inicio": "20:00",
@@ -3484,7 +3484,7 @@
     "grupo_practicas": "Lab-TI"
   },
   {
-    "grupo": "3TECNOL",
+    "grupo": "3TI",
     "cuatrimestre": "2C",
     "dia": "Miércoles",
     "hora_inicio": "20:00",
@@ -3497,7 +3497,7 @@
     "grupo_practicas": ""
   },
   {
-    "grupo": "3TECNOL",
+    "grupo": "3TI",
     "cuatrimestre": "2C",
     "dia": "Jueves",
     "hora_inicio": "20:00",
