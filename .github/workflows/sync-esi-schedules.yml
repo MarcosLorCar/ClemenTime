@@ -12,6 +12,11 @@ on:
       - '.github/workflows/sync-esi-schedules.yml'
   workflow_dispatch:
 
+# Prevents concurrent runs from colliding during git commits/pushes
+concurrency:
+  group: sync-esi-schedules-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check-and-sync:
     runs-on: ubuntu-latest
@@ -27,6 +32,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip' # Caches downloaded wheels across runs
 
       - name: Install System Dependencies
         run: |
@@ -50,7 +56,6 @@ jobs:
         id: check
         env:
           SCHEDULE_SOURCE_URL: ${{ secrets.SCHEDULE_SOURCE_URL }}
-          PYTHONUNBUFFERED: "1"
         run: |
           OUTPUT=$(python3 -u schedules/script/check_esi_update.py)
           echo "$OUTPUT"
@@ -59,18 +64,26 @@ jobs:
           fi
 
       - name: Process Schedules
-        if: steps.check.outputs.has_update == 'true' || github.event_name == 'workflow_dispatch'
+        # Runs if:
+        # 1. ESI web check detects an update, OR
+        # 2. Triggered manually via GitHub UI, OR
+        # 3. A git push added/modified files in 'schedules/pdf/'
+        if: >
+          steps.check.outputs.has_update == 'true' ||
+          github.event_name == 'workflow_dispatch' ||
+          (github.event_name == 'push' && contains(github.event.head_commit.added, 'schedules/pdf/') || contains(github.event.head_commit.modified, 'schedules/pdf/'))
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_API_KEY_ALT: ${{ secrets.GEMINI_API_KEY_ALT }}
           GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
-          PYTHONUNBUFFERED: "1"
         run: |
-          export PYTHONUNBUFFERED=1
           python3 -u process_schedules.py --strict
 
       - name: Commit and Push
-        if: steps.check.outputs.has_update == 'true' || github.event_name == 'workflow_dispatch'
+        if: >
+          steps.check.outputs.has_update == 'true' ||
+          github.event_name == 'workflow_dispatch' ||
+          (github.event_name == 'push' && contains(github.event.head_commit.added, 'schedules/pdf/') || contains(github.event.head_commit.modified, 'schedules/pdf/'))
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
