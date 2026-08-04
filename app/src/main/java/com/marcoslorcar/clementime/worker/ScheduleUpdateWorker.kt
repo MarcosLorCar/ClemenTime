@@ -36,7 +36,8 @@ import androidx.core.graphics.toColorInt
 data class SyncResult(
     val diffs: List<SlotDiff> = emptyList(),
     val remoteSlots: List<JsonFlatSlot> = emptyList(),
-    val remoteHash: String = ""
+    val remoteHash: String = "",
+    val semester: Int? = null
 )
 
 @HiltWorker
@@ -62,7 +63,7 @@ class ScheduleUpdateWorker @AssistedInject constructor(
                 // Only notify once per remote version. The accepted-version hash is not
                 // advanced here (the diff sheet re-syncs to populate itself), so without
                 // this the same notification would re-fire every interval forever.
-                val semester = settingsRepository.currentSemesterFlow.first()
+                val semester = syncResult.semester ?: settingsRepository.currentSemesterFlow.first()
                 val alreadyNotified = settingsRepository
                     .getLastNotifiedScheduleHashFlow(semester).first()
 
@@ -182,12 +183,12 @@ class ScheduleUpdateWorker @AssistedInject constructor(
                     settingsRepository.setLastKnownScheduleHash(currentSemester, remoteHash)
                 }
                 settingsRepository.setLastScheduleSyncTimestamp(System.currentTimeMillis())
-                return SyncResult()
+                return SyncResult(semester = currentSemester)
             }
 
             if (lastKnownHash == remoteHash) {
                 settingsRepository.setLastScheduleSyncTimestamp(System.currentTimeMillis())
-                return SyncResult()
+                return SyncResult(semester = currentSemester)
             }
 
             if (apiService == null) return SyncResult()
@@ -208,7 +209,7 @@ class ScheduleUpdateWorker @AssistedInject constructor(
                 emptyList()
             }
 
-            if (remoteSlots.isEmpty()) return SyncResult()
+            if (remoteSlots.isEmpty()) return SyncResult(semester = currentSemester)
 
             val existingActiveSubjects = importRepository.getExistingActiveSubjects(currentSemester)
             val diffs = ScheduleDiffChecker.findDiffs(existingActiveSubjects, remoteSlots, currentSemester)
@@ -221,7 +222,12 @@ class ScheduleUpdateWorker @AssistedInject constructor(
                 settingsRepository.setLastKnownScheduleHash(currentSemester, remoteHash)
             }
 
-            return SyncResult(diffs = diffs, remoteSlots = remoteSlots, remoteHash = remoteHash)
+            return SyncResult(
+                diffs = diffs,
+                remoteSlots = remoteSlots,
+                remoteHash = remoteHash,
+                semester = currentSemester
+            )
         }
 
         @SuppressLint("MissingPermission")
