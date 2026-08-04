@@ -4,15 +4,15 @@
     "title": "Primer Cuatrimestre",
     "description": "Horario oficial ESI UCLM - 1º Cuatrimestre",
     "path": "1C.json",
-    "hash": "8b13566b737a112cef8cd9fccba60c0bf21778c0c3c01a43528866af49bb33eb",
-    "updatedTime": "2026-07-30"
+    "hash": "652787703d6bdd31a6e7b6f30d078da4625e767a55e4d35f21534cd7320403df",
+    "updatedTime": "2026-08-04"
   },
   {
     "id": "2C",
     "title": "Segundo Cuatrimestre",
     "description": "Horario oficial ESI UCLM - 2º Cuatrimestre",
     "path": "2C.json",
-    "hash": "1d1949daee840bfd76dc6745261efd0d119a65cdb782c72363397fc40791e019",
-    "updatedTime": "2026-07-30"
+    "hash": "7d6eb7ad0d4f8de71f3ad845d2abbb30364dd8e3e70c78f650270233945017f4",
+    "updatedTime": "2026-08-04"
   }
 ]
