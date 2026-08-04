@@ -260,8 +260,12 @@ class MoreViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val currentSemester = settingsRepository.currentSemesterFlow.first()
-                importRepository.applySlotDiffs(_pendingDiffs.value, _pendingRemoteSlots.value, currentSemester)
-                if (_pendingRemoteHash.value.isNotBlank()) {
+                val applied = importRepository.applySlotDiffs(
+                    _pendingDiffs.value, _pendingRemoteSlots.value, currentSemester
+                )
+                // Only mark the version accepted if something was actually written; otherwise
+                // the diff would never resurface even though nothing changed.
+                if (applied > 0 && _pendingRemoteHash.value.isNotBlank()) {
                     settingsRepository.setLastKnownScheduleHash(currentSemester, _pendingRemoteHash.value)
                 }
                 ScheduleWidgetUtils.updateWidget(context)

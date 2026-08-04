@@ -209,12 +209,13 @@ class ImportRepository @Inject constructor(
         }
     }
 
+    /** Returns how many subjects were actually updated. */
     suspend fun applySlotDiffs(
         diffs: List<SlotDiff>,
         remoteSlots: List<JsonFlatSlot> = emptyList(),
         semester: Int
-    ) = withContext(Dispatchers.IO) {
-        if (diffs.isEmpty()) return@withContext
+    ): Int = withContext(Dispatchers.IO) {
+        if (diffs.isEmpty()) return@withContext 0
 
         var slotsToUse = remoteSlots
         if (slotsToUse.isEmpty()) {
@@ -238,8 +239,9 @@ class ImportRepository @Inject constructor(
             }
         }
 
-        if (slotsToUse.isEmpty()) return@withContext
+        if (slotsToUse.isEmpty()) return@withContext 0
 
+        var appliedCount = 0
         val affectedKeys = diffs.map { it.subjectCode.ifBlank { it.subjectName }.trim() }.distinct()
         val existingSubjects = dao.getAllSubjectsWithSlotsBySemester(semester).first()
 
@@ -290,7 +292,10 @@ class ImportRepository @Inject constructor(
             if (newClassSlots.isEmpty()) continue
 
             dao.upsertSubjectWithSlots(subject, newClassSlots)
+            appliedCount++
         }
+
+        appliedCount
     }
 
     private fun normalizeGroup(group: String?): String {

@@ -4,7 +4,10 @@ on:
   schedule:
     - cron: '0 */6 * * *'
   push:
-    branches: ['**']
+    # master only. This job runs the paid Gemini parse and auto-commits its output, so on
+    # '**' every feature-branch push touching these paths burned quota and pushed a commit
+    # back to that branch. Use workflow_dispatch to test from a branch.
+    branches: [master]
     paths:
       - 'schedules/pdf/**'
       - 'schedules/script/**'
