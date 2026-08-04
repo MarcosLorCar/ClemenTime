@@ -284,6 +284,11 @@ class ImportRepository @Inject constructor(
                 )
             }
 
+            // upsertSubjectWithSlots deletes every existing slot before inserting. If matching
+            // produced nothing (renamed subject, changed group code, parse failure) applying
+            // would silently leave the user with an empty subject, so keep what they have.
+            if (newClassSlots.isEmpty()) continue
+
             dao.upsertSubjectWithSlots(subject, newClassSlots)
         }
     }

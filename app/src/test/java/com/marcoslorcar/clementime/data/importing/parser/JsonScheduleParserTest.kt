@@ -136,7 +136,10 @@ class JsonScheduleParserTest {
 
         val exported = parser.exportToJson("Primer Cuatrimestre", listOf(SubjectWithSlots(subject, listOf(slot))))
         assertTrue(exported.trim().startsWith("["))
-        assertTrue(exported.contains("\"asignatura\": \"FP1\""))
+        // Matches what the Python pipeline emits in schedules/dist/*.json:
+        // "codigo" is the short code, "asignatura" the full display name.
+        assertTrue(exported.contains("\"codigo\": \"FP1\""))
+        assertTrue(exported.contains("\"asignatura\": \"Fundamentos de Programación I\""))
         assertTrue(exported.contains("\"dia\": \"Lunes\""))
     }
 

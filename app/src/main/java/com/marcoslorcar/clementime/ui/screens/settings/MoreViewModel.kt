@@ -211,7 +211,9 @@ class MoreViewModel @Inject constructor(
         viewModelScope.launch {
             _isCheckingUpdates.value = true
             try {
-                ScheduleUpdateWorker.enqueueOneTimeWork(context)
+                // Deliberately not enqueueOneTimeWork(): performSync below does the same
+                // check inline and shows the diff sheet. Running the worker too would post
+                // a redundant notification for the sheet the user is already looking at.
                 val syncResult = ScheduleUpdateWorker.performSync(
                     context = context,
                     settingsRepository = settingsRepository,

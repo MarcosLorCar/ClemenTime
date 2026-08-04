@@ -59,10 +59,23 @@ class ScheduleUpdateWorker @AssistedInject constructor(
             )
 
             if (syncResult.diffs.isNotEmpty()) {
-                val changedSubjects = syncResult.diffs.map { it.subjectCode.ifBlank { it.subjectName } }.distinct()
-                val subjectListStr = changedSubjects.joinToString(", ")
-                val messageText = context.getString(R.string.schedule_updates_found, subjectListStr)
-                postNotification(context, messageText)
+                // Only notify once per remote version. The accepted-version hash is not
+                // advanced here (the diff sheet re-syncs to populate itself), so without
+                // this the same notification would re-fire every interval forever.
+                val semester = settingsRepository.currentSemesterFlow.first()
+                val alreadyNotified = settingsRepository
+                    .getLastNotifiedScheduleHashFlow(semester).first()
+
+                if (syncResult.remoteHash.isBlank() || syncResult.remoteHash != alreadyNotified) {
+                    val changedSubjects = syncResult.diffs.map { it.subjectCode.ifBlank { it.subjectName } }.distinct()
+                    val subjectListStr = changedSubjects.joinToString(", ")
+                    val messageText = context.getString(R.string.schedule_updates_found, subjectListStr)
+                    postNotification(context, messageText)
+
+                    if (syncResult.remoteHash.isNotBlank()) {
+                        settingsRepository.setLastNotifiedScheduleHash(semester, syncResult.remoteHash)
+                    }
+                }
             }
 
             Result.success()
@@ -73,6 +86,7 @@ class ScheduleUpdateWorker @AssistedInject constructor(
 
     companion object {
         const val CHANNEL_ID = "CLEMENTIME_SCHEDULE_UPDATE_CHANNEL"
+        const val EXTRA_SHOW_SCHEDULE_DIFF = "SHOW_SCHEDULE_DIFF"
         const val WORK_TAG = "ScheduleUpdateWorkerTag"
         const val UNIQUE_WORK_NAME = "ScheduleUpdateWork"
         const val ONE_TIME_WORK_NAME = "ScheduleUpdateWork_OneTime"
@@ -95,7 +109,25 @@ class ScheduleUpdateWorker @AssistedInject constructor(
             )
         }
 
+        /** Applies a user-chosen interval, restarting the period immediately. */
         fun schedulePeriodicWork(context: Context, hours: Int) {
+            enqueuePeriodic(context, hours, ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE)
+        }
+
+        /**
+         * Re-arms periodic work on app start. Uses KEEP rather than CANCEL_AND_REENQUEUE:
+         * restarting the period on every launch would mean a frequently-opened app never
+         * lets the interval elapse, so the worker would never run.
+         */
+        fun ensurePeriodicWorkScheduled(context: Context, hours: Int) {
+            enqueuePeriodic(context, hours, ExistingPeriodicWorkPolicy.KEEP)
+        }
+
+        private fun enqueuePeriodic(
+            context: Context,
+            hours: Int,
+            policy: ExistingPeriodicWorkPolicy
+        ) {
             val workManager = WorkManager.getInstance(context)
             if (hours <= 0) {
                 workManager.cancelUniqueWork(UNIQUE_WORK_NAME)
@@ -109,11 +141,7 @@ class ScheduleUpdateWorker @AssistedInject constructor(
                     .addTag(WORK_TAG)
                     .build()
 
-                workManager.enqueueUniquePeriodicWork(
-                    UNIQUE_WORK_NAME,
-                    ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE,
-                    request
-                )
+                workManager.enqueueUniquePeriodicWork(UNIQUE_WORK_NAME, policy, request)
             }
         }
 
@@ -139,10 +167,12 @@ class ScheduleUpdateWorker @AssistedInject constructor(
 
             val summaries = remoteSummariesResult.getOrNull() ?: return SyncResult()
             val targetSemesterId = "${currentSemester}C"
+            // No fallback to summaries.first(): diffing against another semester's schedule
+            // would mark every subject as changed.
             val summary = summaries.find {
                 it.id.equals(targetSemesterId, ignoreCase = true) ||
                         it.path.contains(targetSemesterId, ignoreCase = true)
-            } ?: summaries.firstOrNull() ?: return SyncResult()
+            } ?: return SyncResult()
 
             val remoteHash = summary.hash ?: ""
             val lastKnownHash = settingsRepository.getLastKnownScheduleHashFlow(currentSemester).first()
@@ -185,6 +215,12 @@ class ScheduleUpdateWorker @AssistedInject constructor(
 
             settingsRepository.setLastScheduleSyncTimestamp(System.currentTimeMillis())
 
+            // The published schedule changed, but not for any subject this user follows.
+            // Accept the version now, or every future run re-downloads and re-diffs it.
+            if (diffs.isEmpty() && remoteHash.isNotBlank()) {
+                settingsRepository.setLastKnownScheduleHash(currentSemester, remoteHash)
+            }
+
             return SyncResult(diffs = diffs, remoteSlots = remoteSlots, remoteHash = remoteHash)
         }
 
@@ -215,7 +251,7 @@ class ScheduleUpdateWorker @AssistedInject constructor(
 
             val intent = Intent(context, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                putExtra("SHOW_SCHEDULE_DIFF", true)
+                putExtra(EXTRA_SHOW_SCHEDULE_DIFF, true)
             }
             val pendingIntent = PendingIntent.getActivity(
                 context,
