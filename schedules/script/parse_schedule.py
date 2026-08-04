@@ -63,7 +63,23 @@ def save_mappings(mappings: Dict):
     with open(MAPPINGS_FILE, "w", encoding="utf-8") as f:
         json.dump(mappings, f, indent=2, ensure_ascii=False)
 
-def resolve_mapping(code: str, category: str, mappings: Dict, interactive: bool = True) -> Tuple[str, str]:
+# Codes that fell through every matching strategy while running non-interactively.
+# In --non-interactive mode they are passed through verbatim, which would ship raw codes
+# like "JRGP" to users, so main() reports them and exits non-zero instead.
+UNRESOLVED: Dict[str, set] = {}
+
+
+def record_unresolved(code: str, category: str):
+    UNRESOLVED.setdefault(category, set()).add(code)
+
+
+def resolve_mapping(
+    code: str,
+    category: str,
+    mappings: Dict,
+    interactive: bool = True,
+    track: bool = True,
+) -> Tuple[str, str]:
     if not code:
         return code, code
 
@@ -110,6 +126,8 @@ def resolve_mapping(code: str, category: str, mappings: Dict, interactive: bool 
         return best_key, best_val
 
     if not interactive:
+        if track:
+            record_unresolved(code, category)
         return code, code
 
     print(f"\n[?] Unknown {category[:-1]} found: '{code}'", flush=True)
@@ -119,22 +137,30 @@ def resolve_mapping(code: str, category: str, mappings: Dict, interactive: bool 
     save_mappings(mappings)
     return code, val
 
-def get_mapping(code: str, category: str, mappings: Dict, interactive: bool = True) -> str:
-    _, val = resolve_mapping(code, category, mappings, interactive)
+def get_mapping(
+    code: str,
+    category: str,
+    mappings: Dict,
+    interactive: bool = True,
+    track: bool = True,
+) -> str:
+    _, val = resolve_mapping(code, category, mappings, interactive, track)
     return val
 
 def resolve_professors(prof_str: str, mappings: Dict, interactive: bool) -> str:
     if not prof_str:
         return ""
     prof_str = prof_str.strip()
-    full_match = get_mapping(prof_str, "professors", mappings, interactive=False)
+    # track=False on the speculative lookups below: they are probes, and only the final
+    # call decides whether this professor really went unresolved.
+    full_match = get_mapping(prof_str, "professors", mappings, interactive=False, track=False)
     if full_match != prof_str:
         return full_match
     tokens = prof_str.split()
     if len(tokens) > 1 and any('.' in t for t in tokens):
         resolved = []
         for token in tokens:
-            name = get_mapping(token, "professors", mappings, interactive=False)
+            name = get_mapping(token, "professors", mappings, interactive=False, track=False)
             resolved.append(name)
         if all(r != t for r, t in zip(resolved, tokens)):
             return " ".join(resolved)
@@ -571,6 +597,20 @@ def main():
         clear_cache=args.clear_cache,
         target_pages=target_pages
     )
+
+    # Fail before writing anything: in non-interactive mode unknown codes are passed
+    # through verbatim, so writing them would publish raw codes to users' devices.
+    if not interactive and UNRESOLVED:
+        print("\n[Error] Unresolved mappings (nothing was written):", file=sys.stderr)
+        for category in sorted(UNRESOLVED):
+            for code in sorted(UNRESOLVED[category]):
+                print(f"    {category}: {code}", file=sys.stderr)
+        print(
+            f"\nAdd them to {MAPPINGS_FILE} and re-run, or run without --non-interactive "
+            "to be prompted for each.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     by_semester: Dict[str, List[Dict]] = {"1C": [], "2C": []}
     for s in slots:

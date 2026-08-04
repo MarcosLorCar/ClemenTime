@@ -58,7 +58,12 @@ import com.marcoslorcar.clementime.ui.screens.settings.MoreScreen
 import com.marcoslorcar.clementime.ui.screens.subject.AddEditSubjectScreen
 import com.marcoslorcar.clementime.ui.screens.subject.SubjectsScreen
 import com.marcoslorcar.clementime.ui.theme.ClemenTimeTheme
+import com.marcoslorcar.clementime.worker.ScheduleUpdateWorker
+import com.marcoslorcar.clementime.worker.ScheduleUpdateWorker.Companion.EXTRA_SHOW_SCHEDULE_DIFF
+import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.reflect.KClass
 
@@ -72,6 +77,20 @@ class MainActivity : AppCompatActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // Re-arm background sync. Onboarding and Settings enqueue it when the interval
+        // changes, but neither runs for a user who onboarded before this feature existed,
+        // and WorkManager state does not survive "clear data" or some restores.
+        lifecycleScope.launch {
+            val hours = settingsRepository.autoUpdateIntervalHoursFlow.first()
+            ScheduleUpdateWorker.ensurePeriodicWorkScheduled(this@MainActivity, hours)
+        }
+
+        // Read once: the extra lives on the Activity's intent for its whole lifetime, so
+        // re-reading it after a config change would reopen the sheet the user dismissed.
+        val showScheduleDiff = intent?.getBooleanExtra(EXTRA_SHOW_SCHEDULE_DIFF, false) == true
+        intent?.removeExtra(EXTRA_SHOW_SCHEDULE_DIFF)
+
         setContent {
             val themeMode by settingsRepository.themeFlow.collectAsState(initial = "system")
             val selectedTheme by settingsRepository.selectedThemeFlow.collectAsState(initial = "clementine")
@@ -92,7 +111,6 @@ class MainActivity : AppCompatActivity() {
                     color = MaterialTheme.colorScheme.background,
                 ) {
                     if (isOnboardingCompleted != null) {
-                        val showScheduleDiff = intent?.getBooleanExtra("SHOW_SCHEDULE_DIFF", false) == true
                         key(isOnboardingCompleted) {
                             ClemenTimeApp(
                                 isOnboardingCompleted = isOnboardingCompleted!!,

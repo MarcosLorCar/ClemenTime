@@ -178,6 +178,9 @@ class ImportRepository @Inject constructor(
                 usedColors.add(chosenColor)
             }
 
+            // upsertSubjectWithSlots runs an @Update over every column, so any field left at
+            // its default here silently overwrites what the user had. Carry the
+            // user-authored ones across; only schedule data comes from the import.
             val subject = Subject(
                 id = existing?.id ?: 0L,
                 code = jsonSubject.code,
@@ -185,6 +188,9 @@ class ImportRepository @Inject constructor(
                 color = chosenColor,
                 courseGroup = selected.courseGroup,
                 isActive = true,
+                defaultDurationMinutes = existing?.defaultDurationMinutes ?: 90,
+                notes = existing?.notes ?: "",
+                attachedFiles = existing?.attachedFiles ?: emptyList(),
                 selectedLabGroup = autoSelectedLabGroup,
                 semester = jsonSubject.semester ?: 1,
                 isDummy = jsonSubject.isDummy
@@ -209,12 +215,13 @@ class ImportRepository @Inject constructor(
         }
     }
 
+    /** Returns how many subjects were actually updated. */
     suspend fun applySlotDiffs(
         diffs: List<SlotDiff>,
         remoteSlots: List<JsonFlatSlot> = emptyList(),
         semester: Int
-    ) = withContext(Dispatchers.IO) {
-        if (diffs.isEmpty()) return@withContext
+    ): Int = withContext(Dispatchers.IO) {
+        if (diffs.isEmpty()) return@withContext 0
 
         var slotsToUse = remoteSlots
         if (slotsToUse.isEmpty()) {
@@ -238,8 +245,9 @@ class ImportRepository @Inject constructor(
             }
         }
 
-        if (slotsToUse.isEmpty()) return@withContext
+        if (slotsToUse.isEmpty()) return@withContext 0
 
+        var appliedCount = 0
         val affectedKeys = diffs.map { it.subjectCode.ifBlank { it.subjectName }.trim() }.distinct()
         val existingSubjects = dao.getAllSubjectsWithSlotsBySemester(semester).first()
 
@@ -284,8 +292,16 @@ class ImportRepository @Inject constructor(
                 )
             }
 
+            // upsertSubjectWithSlots deletes every existing slot before inserting. If matching
+            // produced nothing (renamed subject, changed group code, parse failure) applying
+            // would silently leave the user with an empty subject, so keep what they have.
+            if (newClassSlots.isEmpty()) continue
+
             dao.upsertSubjectWithSlots(subject, newClassSlots)
+            appliedCount++
         }
+
+        appliedCount
     }
 
     private fun normalizeGroup(group: String?): String {
