@@ -1,5 +1,6 @@
 package com.marcoslorcar.clementime.data.importing.repository
 
+import com.marcoslorcar.clementime.data.AttachedFileItem
 import com.marcoslorcar.clementime.data.ClassSlot
 import com.marcoslorcar.clementime.data.Subject
 import com.marcoslorcar.clementime.data.SubjectWithSlots
@@ -41,6 +42,37 @@ class ImportRepositoryTest {
         assertEquals("SO", upsertedSubject.code)
         assertEquals("Sistemas Operativos Updated", upsertedSubject.name)
         assertEquals(0xFF123456.toInt(), upsertedSubject.color)
+    }
+
+    @Test
+    fun importSubjects_preservesUserAuthoredFieldsOnExistingSubject() = runTest {
+        val existingSubject = Subject(
+            id = 7L,
+            code = "SO",
+            name = "Sistemas Operativos",
+            color = 0xFF123456.toInt(),
+            isActive = true,
+            defaultDurationMinutes = 120,
+            notes = "Aula cambiada, preguntar al profesor",
+            attachedFiles = listOf(
+                AttachedFileItem(name = "apuntes.pdf", uriString = "content://doc/1")
+            )
+        )
+        val fakeDao = FakeScheduleDaoForRepositoryTest(
+            initialSubjects = listOf(SubjectWithSlots(existingSubject, emptyList()))
+        )
+        val repository = ImportRepository(dao = fakeDao)
+
+        repository.importSubjects(
+            listOf(SelectedSubject(JsonSubject(code = "SO", name = "Sistemas Operativos"), "1º A"))
+        )
+
+        // The import carries schedule data only; it must not wipe what the user wrote.
+        val (upserted, _) = fakeDao.upsertedSubjects.single()
+        assertEquals("Aula cambiada, preguntar al profesor", upserted.notes)
+        assertEquals(1, upserted.attachedFiles.size)
+        assertEquals("apuntes.pdf", upserted.attachedFiles[0].name)
+        assertEquals(120, upserted.defaultDurationMinutes)
     }
 
     @Test

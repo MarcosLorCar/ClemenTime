@@ -178,6 +178,9 @@ class ImportRepository @Inject constructor(
                 usedColors.add(chosenColor)
             }
 
+            // upsertSubjectWithSlots runs an @Update over every column, so any field left at
+            // its default here silently overwrites what the user had. Carry the
+            // user-authored ones across; only schedule data comes from the import.
             val subject = Subject(
                 id = existing?.id ?: 0L,
                 code = jsonSubject.code,
@@ -185,6 +188,9 @@ class ImportRepository @Inject constructor(
                 color = chosenColor,
                 courseGroup = selected.courseGroup,
                 isActive = true,
+                defaultDurationMinutes = existing?.defaultDurationMinutes ?: 90,
+                notes = existing?.notes ?: "",
+                attachedFiles = existing?.attachedFiles ?: emptyList(),
                 selectedLabGroup = autoSelectedLabGroup,
                 semester = jsonSubject.semester ?: 1,
                 isDummy = jsonSubject.isDummy
