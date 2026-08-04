@@ -1,8 +1,11 @@
 name: Update Schedules Index
 
+# Safety net for hand-edited dist files. The AI pipeline already regenerates the index
+# itself (process_schedules.py step 3) and commits with [skip ci], so this only fires for
+# schedule JSON committed by hand.
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
     paths:
       - 'schedules/dist/**'
       - '!schedules/dist/schedules_index.json'

@@ -4,7 +4,10 @@ on:
   schedule:
     - cron: '0 */6 * * *'
   push:
-    branches: ['**']
+    # master only. This job runs the paid Gemini parse and auto-commits its output, so on
+    # '**' every feature-branch push touching these paths burned quota and pushed a commit
+    # back to that branch. Use workflow_dispatch to test from a branch.
+    branches: [master]
     paths:
       - 'schedules/pdf/**'
       - 'schedules/script/**'
@@ -12,10 +15,13 @@ on:
       - '.github/workflows/sync-esi-schedules.yml'
   workflow_dispatch:
 
-# Prevents concurrent runs from colliding during git commits/pushes
+# Prevents concurrent runs from colliding during git commits/pushes.
+# cancel-in-progress must stay false: this job commits and pushes, and cancelling it
+# mid-push can leave downloaded PDFs and an updated esi_meta.json uncommitted while the
+# metadata claims they were already seen.
 concurrency:
   group: sync-esi-schedules-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   check-and-sync:
@@ -67,11 +73,17 @@ jobs:
         # Runs if:
         # 1. ESI web check detects an update, OR
         # 2. Triggered manually via GitHub UI, OR
-        # 3. A git push added/modified files in 'schedules/pdf/'
+        # 3. A git push touched the paths in this workflow's `on.push.paths` filter.
+        #
+        # (3) is just `event_name == 'push'`: the paths filter above already guarantees a
+        # push only reaches this job when those files changed. The previous condition tried
+        # to re-check with contains(github.event.head_commit.added, 'schedules/pdf/'), which
+        # can never be true — those fields are arrays of full file paths and contains() does
+        # exact element matching, not prefix matching.
         if: >
           steps.check.outputs.has_update == 'true' ||
           github.event_name == 'workflow_dispatch' ||
-          (github.event_name == 'push' && contains(github.event.head_commit.added, 'schedules/pdf/') || contains(github.event.head_commit.modified, 'schedules/pdf/'))
+          github.event_name == 'push'
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_API_KEY_ALT: ${{ secrets.GEMINI_API_KEY_ALT }}
@@ -80,10 +92,14 @@ jobs:
           python3 -u process_schedules.py --strict
 
       - name: Commit and Push
+        # success() is required: supplying any `if` replaces the implicit success() check,
+        # so without it a failed "Process Schedules" step would still commit whatever
+        # half-written state it left behind.
         if: >
+          success() && (
           steps.check.outputs.has_update == 'true' ||
           github.event_name == 'workflow_dispatch' ||
-          (github.event_name == 'push' && contains(github.event.head_commit.added, 'schedules/pdf/') || contains(github.event.head_commit.modified, 'schedules/pdf/'))
+          github.event_name == 'push' )
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"

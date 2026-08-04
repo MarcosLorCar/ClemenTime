@@ -198,9 +198,12 @@ def main():
                 
                 new_sha256 = compute_sha256_bytes(pdf_data)
 
-                # Check if hash actually changed relative to existing file
+                # Check if hash actually changed relative to existing file.
+                # `or should_download` used to be here, but this block only runs when
+                # should_download is already True, so it made the whole check a no-op and a
+                # mere ETag/Last-Modified change re-triggered the pipeline for identical bytes.
                 existing_sha = compute_sha256_file(local_pdf_path) if os.path.exists(local_pdf_path) else ""
-                if new_sha256 != existing_sha or should_download:
+                if new_sha256 != existing_sha or args.force or mock_provided:
                     # Non-cumulative purge: remove old semester PDFs before writing new one
                     purge_old_semester_pdfs(PDF_DIR, sem, filename)
 
@@ -209,6 +212,8 @@ def main():
 
                     update_detected = True
                     print(f"[Update] Saved {filename} to {PDF_DIR}")
+                else:
+                    print(f"[No Change] {filename} re-fetched but bytes are identical; skipping.")
 
                 new_meta[sem] = {
                     "filename": filename,

@@ -48,6 +48,7 @@ open class SettingsRepository @Inject constructor(
     private val autoUpdateIntervalHoursKey = intPreferencesKey("auto_update_interval_hours")
     private val lastScheduleSyncTimestampKey = longPreferencesKey("last_schedule_sync_timestamp")
     private fun lastKnownScheduleHashKey(semester: Int) = stringPreferencesKey("last_known_schedule_hash_$semester")
+    private fun lastNotifiedScheduleHashKey(semester: Int) = stringPreferencesKey("last_notified_schedule_hash_$semester")
 
 
     open val themeFlow: Flow<String>
@@ -273,15 +274,29 @@ open class SettingsRepository @Inject constructor(
     open val autoUpdateIntervalHoursFlow: Flow<Int>
         get() = try {
             context?.dataStore?.data?.map { preferences ->
-                preferences[autoUpdateIntervalHoursKey] ?: 0
-            } ?: kotlinx.coroutines.flow.flowOf(0)
+                preferences[autoUpdateIntervalHoursKey] ?: DEFAULT_AUTO_UPDATE_INTERVAL_HOURS
+            } ?: kotlinx.coroutines.flow.flowOf(DEFAULT_AUTO_UPDATE_INTERVAL_HOURS)
         } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(0)
+            kotlinx.coroutines.flow.flowOf(DEFAULT_AUTO_UPDATE_INTERVAL_HOURS)
         }
 
     open fun getLastKnownScheduleHashFlow(semester: Int): Flow<String> = try {
         context?.dataStore?.data?.map { preferences ->
             preferences[lastKnownScheduleHashKey(semester)] ?: ""
+        } ?: kotlinx.coroutines.flow.flowOf("")
+    } catch (_: Throwable) {
+        kotlinx.coroutines.flow.flowOf("")
+    }
+
+    /**
+     * The remote hash we have already posted a notification for. Kept separate from
+     * [getLastKnownScheduleHashFlow], which records the version the user has *accepted* or
+     * ignored: the diff sheet re-runs the sync to repopulate itself, so marking a version
+     * "seen" on notify would leave the sheet empty when the user taps through.
+     */
+    open fun getLastNotifiedScheduleHashFlow(semester: Int): Flow<String> = try {
+        context?.dataStore?.data?.map { preferences ->
+            preferences[lastNotifiedScheduleHashKey(semester)] ?: ""
         } ?: kotlinx.coroutines.flow.flowOf("")
     } catch (_: Throwable) {
         kotlinx.coroutines.flow.flowOf("")
@@ -496,6 +511,14 @@ open class SettingsRepository @Inject constructor(
         } catch (_: Throwable) {}
     }
 
+    open suspend fun setLastNotifiedScheduleHash(semester: Int, hash: String) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[lastNotifiedScheduleHashKey(semester)] = hash
+            }
+        } catch (_: Throwable) {}
+    }
+
     open suspend fun setLastScheduleSyncTimestamp(timestamp: Long) {
         try {
             context?.dataStore?.edit { preferences ->
@@ -506,6 +529,9 @@ open class SettingsRepository @Inject constructor(
 
     companion object {
         const val DEFAULT_GITHUB_REPO_BASE_URL = BuildConfig.DEFAULT_GITHUB_REPO_BASE_URL
+
+        /** Hours between background schedule checks. 0 disables them. */
+        const val DEFAULT_AUTO_UPDATE_INTERVAL_HOURS = 6
     }
 }
 
