@@ -53,13 +53,21 @@ class ScheduleWidget : GlanceAppWidget() {
 
         provideContent {
             val prefs = currentState<Preferences>()
-            val isTomorrowSelected = prefs[IS_TOMORROW_KEY] ?: false
+            val dayOffset = prefs[DAY_OFFSET_KEY] ?: (if (prefs[IS_TOMORROW_KEY] == true) 1 else 0)
 
             val subjectsWithSlots by remember(entryPoint) {
                 entryPoint?.settingsRepository()?.currentSemesterFlow?.flatMapLatest { semester ->
                     entryPoint.scheduleDao().getActiveSubjectsWithSlotsBySemester(semester)
                 } ?: kotlinx.coroutines.flow.flowOf(null)
             }.collectAsState(initial = null)
+
+            val themeMode by remember(entryPoint) {
+                entryPoint?.settingsRepository()?.themeFlow ?: kotlinx.coroutines.flow.flowOf("system")
+            }.collectAsState(initial = "system")
+
+            val selectedTheme by remember(entryPoint) {
+                entryPoint?.settingsRepository()?.selectedThemeFlow ?: kotlinx.coroutines.flow.flowOf("clementine")
+            }.collectAsState(initial = "clementine")
 
             val showNowLine by remember(entryPoint) {
                 entryPoint?.settingsRepository()?.showNowLineFlow ?: kotlinx.coroutines.flow.flowOf(true)
@@ -89,6 +97,14 @@ class ScheduleWidget : GlanceAppWidget() {
                 } ?: kotlinx.coroutines.flow.flowOf(LocalTime.of(21, 30))
             }.collectAsState(initial = LocalTime.of(21, 30))
 
+            val isDarkTheme = when (themeMode) {
+                "light" -> false
+                "dark" -> true
+                else -> {
+                    (context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+                }
+            }
+
             val launchAppAction = remember(context) {
                 val intent = Intent().apply {
                     component = ComponentName(context, MainActivity::class.java)
@@ -106,11 +122,13 @@ class ScheduleWidget : GlanceAppWidget() {
                     when (val data = subjectsWithSlots) {
                         null -> WidgetLoadingState()
                         else -> ScheduleWidgetContent(
-                            isTomorrow = isTomorrowSelected,
+                            dayOffset = dayOffset,
                             subjectsWithSlots = data,
                             showNowLine = showNowLine,
                             nowLineStyle = nowLineStyle,
                             highContrast = highContrast,
+                            isDarkTheme = isDarkTheme,
+                            selectedTheme = selectedTheme,
                             dayStartTime = dayStartTime,
                             dayEndTime = dayEndTime,
                             launchAppAction = launchAppAction
@@ -129,6 +147,8 @@ class ScheduleWidget : GlanceAppWidget() {
                 prefs.toMutablePreferences().apply {
                     val current = this[REFRESH_KEY] ?: 0
                     this[REFRESH_KEY] = current + 1
+                    this[DAY_OFFSET_KEY] = 0
+                    this[IS_TOMORROW_KEY] = false
                 }
             }
             update(context, glanceId)

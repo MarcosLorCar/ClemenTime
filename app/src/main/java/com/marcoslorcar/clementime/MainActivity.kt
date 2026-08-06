@@ -122,6 +122,11 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
+    override fun onStart() {
+        super.onStart()
+        com.marcoslorcar.clementime.ui.widget.ScheduleWidgetUtils.updateWidget(this)
+    }
 }
 
 private data class NavigationSuiteItem(
