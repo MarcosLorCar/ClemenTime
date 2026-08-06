@@ -5,11 +5,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.glance.ColorFilter
 import androidx.glance.GlanceModifier
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.action.Action
+import androidx.glance.action.actionParametersOf
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.cornerRadius
@@ -74,28 +76,43 @@ fun WidgetErrorState() {
     }
 }
 
+fun stepWeekday(startDate: LocalDate, daysToStep: Int): LocalDate {
+    var date = startDate
+    val step = if (daysToStep >= 0) 1 else -1
+    repeat(kotlin.math.abs(daysToStep)) {
+        date = date.plusDays(step.toLong())
+        while (date.dayOfWeek == java.time.DayOfWeek.SATURDAY || date.dayOfWeek == java.time.DayOfWeek.SUNDAY) {
+            date = date.plusDays(step.toLong())
+        }
+    }
+    return date
+}
+
+fun getWeekdayDate(todayDate: LocalDate, offset: Int): LocalDate {
+    val baseDate = when (todayDate.dayOfWeek) {
+        java.time.DayOfWeek.SATURDAY -> todayDate.plusDays(2)
+        java.time.DayOfWeek.SUNDAY -> todayDate.plusDays(1)
+        else -> todayDate
+    }
+    return stepWeekday(baseDate, offset)
+}
+
 @Composable
 fun ScheduleWidgetContent(
-    isTomorrow: Boolean,
+    dayOffset: Int = 0,
     subjectsWithSlots: List<SubjectWithSlots>,
     showNowLine: Boolean,
     nowLineStyle: String = "discrete",
     highContrast: Boolean,
+    isDarkTheme: Boolean = true,
+    selectedTheme: String = "clementine",
     dayStartTime: LocalTime = DAY_START_TIME,
     dayEndTime: LocalTime = DAY_END_TIME,
     launchAppAction: Action
 ) {
     val context = LocalContext.current
     val todayDate = LocalDate.now()
-    val targetDate = if (isTomorrow) {
-        when (todayDate.dayOfWeek) {
-            java.time.DayOfWeek.FRIDAY -> todayDate.plusDays(3)
-            java.time.DayOfWeek.SATURDAY -> todayDate.plusDays(2)
-            else -> todayDate.plusDays(1)
-        }
-    } else {
-        todayDate
-    }
+    val targetDate = getWeekdayDate(todayDate, dayOffset)
     val targetDayOfWeek = targetDate.dayOfWeek
 
     val locale = remember(context) {
@@ -110,27 +127,18 @@ fun ScheduleWidgetContent(
 
     val rawDayName = targetDayOfWeek.getDisplayName(JavaTextStyle.SHORT, locale)
     val dayName = rawDayName.replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
-    val dayPillText = if (isTomorrow) {
-        context.getString(R.string.widget_tomorrow_pill, dayName)
-    } else {
-        context.getString(R.string.widget_today_pill, dayName)
+
+    val tomorrowWeekday = stepWeekday(todayDate, 1)
+    val dayPillText = when {
+        targetDate == todayDate -> context.getString(R.string.widget_today_pill, dayName)
+        targetDate == tomorrowWeekday -> context.getString(R.string.widget_tomorrow_pill, dayName)
+        else -> dayName
     }
-    val toggleBtnText = if (isTomorrow) {
-        context.getString(R.string.widget_toggle_today)
+
+    val forwardBtnText = if (dayOffset == 0 && targetDate == todayDate) {
+        context.getString(R.string.widget_toggle_tomorrow)
     } else {
-        val nextDate = when (todayDate.dayOfWeek) {
-            java.time.DayOfWeek.FRIDAY -> todayDate.plusDays(3)
-            java.time.DayOfWeek.SATURDAY -> todayDate.plusDays(2)
-            java.time.DayOfWeek.SUNDAY -> todayDate.plusDays(1)
-            else -> todayDate.plusDays(1)
-        }
-        if (nextDate.dayOfWeek == java.time.DayOfWeek.MONDAY && todayDate.dayOfWeek != java.time.DayOfWeek.SUNDAY) {
-            val mondayName = java.time.DayOfWeek.MONDAY.getDisplayName(JavaTextStyle.SHORT, locale)
-                .replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
-            "$mondayName →"
-        } else {
-            context.getString(R.string.widget_toggle_tomorrow)
-        }
+        "→"
     }
 
     val daySlots = remember(subjectsWithSlots, targetDayOfWeek) {
@@ -149,7 +157,7 @@ fun ScheduleWidgetContent(
         }
     }
 
-    val isToday = !isTomorrow
+    val isToday = targetDate == todayDate
     val isWithinTimeRange = currentTime in dayStartTime..dayEndTime
     val shouldShowNowLine = showNowLine && isToday && isWithinTimeRange
 
@@ -157,55 +165,135 @@ fun ScheduleWidgetContent(
         buildTimelineSegments(daySlots, currentTime, shouldShowNowLine, dayStartTime, dayEndTime)
     }
 
+    val themeAccent = if (isDarkTheme) {
+        when (selectedTheme.lowercase()) {
+            "blueberry" -> Color(0xFF5B8CFF)
+            "matcha" -> Color(0xFF81C784)
+            "espresso" -> Color(0xFFD7CCC8)
+            "grape" -> Color(0xFFBA68C8)
+            else -> Color(0xFFFF9F0A)
+        }
+    } else {
+        when (selectedTheme.lowercase()) {
+            "blueberry" -> Color(0xFF1E56B7)
+            "matcha" -> Color(0xFF2E7D32)
+            "espresso" -> Color(0xFF5D4037)
+            "grape" -> Color(0xFF7B1FA2)
+            else -> Color(0xFFD97706)
+        }
+    }
+
+    val bgColor = if (isDarkTheme) Color(0xFF141416) else Color(0xFFF5F5F8)
+    val headerBgColor = if (isDarkTheme) Color(0xFF1E1E22) else Color(0xFFE8E8EE)
+    val primaryPillBg = if (isDarkTheme) Color(0xFF2C2C34) else Color(0xFFD8D8E0)
+    val secondaryPillBg = if (isDarkTheme) Color(0xFF3A3A44) else Color(0xFFE0E0E8)
+    val textColorSecondary = if (isDarkTheme) Color(0xFFE5E5EA) else Color(0xFF1C1C1E)
+    val emptyTextColor = if (isDarkTheme) Color(0x99E5E5EA) else Color(0x993C3C43)
+
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
-            .background(Color(0xFF141416))
+            .cornerRadius(16.dp)
+            .background(bgColor)
+            .clickable(launchAppAction)
     ) {
         Row(
             modifier = GlanceModifier
                 .fillMaxWidth()
-                .background(Color(0xFF1E1E22))
-                .padding(horizontal = 10.dp, vertical = 8.dp),
+                .background(headerBgColor)
+                .padding(horizontal = 6.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = GlanceModifier
                     .cornerRadius(12.dp)
-                    .background(Color(0xFF2C2C34))
+                    .background(primaryPillBg)
                     .padding(horizontal = 8.dp, vertical = 4.dp)
-                    .clickable(launchAppAction)
+                    .clickable(actionRunCallback<ResetWidgetDayAction>()),
+                contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = dayPillText,
                     style = TextStyle(
                         fontWeight = FontWeight.Bold,
-                        color = ColorProvider(day = Color(0xFFFF9F0A), night = Color(0xFFFF9F0A))
+                        color = ColorProvider(day = themeAccent, night = themeAccent)
                     )
                 )
             }
 
             Spacer(modifier = GlanceModifier.defaultWeight())
 
-            Box(
-                modifier = GlanceModifier
-                    .cornerRadius(12.dp)
-                    .background(Color(0xFF3A3A44))
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
-                    .clickable(actionRunCallback<ToggleWidgetDayAction>())
-            ) {
-                Text(
-                    text = toggleBtnText,
-                    style = TextStyle(
-                        fontWeight = FontWeight.Bold,
-                        color = ColorProvider(day = Color(0xFFE5E5EA), night = Color(0xFFE5E5EA))
-                    )
-                )
+            if (dayOffset == 0 && targetDate == todayDate) {
+                Box(
+                    modifier = GlanceModifier
+                        .cornerRadius(12.dp)
+                        .background(secondaryPillBg)
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .clickable(actionRunCallback<NavigateWidgetDayAction>(actionParametersOf(DIRECTION_KEY to 1))),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = forwardBtnText.replace(" →", ""),
+                            style = TextStyle(
+                                fontWeight = FontWeight.Bold,
+                                color = ColorProvider(day = textColorSecondary, night = textColorSecondary)
+                            )
+                        )
+                        Spacer(modifier = GlanceModifier.width(4.dp))
+                        Image(
+                            provider = ImageProvider(R.drawable.ic_arrow_forward),
+                            contentDescription = null,
+                            modifier = GlanceModifier.size(14.dp),
+                            colorFilter = ColorFilter.tint(ColorProvider(day = textColorSecondary, night = textColorSecondary))
+                        )
+                    }
+                }
+            } else {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = GlanceModifier
+                            .cornerRadius(12.dp)
+                            .background(secondaryPillBg)
+                            .padding(horizontal = 8.dp, vertical = 5.dp)
+                            .clickable(actionRunCallback<NavigateWidgetDayAction>(actionParametersOf(DIRECTION_KEY to -1))),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            provider = ImageProvider(R.drawable.ic_arrow_back),
+                            contentDescription = null,
+                            modifier = GlanceModifier.size(14.dp),
+                            colorFilter = ColorFilter.tint(ColorProvider(day = textColorSecondary, night = textColorSecondary))
+                        )
+                    }
+
+                    Spacer(modifier = GlanceModifier.width(6.dp))
+
+                    Box(
+                        modifier = GlanceModifier
+                            .cornerRadius(12.dp)
+                            .background(secondaryPillBg)
+                            .padding(horizontal = 8.dp, vertical = 5.dp)
+                            .clickable(actionRunCallback<NavigateWidgetDayAction>(actionParametersOf(DIRECTION_KEY to 1))),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            provider = ImageProvider(R.drawable.ic_arrow_forward),
+                            contentDescription = null,
+                            modifier = GlanceModifier.size(14.dp),
+                            colorFilter = ColorFilter.tint(ColorProvider(day = textColorSecondary, night = textColorSecondary))
+                        )
+                    }
+                }
             }
         }
 
         if (daySlots.isEmpty()) {
-            val emptyText = if (!isTomorrow) {
+            val emptyText = if (dayOffset == 0) {
                 context.getString(R.string.empty_schedule_today)
             } else {
                 val dayOfWeekName = targetDayOfWeek.getDisplayName(JavaTextStyle.FULL, locale)
@@ -230,7 +318,7 @@ fun ScheduleWidgetContent(
                     Text(
                         text = emptyText,
                         style = TextStyle(
-                            color = ColorProvider(day = Color(0x99E5E5EA), night = Color(0x99E5E5EA)),
+                            color = ColorProvider(day = emptyTextColor, night = emptyTextColor),
                             fontWeight = FontWeight.Medium
                         )
                     )
@@ -240,6 +328,9 @@ fun ScheduleWidgetContent(
             LazyColumn(
                 modifier = GlanceModifier.fillMaxSize()
             ) {
+                item {
+                    Spacer(modifier = GlanceModifier.height(3.dp))
+                }
                 timelineSegments.forEachIndexed { index, segment ->
                     val isNowInSegment = shouldShowNowLine && (currentTime >= segment.startTime && currentTime < segment.endTime)
                     item {
@@ -260,16 +351,16 @@ fun ScheduleWidgetContent(
                                     currentTime = currentTime,
                                     isNowInSegment = isNowInSegment,
                                     nowLineStyle = nowLineStyle,
+                                    isDarkTheme = isDarkTheme,
                                     launchAppAction = launchAppAction,
-                                    isFirstSegment = index == 0,
-                                    isLastSegment = index == timelineSegments.size - 1
+                                    isFirstSegment = index == 0
                                 )
                             }
                         }
                     }
                 }
                 item {
-                    Spacer(modifier = GlanceModifier.height(12.dp))
+                    Spacer(modifier = GlanceModifier.height(3.dp))
                 }
             }
         }
@@ -291,8 +382,8 @@ fun ClusterSegmentRow(
     Box(
         modifier = GlanceModifier
             .fillMaxWidth()
-            .height(heightDp + 4.dp)
-            .padding(horizontal = 4.dp, vertical = 2.dp)
+            .height(heightDp + 6.dp)
+            .padding(horizontal = 6.dp, vertical = 3.dp)
             .clickable(launchAppAction),
         contentAlignment = Alignment.TopStart
     ) {
@@ -424,13 +515,16 @@ fun EmptySegmentRow(
     currentTime: LocalTime,
     isNowInSegment: Boolean,
     nowLineStyle: String = "discrete",
+    isDarkTheme: Boolean = true,
     launchAppAction: Action,
-    isFirstSegment: Boolean = false,
-    isLastSegment: Boolean = false
+    isFirstSegment: Boolean = false
 ) {
     val durationMinutes = Duration.between(segment.startTime, segment.endTime).toMinutes().coerceAtLeast(1)
     val totalHeight = BLOCK_HEIGHT * (durationMinutes / 30.0).toFloat()
     val numBlocks = (durationMinutes / 30).toInt()
+
+    val hourLineColor = if (isDarkTheme) Color(0xFF3A3A3C) else Color(0xFFC6C6C8)
+    val halfHourLineColor = if (isDarkTheme) Color(0xFF222224) else Color(0xFFE5E5EA)
 
     Column(
         modifier = GlanceModifier
@@ -447,19 +541,36 @@ fun EmptySegmentRow(
                 modifier = GlanceModifier
                     .fillMaxWidth()
                     .height(BLOCK_HEIGHT)
-                    .padding(horizontal = 11.dp),
+                    .padding(horizontal = 6.dp),
                 contentAlignment = Alignment.TopStart
             ) {
-                val shouldSkipLine = (isFirstSegment && blockIndex == 0) || (isLastSegment && blockIndex == 0)
-                if (!shouldSkipLine) {
+                val shouldSkipTopLine = isFirstSegment && blockIndex == 0
+                if (!shouldSkipTopLine) {
                     Box(
                         modifier = GlanceModifier
                             .fillMaxWidth()
                             .height(1.dp)
                             .background(
-                                if (isHourMark) Color(0xFF3A3A3C) else Color(0xFF222224)
+                                if (isHourMark) hourLineColor else halfHourLineColor
                             )
                     ) {}
+                }
+
+                if (blockIndex == numBlocks - 1) {
+                    val isEndHourMark = segment.endTime.minute == 0
+                    Column(
+                        modifier = GlanceModifier.fillMaxSize()
+                    ) {
+                        Spacer(modifier = GlanceModifier.defaultWeight())
+                        Box(
+                            modifier = GlanceModifier
+                                .fillMaxWidth()
+                                .height(1.dp)
+                                .background(
+                                    if (isEndHourMark) hourLineColor else halfHourLineColor
+                                )
+                        ) {}
+                    }
                 }
 
                 if (isNowInBlock) {

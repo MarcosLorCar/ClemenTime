@@ -40,15 +40,15 @@ fun buildTimelineSegments(
     val firstClassStart = clusters.minOf { it.startTime }
     val lastClassEnd = clusters.maxOf { it.endTime }
 
-    val displayStartTime = if (shouldShowNowLine) {
+    val displayStartTime = if (shouldShowNowLine && currentTime < firstClassStart) {
         val thirtyMinsBeforeNow = currentTime.minusMinutes(30)
         val snapped = thirtyMinsBeforeNow.withMinute((thirtyMinsBeforeNow.minute / 30) * 30).withSecond(0).withNano(0)
-        snapped.coerceIn(dayStartTime, firstClassStart.minusMinutes(30).coerceAtLeast(dayStartTime))
+        snapped.coerceIn(dayStartTime, firstClassStart)
     } else {
-        firstClassStart.minusMinutes(30).coerceAtLeast(dayStartTime)
+        firstClassStart
     }
 
-    val displayEndTime = lastClassEnd.plusMinutes(30).coerceAtMost(dayEndTime)
+    val displayEndTime = lastClassEnd
 
     val segments = mutableListOf<WidgetTimelineSegment>()
     var curr = displayStartTime
