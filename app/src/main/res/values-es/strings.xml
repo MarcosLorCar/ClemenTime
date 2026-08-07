@@ -370,6 +370,7 @@
     <string name="diff_new_detail">Nuevo: %1$s</string>
     <string name="diff_previous_label">ANTERIOR</string>
     <string name="diff_new_label">NUEVO</string>
+    <string name="diff_list_title">Resumen de cambios</string>
     <string name="onboarding_autoupdate_title">Actualización automática</string>
     <string name="onboarding_autoupdate_desc">Recibe avisos cuando la ESI actualice las aulas, profesores o tramos horarios.</string>
     <string name="onboarding_autoupdate_frequency">Frecuencia de comprobación</string>

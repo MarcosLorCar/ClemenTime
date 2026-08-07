@@ -368,6 +368,7 @@
     <string name="diff_new_detail">New: %1$s</string>
     <string name="diff_previous_label">BEFORE</string>
     <string name="diff_new_label">AFTER</string>
+    <string name="diff_list_title">Summary of Changes</string>
     <string name="onboarding_autoupdate_title">Automatic Updates</string>
     <string name="onboarding_autoupdate_desc">Get notified whenever your school updates classrooms, professors, or time slots.</string>
     <string name="onboarding_autoupdate_frequency">Check frequency</string>
