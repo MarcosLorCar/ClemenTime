@@ -95,18 +95,22 @@ def resolve_mapping(
         if v == code:
             return k, v
 
-    norm_code = remove_accents(code).lower()
+    norm_code = remove_accents(code).lower().strip(". ,")
     for key, val in category_map.items():
-        if remove_accents(key).lower() == norm_code or remove_accents(val).lower() == norm_code:
+        if remove_accents(key).lower().strip(". ,") == norm_code or remove_accents(val).lower().strip(". ,") == norm_code:
             return key, val
 
     code_tokens = set(re.findall(r'\w+', norm_code))
     for key, val in category_map.items():
         key_norm = remove_accents(key).lower()
         val_norm = remove_accents(val).lower()
-        if key_norm and (key_norm in norm_code or norm_code in key_norm):
+        if key_norm and re.search(rf'\b{re.escape(key_norm)}\b', norm_code):
             return key, val
-        if val_norm and (val_norm in norm_code or norm_code in val_norm):
+        if val_norm and re.search(rf'\b{re.escape(val_norm)}\b', norm_code):
+            return key, val
+        key_words = re.findall(r'\w+', key_norm)
+        val_words = re.findall(r'\w+', val_norm)
+        if norm_code and len(norm_code) >= 3 and any(w.startswith(norm_code) for w in key_words + val_words):
             return key, val
         key_tokens = set(re.findall(r'\w+', key_norm))
         if key_tokens and key_tokens.issubset(code_tokens):
