@@ -82,8 +82,7 @@ jobs:
         # exact element matching, not prefix matching.
         if: >
           steps.check.outputs.has_update == 'true' ||
-          github.event_name == 'workflow_dispatch' ||
-          github.event_name == 'push'
+          github.event_name == 'workflow_dispatch'
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_API_KEY_ALT: ${{ secrets.GEMINI_API_KEY_ALT }}
@@ -98,8 +97,7 @@ jobs:
         if: >
           success() && (
           steps.check.outputs.has_update == 'true' ||
-          github.event_name == 'workflow_dispatch' ||
-          github.event_name == 'push' )
+          github.event_name == 'workflow_dispatch' )
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"

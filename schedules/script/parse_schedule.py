@@ -168,6 +168,19 @@ def resolve_professors(prof_str: str, mappings: Dict, interactive: bool) -> str:
     full_match = get_mapping(prof_str, "professors", mappings, interactive=False, track=False)
     if full_match != prof_str:
         return full_match
+
+    # Probe matching dotted parts (e.g. 'David.V', 'Jesus.F') against professor mapping entries
+    prof_map = mappings.get("professors", {})
+    parts = [remove_accents(p).lower() for p in prof_str.split(".") if p.strip()]
+    if parts:
+        for key, val in prof_map.items():
+            key_parts = [remove_accents(p).lower() for p in re.split(r'[\s\.]+', key) if p.strip()]
+            val_parts = [remove_accents(p).lower() for p in re.split(r'[\s\.]+', val) if p.strip()]
+            for target_parts in [key_parts, val_parts]:
+                if len(parts) <= len(target_parts):
+                    if all(target_parts[i].startswith(parts[i]) for i in range(len(parts))):
+                        return val
+
     tokens = prof_str.split()
     if len(tokens) > 1 and any('.' in t for t in tokens):
         resolved = []
