@@ -526,6 +526,18 @@ def process_pdf_schedule(
         is_lab = bool(slot.get("es_laboratorio", False))
         grupo_prac = (slot.get("grupo_practicas") or "").strip()
 
+        # Enforce lab status if deterministic lab indicators are present
+        is_lab_indicator = (
+            bool(grupo_prac) or
+            clean_asig.endswith("-L") or clean_asig.endswith("-L.") or
+            bool(re.search(r'\bLD\d?', clean_aula, re.IGNORECASE))
+        )
+
+        if is_lab_indicator:
+            is_lab = True
+            if slot_type != "evento":
+                slot_type = "laboratorio"
+
         if asig_norm in ["Pruebas de Progreso", "Conferencias", "PruebasProgreso"]:
             group = "GENERAL"
             prof = ""
