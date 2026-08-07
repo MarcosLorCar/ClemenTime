@@ -350,6 +350,7 @@
     <!-- Schedule Auto-Update strings -->
     <string name="auto_update_interval_title">Intervalo de actualización de horario</string>
     <string name="auto_update_interval_off">Desactivado</string>
+    <string name="auto_update_interval_15m">Cada 15 minutos (Debug)</string>
     <string name="auto_update_interval_6h">Cada 6 horas</string>
     <string name="auto_update_interval_12h">Cada 12 horas</string>
     <string name="auto_update_interval_24h">Cada 24 horas</string>
@@ -357,6 +358,18 @@
     <string name="checking_updates">Buscando actualizaciones de horario…</string>
     <string name="no_schedule_updates_found">No hay actualizaciones de horario.</string>
     <string name="schedule_updates_found">Cambios de horario en: %1$s</string>
+
+    <!-- Developer / Debug Settings strings -->
+    <string name="developer_settings_header">Opciones de desarrollo</string>
+    <string name="debug_trigger_worker_title">Ejecutar Worker de Horarios</string>
+    <string name="debug_trigger_worker_desc">Ejecuta WorkManager ScheduleUpdateWorker inmediatamente</string>
+    <string name="debug_reset_hashes_title">Restablecer Hashes de Horario</string>
+    <string name="debug_reset_hashes_desc">Borra los hashes guardados para forzar la detección de cambios</string>
+    <string name="debug_simulate_diff_title">Simular Cambios de Horario</string>
+    <string name="debug_simulate_diff_desc">Muestra una notificación de prueba y el panel de diferencias</string>
+    <string name="debug_reset_onboarding_title">Restablecer Guías y Tutoriales</string>
+    <string name="debug_reset_onboarding_desc">Restablece la bienvenida y los avisos de ayuda para pruebas</string>
+    <string name="debug_action_triggered">Acción de desarrollo ejecutada</string>
 
     <!-- Schedule Diff Bottom Sheet strings -->
     <string name="schedule_changes_detected_title">Cambios detectados en el horario</string>

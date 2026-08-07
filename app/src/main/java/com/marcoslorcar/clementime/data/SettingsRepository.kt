@@ -46,6 +46,7 @@ open class SettingsRepository @Inject constructor(
     private val dayEndHourKey = intPreferencesKey("day_end_hour")
     private val dayEndMinuteKey = intPreferencesKey("day_end_minute")
     private val autoUpdateIntervalHoursKey = intPreferencesKey("auto_update_interval_hours")
+    private val autoUpdateIntervalMinutesKey = intPreferencesKey("auto_update_interval_minutes")
     private val lastScheduleSyncTimestampKey = longPreferencesKey("last_schedule_sync_timestamp")
     private fun lastKnownScheduleHashKey(semester: Int) = stringPreferencesKey("last_known_schedule_hash_$semester")
     private fun lastNotifiedScheduleHashKey(semester: Int) = stringPreferencesKey("last_notified_schedule_hash_$semester")
@@ -271,13 +272,19 @@ open class SettingsRepository @Inject constructor(
             kotlinx.coroutines.flow.flowOf(30)
         }
 
-    open val autoUpdateIntervalHoursFlow: Flow<Int>
+    open val autoUpdateIntervalMinutesFlow: Flow<Int>
         get() = try {
             context?.dataStore?.data?.map { preferences ->
-                preferences[autoUpdateIntervalHoursKey] ?: DEFAULT_AUTO_UPDATE_INTERVAL_HOURS
-            } ?: kotlinx.coroutines.flow.flowOf(DEFAULT_AUTO_UPDATE_INTERVAL_HOURS)
+                preferences[autoUpdateIntervalMinutesKey]
+                    ?: ((preferences[autoUpdateIntervalHoursKey] ?: DEFAULT_AUTO_UPDATE_INTERVAL_HOURS) * 60)
+            } ?: kotlinx.coroutines.flow.flowOf(DEFAULT_AUTO_UPDATE_INTERVAL_HOURS * 60)
         } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(DEFAULT_AUTO_UPDATE_INTERVAL_HOURS)
+            kotlinx.coroutines.flow.flowOf(DEFAULT_AUTO_UPDATE_INTERVAL_HOURS * 60)
+        }
+
+    open val autoUpdateIntervalHoursFlow: Flow<Int>
+        get() = autoUpdateIntervalMinutesFlow.map { minutes ->
+            if (minutes in 1..59) minutes else minutes / 60
         }
 
     open fun getLastKnownScheduleHashFlow(semester: Int): Flow<String> = try {
@@ -495,10 +502,43 @@ open class SettingsRepository @Inject constructor(
         } catch (_: Throwable) {}
     }
 
-    open suspend fun setAutoUpdateIntervalHours(hours: Int) {
+    open suspend fun setAutoUpdateIntervalMinutes(minutes: Int) {
         try {
             context?.dataStore?.edit { preferences ->
-                preferences[autoUpdateIntervalHoursKey] = hours
+                preferences[autoUpdateIntervalMinutesKey] = minutes
+                preferences[autoUpdateIntervalHoursKey] = if (minutes in 1..59) minutes else minutes / 60
+            }
+        } catch (_: Throwable) {}
+    }
+
+    open suspend fun setAutoUpdateIntervalHours(hours: Int) {
+        setAutoUpdateIntervalMinutes(hours * 60)
+    }
+
+    open suspend fun resetScheduleHashes() {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences.remove(lastKnownScheduleHashKey(1))
+                preferences.remove(lastKnownScheduleHashKey(2))
+                preferences.remove(lastNotifiedScheduleHashKey(1))
+                preferences.remove(lastNotifiedScheduleHashKey(2))
+                preferences.remove(lastScheduleSyncTimestampKey)
+            }
+        } catch (_: Throwable) {}
+    }
+
+    open suspend fun resetOnboardingAndTooltips() {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences.remove(isOnboardingCompletedKey)
+                preferences.remove(onboardingTooltipsEnabledKey)
+                preferences.remove(hasSeenImportConflictTooltipKey)
+                preferences.remove(hasSeenOptimizerTooltipKey)
+                preferences.remove(hasSeenResolverPrioritiesTooltipKey)
+                preferences.remove(hasSeenResolverApplyTooltipKey)
+                preferences.remove(hasSeenAddSlotTooltipKey)
+                preferences.remove(hasSeenImportPreviewTooltipKey)
+                preferences.remove(hasSeenLabSelectionTooltipKey)
             }
         } catch (_: Throwable) {}
     }
