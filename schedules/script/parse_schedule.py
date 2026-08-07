@@ -83,8 +83,16 @@ def resolve_mapping(
     if not code:
         return code, code
 
-    if category == "classrooms" and re.match(r'^lab[-_\s]', remove_accents(code).lower()):
-        return code, code
+    if category == "classrooms":
+        if re.match(r'^lab[-_\s]', remove_accents(code).lower()):
+            return code, code
+        room_match = re.match(r'^([A-Z0-9]+\.\d+|LD\d+)', code, re.IGNORECASE)
+        if room_match:
+            prefix = room_match.group(1).upper()
+            category_map = mappings.get(category, {})
+            for key, val in category_map.items():
+                if val.upper().startswith(prefix) or key.upper().startswith(prefix):
+                    return code, val
 
     category_map = mappings.get(category, {})
 
