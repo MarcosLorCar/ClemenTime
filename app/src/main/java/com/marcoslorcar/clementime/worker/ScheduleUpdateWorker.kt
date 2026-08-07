@@ -110,9 +110,9 @@ class ScheduleUpdateWorker @AssistedInject constructor(
             )
         }
 
-        /** Applies a user-chosen interval, restarting the period immediately. */
-        fun schedulePeriodicWork(context: Context, hours: Int) {
-            enqueuePeriodic(context, hours, ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE)
+        /** Applies a user-chosen interval in minutes or hours, restarting the period immediately. */
+        fun schedulePeriodicWork(context: Context, intervalValue: Int) {
+            enqueuePeriodic(context, intervalValue, ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE)
         }
 
         /**
@@ -120,24 +120,31 @@ class ScheduleUpdateWorker @AssistedInject constructor(
          * restarting the period on every launch would mean a frequently-opened app never
          * lets the interval elapse, so the worker would never run.
          */
-        fun ensurePeriodicWorkScheduled(context: Context, hours: Int) {
-            enqueuePeriodic(context, hours, ExistingPeriodicWorkPolicy.KEEP)
+        fun ensurePeriodicWorkScheduled(context: Context, intervalValue: Int) {
+            enqueuePeriodic(context, intervalValue, ExistingPeriodicWorkPolicy.KEEP)
         }
 
         private fun enqueuePeriodic(
             context: Context,
-            hours: Int,
+            intervalValue: Int,
             policy: ExistingPeriodicWorkPolicy
         ) {
             val workManager = WorkManager.getInstance(context)
-            if (hours <= 0) {
+            val minutes = when {
+                intervalValue <= 0 -> 0
+                intervalValue == 15 -> 15
+                intervalValue <= 24 -> intervalValue * 60
+                else -> intervalValue
+            }
+
+            if (minutes <= 0) {
                 workManager.cancelUniqueWork(UNIQUE_WORK_NAME)
             } else {
                 val constraints = Constraints.Builder()
                     .setRequiredNetworkType(NetworkType.CONNECTED)
                     .build()
 
-                val request = PeriodicWorkRequestBuilder<ScheduleUpdateWorker>(hours.toLong(), TimeUnit.HOURS)
+                val request = PeriodicWorkRequestBuilder<ScheduleUpdateWorker>(minutes.toLong(), TimeUnit.MINUTES)
                     .setConstraints(constraints)
                     .addTag(WORK_TAG)
                     .build()
@@ -154,8 +161,8 @@ class ScheduleUpdateWorker @AssistedInject constructor(
             ignoreInterval: Boolean = false
         ): SyncResult {
             if (!ignoreInterval) {
-                val intervalHours = settingsRepository.autoUpdateIntervalHoursFlow.first()
-                if (intervalHours <= 0) return SyncResult()
+                val intervalMinutes = settingsRepository.autoUpdateIntervalMinutesFlow.first()
+                if (intervalMinutes <= 0) return SyncResult()
             }
 
             val currentSemester = settingsRepository.currentSemesterFlow.first()
