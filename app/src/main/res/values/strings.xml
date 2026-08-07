@@ -348,6 +348,7 @@
     <!-- Schedule Auto-Update strings -->
     <string name="auto_update_interval_title">Auto-Update Interval</string>
     <string name="auto_update_interval_off">Off</string>
+    <string name="auto_update_interval_15m">15 minutes (Debug)</string>
     <string name="auto_update_interval_6h">6 hours</string>
     <string name="auto_update_interval_12h">12 hours</string>
     <string name="auto_update_interval_24h">24 hours</string>
@@ -356,18 +357,31 @@
     <string name="no_schedule_updates_found">No schedule updates found.</string>
     <string name="schedule_updates_found">Schedule changes in: %1$s</string>
 
+    <!-- Developer / Debug Settings strings -->
+    <string name="developer_settings_header">Developer Settings</string>
+    <string name="debug_trigger_worker_title">Run Schedule Worker Now</string>
+    <string name="debug_trigger_worker_desc">Trigger WorkManager ScheduleUpdateWorker immediately</string>
+    <string name="debug_reset_hashes_title">Reset Schedule Hashes</string>
+    <string name="debug_reset_hashes_desc">Clear last known and notified hashes to test schedule sync detection</string>
+    <string name="debug_simulate_diff_title">Simulate Schedule Diff</string>
+    <string name="debug_simulate_diff_desc">Show mock schedule update notification and diff bottom sheet</string>
+    <string name="debug_reset_onboarding_title">Reset Tooltips &amp; Onboarding</string>
+    <string name="debug_reset_onboarding_desc">Reset onboarding tutorial and tooltip flags for testing</string>
+    <string name="debug_action_triggered">Developer action performed</string>
+
     <!-- Schedule Diff Bottom Sheet strings -->
     <string name="schedule_changes_detected_title">Schedule Changes Detected</string>
     <string name="schedule_changes_detected_desc">The official ESI schedule has been updated with changes affecting your active subjects.</string>
     <string name="apply_updates">Apply Updates</string>
     <string name="dismiss">Dismiss</string>
-    <string name="diff_badge_modified">MODIFIED</string>
-    <string name="diff_badge_added">ADDED</string>
-    <string name="diff_badge_removed">REMOVED</string>
+    <string name="diff_badge_modified">Modified</string>
+    <string name="diff_badge_added">Added</string>
+    <string name="diff_badge_removed">Removed</string>
     <string name="diff_previous_detail">Previous: %1$s</string>
     <string name="diff_new_detail">New: %1$s</string>
-    <string name="diff_previous_label">BEFORE</string>
-    <string name="diff_new_label">AFTER</string>
+    <string name="diff_previous_label">Before</string>
+    <string name="diff_new_label">After</string>
+    <string name="diff_list_title">Summary of Changes</string>
     <string name="onboarding_autoupdate_title">Automatic Updates</string>
     <string name="onboarding_autoupdate_desc">Get notified whenever your school updates classrooms, professors, or time slots.</string>
     <string name="onboarding_autoupdate_frequency">Check frequency</string>

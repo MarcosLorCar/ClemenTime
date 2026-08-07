@@ -82,8 +82,8 @@ class MainActivity : AppCompatActivity() {
         // changes, but neither runs for a user who onboarded before this feature existed,
         // and WorkManager state does not survive "clear data" or some restores.
         lifecycleScope.launch {
-            val hours = settingsRepository.autoUpdateIntervalHoursFlow.first()
-            ScheduleUpdateWorker.ensurePeriodicWorkScheduled(this@MainActivity, hours)
+            val intervalMinutes = settingsRepository.autoUpdateIntervalMinutesFlow.first()
+            ScheduleUpdateWorker.ensurePeriodicWorkScheduled(this@MainActivity, intervalMinutes)
         }
 
         // Read once: the extra lives on the Activity's intent for its whole lifetime, so

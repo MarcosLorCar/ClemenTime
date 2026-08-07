@@ -36,12 +36,16 @@ import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.CleaningServices
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.InvertColors
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Policy
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Sync
@@ -164,6 +168,10 @@ fun MoreScreen(
                 Toast.makeText(context, noUpdatesMsg, Toast.LENGTH_SHORT).show()
             }
         },
+        onDebugTriggerWorker = viewModel::debugTriggerWorkerNow,
+        onDebugResetHashes = viewModel::debugResetScheduleHashes,
+        onDebugSimulateDiff = viewModel::debugSimulateScheduleDiff,
+        onDebugResetOnboarding = viewModel::debugResetOnboardingAndTooltips,
         onImportClick = onNavigateToImport,
         onMenuClick = onMenuClick
     )
@@ -188,6 +196,10 @@ fun MoreContent(
     onExportIcs: (android.content.Context, Uri, LocalDate, LocalDate, LocalDate, LocalDate, (ExportStatus) -> Unit) -> Unit,
     onAutoUpdateIntervalChanged: (Int) -> Unit = {},
     onCheckUpdatesNow: () -> Unit = {},
+    onDebugTriggerWorker: () -> Unit = {},
+    onDebugResetHashes: () -> Unit = {},
+    onDebugSimulateDiff: () -> Unit = {},
+    onDebugResetOnboarding: () -> Unit = {},
     onImportClick: () -> Unit,
     onMenuClick: (() -> Unit)? = null
 ) {
@@ -696,9 +708,10 @@ fun MoreContent(
                 // Auto-Update Interval Setting
                 var showAutoUpdateMenu by remember { mutableStateOf(false) }
                 val autoUpdateLabel = when (uiState.autoUpdateIntervalHours) {
-                    6 -> stringResource(R.string.auto_update_interval_6h)
-                    12 -> stringResource(R.string.auto_update_interval_12h)
-                    24 -> stringResource(R.string.auto_update_interval_24h)
+                    15 -> stringResource(R.string.auto_update_interval_15m)
+                    6, 360 -> stringResource(R.string.auto_update_interval_6h)
+                    12, 720 -> stringResource(R.string.auto_update_interval_12h)
+                    24, 1440 -> stringResource(R.string.auto_update_interval_24h)
                     else -> stringResource(R.string.auto_update_interval_off)
                 }
 
@@ -713,11 +726,13 @@ fun MoreContent(
                         expanded = showAutoUpdateMenu,
                         onDismissRequest = { showAutoUpdateMenu = false }
                     ) {
-                        listOf(6, 12, 24, 0).forEach { hours ->
+                        val intervalOptions = if (BuildConfig.DEBUG) listOf(15, 6, 12, 24, 0) else listOf(6, 12, 24, 0)
+                        intervalOptions.forEach { hours ->
                             DropdownMenuItem(
                                 text = {
                                     Text(
                                         when (hours) {
+                                            15 -> stringResource(R.string.auto_update_interval_15m)
                                             6 -> stringResource(R.string.auto_update_interval_6h)
                                             12 -> stringResource(R.string.auto_update_interval_12h)
                                             24 -> stringResource(R.string.auto_update_interval_24h)
@@ -806,6 +821,57 @@ fun MoreContent(
                     context.startActivity(intent)
                 }
             )
+
+            if (BuildConfig.DEBUG) {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+                Text(
+                    text = stringResource(R.string.developer_settings_header),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                val debugActionTriggeredMsg = stringResource(R.string.debug_action_triggered)
+
+                SettingItem(
+                    icon = Icons.Default.PlayArrow,
+                    title = stringResource(R.string.debug_trigger_worker_title),
+                    subtitle = stringResource(R.string.debug_trigger_worker_desc),
+                    onClick = {
+                        onDebugTriggerWorker()
+                        Toast.makeText(context, debugActionTriggeredMsg, Toast.LENGTH_SHORT).show()
+                    }
+                )
+
+                SettingItem(
+                    icon = Icons.Default.RestartAlt,
+                    title = stringResource(R.string.debug_reset_hashes_title),
+                    subtitle = stringResource(R.string.debug_reset_hashes_desc),
+                    onClick = {
+                        onDebugResetHashes()
+                        Toast.makeText(context, debugActionTriggeredMsg, Toast.LENGTH_SHORT).show()
+                    }
+                )
+
+                SettingItem(
+                    icon = Icons.Default.BugReport,
+                    title = stringResource(R.string.debug_simulate_diff_title),
+                    subtitle = stringResource(R.string.debug_simulate_diff_desc),
+                    onClick = {
+                        onDebugSimulateDiff()
+                    }
+                )
+
+                SettingItem(
+                    icon = Icons.Default.CleaningServices,
+                    title = stringResource(R.string.debug_reset_onboarding_title),
+                    subtitle = stringResource(R.string.debug_reset_onboarding_desc),
+                    onClick = {
+                        onDebugResetOnboarding()
+                        Toast.makeText(context, debugActionTriggeredMsg, Toast.LENGTH_SHORT).show()
+                    }
+                )
+            }
         }
     }
 }

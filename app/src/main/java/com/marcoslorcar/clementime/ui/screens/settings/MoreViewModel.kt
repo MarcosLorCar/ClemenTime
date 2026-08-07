@@ -89,7 +89,7 @@ class MoreViewModel @Inject constructor(
         settingsRepository.dayStartMinuteFlow,
         settingsRepository.dayEndHourFlow,
         settingsRepository.dayEndMinuteFlow,
-        settingsRepository.autoUpdateIntervalHoursFlow,
+        settingsRepository.autoUpdateIntervalMinutesFlow,
         settingsRepository.lastScheduleSyncTimestampFlow,
         _isCheckingUpdates,
         _appLanguage,
@@ -201,9 +201,44 @@ class MoreViewModel @Inject constructor(
     }
 
     fun setAutoUpdateIntervalHours(hours: Int) {
+        setAutoUpdateIntervalMinutes(if (hours == 15) 15 else hours * 60)
+    }
+
+    fun setAutoUpdateIntervalMinutes(minutes: Int) {
         viewModelScope.launch {
-            settingsRepository.setAutoUpdateIntervalHours(hours)
-            ScheduleUpdateWorker.schedulePeriodicWork(context, hours)
+            settingsRepository.setAutoUpdateIntervalMinutes(minutes)
+            ScheduleUpdateWorker.schedulePeriodicWork(context, minutes)
+        }
+    }
+
+    fun debugTriggerWorkerNow() {
+        ScheduleUpdateWorker.enqueueOneTimeWork(context)
+    }
+
+    fun debugResetScheduleHashes() {
+        viewModelScope.launch {
+            settingsRepository.resetScheduleHashes()
+        }
+    }
+
+    fun debugSimulateScheduleDiff() {
+        val mockDiffs = listOf(
+            SlotDiff(
+                subjectCode = "DEBUG101",
+                subjectName = "Debug Systems & Testing",
+                changeType = com.marcoslorcar.clementime.utils.DiffType.MODIFIED,
+                oldDetail = "Mon 09:00-11:00 (Aula 1.1)",
+                newDetail = "Mon 10:00-12:00 (Aula 2.3)"
+            )
+        )
+        _pendingDiffs.value = mockDiffs
+        _pendingRemoteHash.value = "debug_simulated_hash_${System.currentTimeMillis()}"
+        _showDiffBottomSheet.value = true
+    }
+
+    fun debugResetOnboardingAndTooltips() {
+        viewModelScope.launch {
+            settingsRepository.resetOnboardingAndTooltips()
         }
     }
 

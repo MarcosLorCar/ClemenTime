@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.marcoslorcar.clementime.data.ClassSlot
@@ -46,13 +47,22 @@ fun ScheduleMiniPreview(
     modifier: Modifier = Modifier,
     slots: List<Pair<Subject, ClassSlot>>,
     overlappingSlotIds: Set<Long> = emptySet(),
+    highlightedSlotIds: Set<Long> = emptySet(),
+    highlightedSlots: Set<Pair<Subject, ClassSlot>> = emptySet(),
     startTime: LocalTime = LocalTime.of(8, 30),
     endTime: LocalTime = LocalTime.of(21, 30)
 ) {
     val days = listOf(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY)
     val locale = LocalConfiguration.current.locales[0]
     
-    val totalMinutes = Duration.between(startTime, endTime).toMinutes().toInt()
+    val totalMinutes = Duration.between(startTime, endTime).toMinutes().toInt().coerceAtLeast(1)
+
+    val slotsByDay = remember(slots) { slots.groupBy { it.second.dayOfWeek } }
+    val clustersByDay = remember(slotsByDay) {
+        days.associateWith { day ->
+            groupSlotsIntoClusters(slotsByDay[day].orEmpty())
+        }
+    }
 
     Surface(
         modifier = modifier,
@@ -116,8 +126,7 @@ fun ScheduleMiniPreview(
 
                 Row(modifier = Modifier.fillMaxSize()) {
                     days.forEach { day ->
-                        val daySlots = remember(slots) { slots.filter { it.second.dayOfWeek == day } }
-                        val clusters = remember(daySlots) { groupSlotsIntoClusters(daySlots) }
+                        val clusters = clustersByDay[day].orEmpty()
                         
                         Box(modifier = Modifier
                             .weight(1f)
@@ -146,6 +155,11 @@ fun ScheduleMiniPreview(
                                         ) {
                                             columnItems.forEach { (subject, slot) ->
                                                 val isOverlapping = overlappingSlotIds.contains(slot.id)
+                                                val isHighlighted = (slot.id > 0 && highlightedSlotIds.contains(slot.id)) ||
+                                                        highlightedSlots.any { (hSub, hSlot) ->
+                                                            (hSlot.id > 0 && hSlot.id == slot.id) ||
+                                                                    (hSub.code == subject.code && hSlot.dayOfWeek == slot.dayOfWeek && hSlot.startTime == slot.startTime && hSlot.endTime == slot.endTime)
+                                                        }
                                                 val isLab = slot.entryType == EntryType.LAB
                                                 val itemDuration = Duration.between(slot.startTime, slot.endTime).toMinutes().toInt().coerceAtLeast(1)
                                                 val itemHeight = clusterHeight * (itemDuration.toFloat() / durationMinutes)
@@ -163,7 +177,12 @@ fun ScheduleMiniPreview(
                                                         .clip(RoundedCornerShape(1.dp))
                                                         .background(subject.uiColor.copy(alpha = backgroundAlpha))
                                                         .then(
-                                                            if (isOverlapping) {
+                                                            if (isHighlighted) {
+                                                                Modifier.border(
+                                                                    BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary),
+                                                                    RoundedCornerShape(1.dp)
+                                                                )
+                                                            } else if (isOverlapping) {
                                                                 Modifier.border(
                                                                     BorderStroke(1.dp, MaterialTheme.colorScheme.error),
                                                                     RoundedCornerShape(1.dp)
@@ -198,3 +217,22 @@ fun ScheduleMiniPreview(
         }
     }
 }
+
+@Preview(showBackground = true, widthDp = 360, heightDp = 200)
+@Composable
+fun ScheduleMiniPreviewPreview() {
+    val sub1 = Subject(id = 1, code = "PROG", name = "Programming", color = 0xFF2196F3.toInt(), isActive = true)
+    val sub2 = Subject(id = 2, code = "ED", name = "Data Structures", color = 0xFF4CAF50.toInt(), isActive = true)
+
+    val slot1 = ClassSlot(id = 101, subjectId = 1, dayOfWeek = DayOfWeek.MONDAY, startTime = LocalTime.of(9, 0), endTime = LocalTime.of(11, 0))
+    val slot2 = ClassSlot(id = 102, subjectId = 2, dayOfWeek = DayOfWeek.TUESDAY, startTime = LocalTime.of(11, 0), endTime = LocalTime.of(13, 0))
+
+    com.marcoslorcar.clementime.ui.theme.ClemenTimeTheme(dynamicColor = false) {
+        ScheduleMiniPreview(
+            slots = listOf(Pair(sub1, slot1), Pair(sub2, slot2)),
+            highlightedSlotIds = setOf(102L),
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+}
+
