@@ -5,7 +5,7 @@
     "description": "Horario oficial ESI UCLM - 1º Cuatrimestre",
     "path": "1C.json",
     "hash": "bc0e4b6faa6d1b65ec1268b3d5ca75ec726333d10509b1be924a681e566780a1",
-    "updatedTime": "2026-08-07"
+    "updatedTime": "2026-08-08"
   },
   {
     "id": "2C",
@@ -13,6 +13,6 @@
     "description": "Horario oficial ESI UCLM - 2º Cuatrimestre",
     "path": "2C.json",
     "hash": "3f2ab4e6ab7ca4f9d6e5e981f15cde4cd1819736a4cac82d0632daeeeec6e7b7",
-    "updatedTime": "2026-08-07"
+    "updatedTime": "2026-08-08"
   }
 ]
