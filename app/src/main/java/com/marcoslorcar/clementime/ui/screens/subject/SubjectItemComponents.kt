@@ -43,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -55,6 +56,7 @@ import com.marcoslorcar.clementime.data.EntryType
 import com.marcoslorcar.clementime.data.Subject
 import com.marcoslorcar.clementime.data.SubjectWithSlots
 import com.marcoslorcar.clementime.data.cardColor
+import com.marcoslorcar.clementime.data.uiColor
 import com.marcoslorcar.clementime.ui.components.ScheduleMiniPreview
 import com.marcoslorcar.clementime.ui.theme.ClemenTimeTheme
 import java.time.DayOfWeek
@@ -77,18 +79,36 @@ fun SubjectItemCard(
     val subject = subjectWithSlots.subject
     var isExpanded by remember { mutableStateOf(false) }
 
+    val baseColor = subject.uiColor
     val cardBgColor = if (highContrastEnabled) {
-        if (subject.isActive) subject.cardColor else MaterialTheme.colorScheme.surfaceVariant
+        if (subject.isActive) baseColor.copy(alpha = 0.95f) else MaterialTheme.colorScheme.surfaceVariant
     } else if (subject.isActive) {
         subject.cardColor
     } else {
         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
     }
 
+    val luminance = 0.299 * baseColor.red + 0.587 * baseColor.green + 0.114 * baseColor.blue
+    val contentColor = if (highContrastEnabled && subject.isActive) {
+        if (luminance > 0.5f) Color.Black else Color.White
+    } else if (subject.isActive) {
+        MaterialTheme.colorScheme.onSurface
+    } else {
+        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+    }
+
+    val secondaryContentColor = if (highContrastEnabled && subject.isActive) {
+        contentColor.copy(alpha = 0.75f)
+    } else if (subject.isActive) {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = if (highContrastEnabled) androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.outline) else null,
+        border = null,
         shape = RoundedCornerShape(12.dp)
     ) {
         Surface(
@@ -132,13 +152,7 @@ fun SubjectItemCard(
                         fontWeight = if (highContrastEnabled) FontWeight.Bold else FontWeight.SemiBold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        color = if (highContrastEnabled) {
-                            if (subject.isActive) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        } else if (subject.isActive) {
-                            MaterialTheme.colorScheme.onSurface
-                        } else {
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                        }
+                        color = contentColor
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -154,11 +168,7 @@ fun SubjectItemCard(
                             style = MaterialTheme.typography.bodyMedium,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            color = if (subject.isActive) {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
-                            }
+                            color = secondaryContentColor
                         )
                     }
 

@@ -410,7 +410,18 @@ fun ClusterSegmentRow(
                         val itemHeight = BLOCK_HEIGHT * (itemDurationMinutes / 30.0).toFloat()
 
                         val rawColor = Color(subject.color)
-                        val cardBgColor = if (highContrast) rawColor.copy(alpha = 0.95f) else rawColor
+                        val cardBgColor = if (highContrast) rawColor.copy(alpha = 0.95f) else rawColor.copy(alpha = 0.35f)
+                        val luminance = 0.299 * rawColor.red + 0.587 * rawColor.green + 0.114 * rawColor.blue
+                        val titleTextColor = if (highContrast) {
+                            if (luminance > 0.5f) Color(0xFF000000) else Color(0xFFFFFFFF)
+                        } else {
+                            Color(0xFFFFFFFF)
+                        }
+                        val subTextColor = if (highContrast) {
+                            titleTextColor.copy(alpha = 0.75f)
+                        } else {
+                            Color(0xFFE5E5EA)
+                        }
 
                         Box(
                             modifier = GlanceModifier
@@ -423,18 +434,9 @@ fun ClusterSegmentRow(
                             Row(
                                 modifier = GlanceModifier
                                     .fillMaxSize()
-                                    .padding(horizontal = 6.dp, vertical = 2.dp),
+                                    .padding(horizontal = 10.dp, vertical = 2.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Box(
-                                    modifier = GlanceModifier
-                                        .width(4.dp)
-                                        .fillMaxHeight()
-                                        .background(rawColor)
-                                ) {}
-
-                                Spacer(modifier = GlanceModifier.width(6.dp))
-
                                 Column(
                                     modifier = GlanceModifier
                                         .defaultWeight()
@@ -447,7 +449,7 @@ fun ClusterSegmentRow(
                                         maxLines = 1,
                                         style = TextStyle(
                                             fontWeight = FontWeight.Bold,
-                                            color = ColorProvider(day = Color.White, night = Color.White)
+                                            color = ColorProvider(day = titleTextColor, night = titleTextColor)
                                         )
                                     )
                                     val labText = if (!slot.labGroupName.isNullOrEmpty()) " (${slot.labGroupName})" else ""
@@ -455,7 +457,7 @@ fun ClusterSegmentRow(
                                         text = "${slot.startTime.format(timeFormatter)} - ${slot.endTime.format(timeFormatter)}$labText",
                                         maxLines = 1,
                                         style = TextStyle(
-                                            color = ColorProvider(day = Color(0xFFE5E5EA), night = Color(0xFFE5E5EA))
+                                            color = ColorProvider(day = subTextColor, night = subTextColor)
                                         )
                                     )
                                 }
