@@ -111,11 +111,16 @@ class ImportViewModel @Inject constructor(
 
                 val remoteResult = repository.fetchRemoteSchedules(baseUrl)
                 val remoteFiles = remoteResult.fold(
-                    onSuccess = { list ->
+                    onSuccess = { (effectiveBaseUrl, list) ->
+                        val effectiveFolderUrl = when {
+                            effectiveBaseUrl.endsWith("schedules_index.json") -> effectiveBaseUrl.substringBeforeLast("/") + "/"
+                            effectiveBaseUrl.endsWith("/") -> effectiveBaseUrl
+                            else -> "$effectiveBaseUrl/"
+                        }
                         list.map { summary ->
                             val fullPath = when {
                                 summary.path.startsWith("http://") || summary.path.startsWith("https://") -> summary.path
-                                else -> "$folderUrl${summary.path.removePrefix("/")}"
+                                else -> "$effectiveFolderUrl${summary.path.removePrefix("/")}"
                             }
                             val cachedEntry = cacheMetadata.find { it.id == summary.id }
                             val isCached = cachedEntry != null && 

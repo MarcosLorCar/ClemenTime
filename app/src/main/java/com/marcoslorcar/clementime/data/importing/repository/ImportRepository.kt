@@ -226,7 +226,7 @@ class ImportRepository @Inject constructor(
         var slotsToUse = remoteSlots
         if (slotsToUse.isEmpty()) {
             val baseUrl = SettingsRepository.DEFAULT_GITHUB_REPO_BASE_URL
-            val summaries = fetchRemoteSchedules(baseUrl).getOrNull().orEmpty()
+            val (effectiveBaseUrl, summaries) = fetchRemoteSchedules(baseUrl).getOrNull() ?: Pair(baseUrl, emptyList())
             val targetSemesterId = "${semester}C"
             val summary = summaries.find {
                 it.id.equals(targetSemesterId, ignoreCase = true) ||
@@ -235,7 +235,7 @@ class ImportRepository @Inject constructor(
 
             if (summary != null && apiService != null) {
                 val fullUrl = normalizeGitHubUrl(
-                    if (baseUrl.endsWith("/")) "${baseUrl}${summary.path}" else "${baseUrl}/${summary.path}"
+                    if (effectiveBaseUrl.endsWith("/")) "${effectiveBaseUrl}${summary.path}" else "${effectiveBaseUrl}/${summary.path}"
                 )
                 val resp = apiService.getRawScheduleSchema(fullUrl)
                 if (resp.isSuccessful) {
@@ -336,7 +336,7 @@ class ImportRepository @Inject constructor(
         return trimmed
     }
 
-    suspend fun fetchRemoteSchedules(rawBaseUrl: String): Result<List<RemoteScheduleSummary>> = withContext(Dispatchers.IO) {
+    suspend fun fetchRemoteSchedules(rawBaseUrl: String): Result<Pair<String, List<RemoteScheduleSummary>>> = withContext(Dispatchers.IO) {
         try {
             if (apiService == null) return@withContext Result.failure(Exception("Network service unavailable"))
             val baseUrl = normalizeGitHubUrl(rawBaseUrl)
@@ -347,12 +347,22 @@ class ImportRepository @Inject constructor(
             }
             val response = apiService.getScheduleIndex(indexUrl)
             if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
+                Result.success(Pair(baseUrl, response.body()!!))
             } else {
-                Result.failure(Exception("Failed to fetch remote index: ${response.code()} ${response.message()}"))
+                val fallbackUrl = SettingsRepository.FALLBACK_GITHUB_REPO_BASE_URL
+                if (normalizeGitHubUrl(rawBaseUrl) != normalizeGitHubUrl(fallbackUrl)) {
+                    fetchRemoteSchedules(fallbackUrl)
+                } else {
+                    Result.failure(Exception("Failed to fetch remote index: ${response.code()} ${response.message()}"))
+                }
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            val fallbackUrl = SettingsRepository.FALLBACK_GITHUB_REPO_BASE_URL
+            if (normalizeGitHubUrl(rawBaseUrl) != normalizeGitHubUrl(fallbackUrl)) {
+                fetchRemoteSchedules(fallbackUrl)
+            } else {
+                Result.failure(e)
+            }
         }
     }
 
@@ -404,8 +414,19 @@ class ImportRepository @Inject constructor(
 
         try {
             if (apiService == null) throw Exception("Network service unavailable")
-            val fullUrl = normalizeGitHubUrl(file.remotePath ?: throw Exception("Remote path is null"))
-            val response = apiService.getRawScheduleSchema(fullUrl)
+            var fullUrl = normalizeGitHubUrl(file.remotePath ?: throw Exception("Remote path is null"))
+            var response = apiService.getRawScheduleSchema(fullUrl)
+            if (!response.isSuccessful) {
+                val fallbackUrl = normalizeGitHubUrl(SettingsRepository.FALLBACK_GITHUB_REPO_BASE_URL)
+                val defaultUrl = normalizeGitHubUrl(SettingsRepository.DEFAULT_GITHUB_REPO_BASE_URL)
+                if (defaultUrl != fallbackUrl && fullUrl.contains(defaultUrl)) {
+                    val retryUrl = fullUrl.replace(defaultUrl, fallbackUrl)
+                    val retryResponse = apiService.getRawScheduleSchema(retryUrl)
+                    if (retryResponse.isSuccessful) {
+                        response = retryResponse
+                    }
+                }
+            }
             if (response.isSuccessful) {
                 val jsonBody = response.body()?.string() ?: throw Exception("Response body is empty")
                 val schema = parser.parseJson(jsonBody).getOrThrow()

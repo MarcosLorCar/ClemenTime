@@ -173,7 +173,7 @@ class ScheduleUpdateWorker @AssistedInject constructor(
                 return SyncResult()
             }
 
-            val summaries = remoteSummariesResult.getOrNull() ?: return SyncResult()
+            val (effectiveBaseUrl, summaries) = remoteSummariesResult.getOrNull() ?: return SyncResult()
             val targetSemesterId = "${currentSemester}C"
             // No fallback to summaries.first(): diffing against another semester's schedule
             // would mark every subject as changed.
@@ -201,7 +201,7 @@ class ScheduleUpdateWorker @AssistedInject constructor(
             if (apiService == null) return SyncResult()
 
             val fullUrl = importRepository.normalizeGitHubUrl(
-                if (baseUrl.endsWith("/")) "${baseUrl}${summary.path}" else "${baseUrl}/${summary.path}"
+                if (effectiveBaseUrl.endsWith("/")) "${effectiveBaseUrl}${summary.path}" else "${effectiveBaseUrl}/${summary.path}"
             )
 
             val rawResponse = apiService.getRawScheduleSchema(fullUrl)
