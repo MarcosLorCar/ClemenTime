@@ -42,8 +42,10 @@ android {
 
         val effectiveBranch = if (gitBranch.isBlank() || gitBranch == "HEAD") "master" else gitBranch
         val defaultGithubRepoBaseUrl = "https://raw.githubusercontent.com/MarcosLorCar/ClemenTime/$effectiveBranch/schedules/dist/"
+        val fallbackGithubRepoBaseUrl = "https://raw.githubusercontent.com/MarcosLorCar/ClemenTime/master/schedules/dist/"
 
         buildConfigField("String", "DEFAULT_GITHUB_REPO_BASE_URL", "\"$defaultGithubRepoBaseUrl\"")
+        buildConfigField("String", "FALLBACK_GITHUB_REPO_BASE_URL", "\"$fallbackGithubRepoBaseUrl\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

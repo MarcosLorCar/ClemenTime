@@ -569,6 +569,7 @@ open class SettingsRepository @Inject constructor(
 
     companion object {
         const val DEFAULT_GITHUB_REPO_BASE_URL = BuildConfig.DEFAULT_GITHUB_REPO_BASE_URL
+        const val FALLBACK_GITHUB_REPO_BASE_URL = BuildConfig.FALLBACK_GITHUB_REPO_BASE_URL
 
         /** Hours between background schedule checks. 0 disables them. */
         const val DEFAULT_AUTO_UPDATE_INTERVAL_HOURS = 6
