@@ -96,14 +96,9 @@ fun ScheduleScreen(
         }
     }
 
-    LaunchedEffect(targetDayOfWeek) {
-        if (targetDayOfWeek != null) {
-            val targetTab = ScheduleTab.entries.find { it.dayOfWeek.name.equals(targetDayOfWeek, ignoreCase = true) }
-            if (targetTab != null) {
-                viewModel.changeTab(targetTab)
-            }
-        }
-    }
+    // The day requested by the route is applied inside ScheduleContent, where it can move the
+    // pager and the ViewModel together. Doing it here only set the ViewModel, and the pager sync
+    // then raced with the settledPage collector.
 
     // The route argument is immutable, and navigateToTab reuses the existing entry
     // (launchSingleTop), so on a second "view in schedule" the ViewModel's savedStateHandle is
@@ -114,6 +109,7 @@ fun ScheduleScreen(
 
     ScheduleContent(
         uiState = uiState,
+        targetDayOfWeek = targetDayOfWeek,
         overrideHighlightSlotId = pendingHighlightSlotId,
         onChangeTab = viewModel::changeTab,
         onSemesterSelected = viewModel::changeSemester,
@@ -137,6 +133,7 @@ fun ScheduleScreen(
 @Composable
 fun ScheduleContent(
     uiState: ScheduleUiState,
+    targetDayOfWeek: String? = null,
     overrideHighlightSlotId: Long? = null,
     onChangeTab: (ScheduleTab) -> Unit,
     onSemesterSelected: (Int) -> Unit = {},
@@ -171,12 +168,18 @@ fun ScheduleContent(
     val slotToHighlight = overrideHighlightSlotId ?: uiState.highlightSlotId
     var activeHighlightSlotId by remember { mutableStateOf<Long?>(null) }
 
+    // Latch the request, then consume it. Consuming nulls slotToHighlight, which cancels this
+    // effect - so it must not be the one holding the timeout, or the highlight would never clear.
     LaunchedEffect(slotToHighlight) {
-        if (slotToHighlight != null) {
-            activeHighlightSlotId = slotToHighlight
-            // Consuming nulls slotToHighlight, so activeHighlightSlotId must NOT be keyed on it -
-            // re-keying would clear the highlight immediately instead of after the delay.
-            onHighlightConsumed()
+        val requested = slotToHighlight ?: return@LaunchedEffect
+        activeHighlightSlotId = requested
+        onHighlightConsumed()
+    }
+
+    // The fade-out is keyed on the latched value instead, so it survives consumption and restarts
+    // cleanly if a different slot is highlighted mid-timeout.
+    LaunchedEffect(activeHighlightSlotId) {
+        if (activeHighlightSlotId != null) {
             delay(2000L.milliseconds)
             activeHighlightSlotId = null
         }
@@ -190,18 +193,42 @@ fun ScheduleContent(
         }
     }
 
+    // A day requested by navigation ("view in schedule") drives the pager directly and updates the
+    // ViewModel in the same breath. Going VM -> uiState -> pager lost the race against the
+    // settledPage collector below, which reported the pager's not-yet-updated page back and
+    // cancelled the jump. Keyed on the slot id too, so navigating again re-applies the day even
+    // when the day itself is unchanged.
+    var isRestoringRequestedDay by remember { mutableStateOf(false) }
+
+    LaunchedEffect(targetDayOfWeek, overrideHighlightSlotId) {
+        val targetTab = targetDayOfWeek
+            ?.let { day -> tabs.find { it.dayOfWeek.name.equals(day, ignoreCase = true) } }
+            ?: return@LaunchedEffect
+
+        isRestoringRequestedDay = true
+        onChangeTab(targetTab)
+        if (pagerState.currentPage != targetTab.ordinal) {
+            pagerState.scrollToPage(targetTab.ordinal)
+        }
+        isRestoringRequestedDay = false
+    }
+
     // Synchronize Pager state with ViewModel only when it settles and we're not programmatically scrolling
     LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.settledPage }.collect { page ->
-            if (!pagerState.isScrollInProgress) {
+            if (!pagerState.isScrollInProgress && !isRestoringRequestedDay) {
                 onChangeTab(tabs[page])
             }
         }
     }
 
-    // Synchronize Pager page when ViewModel changes selectedTab (e.g. via navigation)
-    LaunchedEffect(uiState.selectedTab) {
-        if (!uiState.isLoading && pagerState.currentPage != uiState.selectedTab.ordinal) {
+    // Synchronize Pager page when the ViewModel changes selectedTab by any other route. Keyed on
+    // isLoading as well: the guard below depends on it, so without it the effect would never
+    // re-run once loading finished on an unchanged tab.
+    LaunchedEffect(uiState.selectedTab, uiState.isLoading) {
+        if (!uiState.isLoading && !isRestoringRequestedDay &&
+            pagerState.currentPage != uiState.selectedTab.ordinal
+        ) {
             pagerState.scrollToPage(uiState.selectedTab.ordinal)
         }
     }
