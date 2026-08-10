@@ -8,16 +8,16 @@ import org.junit.Test
 class SettingsRepositoryTest {
 
     @Test
-    fun defaultAutoUpdateIntervalMinutes_returns360() = runTest {
+    fun defaultAutoUpdateIntervalMinutes_isDisabled() = runTest {
         val repository = SettingsRepository(null)
         val minutes = repository.autoUpdateIntervalMinutesFlow.first()
-        assertEquals(360, minutes)
+        assertEquals(0, minutes)
     }
 
     @Test
-    fun defaultAutoUpdateIntervalHours_returns6() = runTest {
+    fun defaultAutoUpdateIntervalHours_isDisabled() = runTest {
         val repository = SettingsRepository(null)
         val hours = repository.autoUpdateIntervalHoursFlow.first()
-        assertEquals(6, hours)
+        assertEquals(0, hours)
     }
 }

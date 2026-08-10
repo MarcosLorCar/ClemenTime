@@ -45,7 +45,7 @@ data class MoreUiState(
     val onboardingTooltipsEnabled: Boolean = true,
     val dayStartTime: LocalTime = LocalTime.of(8, 30),
     val dayEndTime: LocalTime = LocalTime.of(21, 30),
-    val autoUpdateIntervalHours: Int = 6,
+    val autoUpdateIntervalHours: Int = SettingsRepository.DEFAULT_AUTO_UPDATE_INTERVAL_HOURS,
     val lastScheduleSyncTimestamp: Long = 0L,
     val isCheckingUpdates: Boolean = false,
     val pendingDiffs: List<SlotDiff> = emptyList(),
