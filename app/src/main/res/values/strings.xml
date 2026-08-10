@@ -67,6 +67,7 @@
     <string name="high_contrast_setting_title">High Contrast Cards</string>
     <string name="high_contrast_setting_desc">Make schedule cards more opaque for better legibility</string>
     <string name="schedule_range_header">Schedule Range</string>
+    <string name="time_picker_dialog_title">Select time</string>
     <string name="day_start_time_label">Day Start Time</string>
     <string name="day_end_time_label">Day End Time</string>
     <string name="theme_preview_title">Theme Selection</string>
