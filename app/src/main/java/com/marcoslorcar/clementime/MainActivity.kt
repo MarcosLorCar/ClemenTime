@@ -218,7 +218,7 @@ fun ClemenTimeApp(
 
     val focusScheduleSlot = { day: java.time.DayOfWeek, slotId: Long? ->
         pendingScheduleFocus = ScheduleFocus(dayOfWeek = day, slotId = slotId)
-        navigateToTab(ScheduleListRoute())
+        navigateToTab(ScheduleListRoute)
     }
 
     NavigationSuiteScaffold(
@@ -231,7 +231,7 @@ fun ClemenTimeApp(
                         selected = isSelected,
                         onClick = {
                             val route = when (item.routeClass) {
-                                ScheduleListRoute::class -> ScheduleListRoute()
+                                ScheduleListRoute::class -> ScheduleListRoute
                                 SubjectsRoute::class -> SubjectsRoute
                                 MoreRoute::class -> MoreRoute()
                                 else -> return@item
@@ -252,7 +252,7 @@ fun ClemenTimeApp(
     ) {
         NavHost(
             navController = navController,
-            startDestination = if (isOnboardingCompleted) ScheduleListRoute() else OnboardingRoute,
+            startDestination = if (isOnboardingCompleted) ScheduleListRoute else OnboardingRoute,
             modifier = Modifier.fillMaxSize(),
             enterTransition = {
                 val fromIndex = getTabIndex(initialState)
@@ -314,7 +314,7 @@ fun ClemenTimeApp(
             composable<OnboardingRoute> {
                 OnboardingScreen(
                     onFinish = {
-                        navController.navigate(ScheduleListRoute()) {
+                        navController.navigate(ScheduleListRoute) {
                             popUpTo(OnboardingRoute) { inclusive = true }
                         }
                     }
