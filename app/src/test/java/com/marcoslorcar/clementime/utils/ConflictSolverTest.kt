@@ -66,6 +66,23 @@ class ConflictSolverTest {
     }
 
     @Test
+    fun `test labVariantCount collapses lab groups with identical schedules`() {
+        val subject = Subject(id = 1, code = "S1", name = "Subject 1", color = 0, isActive = true)
+
+        val theory = ClassSlot(id = 1, subjectId = 1, dayOfWeek = DayOfWeek.MONDAY, startTime = LocalTime.of(9, 0), endTime = LocalTime.of(10, 0), entryType = EntryType.THEORY)
+        // L1 and L2 share a schedule, L3 differs.
+        val lab1 = ClassSlot(id = 2, subjectId = 1, dayOfWeek = DayOfWeek.MONDAY, startTime = LocalTime.of(11, 0), endTime = LocalTime.of(12, 0), entryType = EntryType.LAB, labGroupName = "L1")
+        val lab2 = ClassSlot(id = 3, subjectId = 1, dayOfWeek = DayOfWeek.MONDAY, startTime = LocalTime.of(11, 0), endTime = LocalTime.of(12, 0), entryType = EntryType.LAB, labGroupName = "L2")
+        val lab3 = ClassSlot(id = 4, subjectId = 1, dayOfWeek = DayOfWeek.TUESDAY, startTime = LocalTime.of(11, 0), endTime = LocalTime.of(12, 0), entryType = EntryType.LAB, labGroupName = "L3")
+
+        assertEquals(0, ConflictSolver.labVariantCount(SubjectWithSlots(subject, listOf(theory))))
+        assertEquals(1, ConflictSolver.labVariantCount(SubjectWithSlots(subject, listOf(theory, lab1))))
+        // Two named groups, one real choice.
+        assertEquals(1, ConflictSolver.labVariantCount(SubjectWithSlots(subject, listOf(theory, lab1, lab2))))
+        assertEquals(2, ConflictSolver.labVariantCount(SubjectWithSlots(subject, listOf(theory, lab1, lab2, lab3))))
+    }
+
+    @Test
     fun `test ignored slots are not counted as overlaps`() {
         val subject1 = Subject(id = 1, code = "S1", name = "Subject 1", color = 0, isActive = true)
         val subject2 = Subject(id = 2, code = "S2", name = "Subject 2", color = 0, isActive = true)

@@ -36,7 +36,9 @@ data class ConflictResolverUiState(
     val canUndo: Boolean = false,
     val onboardingTooltipsEnabled: Boolean = true,
     val hasSeenPrioritiesTooltip: Boolean = false,
-    val hasSeenApplyTooltip: Boolean = false
+    val hasSeenApplyTooltip: Boolean = false,
+    /** Ids of subjects where the optimizer actually had a lab choice to make. */
+    val ambiguousSubjectIds: Set<Long> = emptySet()
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -86,6 +88,15 @@ class ConflictResolverViewModel @Inject constructor(
                 )
             }
 
+            val ambiguousSubjectIds = subjects
+                .filter {
+                    !it.subject.isDummy &&
+                            it.subject.selectedLabGroup == null &&
+                            ConflictSolver.labVariantCount(it) > 1
+                }
+                .map { it.subject.id }
+                .toSet()
+
             ConflictResolverUiState(
                 isLoading = false,
                 solutions = sortedSolutions,
@@ -94,7 +105,8 @@ class ConflictResolverViewModel @Inject constructor(
                 canUndo = lastAppliedLabSelections != null,
                 onboardingTooltipsEnabled = onboardingEnabled,
                 hasSeenPrioritiesTooltip = seenPriorities,
-                hasSeenApplyTooltip = seenApply
+                hasSeenApplyTooltip = seenApply,
+                ambiguousSubjectIds = ambiguousSubjectIds
             )
         } catch (_: Exception) {
             ConflictResolverUiState(

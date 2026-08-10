@@ -6,8 +6,6 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -56,6 +54,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.marcoslorcar.clementime.R
 import com.marcoslorcar.clementime.data.EntryType
@@ -359,6 +358,7 @@ fun SolutionsSheetContent(
     solutions: List<ScheduleSolution>,
     subjects: List<SubjectWithSlots>,
     onSelectSolution: (ScheduleSolution) -> Unit,
+    ambiguousSubjectIds: Set<Long> = emptySet(),
     onboardingTooltipsEnabled: Boolean = true,
     hasSeenApplyTooltip: Boolean = false,
     onMarkApplyTooltipSeen: () -> Unit = {}
@@ -402,6 +402,7 @@ fun SolutionsSheetContent(
             SolutionCard(
                 solution = solution,
                 allSubjects = subjects,
+                ambiguousSubjectIds = ambiguousSubjectIds,
                 onApply = { onSelectSolution(solution) },
                 showOnboardingTooltip = isFirstNonCurrent && onboardingTooltipsEnabled && !hasSeenApplyTooltip,
                 onMarkApplyTooltipSeen = onMarkApplyTooltipSeen
@@ -410,11 +411,11 @@ fun SolutionsSheetContent(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SolutionCard(
     solution: ScheduleSolution,
     allSubjects: List<SubjectWithSlots>,
+    ambiguousSubjectIds: Set<Long> = emptySet(),
     onApply: () -> Unit,
     showOnboardingTooltip: Boolean = false,
     onMarkApplyTooltipSeen: () -> Unit = {}
@@ -520,19 +521,24 @@ fun SolutionCard(
                 }
             }
 
-            // Wrapping FlowRow of Borderless Lab Group Chips
-            val filteredSelections = remember(solution.labSelections, allSubjects) {
-                solution.labSelections.filter { (subjectId, _) ->
-                    allSubjects.find { it.subject.id == subjectId }?.subject?.selectedLabGroup == null
-                }
+            // One line per lab choice, only for subjects where a real choice existed
+            // (unpinned, and offering more than one distinct lab schedule).
+            val filteredSelections = remember(solution.labSelections, ambiguousSubjectIds) {
+                solution.labSelections.filterKeys { it in ambiguousSubjectIds }
             }
 
             if (filteredSelections.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(10.dp))
-                FlowRow(
+                Text(
+                    text = stringResource(R.string.conflict_resolver_choices_header),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     filteredSelections.forEach { (subjectId, labGroupNames) ->
                         val subject = allSubjects.find { it.subject.id == subjectId }?.subject
@@ -541,13 +547,14 @@ fun SolutionCard(
                         val subjectColor = subject?.uiColor ?: MaterialTheme.colorScheme.primary
 
                         Surface(
+                            modifier = Modifier.fillMaxWidth(),
                             color = subjectColor.copy(alpha = 0.12f),
                             shape = RoundedCornerShape(6.dp)
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 Box(
                                     modifier = Modifier
@@ -556,10 +563,13 @@ fun SolutionCard(
                                         .background(subjectColor)
                                 )
                                 Text(
-                                    text = "$codeStr:",
+                                    text = subject?.name ?: codeStr,
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontWeight = FontWeight.Medium
+                                    fontWeight = FontWeight.Medium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f, fill = true)
                                 )
                                 Text(
                                     text = groupText,
