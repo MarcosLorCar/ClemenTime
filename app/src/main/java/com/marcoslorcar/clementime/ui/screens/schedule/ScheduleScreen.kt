@@ -198,25 +198,24 @@ fun ScheduleContent(
     // settledPage collector below, which reported the pager's not-yet-updated page back and
     // cancelled the jump. Keyed on the slot id too, so navigating again re-applies the day even
     // when the day itself is unchanged.
-    var isRestoringRequestedDay by remember { mutableStateOf(false) }
-
     LaunchedEffect(targetDayOfWeek, overrideHighlightSlotId) {
         val targetTab = targetDayOfWeek
             ?.let { day -> tabs.find { it.dayOfWeek.name.equals(day, ignoreCase = true) } }
             ?: return@LaunchedEffect
 
-        isRestoringRequestedDay = true
+        // Move the pager first, then the ViewModel. Ordered this way the sequence is
+        // self-correcting: a settledPage emission arriving before the jump reports the old page
+        // and is then overwritten by onChangeTab, and one arriving after already reports the
+        // target. An earlier attempt used a suppression flag instead, which raced with the
+        // collector's snapshot reads.
+        pagerState.scrollToPage(targetTab.ordinal)
         onChangeTab(targetTab)
-        if (pagerState.currentPage != targetTab.ordinal) {
-            pagerState.scrollToPage(targetTab.ordinal)
-        }
-        isRestoringRequestedDay = false
     }
 
     // Synchronize Pager state with ViewModel only when it settles and we're not programmatically scrolling
     LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.settledPage }.collect { page ->
-            if (!pagerState.isScrollInProgress && !isRestoringRequestedDay) {
+            if (!pagerState.isScrollInProgress) {
                 onChangeTab(tabs[page])
             }
         }
@@ -226,9 +225,7 @@ fun ScheduleContent(
     // isLoading as well: the guard below depends on it, so without it the effect would never
     // re-run once loading finished on an unchanged tab.
     LaunchedEffect(uiState.selectedTab, uiState.isLoading) {
-        if (!uiState.isLoading && !isRestoringRequestedDay &&
-            pagerState.currentPage != uiState.selectedTab.ordinal
-        ) {
+        if (!uiState.isLoading && pagerState.currentPage != uiState.selectedTab.ordinal) {
             pagerState.scrollToPage(uiState.selectedTab.ordinal)
         }
     }

@@ -38,6 +38,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -62,6 +63,7 @@ import com.marcoslorcar.clementime.utils.DAY_START_TIME
 import com.marcoslorcar.clementime.utils.TimelineCluster
 import com.marcoslorcar.clementime.utils.groupSlotsIntoClusters
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import java.time.DayOfWeek
 import java.time.Duration
 import java.time.LocalTime
@@ -117,6 +119,9 @@ fun ScheduleTimeline(
 
     var viewportHeightPx by remember { mutableIntStateOf(0) }
     var hasAutoScrolled by remember { mutableStateOf(false) }
+    // The highlight id this timeline has already scrolled for, so one request scrolls once
+    // regardless of how many times the effect's other keys settle.
+    var lastHighlightScrolledId by remember { mutableStateOf<Long?>(null) }
 
     val isNearNow by remember {
         derivedStateOf {
@@ -159,27 +164,43 @@ fun ScheduleTimeline(
         }
     }
 
-    LaunchedEffect(clusters, showNowLine, isToday, viewportHeightPx, highlightSlotId, startTime, endTime) {
-        if (viewportHeightPx == 0) return@LaunchedEffect
-        // An explicit highlight is a direct user request ("view in schedule"), so it bypasses the
-        // once-per-day guard. Without this, highlighting a second slot on a day already visited
-        // silently did nothing.
-        if (hasAutoScrolled && highlightSlotId == null) return@LaunchedEffect
-
-        if (highlightSlotId != null) {
-            val targetSlot = clusters.flatMap { it.items }.find { it.second.id == highlightSlotId }?.second
-            if (targetSlot != null) {
-                val startMinutes = Duration.between(startTime, targetSlot.startTime).toMinutes().toInt()
-                val slotTopPx = with(density) { ((MINUTE_HEIGHT * startMinutes) + TOP_TIMELINE_PADDING).toPx() }
-                
-                // Center the slot in the viewport
-                val targetPx = (slotTopPx - (viewportHeightPx / 2)).toInt().coerceAtLeast(0)
-                
-                scrollState.animateScrollTo(targetPx)
-                hasAutoScrolled = true
-                return@LaunchedEffect
-            }
+    // Scrolling to a highlighted slot is its own effect, latched on the id it last scrolled for.
+    // Previously it shared the auto-scroll effect below and bypassed the hasAutoScrolled guard, so
+    // any key change during the highlight window (viewportHeightPx and clusters both settle late)
+    // launched another animateScrollTo on top of the one still running - the visible loop.
+    // Instant scrollTo, not animated: this is a direct "take me there" request, and an animation
+    // in flight is one more thing that can be interrupted or fought over.
+    LaunchedEffect(highlightSlotId, clusters, viewportHeightPx) {
+        val id = highlightSlotId
+        if (id == null) {
+            lastHighlightScrolledId = null
+            return@LaunchedEffect
         }
+        if (lastHighlightScrolledId == id) return@LaunchedEffect
+        if (viewportHeightPx == 0) return@LaunchedEffect
+
+        val targetSlot = clusters.flatMap { it.items }.find { it.second.id == id }?.second
+            ?: return@LaunchedEffect
+
+        // Wait until the content is actually measured. scrollTo clamps to maxValue, so running
+        // before layout silently scrolled to 0 and then latched - the "I have to scroll manually
+        // first" symptom, where the content was scrollable all along.
+        snapshotFlow { scrollState.maxValue }.first { it > 0 }
+
+        val startMinutes = Duration.between(startTime, targetSlot.startTime).toMinutes().toInt()
+        val slotTopPx = with(density) { ((MINUTE_HEIGHT * startMinutes) + TOP_TIMELINE_PADDING).toPx() }
+        val targetPx = (slotTopPx - (viewportHeightPx / 2)).toInt().coerceAtLeast(0)
+
+        scrollState.scrollTo(targetPx)
+        lastHighlightScrolledId = id
+        hasAutoScrolled = true
+    }
+
+    LaunchedEffect(clusters, showNowLine, isToday, viewportHeightPx, startTime, endTime) {
+        if (viewportHeightPx == 0) return@LaunchedEffect
+        if (hasAutoScrolled) return@LaunchedEffect
+        // Never fight an explicit highlight; the effect above owns the scroll position then.
+        if (highlightSlotId != null) return@LaunchedEffect
 
         if (showNowLine && isToday && isWithinTimeRange) {
             scrollToNow()
