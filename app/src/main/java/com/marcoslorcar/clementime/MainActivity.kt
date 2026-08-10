@@ -82,6 +82,8 @@ class MainActivity : AppCompatActivity() {
         // changes, but neither runs for a user who onboarded before this feature existed,
         // and WorkManager state does not survive "clear data" or some restores.
         lifecycleScope.launch {
+            // Must precede the read below: it may write the interval this install relies on.
+            settingsRepository.migrateLegacyAutoUpdateDefault()
             val intervalMinutes = settingsRepository.autoUpdateIntervalMinutesFlow.first()
             ScheduleUpdateWorker.ensurePeriodicWorkScheduled(this@MainActivity, intervalMinutes)
         }

@@ -515,6 +515,38 @@ open class SettingsRepository @Inject constructor(
         setAutoUpdateIntervalMinutes(hours * 60)
     }
 
+    /**
+     * Preserves background sync for installs that predate it becoming opt-in.
+     *
+     * TEMPORARY — delete this, [LEGACY_AUTO_UPDATE_INTERVAL_HOURS] and the call in
+     * MainActivity once enough releases have shipped that every active install has launched
+     * on this version or later. See AGENTS.md, "Background schedule sync".
+     *
+     * DataStore only holds keys that were explicitly written, so a user who never picked an
+     * interval has neither key and falls through to [DEFAULT_AUTO_UPDATE_INTERVAL_HOURS].
+     * That constant used to be 6, so those users had sync on; it is now 0, so on upgrade
+     * they would silently lose it. Completed onboarding with no interval key stored means
+     * exactly that case — a new install has not finished onboarding yet, so it keeps the
+     * new off-by-default.
+     *
+     * Self-limiting: it writes the key it checks for, so it can only ever run once, and it
+     * cannot override someone who deliberately chose "Off" (that writes 0).
+     */
+    open suspend fun migrateLegacyAutoUpdateDefault() {
+        try {
+            context?.dataStore?.edit { preferences ->
+                val hasInterval = preferences[autoUpdateIntervalMinutesKey] != null ||
+                        preferences[autoUpdateIntervalHoursKey] != null
+                val onboarded = preferences[isOnboardingCompletedKey] == true
+
+                if (!hasInterval && onboarded) {
+                    preferences[autoUpdateIntervalMinutesKey] = LEGACY_AUTO_UPDATE_INTERVAL_HOURS * 60
+                    preferences[autoUpdateIntervalHoursKey] = LEGACY_AUTO_UPDATE_INTERVAL_HOURS
+                }
+            }
+        } catch (_: Throwable) {}
+    }
+
     open suspend fun resetScheduleHashes() {
         try {
             context?.dataStore?.edit { preferences ->
@@ -573,6 +605,9 @@ open class SettingsRepository @Inject constructor(
 
         /** Hours between background schedule checks. 0 disables them, which is the default. */
         const val DEFAULT_AUTO_UPDATE_INTERVAL_HOURS = 0
+
+        /** What the default used to be, restored for pre-existing installs. See [migrateLegacyAutoUpdateDefault]. */
+        const val LEGACY_AUTO_UPDATE_INTERVAL_HOURS = 6
     }
 }
 
