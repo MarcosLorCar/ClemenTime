@@ -27,8 +27,6 @@ sealed interface WidgetTimelineSegment {
 
 fun buildTimelineSegments(
     daySlots: List<Pair<Subject, ClassSlot>>,
-    currentTime: LocalTime,
-    shouldShowNowLine: Boolean,
     dayStartTime: LocalTime = DAY_START_TIME,
     dayEndTime: LocalTime = DAY_END_TIME
 ): List<WidgetTimelineSegment> {
@@ -40,14 +38,9 @@ fun buildTimelineSegments(
     val firstClassStart = clusters.minOf { it.startTime }
     val lastClassEnd = clusters.maxOf { it.endTime }
 
-    val displayStartTime = if (shouldShowNowLine && currentTime < firstClassStart) {
-        val thirtyMinsBeforeNow = currentTime.minusMinutes(30)
-        val snapped = thirtyMinsBeforeNow.withMinute((thirtyMinsBeforeNow.minute / 30) * 30).withSecond(0).withNano(0)
-        snapped.coerceIn(dayStartTime, firstClassStart)
-    } else {
-        firstClassStart
-    }
-
+    // The timeline always spans exactly the classes of the day. The "Now" line is only
+    // drawn when the current time falls inside that range (see isNowInSegment in ScheduleWidgetUI).
+    val displayStartTime = firstClassStart
     val displayEndTime = lastClassEnd
 
     val segments = mutableListOf<WidgetTimelineSegment>()
