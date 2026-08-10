@@ -158,9 +158,11 @@ fun ScheduleContent(
         val targetTab = tabs.find { it.dayOfWeek == request.dayOfWeek }
 
         if (targetTab != null) {
-            // Pager first, then the ViewModel: whichever way the settledPage collector below
-            // interleaves, the sequence ends with both agreeing on the target.
-            pagerState.scrollToPage(targetTab.ordinal)
+            // requestScrollToPage, not scrollToPage: the request usually arrives before the pager
+            // has been measured, and a suspending scroll on an unmeasured pager left it showing a
+            // blank page stuck on the previous day until a touch forced another measure pass.
+            // This one is applied on the next measure instead.
+            pagerState.requestScrollToPage(targetTab.ordinal)
             onChangeTab(targetTab)
         }
 
@@ -204,7 +206,9 @@ fun ScheduleContent(
     // re-run once loading finished on an unchanged tab.
     LaunchedEffect(uiState.selectedTab, uiState.isLoading) {
         if (!uiState.isLoading && pagerState.currentPage != uiState.selectedTab.ordinal) {
-            pagerState.scrollToPage(uiState.selectedTab.ordinal)
+            // Same reasoning as above - this can also run before the pager is measured, and it
+            // would otherwise re-break the jump the focus effect just requested.
+            pagerState.requestScrollToPage(uiState.selectedTab.ordinal)
         }
     }
 
