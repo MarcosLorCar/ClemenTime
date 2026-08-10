@@ -161,8 +161,8 @@ fun ScheduleWidgetContent(
     val isWithinTimeRange = currentTime in dayStartTime..dayEndTime
     val shouldShowNowLine = showNowLine && isToday && isWithinTimeRange
 
-    val timelineSegments = remember(daySlots, dayStartTime, dayEndTime) {
-        buildTimelineSegments(daySlots, dayStartTime, dayEndTime)
+    val timelineSegments = remember(daySlots) {
+        buildTimelineSegments(daySlots)
     }
 
     val themeAccent = if (isDarkTheme) {

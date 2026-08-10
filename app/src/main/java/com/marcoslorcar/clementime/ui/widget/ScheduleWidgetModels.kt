@@ -2,8 +2,6 @@ package com.marcoslorcar.clementime.ui.widget
 
 import com.marcoslorcar.clementime.data.ClassSlot
 import com.marcoslorcar.clementime.data.Subject
-import com.marcoslorcar.clementime.utils.DAY_END_TIME
-import com.marcoslorcar.clementime.utils.DAY_START_TIME
 import com.marcoslorcar.clementime.utils.TimelineCluster
 import com.marcoslorcar.clementime.utils.groupSlotsIntoClusters
 import java.time.LocalTime
@@ -25,14 +23,19 @@ sealed interface WidgetTimelineSegment {
     ) : WidgetTimelineSegment
 }
 
+/**
+ * Builds the widget timeline for one day. The range is exactly the day's classes: the
+ * configured day start/end no longer play a part, since nothing is drawn outside them.
+ */
 fun buildTimelineSegments(
-    daySlots: List<Pair<Subject, ClassSlot>>,
-    dayStartTime: LocalTime = DAY_START_TIME,
-    dayEndTime: LocalTime = DAY_END_TIME
+    daySlots: List<Pair<Subject, ClassSlot>>
 ): List<WidgetTimelineSegment> {
     val clusters = groupSlotsIntoClusters(daySlots)
+    // No entries means no time scope, so there is nothing to draw and nowhere the Now line
+    // could belong. Returning a full-day EmptySegment here would put a grid — and the line —
+    // on a day with no classes.
     if (clusters.isEmpty()) {
-        return listOf(WidgetTimelineSegment.EmptySegment(dayStartTime, dayEndTime))
+        return emptyList()
     }
 
     val firstClassStart = clusters.minOf { it.startTime }
