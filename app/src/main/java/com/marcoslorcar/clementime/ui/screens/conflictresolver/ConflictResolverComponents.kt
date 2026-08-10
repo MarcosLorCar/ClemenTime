@@ -558,12 +558,6 @@ fun SolutionCard(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(6.dp)
-                                        .clip(CircleShape)
-                                        .background(subjectColor)
-                                )
                                 Text(
                                     text = subject?.name ?: codeStr,
                                     style = MaterialTheme.typography.labelSmall,
