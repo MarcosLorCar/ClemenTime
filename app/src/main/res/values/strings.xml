@@ -91,7 +91,10 @@
     <string name="add_note_button">Add note</string>
     <string name="notes_and_files_summary_title">Notes &amp; Attachments</string>
     <string name="notes_and_files_empty_hint">No notes or files attached</string>
-    <string name="notes_and_files_summary_files">%1$d files</string>
+    <plurals name="notes_and_files_summary_files">
+        <item quantity="one">%1$d file</item>
+        <item quantity="other">%1$d files</item>
+    </plurals>
     <string name="notes_and_files_summary_notes">Has notes</string>
 
     <!-- Toast & Dialog strings -->

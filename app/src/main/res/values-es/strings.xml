@@ -95,7 +95,11 @@
     <string name="add_note_button">Añadir nota</string>
     <string name="notes_and_files_summary_title">Notas y Archivos</string>
     <string name="notes_and_files_empty_hint">Sin notas ni archivos adjuntos</string>
-    <string name="notes_and_files_summary_files">%1$d archivos</string>
+    <plurals name="notes_and_files_summary_files">
+        <item quantity="one">%1$d archivo</item>
+        <item quantity="many">%1$d archivos</item>
+        <item quantity="other">%1$d archivos</item>
+    </plurals>
     <string name="notes_and_files_summary_notes">Tiene notas</string>
 
     <!-- Toast & Dialog strings -->

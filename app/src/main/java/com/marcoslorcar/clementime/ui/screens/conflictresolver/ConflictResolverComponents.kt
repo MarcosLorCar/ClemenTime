@@ -477,15 +477,17 @@ fun SolutionCard(
                         )
                     }
 
-                    val subtitle = buildString {
-                        if (conflictingClassesCount > 0) {
-                            append(pluralStringResource(R.plurals.conflict_resolver_overlaps, conflictingClassesCount, conflictingClassesCount))
-                            append(" • ")
-                        } else {
-                            append("0 Overlaps • ")
-                        }
-                        append(pluralStringResource(R.plurals.conflict_resolver_free_days, solution.freeDaysCount, solution.freeDaysCount))
-                    }
+                    val overlapsText = pluralStringResource(
+                        R.plurals.conflict_resolver_overlaps,
+                        conflictingClassesCount,
+                        conflictingClassesCount
+                    )
+                    val freeDaysText = pluralStringResource(
+                        R.plurals.conflict_resolver_free_days,
+                        solution.freeDaysCount,
+                        solution.freeDaysCount
+                    )
+                    val subtitle = "$overlapsText • $freeDaysText"
 
                     Text(
                         text = subtitle,
