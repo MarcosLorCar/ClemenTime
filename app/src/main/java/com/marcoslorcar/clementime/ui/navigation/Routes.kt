@@ -5,10 +5,9 @@ import kotlinx.serialization.Serializable
 
 @Keep
 @Serializable
-data class ScheduleListRoute(
-    val dayOfWeek: String? = null,
-    val highlightSlotId: Long? = null
-)
+// No arguments: a "view in schedule" request travels as ScheduleFocus instead, precisely because
+// launchSingleTop reuses this entry and route arguments went stale between navigations.
+object ScheduleListRoute
 
 @Keep
 @Serializable

@@ -21,6 +21,25 @@ data class ScheduleSolution(
 object ConflictSolver {
 
     /**
+     * Number of *distinct lab schedules* a subject offers, i.e. how many genuinely different
+     * choices exist for it. Lab groups that share the exact same (day, start, end) signature
+     * collapse into one, matching how [findSolutions] builds its candidates.
+     *
+     * Read-only helper for display filtering — [findSolutions] intentionally keeps using its own
+     * name-based counts, since those also decide how a subject's slots are partitioned.
+     */
+    fun labVariantCount(subjectWithSlots: SubjectWithSlots): Int {
+        val labGroups = subjectWithSlots.slots
+            .filter { it.entryType == EntryType.LAB && it.labGroupName != null }
+            .groupBy { it.labGroupName }
+
+        return labGroups.values
+            .map { slots -> slots.map { it.dayOfWeek to (it.startTime to it.endTime) }.sortedBy { it.first } }
+            .distinct()
+            .size
+    }
+
+    /**
      * Generates and ranks possible schedule solutions by selecting one lab variant per subject.
      */
     fun findSolutions(subjects: List<SubjectWithSlots>): List<ScheduleSolution> {

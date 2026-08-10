@@ -26,6 +26,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -48,6 +51,7 @@ import com.marcoslorcar.clementime.ui.navigation.ConflictResolverRoute
 import com.marcoslorcar.clementime.ui.navigation.ImportRoute
 import com.marcoslorcar.clementime.ui.navigation.MoreRoute
 import com.marcoslorcar.clementime.ui.navigation.OnboardingRoute
+import com.marcoslorcar.clementime.ui.navigation.ScheduleFocus
 import com.marcoslorcar.clementime.ui.navigation.ScheduleListRoute
 import com.marcoslorcar.clementime.ui.navigation.SubjectsRoute
 import com.marcoslorcar.clementime.ui.screens.conflictresolver.ConflictResolverScreen
@@ -82,6 +86,8 @@ class MainActivity : AppCompatActivity() {
         // changes, but neither runs for a user who onboarded before this feature existed,
         // and WorkManager state does not survive "clear data" or some restores.
         lifecycleScope.launch {
+            // Must precede the read below: it may write the interval this install relies on.
+            settingsRepository.migrateLegacyAutoUpdateDefault()
             val intervalMinutes = settingsRepository.autoUpdateIntervalMinutesFlow.first()
             ScheduleUpdateWorker.ensurePeriodicWorkScheduled(this@MainActivity, intervalMinutes)
         }
@@ -207,6 +213,14 @@ fun ClemenTimeApp(
         }
     }
 
+    // Held here, above the NavHost, rather than passed as route arguments - see ScheduleFocus.
+    var pendingScheduleFocus by remember { mutableStateOf<ScheduleFocus?>(null) }
+
+    val focusScheduleSlot = { day: java.time.DayOfWeek, slotId: Long? ->
+        pendingScheduleFocus = ScheduleFocus(dayOfWeek = day, slotId = slotId)
+        navigateToTab(ScheduleListRoute)
+    }
+
     NavigationSuiteScaffold(
         layoutType = layoutType,
         navigationSuiteItems = {
@@ -217,7 +231,7 @@ fun ClemenTimeApp(
                         selected = isSelected,
                         onClick = {
                             val route = when (item.routeClass) {
-                                ScheduleListRoute::class -> ScheduleListRoute()
+                                ScheduleListRoute::class -> ScheduleListRoute
                                 SubjectsRoute::class -> SubjectsRoute
                                 MoreRoute::class -> MoreRoute()
                                 else -> return@item
@@ -238,7 +252,7 @@ fun ClemenTimeApp(
     ) {
         NavHost(
             navController = navController,
-            startDestination = if (isOnboardingCompleted) ScheduleListRoute() else OnboardingRoute,
+            startDestination = if (isOnboardingCompleted) ScheduleListRoute else OnboardingRoute,
             modifier = Modifier.fillMaxSize(),
             enterTransition = {
                 val fromIndex = getTabIndex(initialState)
@@ -300,18 +314,17 @@ fun ClemenTimeApp(
             composable<OnboardingRoute> {
                 OnboardingScreen(
                     onFinish = {
-                        navController.navigate(ScheduleListRoute()) {
+                        navController.navigate(ScheduleListRoute) {
                             popUpTo(OnboardingRoute) { inclusive = true }
                         }
                     }
                 )
             }
 
-            composable<ScheduleListRoute> { backStackEntry ->
-                val route = backStackEntry.toRoute<ScheduleListRoute>()
+            composable<ScheduleListRoute> {
                 ScheduleScreen(
-                    targetDayOfWeek = route.dayOfWeek,
-                    targetHighlightSlotId = route.highlightSlotId,
+                    focus = pendingScheduleFocus,
+                    onFocusConsumed = { pendingScheduleFocus = null },
                     onClickSubject = { subjectId, slotId ->
                         navController.navigate(AddEditSubjectRoute(subjectId, slotId))
                     },
@@ -356,9 +369,7 @@ fun ClemenTimeApp(
                     onNavigateToSubject = { subjectId: Long? ->
                         navController.navigate(AddEditSubjectRoute(subjectId))
                     },
-                    onNavigateToSchedule = { dayOfWeek, slotId ->
-                        navigateToTab(ScheduleListRoute(dayOfWeek = dayOfWeek.name, highlightSlotId = slotId))
-                    },
+                    onNavigateToSchedule = focusScheduleSlot,
                     onNavigateToImport = {
                         navController.navigate(ImportRoute)
                     }
@@ -368,9 +379,7 @@ fun ClemenTimeApp(
             composable<AddEditSubjectRoute> {
                 AddEditSubjectScreen(
                     onBack = { navController.popBackStack() },
-                    onNavigateToSchedule = { dayOfWeek: java.time.DayOfWeek, slotId: Long? ->
-                        navigateToTab(ScheduleListRoute(dayOfWeek = dayOfWeek.name, highlightSlotId = slotId))
-                    }
+                    onNavigateToSchedule = focusScheduleSlot
                 )
             }
         }

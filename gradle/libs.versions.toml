@@ -28,8 +28,8 @@ glance = "1.1.1"
 retrofit = "3.0.0"
 okhttp = "5.4.0"
 coil = "3.5.0"
-work = "2.10.0"
-hiltWork = "1.2.0"
+work = "2.11.2"
+hiltWork = "1.4.0"
 
 [libraries]
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }

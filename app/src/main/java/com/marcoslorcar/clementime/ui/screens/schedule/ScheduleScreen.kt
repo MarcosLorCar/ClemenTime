@@ -63,6 +63,7 @@ import com.marcoslorcar.clementime.ui.components.EmptyStateContent
 import com.marcoslorcar.clementime.ui.components.OnboardingTooltip
 import com.marcoslorcar.clementime.ui.components.ScheduleTimeline
 import com.marcoslorcar.clementime.ui.components.SemesterSwitcher
+import com.marcoslorcar.clementime.ui.navigation.ScheduleFocus
 import com.marcoslorcar.clementime.ui.model.ClassSlotUiModel
 import com.marcoslorcar.clementime.ui.model.toUiModel
 import com.marcoslorcar.clementime.ui.screens.subject.SlotEditBottomSheet
@@ -80,8 +81,8 @@ import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun ScheduleScreen(
-    targetDayOfWeek: String? = null,
-    targetHighlightSlotId: Long? = null,
+    focus: ScheduleFocus? = null,
+    onFocusConsumed: () -> Unit = {},
     onClickSubject: (Long, Long?) -> Unit,
     onNavigateToImport: () -> Unit,
     onNavigateToConflictResolver: () -> Unit,
@@ -96,18 +97,9 @@ fun ScheduleScreen(
         }
     }
 
-    LaunchedEffect(targetDayOfWeek) {
-        if (targetDayOfWeek != null) {
-            val targetTab = ScheduleTab.entries.find { it.dayOfWeek.name.equals(targetDayOfWeek, ignoreCase = true) }
-            if (targetTab != null) {
-                viewModel.changeTab(targetTab)
-            }
-        }
-    }
-
     ScheduleContent(
         uiState = uiState,
-        overrideHighlightSlotId = targetHighlightSlotId,
+        focus = focus,
         onChangeTab = viewModel::changeTab,
         onSemesterSelected = viewModel::changeSemester,
         onToggleSemesterSwitcher = viewModel::toggleSemesterSwitcher,
@@ -117,7 +109,7 @@ fun ScheduleScreen(
         onClickSubject = onClickSubject,
         onSaveSlot = viewModel::saveSlot,
         onDeleteSlot = viewModel::deleteSlot,
-        onHighlightConsumed = viewModel::onHighlightConsumed,
+        onFocusConsumed = onFocusConsumed,
         onMarkOptimizerTooltipSeen = viewModel::markOptimizerTooltipSeen,
         onMarkAutoSemesterChangeTooltipSeen = viewModel::markAutoSemesterChangeTooltipSeen
     )
@@ -127,7 +119,7 @@ fun ScheduleScreen(
 @Composable
 fun ScheduleContent(
     uiState: ScheduleUiState,
-    overrideHighlightSlotId: Long? = null,
+    focus: ScheduleFocus? = null,
     onChangeTab: (ScheduleTab) -> Unit,
     onSemesterSelected: (Int) -> Unit = {},
     onToggleSemesterSwitcher: () -> Unit = {},
@@ -137,7 +129,7 @@ fun ScheduleContent(
     onClickSubject: (Long, Long?) -> Unit = { _, _ -> },
     onSaveSlot: (ClassSlotUiModel) -> Unit = { _ -> },
     onDeleteSlot: (Long) -> Unit = { _ -> },
-    onHighlightConsumed: () -> Unit = {},
+    onFocusConsumed: () -> Unit = {},
     onMarkOptimizerTooltipSeen: () -> Unit = {},
     onMarkAutoSemesterChangeTooltipSeen: () -> Unit = {}
 ) {
@@ -155,6 +147,51 @@ fun ScheduleContent(
     var isNearNow by remember { mutableStateOf(false) }
     val today = remember { LocalDate.now().dayOfWeek }
 
+    var activeHighlightSlotId by remember { mutableStateOf<Long?>(null) }
+
+    // The request is taken and acknowledged straight away, then held locally until there is a pager
+    // to apply it to. Consuming it up front keeps MainActivity's state from lingering across a
+    // later navigation; the nonce inside ScheduleFocus makes a repeat request for the same slot a
+    // genuinely new value, so asking twice still re-applies.
+    var pendingFocus by remember { mutableStateOf<ScheduleFocus?>(null) }
+
+    LaunchedEffect(focus) {
+        val request = focus ?: return@LaunchedEffect
+        pendingFocus = request
+        onFocusConsumed()
+    }
+
+    // The pager only exists in the loaded, non-empty branch below. Applying the jump before then
+    // would target a pager that is not in the composition at all.
+    val hasTimelineContent = !uiState.isLoading && uiState.subjectsWithSlots.isNotEmpty()
+
+    LaunchedEffect(pendingFocus, hasTimelineContent) {
+        val request = pendingFocus ?: return@LaunchedEffect
+        if (!hasTimelineContent) return@LaunchedEffect
+
+        val targetTab = tabs.find { it.dayOfWeek == request.dayOfWeek }
+        if (targetTab != null) {
+            // requestScrollToPage, not scrollToPage: this runs after composition but possibly
+            // before the pager has been measured, and a suspending scroll needs layout to act on.
+            // This one is applied on the next measure pass instead.
+            pagerState.requestScrollToPage(targetTab.ordinal)
+            onChangeTab(targetTab)
+        }
+
+        activeHighlightSlotId = request.slotId
+        // Restarts this effect, but the null branch returns immediately - it cannot loop.
+        pendingFocus = null
+    }
+
+    // The fade-out is keyed on the latched id, not on `focus`, so consuming the request cannot
+    // cancel the timer. Restarts cleanly if a different slot is highlighted mid-timeout.
+    LaunchedEffect(activeHighlightSlotId) {
+        if (activeHighlightSlotId != null) {
+            delay(2000L.milliseconds)
+            activeHighlightSlotId = null
+        }
+    }
+
     var currentTime by remember { mutableStateOf(LocalTime.now()) }
     LaunchedEffect(Unit) {
         while (true) {
@@ -163,19 +200,19 @@ fun ScheduleContent(
         }
     }
 
-    // Synchronize Pager state with ViewModel only when it settles and we're not programmatically scrolling
+    // The day flows one way only: focus/swipe -> pager -> ViewModel. The pager is the single source
+    // of truth for which day is on screen (both tab rows and the FAB read pagerState.currentPage);
+    // the ViewModel is told after the fact, so the day survives leaving and re-entering the tab.
+    //
+    // There is deliberately no effect pushing uiState.selectedTab back onto the pager. That is what
+    // broke "view in schedule" across days: it captured the pre-jump selectedTab, saw it disagree
+    // with the page the focus effect had just requested, and requested the old page right back -
+    // while the settled collector reported that same old day to the ViewModel, so the two agreed on
+    // the wrong day and nothing pulled it out. A same-day request never tripped it, because then
+    // the page and the tab already matched.
     LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.settledPage }.collect { page ->
-            if (!pagerState.isScrollInProgress) {
-                onChangeTab(tabs[page])
-            }
-        }
-    }
-
-    // Synchronize Pager page when ViewModel changes selectedTab (e.g. via navigation)
-    LaunchedEffect(uiState.selectedTab) {
-        if (!uiState.isLoading && pagerState.currentPage != uiState.selectedTab.ordinal) {
-            pagerState.scrollToPage(uiState.selectedTab.ordinal)
+            onChangeTab(tabs[page])
         }
     }
 
@@ -391,17 +428,11 @@ fun ScheduleContent(
                     groupSlotsIntoClusters(daySlots)
                 }
 
-    val slotToHighlight = overrideHighlightSlotId ?: uiState.highlightSlotId
-    var activeHighlightSlotId by remember(slotToHighlight) { mutableStateOf(slotToHighlight) }
-
-    LaunchedEffect(slotToHighlight) {
-        if (slotToHighlight != null) {
-            activeHighlightSlotId = slotToHighlight
-            onHighlightConsumed()
-            delay(2000L.milliseconds)
-            activeHighlightSlotId = null
-        }
-    }
+                // Only the page that actually holds the slot gets the highlight. The pager keeps
+                // neighbouring pages composed, so handing every page the same id made each one
+                // race its own animateScrollTo.
+                val pageHighlightSlotId = activeHighlightSlotId
+                    ?.takeIf { id -> daySlots.any { (_, slot) -> slot.id == id } }
 
                 ScheduleTimeline(
                     modifier = Modifier.fillMaxSize(),
@@ -413,7 +444,7 @@ fun ScheduleContent(
                     dayOfWeek = currentDay.dayOfWeek,
                     scrollToNowTrigger = scrollToNowTrigger,
                     highContrastEnabled = uiState.highContrast,
-                    highlightSlotId = activeHighlightSlotId,
+                    highlightSlotId = pageHighlightSlotId,
                     onNearNowChanged = { if (currentDay.dayOfWeek == today) isNearNow = it },
                     onClickSubject = onClickSubject,
                     onLongClickSubject = { subjectId, slotId ->

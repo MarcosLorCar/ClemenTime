@@ -367,7 +367,9 @@ fun AddEditSubjectContent(
                         ClassSlotItemCard(
                             slot = slot,
                             isHighlighted = slot.id == uiState.highlightSlotId,
-                            onEditClick = if (uiState.isEditMode) { { onOpenSlotEditor(index) } } else null,
+                            // Tapping a card opens its editor in read-only mode too. isEditMode
+                            // still gates the duplicate/delete affordances inside the card.
+                            onEditClick = { onOpenSlotEditor(index) },
                             onGoToSchedule = { day, id -> onNavigateToSchedule(day, id) },
                             onDuplicate = { onDuplicateSlot(index) },
                             onDelete = { onDeleteSlot(index) },

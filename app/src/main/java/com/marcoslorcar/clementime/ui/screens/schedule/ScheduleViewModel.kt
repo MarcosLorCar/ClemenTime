@@ -1,17 +1,14 @@
 package com.marcoslorcar.clementime.ui.screens.schedule
 
 import android.content.Context
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.navigation.toRoute
 import com.marcoslorcar.clementime.data.EntryType
 import com.marcoslorcar.clementime.data.ScheduleDao
 import com.marcoslorcar.clementime.data.SettingsRepository
 import com.marcoslorcar.clementime.data.SubjectWithSlots
 import com.marcoslorcar.clementime.ui.model.ClassSlotUiModel
 import com.marcoslorcar.clementime.ui.model.toEntity
-import com.marcoslorcar.clementime.ui.navigation.ScheduleListRoute
 import com.marcoslorcar.clementime.ui.widget.ScheduleWidgetUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -36,7 +33,6 @@ data class ScheduleUiState(
     val nowLineStyle: String = "discrete",
     val highContrast: Boolean = false,
     val hasOverlaps: Boolean = false,
-    val highlightSlotId: Long? = null,
     val isSemesterSwitcherVisible: Boolean = false,
     val hasAnySubjects: Boolean = false,
     val onboardingTooltipsEnabled: Boolean = true,
@@ -46,12 +42,11 @@ data class ScheduleUiState(
     val dayEndTime: LocalTime = LocalTime.of(21, 30)
 )
 
-private data class SettingsAndHighlight(
+private data class ScheduleSettings(
     val scrollable: Boolean,
     val showNowLine: Boolean,
     val nowLineStyle: String,
     val highContrast: Boolean,
-    val highlightSlotId: Long?,
     val onboardingTooltipsEnabled: Boolean,
     val hasSeenOptimizerTooltip: Boolean,
     val selectedSemester: Int,
@@ -66,48 +61,29 @@ private data class SettingsAndHighlight(
 class ScheduleViewModel @Inject constructor(
     private val scheduleDao: ScheduleDao,
     private val settingsRepository: SettingsRepository,
-    private val savedStateHandle: SavedStateHandle,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
-    private val route = runCatching { savedStateHandle.toRoute<ScheduleListRoute>() }.getOrNull()
-
+    // Opens on today. A "view in schedule" request no longer arrives here at all - it travels as
+    // ScheduleFocus, applied to the pager by the screen, which then reports the day back through
+    // changeTab. See ScheduleFocus for why it is not carried as navigation arguments.
     private val initialTab: ScheduleTab = run {
-        val dayName = route?.dayOfWeek ?: savedStateHandle.get<String>("dayOfWeek")
-        if (dayName != null) {
-            ScheduleTab.entries.find { it.dayOfWeek.name.equals(dayName, ignoreCase = true) } ?: ScheduleTab.MONDAY
-        } else {
-            val today = LocalDate.now().dayOfWeek
-            ScheduleTab.entries.find { it.dayOfWeek == today } ?: ScheduleTab.MONDAY
-        }
+        val today = LocalDate.now().dayOfWeek
+        ScheduleTab.entries.find { it.dayOfWeek == today } ?: ScheduleTab.MONDAY
     }
 
     private val _selectedTab = MutableStateFlow(initialTab)
     private val _isSemesterSwitcherVisible = MutableStateFlow(false)
 
-    init {
-        viewModelScope.launch {
-            savedStateHandle.getStateFlow<String?>("dayOfWeek", route?.dayOfWeek).collect { dayName ->
-                if (dayName != null) {
-                    val targetTab = ScheduleTab.entries.find { it.dayOfWeek.name.equals(dayName, ignoreCase = true) }
-                    if (targetTab != null) {
-                        _selectedTab.value = targetTab
-                    }
-                }
-            }
-        }
-    }
-
     val uiState: StateFlow<ScheduleUiState> = combine(
         scheduleDao.getAllSubjectsWithSlots(),
         _selectedTab,
         _isSemesterSwitcherVisible,
-        combine<Any?, SettingsAndHighlight>(
+        combine<Any?, ScheduleSettings>(
             settingsRepository.scrollableTabsFlow,
             settingsRepository.showNowLineFlow,
             settingsRepository.nowLineStyleFlow,
             settingsRepository.highContrastFlow,
-            savedStateHandle.getStateFlow("highlightSlotId", route?.highlightSlotId),
             settingsRepository.onboardingTooltipsEnabledFlow,
             settingsRepository.hasSeenOptimizerTooltipFlow,
             settingsRepository.currentSemesterFlow,
@@ -118,19 +94,18 @@ class ScheduleViewModel @Inject constructor(
             settingsRepository.dayEndHourFlow,
             settingsRepository.dayEndMinuteFlow
         ) { args ->
-            SettingsAndHighlight(
+            ScheduleSettings(
                 scrollable = args[0] as Boolean,
                 showNowLine = args[1] as Boolean,
                 nowLineStyle = args[2] as String,
                 highContrast = args[3] as Boolean,
-                highlightSlotId = args[4] as Long?,
-                onboardingTooltipsEnabled = args[5] as Boolean,
-                hasSeenOptimizerTooltip = args[6] as Boolean,
-                selectedSemester = args[7] as Int,
-                wasSemesterAutoChanged = args[8] as Boolean,
-                hasManuallyChangedSemester = args[9] as Boolean,
-                dayStartTime = LocalTime.of(args[10] as Int, args[11] as Int),
-                dayEndTime = LocalTime.of(args[12] as Int, args[13] as Int)
+                onboardingTooltipsEnabled = args[4] as Boolean,
+                hasSeenOptimizerTooltip = args[5] as Boolean,
+                selectedSemester = args[6] as Int,
+                wasSemesterAutoChanged = args[7] as Boolean,
+                hasManuallyChangedSemester = args[8] as Boolean,
+                dayStartTime = LocalTime.of(args[9] as Int, args[10] as Int),
+                dayEndTime = LocalTime.of(args[11] as Int, args[12] as Int)
             )
         }
     ) { allSubjects, selectedTab, isSwitcherVisible, settings ->
@@ -159,7 +134,6 @@ class ScheduleViewModel @Inject constructor(
             nowLineStyle = settings.nowLineStyle,
             highContrast = settings.highContrast,
             hasOverlaps = hasOverlaps,
-            highlightSlotId = settings.highlightSlotId,
             isSemesterSwitcherVisible = isSwitcherVisible,
             hasAnySubjects = allSubjects.isNotEmpty(),
             onboardingTooltipsEnabled = settings.onboardingTooltipsEnabled,
@@ -184,11 +158,6 @@ class ScheduleViewModel @Inject constructor(
             settingsRepository.setHasManuallyChangedSemester(true)
             settingsRepository.setWasSemesterAutoChanged(false)
         }
-    }
-
-    fun onHighlightConsumed() {
-        savedStateHandle["highlightSlotId"] = null
-        savedStateHandle["dayOfWeek"] = null
     }
 
     fun saveSlot(slot: ClassSlotUiModel) {

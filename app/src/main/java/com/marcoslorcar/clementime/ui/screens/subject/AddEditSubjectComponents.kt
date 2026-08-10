@@ -71,6 +71,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -415,7 +416,7 @@ fun SubjectNotesAndFilesSummary(
                         if (attachedFiles.isNotEmpty()) {
                             AssistChip(
                                 onClick = {},
-                                label = { Text(stringResource(R.string.notes_and_files_summary_files, attachedFiles.size)) },
+                                label = { Text(pluralStringResource(R.plurals.notes_and_files_summary_files, attachedFiles.size, attachedFiles.size)) },
                                 leadingIcon = { Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(14.dp)) }
                             )
                         }

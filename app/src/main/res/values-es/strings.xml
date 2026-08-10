@@ -71,6 +71,7 @@
     <string name="high_contrast_setting_title">Tarjetas de Alto Contraste</string>
     <string name="high_contrast_setting_desc">Tarjetas más opacas para una mejor legibilidad</string>
     <string name="schedule_range_header">Rango del Horario</string>
+    <string name="time_picker_dialog_title">Selecciona la hora</string>
     <string name="day_start_time_label">Hora de Inicio del Día</string>
     <string name="day_end_time_label">Hora de Fin del Día</string>
     <string name="theme_preview_title">Selección de Tema</string>
@@ -95,7 +96,11 @@
     <string name="add_note_button">Añadir nota</string>
     <string name="notes_and_files_summary_title">Notas y Archivos</string>
     <string name="notes_and_files_empty_hint">Sin notas ni archivos adjuntos</string>
-    <string name="notes_and_files_summary_files">%1$d archivos</string>
+    <plurals name="notes_and_files_summary_files">
+        <item quantity="one">%1$d archivo</item>
+        <item quantity="many">%1$d archivos</item>
+        <item quantity="other">%1$d archivos</item>
+    </plurals>
     <string name="notes_and_files_summary_notes">Tiene notas</string>
 
     <!-- Toast & Dialog strings -->
@@ -134,8 +139,9 @@
     <string name="import_conflict_theory_visualization">Visualización de Solapamientos:</string>
 
     <!-- Conflict Resolver strings -->
-    <string name="conflict_resolver_title">Optimizador de Horario</string>
-    <string name="conflict_resolver_solutions_tab">Soluciones</string>
+    <string name="conflict_resolver_title">Optimizador de Laboratorios</string>
+    <string name="conflict_resolver_choices_header">Elecciones de laboratorio</string>
+    <string name="conflict_resolver_solutions_tab">Combinaciones de Laboratorio</string>
     <string name="conflict_resolver_details_tab">Detalles y Omisión</string>
     <string name="conflict_resolver_no_variants">No se han encontrado asignaturas con múltiples variantes de laboratorio.</string>
     <string name="conflict_resolver_optimal_header">Selecciones Óptimas</string>
@@ -159,17 +165,17 @@
     <string name="conflict_resolver_current_badge">Actual</string>
     <string name="conflict_resolver_current_header">Selección Actual</string>
     <string name="conflict_resolver_manual_config_header">Preferencias Manuales (Opcional)</string>
-    <string name="conflict_resolver_radio_desc">• Fijar Selecciones de Lab: Usa los botones de opción si hay grupos de laboratorio específicos que quieres mantener sí o sí. El optimizador trabajará en base a ellos. Si no los fijas, el optimizador buscará todas las opciones.</string>
+    <string name="conflict_resolver_radio_desc">• Fijar Selecciones de Lab: Usa los botones de opción si hay grupos de laboratorio específicos que quieres mantener sí o sí. El optimizador de laboratorios trabajará en base a ellos. Si no los fijas, probará todos los grupos de laboratorio.</string>
     <string name="conflict_resolver_checkbox_desc">• Omitir Horarios: Marca las clases que quieras excluir de los cálculos de solapamiento (por ejemplo, clases opcionales o no obligatorias).</string>
-    <string name="conflict_resolver_continue">Ver Soluciones</string>
-    <string name="resolve_conflicts_tooltip">Resolver Conflictos</string>
-    <string name="conflict_resolver_help_title">Ayuda del Optimizador</string>
-    <string name="conflict_resolver_help_desc">Fija grupos de laboratorio para bloquearlos como selecciones obligatorias. Tocar un grupo no fijado lo fija, y viceversa. Activa "Ignorar horario" para excluir clases específicas de la detección de solapamientos.</string>
-    <string name="conflict_resolver_lab_help_desc">Fija grupos de laboratorio para bloquearlos como selecciones obligatorias para el optimizador. Tocar un grupo no fijado lo fija, y viceversa. El optimizador respetará estas elecciones fijas.</string>
+    <string name="conflict_resolver_continue">Ver Combinaciones de Laboratorio</string>
+    <string name="resolve_conflicts_tooltip">Optimizar Laboratorios</string>
+    <string name="conflict_resolver_help_title">Ayuda del Optimizador de Laboratorios</string>
+    <string name="conflict_resolver_help_desc">Esta pantalla solo cambia a qué grupo de laboratorio asistes; las clases de teoría son siempre fijas. Fija grupos de laboratorio para bloquearlos como selecciones obligatorias. Tocar un grupo no fijado lo fija, y viceversa. Activa "Ignorar horario" para excluir clases específicas de la detección de solapamientos.</string>
+    <string name="conflict_resolver_lab_help_desc">Fija grupos de laboratorio para bloquearlos como selecciones obligatorias. Tocar un grupo no fijado lo fija, y viceversa. El optimizador de laboratorios respetará estas elecciones fijas.</string>
     <string name="conflict_resolver_pref_free_days">Días Libres</string>
     <string name="conflict_resolver_pref_compact">Compacidad</string>
-    <string name="conflict_resolver_generate_preview">Previsualizar Soluciones</string>
-    <string name="conflict_resolver_generate_preview_warning">Previsualizar Soluciones (Hay Conflictos)</string>
+    <string name="conflict_resolver_generate_preview">Previsualizar Combinaciones</string>
+    <string name="conflict_resolver_generate_preview_warning">Previsualizar Combinaciones (Hay Conflictos)</string>
     <string name="conflict_resolver_badge_zero_overlaps">Sin Solapamientos</string>
     <string name="conflict_resolver_badge_conflict">⚠️ Con Conflictos</string>
     <string name="conflict_resolver_badge_free_days">Máx Días Libres</string>
@@ -245,12 +251,12 @@
     <!-- Tooltip Contents -->
     <string name="tooltip_import_conflict_title">Conflictos Detectados</string>
     <string name="tooltip_import_conflict_desc">Algunas asignaturas seleccionadas tienen clases de teoría que se solapan o no tienen grupos de laboratorio compatibles. Pulsa para ver detalles.</string>
-    <string name="tooltip_optimizer_title">Optimizador de Horario</string>
+    <string name="tooltip_optimizer_title">Optimizador de Laboratorios</string>
     <string name="tooltip_optimizer_desc">Tu horario tiene solapamientos. ¡Pulsa la varita mágica para encontrar la mejor combinación de laboratorios automáticamente!</string>
     <string name="tooltip_resolver_priorities_title">Prioriza a tu Gusto</string>
     <string name="tooltip_resolver_priorities_desc">Elige si prefieres más días libres o un horario más compacto. Los solapamientos siempre se minimizan primero.</string>
-    <string name="tooltip_resolver_apply_title">Aplicar Solución</string>
-    <string name="tooltip_resolver_apply_desc">Cuando encuentres una combinación que te guste, pulsa Aplicar para actualizar tu horario activo automáticamente.</string>
+    <string name="tooltip_resolver_apply_title">Aplicar Combinación</string>
+    <string name="tooltip_resolver_apply_desc">Cuando encuentres una combinación de laboratorios que te guste, pulsa Aplicar para actualizar tu horario activo automáticamente.</string>
     <string name="tooltip_add_slot_title">Añade Tu Primera Clase</string>
     <string name="tooltip_add_slot_desc">Pulsa aquí para añadir un horario a esta asignatura. Podrás configurar la hora, el aula y el profesor.</string>
     <string name="tooltip_auto_semester_title">Cuatrimestre Cambiado</string>

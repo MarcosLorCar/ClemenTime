@@ -67,6 +67,7 @@
     <string name="high_contrast_setting_title">High Contrast Cards</string>
     <string name="high_contrast_setting_desc">Make schedule cards more opaque for better legibility</string>
     <string name="schedule_range_header">Schedule Range</string>
+    <string name="time_picker_dialog_title">Select time</string>
     <string name="day_start_time_label">Day Start Time</string>
     <string name="day_end_time_label">Day End Time</string>
     <string name="theme_preview_title">Theme Selection</string>
@@ -91,7 +92,10 @@
     <string name="add_note_button">Add note</string>
     <string name="notes_and_files_summary_title">Notes &amp; Attachments</string>
     <string name="notes_and_files_empty_hint">No notes or files attached</string>
-    <string name="notes_and_files_summary_files">%1$d files</string>
+    <plurals name="notes_and_files_summary_files">
+        <item quantity="one">%1$d file</item>
+        <item quantity="other">%1$d files</item>
+    </plurals>
     <string name="notes_and_files_summary_notes">Has notes</string>
 
     <!-- Toast & Dialog strings -->
@@ -131,8 +135,9 @@
     <string name="import_conflict_theory_visualization">Overlap Visualization:</string>
 
     <!-- Conflict Resolver strings -->
-    <string name="conflict_resolver_title">Conflict Resolver</string>
-    <string name="conflict_resolver_solutions_tab">Solutions</string>
+    <string name="conflict_resolver_title">Lab Optimizer</string>
+    <string name="conflict_resolver_choices_header">Lab choices</string>
+    <string name="conflict_resolver_solutions_tab">Lab Combinations</string>
     <string name="conflict_resolver_details_tab">Details &amp; Ignore</string>
     <string name="conflict_resolver_no_variants">No subjects with multiple lab variants found.</string>
     <string name="conflict_resolver_optimal_header">Optimal Selections</string>
@@ -154,17 +159,17 @@
     <string name="conflict_resolver_current_badge">Current</string>
     <string name="conflict_resolver_current_header">Current Selection</string>
     <string name="conflict_resolver_manual_config_header">Manual Preferences (Optional)</string>
-    <string name="conflict_resolver_radio_desc">• Pin Lab Selections: Use the radio buttons if you have specific lab groups you absolutely want to keep. The optimizer will work around them. Leaving them unpinned lets the optimizer search all options.</string>
+    <string name="conflict_resolver_radio_desc">• Pin Lab Selections: Use the radio buttons if you have specific lab groups you absolutely want to keep. The lab optimizer will work around them. Leaving them unpinned lets it try every lab group.</string>
     <string name="conflict_resolver_checkbox_desc">• Ignore Slots: Check classes you want to exclude from overlap checks entirely (e.g. optional or non-mandatory classes).</string>
-    <string name="conflict_resolver_continue">View Solutions</string>
-    <string name="resolve_conflicts_tooltip">Resolve Conflicts</string>
-    <string name="conflict_resolver_help_title">Conflict Resolver Help</string>
-    <string name="conflict_resolver_help_desc">Pin lab groups to lock them as mandatory selections for the solver. Tapping an unpinned group pins it, while tapping a pinned group unpins it. Toggle "Ignore class slot" to exclude specific classes from overlap checks entirely.</string>
-    <string name="conflict_resolver_lab_help_desc">Pin lab groups to lock them as mandatory selections for the solver. Tapping an unpinned group pins it, while tapping a pinned group unpins it. The optimizer will work around these locked choices.</string>
+    <string name="conflict_resolver_continue">View Lab Combinations</string>
+    <string name="resolve_conflicts_tooltip">Optimize Lab Groups</string>
+    <string name="conflict_resolver_help_title">Lab Optimizer Help</string>
+    <string name="conflict_resolver_help_desc">This screen only changes which lab group you attend — theory classes are always fixed. Pin lab groups to lock them as mandatory selections. Tapping an unpinned group pins it, while tapping a pinned group unpins it. Toggle "Ignore class slot" to exclude specific classes from overlap checks entirely.</string>
+    <string name="conflict_resolver_lab_help_desc">Pin lab groups to lock them as mandatory selections. Tapping an unpinned group pins it, while tapping a pinned group unpins it. The lab optimizer will work around these locked choices.</string>
     <string name="conflict_resolver_pref_free_days">Free Days</string>
     <string name="conflict_resolver_pref_compact">Compactness</string>
-    <string name="conflict_resolver_generate_preview">Preview Solutions</string>
-    <string name="conflict_resolver_generate_preview_warning">Preview Solutions (Conflicts Exist)</string>
+    <string name="conflict_resolver_generate_preview">Preview Lab Combinations</string>
+    <string name="conflict_resolver_generate_preview_warning">Preview Lab Combinations (Conflicts Exist)</string>
     <string name="conflict_resolver_badge_zero_overlaps">0 Overlaps</string>
     <string name="conflict_resolver_badge_conflict">⚠️ Conflict</string>
     <string name="conflict_resolver_badge_free_days">Max Free Days</string>
@@ -242,12 +247,12 @@
     <!-- Tooltip Contents -->
     <string name="tooltip_import_conflict_title">Conflicts Detected</string>
     <string name="tooltip_import_conflict_desc">Some selected subjects have overlapping theory classes or no compatible lab groups. Tap to see details.</string>
-    <string name="tooltip_optimizer_title">Schedule Optimizer</string>
+    <string name="tooltip_optimizer_title">Lab Optimizer</string>
     <string name="tooltip_optimizer_desc">Your schedule has overlaps. Tap the magic wand to find the best combination of lab groups automatically!</string>
     <string name="tooltip_resolver_priorities_title">Prioritize Your Way</string>
     <string name="tooltip_resolver_priorities_desc">Choose if you prefer more free days or a more compact schedule. Overlaps are always minimized first.</string>
-    <string name="tooltip_resolver_apply_title">Apply Solution</string>
-    <string name="tooltip_resolver_apply_desc">Once you find a combination you like, tap Apply to update your active schedule automatically.</string>
+    <string name="tooltip_resolver_apply_title">Apply Combination</string>
+    <string name="tooltip_resolver_apply_desc">Once you find a lab combination you like, tap Apply to update your active schedule automatically.</string>
     <string name="tooltip_add_slot_title">Add Your First Class</string>
     <string name="tooltip_add_slot_desc">Tap here to add a class slot to this subject. You can set the time, room, and professor.</string>
     <string name="tooltip_auto_semester_title">Semester Changed</string>

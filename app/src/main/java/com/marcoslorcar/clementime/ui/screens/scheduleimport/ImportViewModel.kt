@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -76,13 +77,20 @@ class ImportViewModel @Inject constructor(
                 settingsRepository.hasSeenImportConflictTooltipFlow,
                 settingsRepository.hasSeenImportPreviewTooltipFlow
             ) { enabled, seenConflict, seenPreview -> Triple(enabled, seenConflict, seenPreview) }.collect { (enabled, seenConflict, seenPreview) ->
-                val current = _uiState.value
-                if (current is ImportUiState.Selection) {
-                    _uiState.value = current.copy(
-                        onboardingEnabled = enabled, 
-                        hasSeenConflictTooltip = seenConflict,
-                        hasSeenPreviewTooltip = seenPreview
-                    )
+                // update{} rather than read-then-write: this collector fires independently of user
+                // interaction, so a plain `_uiState.value = current.copy(...)` could publish a
+                // snapshot captured before a concurrent edit and silently discard it (it was
+                // wiping freshly-computed conflictStatus).
+                _uiState.update { current ->
+                    if (current is ImportUiState.Selection) {
+                        current.copy(
+                            onboardingEnabled = enabled,
+                            hasSeenConflictTooltip = seenConflict,
+                            hasSeenPreviewTooltip = seenPreview
+                        )
+                    } else {
+                        current
+                    }
                 }
             }
         }

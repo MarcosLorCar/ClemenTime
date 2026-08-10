@@ -250,6 +250,7 @@ fun ConflictResolverScreen(
                 solutions = uiState.solutions,
                 subjects = uiState.subjects,
                 onSelectSolution = { solutionToConfirm = it },
+                ambiguousSubjectIds = uiState.ambiguousSubjectIds,
                 onboardingTooltipsEnabled = uiState.onboardingTooltipsEnabled,
                 hasSeenApplyTooltip = uiState.hasSeenApplyTooltip,
                 onMarkApplyTooltipSeen = viewModel::markApplyTooltipSeen
