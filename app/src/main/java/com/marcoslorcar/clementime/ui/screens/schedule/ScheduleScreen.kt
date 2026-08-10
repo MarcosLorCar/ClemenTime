@@ -198,11 +198,22 @@ fun ScheduleContent(
     // settledPage collector below, which reported the pager's not-yet-updated page back and
     // cancelled the jump. Keyed on the slot id too, so navigating again re-applies the day even
     // when the day itself is unchanged.
+    // Applied once per (day, slot) request. Without the latch this effect re-fired when
+    // overrideHighlightSlotId went null on consume, jumping the pager back to the route's day a
+    // second time - and again on every later consume, which is the pager yanking itself around.
+    var lastAppliedDayRequest by remember { mutableStateOf<Pair<String, Long>?>(null) }
+
     LaunchedEffect(targetDayOfWeek, overrideHighlightSlotId) {
-        val targetTab = targetDayOfWeek
-            ?.let { day -> tabs.find { it.dayOfWeek.name.equals(day, ignoreCase = true) } }
+        val day = targetDayOfWeek ?: return@LaunchedEffect
+        // Only act while a request is actually live; null means it has been consumed already.
+        val slotId = overrideHighlightSlotId ?: return@LaunchedEffect
+        val request = day to slotId
+        if (lastAppliedDayRequest == request) return@LaunchedEffect
+
+        val targetTab = tabs.find { it.dayOfWeek.name.equals(day, ignoreCase = true) }
             ?: return@LaunchedEffect
 
+        lastAppliedDayRequest = request
         // Move the pager first, then the ViewModel. Ordered this way the sequence is
         // self-correcting: a settledPage emission arriving before the jump reports the old page
         // and is then overwritten by onChangeTab, and one arriving after already reports the
