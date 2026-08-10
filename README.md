@@ -5,24 +5,43 @@
 <h1 align="center">Clemen<span style="color: #FF7A00;">Time</span></h1>
 
 <p align="center">
-  ClemenTime is a schedule and task planner app for Android targeted to ESI students, built with Jetpack Compose. It allows you to import, view, and manage your timetables and tasks on a clean, modern interface.
+  A clean, modern schedule and task planner for Android tailored for ESI students.
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPL_v3-orange.svg" alt="License: GPL v3"></a>
+  <a href="https://ko-fi.com/marcoslorocarrasco"><img src="https://img.shields.io/badge/Ko--fi-Support-FF5E5B.svg?logo=ko-fi&logoColor=white" alt="Support on Ko-fi"></a>
 </p>
 
 ---
 
-<h2 align="center">Features</h2>
+## About
 
-* **Timetable Management:** View and coordinate daily and weekly schedules.
-* **Adaptive Layout:** Responsive UI supporting phones, tablets, and foldables.
-* **Material 3 UI:** Clean look with support for light and dark themes, plus dynamic color styling.
-* **Home Screen Widget:** A reactive widget showing current and upcoming events at a glance.
-* **Conflict Resolution:** Highlight and resolve overlapping schedule slots upon import.
-* **Data Portability:** Backup and restore data using import/export features, including calendar export to ICS format.
-* **Privacy First:** Fully offline operation with no account registration or analytics tracking.
+**ClemenTime** helps ESI students organize timetables and tasks effortlessly. Import class schedules, manage daily tasks, and resolve timetable overlaps through a reactive, privacy-conscious interface built entirely with Jetpack Compose and Material 3.
 
----
+## Features
 
-<h2 align="center">License</h2>
+* **Timetable Management:** Organize daily and weekly class schedules with ease.
+* **Conflict Resolution:** Automatically detect and resolve overlapping schedule slots upon import.
+* **Home Screen Widget:** Glanceable, reactive widget displaying ongoing and upcoming events.
+* **Adaptive Layouts:** Native UI scaling for smartphones, foldables, and tablets.
+* **Material You Design:** Full support for Material 3 dynamic color, along with Light and Dark themes.
+* **Data Portability:** Full backup/restore capabilities with `.ics` calendar export support.
+* **Privacy First:** 100% offline functionality. No account creation, login, or analytics tracking.
+
+## Support & Contribution
+
+If you find ClemenTime helpful and would like to support its ongoing development, consider buying me a coffee:
+
+<p align="center">
+  <a href="https://ko-fi.com/marcoslorocarrasco">
+    <img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="ko-fi" height="36">
+  </a>
+</p>
+
+Contributions, bug reports, and feature requests are always welcome via GitHub Issues and Pull Requests.
+
+## License
 
 ```text
 Copyright (C) 2026 Marcos Loro Carrasco
