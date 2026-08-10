@@ -63,6 +63,7 @@ import com.marcoslorcar.clementime.ui.components.EmptyStateContent
 import com.marcoslorcar.clementime.ui.components.OnboardingTooltip
 import com.marcoslorcar.clementime.ui.components.ScheduleTimeline
 import com.marcoslorcar.clementime.ui.components.SemesterSwitcher
+import com.marcoslorcar.clementime.ui.navigation.ScheduleFocus
 import com.marcoslorcar.clementime.ui.model.ClassSlotUiModel
 import com.marcoslorcar.clementime.ui.model.toUiModel
 import com.marcoslorcar.clementime.ui.screens.subject.SlotEditBottomSheet
@@ -80,8 +81,8 @@ import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun ScheduleScreen(
-    targetDayOfWeek: String? = null,
-    targetHighlightSlotId: Long? = null,
+    focus: ScheduleFocus? = null,
+    onFocusConsumed: () -> Unit = {},
     onClickSubject: (Long, Long?) -> Unit,
     onNavigateToImport: () -> Unit,
     onNavigateToConflictResolver: () -> Unit,
@@ -96,21 +97,9 @@ fun ScheduleScreen(
         }
     }
 
-    // The day requested by the route is applied inside ScheduleContent, where it can move the
-    // pager and the ViewModel together. Doing it here only set the ViewModel, and the pager sync
-    // then raced with the settledPage collector.
-
-    // The route argument is immutable, and navigateToTab reuses the existing entry
-    // (launchSingleTop), so on a second "view in schedule" the ViewModel's savedStateHandle is
-    // already null from the first consume and only this local copy carries the new id. It has to
-    // be clearable, or the highlight effect can never settle. Keyed on the route value so a fresh
-    // navigation re-seeds it.
-    var pendingHighlightSlotId by remember(targetHighlightSlotId) { mutableStateOf(targetHighlightSlotId) }
-
     ScheduleContent(
         uiState = uiState,
-        targetDayOfWeek = targetDayOfWeek,
-        overrideHighlightSlotId = pendingHighlightSlotId,
+        focus = focus,
         onChangeTab = viewModel::changeTab,
         onSemesterSelected = viewModel::changeSemester,
         onToggleSemesterSwitcher = viewModel::toggleSemesterSwitcher,
@@ -120,10 +109,7 @@ fun ScheduleScreen(
         onClickSubject = onClickSubject,
         onSaveSlot = viewModel::saveSlot,
         onDeleteSlot = viewModel::deleteSlot,
-        onHighlightConsumed = {
-            pendingHighlightSlotId = null
-            viewModel.onHighlightConsumed()
-        },
+        onFocusConsumed = onFocusConsumed,
         onMarkOptimizerTooltipSeen = viewModel::markOptimizerTooltipSeen,
         onMarkAutoSemesterChangeTooltipSeen = viewModel::markAutoSemesterChangeTooltipSeen
     )
@@ -133,8 +119,7 @@ fun ScheduleScreen(
 @Composable
 fun ScheduleContent(
     uiState: ScheduleUiState,
-    targetDayOfWeek: String? = null,
-    overrideHighlightSlotId: Long? = null,
+    focus: ScheduleFocus? = null,
     onChangeTab: (ScheduleTab) -> Unit,
     onSemesterSelected: (Int) -> Unit = {},
     onToggleSemesterSwitcher: () -> Unit = {},
@@ -144,7 +129,7 @@ fun ScheduleContent(
     onClickSubject: (Long, Long?) -> Unit = { _, _ -> },
     onSaveSlot: (ClassSlotUiModel) -> Unit = { _ -> },
     onDeleteSlot: (Long) -> Unit = { _ -> },
-    onHighlightConsumed: () -> Unit = {},
+    onFocusConsumed: () -> Unit = {},
     onMarkOptimizerTooltipSeen: () -> Unit = {},
     onMarkAutoSemesterChangeTooltipSeen: () -> Unit = {}
 ) {
@@ -162,22 +147,29 @@ fun ScheduleContent(
     var isNearNow by remember { mutableStateOf(false) }
     val today = remember { LocalDate.now().dayOfWeek }
 
-    // Highlight state lives here, above the pager. It used to be declared inside the page lambda,
-    // which meant every composed page ran its own copy of this effect and called
-    // onHighlightConsumed() independently.
-    val slotToHighlight = overrideHighlightSlotId ?: uiState.highlightSlotId
+    // One effect owns the whole "jump to this slot" request: pick the day, move the pager, tell the
+    // ViewModel, arm the highlight, consume. Consuming nulls `focus`, which restarts this effect,
+    // but the null branch returns immediately - so it cannot re-apply or loop. The nonce inside
+    // ScheduleFocus makes a repeat request for the same slot a genuinely new value.
     var activeHighlightSlotId by remember { mutableStateOf<Long?>(null) }
 
-    // Latch the request, then consume it. Consuming nulls slotToHighlight, which cancels this
-    // effect - so it must not be the one holding the timeout, or the highlight would never clear.
-    LaunchedEffect(slotToHighlight) {
-        val requested = slotToHighlight ?: return@LaunchedEffect
-        activeHighlightSlotId = requested
-        onHighlightConsumed()
+    LaunchedEffect(focus) {
+        val request = focus ?: return@LaunchedEffect
+        val targetTab = tabs.find { it.dayOfWeek == request.dayOfWeek }
+
+        if (targetTab != null) {
+            // Pager first, then the ViewModel: whichever way the settledPage collector below
+            // interleaves, the sequence ends with both agreeing on the target.
+            pagerState.scrollToPage(targetTab.ordinal)
+            onChangeTab(targetTab)
+        }
+
+        activeHighlightSlotId = request.slotId
+        onFocusConsumed()
     }
 
-    // The fade-out is keyed on the latched value instead, so it survives consumption and restarts
-    // cleanly if a different slot is highlighted mid-timeout.
+    // The fade-out is keyed on the latched id, not on `focus`, so consuming the request cannot
+    // cancel the timer. Restarts cleanly if a different slot is highlighted mid-timeout.
     LaunchedEffect(activeHighlightSlotId) {
         if (activeHighlightSlotId != null) {
             delay(2000L.milliseconds)
@@ -198,31 +190,6 @@ fun ScheduleContent(
     // settledPage collector below, which reported the pager's not-yet-updated page back and
     // cancelled the jump. Keyed on the slot id too, so navigating again re-applies the day even
     // when the day itself is unchanged.
-    // Applied once per (day, slot) request. Without the latch this effect re-fired when
-    // overrideHighlightSlotId went null on consume, jumping the pager back to the route's day a
-    // second time - and again on every later consume, which is the pager yanking itself around.
-    var lastAppliedDayRequest by remember { mutableStateOf<Pair<String, Long>?>(null) }
-
-    LaunchedEffect(targetDayOfWeek, overrideHighlightSlotId) {
-        val day = targetDayOfWeek ?: return@LaunchedEffect
-        // Only act while a request is actually live; null means it has been consumed already.
-        val slotId = overrideHighlightSlotId ?: return@LaunchedEffect
-        val request = day to slotId
-        if (lastAppliedDayRequest == request) return@LaunchedEffect
-
-        val targetTab = tabs.find { it.dayOfWeek.name.equals(day, ignoreCase = true) }
-            ?: return@LaunchedEffect
-
-        lastAppliedDayRequest = request
-        // Move the pager first, then the ViewModel. Ordered this way the sequence is
-        // self-correcting: a settledPage emission arriving before the jump reports the old page
-        // and is then overwritten by onChangeTab, and one arriving after already reports the
-        // target. An earlier attempt used a suppression flag instead, which raced with the
-        // collector's snapshot reads.
-        pagerState.scrollToPage(targetTab.ordinal)
-        onChangeTab(targetTab)
-    }
-
     // Synchronize Pager state with ViewModel only when it settles and we're not programmatically scrolling
     LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.settledPage }.collect { page ->
