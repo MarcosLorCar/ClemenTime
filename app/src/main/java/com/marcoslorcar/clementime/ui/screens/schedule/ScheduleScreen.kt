@@ -105,9 +105,16 @@ fun ScheduleScreen(
         }
     }
 
+    // The route argument is immutable, and navigateToTab reuses the existing entry
+    // (launchSingleTop), so on a second "view in schedule" the ViewModel's savedStateHandle is
+    // already null from the first consume and only this local copy carries the new id. It has to
+    // be clearable, or the highlight effect can never settle. Keyed on the route value so a fresh
+    // navigation re-seeds it.
+    var pendingHighlightSlotId by remember(targetHighlightSlotId) { mutableStateOf(targetHighlightSlotId) }
+
     ScheduleContent(
         uiState = uiState,
-        overrideHighlightSlotId = targetHighlightSlotId,
+        overrideHighlightSlotId = pendingHighlightSlotId,
         onChangeTab = viewModel::changeTab,
         onSemesterSelected = viewModel::changeSemester,
         onToggleSemesterSwitcher = viewModel::toggleSemesterSwitcher,
@@ -117,7 +124,10 @@ fun ScheduleScreen(
         onClickSubject = onClickSubject,
         onSaveSlot = viewModel::saveSlot,
         onDeleteSlot = viewModel::deleteSlot,
-        onHighlightConsumed = viewModel::onHighlightConsumed,
+        onHighlightConsumed = {
+            pendingHighlightSlotId = null
+            viewModel.onHighlightConsumed()
+        },
         onMarkOptimizerTooltipSeen = viewModel::markOptimizerTooltipSeen,
         onMarkAutoSemesterChangeTooltipSeen = viewModel::markAutoSemesterChangeTooltipSeen
     )
@@ -154,6 +164,23 @@ fun ScheduleContent(
     var scrollToNowTrigger by remember { mutableLongStateOf(0L) }
     var isNearNow by remember { mutableStateOf(false) }
     val today = remember { LocalDate.now().dayOfWeek }
+
+    // Highlight state lives here, above the pager. It used to be declared inside the page lambda,
+    // which meant every composed page ran its own copy of this effect and called
+    // onHighlightConsumed() independently.
+    val slotToHighlight = overrideHighlightSlotId ?: uiState.highlightSlotId
+    var activeHighlightSlotId by remember { mutableStateOf<Long?>(null) }
+
+    LaunchedEffect(slotToHighlight) {
+        if (slotToHighlight != null) {
+            activeHighlightSlotId = slotToHighlight
+            // Consuming nulls slotToHighlight, so activeHighlightSlotId must NOT be keyed on it -
+            // re-keying would clear the highlight immediately instead of after the delay.
+            onHighlightConsumed()
+            delay(2000L.milliseconds)
+            activeHighlightSlotId = null
+        }
+    }
 
     var currentTime by remember { mutableStateOf(LocalTime.now()) }
     LaunchedEffect(Unit) {
@@ -391,17 +418,11 @@ fun ScheduleContent(
                     groupSlotsIntoClusters(daySlots)
                 }
 
-    val slotToHighlight = overrideHighlightSlotId ?: uiState.highlightSlotId
-    var activeHighlightSlotId by remember(slotToHighlight) { mutableStateOf(slotToHighlight) }
-
-    LaunchedEffect(slotToHighlight) {
-        if (slotToHighlight != null) {
-            activeHighlightSlotId = slotToHighlight
-            onHighlightConsumed()
-            delay(2000L.milliseconds)
-            activeHighlightSlotId = null
-        }
-    }
+                // Only the page that actually holds the slot gets the highlight. The pager keeps
+                // neighbouring pages composed, so handing every page the same id made each one
+                // race its own animateScrollTo.
+                val pageHighlightSlotId = activeHighlightSlotId
+                    ?.takeIf { id -> daySlots.any { (_, slot) -> slot.id == id } }
 
                 ScheduleTimeline(
                     modifier = Modifier.fillMaxSize(),
@@ -413,7 +434,7 @@ fun ScheduleContent(
                     dayOfWeek = currentDay.dayOfWeek,
                     scrollToNowTrigger = scrollToNowTrigger,
                     highContrastEnabled = uiState.highContrast,
-                    highlightSlotId = activeHighlightSlotId,
+                    highlightSlotId = pageHighlightSlotId,
                     onNearNowChanged = { if (currentDay.dayOfWeek == today) isNearNow = it },
                     onClickSubject = onClickSubject,
                     onLongClickSubject = { subjectId, slotId ->

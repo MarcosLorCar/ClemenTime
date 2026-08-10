@@ -161,7 +161,10 @@ fun ScheduleTimeline(
 
     LaunchedEffect(clusters, showNowLine, isToday, viewportHeightPx, highlightSlotId, startTime, endTime) {
         if (viewportHeightPx == 0) return@LaunchedEffect
-        if (hasAutoScrolled) return@LaunchedEffect
+        // An explicit highlight is a direct user request ("view in schedule"), so it bypasses the
+        // once-per-day guard. Without this, highlighting a second slot on a day already visited
+        // silently did nothing.
+        if (hasAutoScrolled && highlightSlotId == null) return@LaunchedEffect
 
         if (highlightSlotId != null) {
             val targetSlot = clusters.flatMap { it.items }.find { it.second.id == highlightSlotId }?.second
