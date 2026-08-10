@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [ master ]
 
+# Superseded PR builds are cancelled: pushing three times to a PR used to run three full
+# test+assemble jobs to completion. cancel-in-progress is gated on the event so that master
+# builds — the guard for direct pushes — always finish.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
