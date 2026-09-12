@@ -50,12 +50,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install google-genai pdf2image pillow pydantic python-dotenv
 
-      - name: Cache Gemini AI Responses
-        uses: actions/cache@v4
+      - name: Restore Gemini AI Responses Cache
+        uses: actions/cache/restore@v4
+        id: restore-gemini-cache
         with:
           path: schedules/script/.cache
-          key: gemini-cache-v2-${{ runner.os }}-${{ hashFiles('schedules/pdf/*.pdf', 'schedules/script/**') }}
+          key: gemini-cache-v3-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
+            gemini-cache-v3-${{ runner.os }}-
             gemini-cache-v2-${{ runner.os }}-
 
       - name: Check ESI Web Page for Schedule Updates
@@ -70,6 +72,7 @@ jobs:
           fi
 
       - name: Process Schedules
+        id: process
         # Runs if:
         # 1. ESI web check detects an update, OR
         # 2. Triggered manually via GitHub UI, OR
@@ -82,13 +85,23 @@ jobs:
         # exact element matching, not prefix matching.
         if: >
           steps.check.outputs.has_update == 'true' ||
-          github.event_name == 'workflow_dispatch'
+          github.event_name == 'workflow_dispatch' ||
+          github.event_name == 'push'
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_API_KEY_ALT: ${{ secrets.GEMINI_API_KEY_ALT }}
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL || secrets.GEMINI_MODEL || 'gemini-2.0-flash' }}
         run: |
           python3 -u process_schedules.py --strict
+
+      - name: Save Gemini AI Responses Cache
+        uses: actions/cache/save@v4
+        # Saves even if process_schedules.py failed with unresolved mappings (so parsed
+        # pages are preserved across runs), but skips saving on no-op scheduled checks.
+        if: always() && steps.process.outcome != 'skipped' && hashFiles('schedules/script/.cache/**') != ''
+        with:
+          path: schedules/script/.cache
+          key: gemini-cache-v3-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Commit and Push
         # success() is required: supplying any `if` replaces the implicit success() check,
@@ -97,7 +110,8 @@ jobs:
         if: >
           success() && (
           steps.check.outputs.has_update == 'true' ||
-          github.event_name == 'workflow_dispatch' )
+          github.event_name == 'workflow_dispatch' ||
+          github.event_name == 'push' )
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"

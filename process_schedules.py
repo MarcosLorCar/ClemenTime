@@ -82,6 +82,7 @@ def main():
         if not pdfs_to_process:
             print(f"[Warning] No PDFs found in {pdf_dir}", flush=True)
 
+    failed_pdfs = []
     if not pdfs_to_process:
         print("[Info] No files to process.", flush=True)
     else:
@@ -103,8 +104,14 @@ def main():
             res = subprocess.run(cmd)
             if res.returncode != 0:
                 print(f"[Error] Parsing failed for {pdf}", flush=True)
-                if args.strict:
-                    sys.exit(res.returncode)
+                failed_pdfs.append(pdf)
+
+        if failed_pdfs:
+            print(f"\n[Error] Parsing failed for {len(failed_pdfs)} PDF(s):", file=sys.stderr)
+            for p in failed_pdfs:
+                print(f"  - {os.path.basename(p)}", file=sys.stderr)
+            if args.strict:
+                sys.exit(1)
 
     # 3. Regenerate index
     if os.path.exists(index_script):

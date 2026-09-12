@@ -74,7 +74,7 @@ ESI web page -> check_esi_update.py (scrape + HEAD/ETag check) -> schedules/pdf/
              -> app downloads over HTTPS
 ```
 
-State lives in committed files, not workflow state: `schedules/input/esi_meta.json` (per-semester URL/ETag/Last-Modified/sha256) and `schedules/input/pdf_meta.json`. `schedules/script/mappings.json` maps the PDF's abbreviated codes to display names in three categories — `matters`, `professors`, `classrooms`. Gemini responses are cached in `schedules/script/.cache/`, keyed by **page-image content hash**, so a changed PDF can never hit a stale entry.
+State lives in committed files, not workflow state: `schedules/input/esi_meta.json` (per-semester URL/ETag/Last-Modified/sha256) and `schedules/input/pdf_meta.json`. `schedules/script/mappings.json` maps the PDF's abbreviated codes to display names in three categories — `matters`, `professors`, `classrooms`. Gemini responses are cached in `schedules/script/.cache/`, keyed by **page-image content hash**, so a changed PDF can never hit a stale entry. In CI (`sync-esi-schedules.yml`), cache is restored via `actions/cache/restore` and saved via `actions/cache/save` with `always()` so runs that halt on unknown mappings still preserve cached pages across runs.
 
 The app fetches `schedules_index.json` from `SettingsRepository.DEFAULT_GITHUB_REPO_BASE_URL` (a `buildConfigField`), user-overridable in settings. `ImportRepository` rewrites `github.com` → `raw.githubusercontent.com` and appends `schedules_index.json` when the configured URL is a directory. Retrofit uses `@Url` for full URLs, so the `baseUrl` in `NetworkModule` is only a placeholder.
 
@@ -120,7 +120,7 @@ All workflows trigger on **`master`**, the default branch. `ci.yml` and `update-
 
 - `ci.yml` — `test` + `assembleDebug` on pushes/PRs to `master`.
 - `sync-esi-schedules.yml` — every 6h, on `workflow_dispatch`, and on pushes to `master` touching `schedules/pdf/**`, `schedules/script/**`, `process_schedules.py`, or the workflow itself. Runs `check_esi_update.py`, then `process_schedules.py --strict` when an update is detected, and commits `schedules/` back with `[skip ci]`. Needs the `SCHEDULE_SOURCE_URL`, `GEMINI_API_KEY`, `GEMINI_API_KEY_ALT`, and `GEMINI_MODEL` secrets. Push trigger is deliberately `master`-only: the job runs a paid Gemini parse and auto-commits, so a wildcard branch filter burns quota and pushes commits onto feature branches. Use `workflow_dispatch` to test from a branch.
-- Any step in that workflow carrying a custom `if:` must include `success()` — supplying an `if` replaces the implicit `success()` check, so a step can otherwise run after an earlier one failed.
+- Any step in that workflow intended to run only on success must include `success()` (such as `Commit and Push`) — supplying an `if` replaces the implicit `success()` check, so a step can otherwise run after an earlier one failed. The `Save Gemini AI Responses Cache` step intentionally pairs with `always()` so cache is saved even if parsing halted on unresolved mappings.
 - `update-schedules-index.yml` — regenerates `schedules_index.json` when `schedules/dist/**` changes. Redundant for pipeline commits (`process_schedules.py` already regenerates it, and `[skip ci]` suppresses this workflow); it only really fires for hand-committed dist files.
 - `release.yml` — builds and publishes on `v*` tags or manual dispatch with a version input.
 
