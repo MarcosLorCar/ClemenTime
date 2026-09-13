@@ -53,7 +53,13 @@ class ScheduleWidget : GlanceAppWidget() {
 
         provideContent {
             val prefs = currentState<Preferences>()
-            val dayOffset = prefs[DAY_OFFSET_KEY] ?: (if (prefs[IS_TOMORROW_KEY] == true) 1 else 0)
+            val todayStr = java.time.LocalDate.now().toString()
+            val savedOffset = prefs[DAY_OFFSET_KEY] ?: (if (prefs[IS_TOMORROW_KEY] == true) 1 else 0)
+            val dayOffset = resolveEffectiveDayOffset(
+                savedOffset = savedOffset,
+                lastNavigatedDate = prefs[NAVIGATED_DATE_KEY],
+                todayDate = todayStr
+            )
 
             val subjectsWithSlots by remember(entryPoint) {
                 entryPoint?.settingsRepository()?.currentSemesterFlow?.flatMapLatest { semester ->
@@ -142,6 +148,7 @@ class ScheduleWidget : GlanceAppWidget() {
     suspend fun updateAll(context: Context) {
         val manager = GlanceAppWidgetManager(context)
         val glanceIds = manager.getGlanceIds(ScheduleWidget::class.java)
+        val todayStr = java.time.LocalDate.now().toString()
         glanceIds.forEach { glanceId ->
             updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { prefs ->
                 prefs.toMutablePreferences().apply {
@@ -149,6 +156,7 @@ class ScheduleWidget : GlanceAppWidget() {
                     this[REFRESH_KEY] = current + 1
                     this[DAY_OFFSET_KEY] = 0
                     this[IS_TOMORROW_KEY] = false
+                    this[NAVIGATED_DATE_KEY] = todayStr
                 }
             }
             update(context, glanceId)
