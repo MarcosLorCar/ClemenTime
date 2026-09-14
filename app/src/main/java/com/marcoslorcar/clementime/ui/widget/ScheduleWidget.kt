@@ -25,9 +25,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
-import java.time.LocalTime
 
 @EntryPoint
 @InstallIn(SingletonComponent::class)
@@ -75,33 +73,9 @@ class ScheduleWidget : GlanceAppWidget() {
                 entryPoint?.settingsRepository()?.selectedThemeFlow ?: kotlinx.coroutines.flow.flowOf("clementine")
             }.collectAsState(initial = "clementine")
 
-            val showNowLine by remember(entryPoint) {
-                entryPoint?.settingsRepository()?.showNowLineFlow ?: kotlinx.coroutines.flow.flowOf(true)
-            }.collectAsState(initial = true)
-
             val highContrast by remember(entryPoint) {
                 entryPoint?.settingsRepository()?.highContrastFlow ?: kotlinx.coroutines.flow.flowOf(false)
             }.collectAsState(initial = false)
-
-            val nowLineStyle by remember(entryPoint) {
-                entryPoint?.settingsRepository()?.nowLineStyleFlow ?: kotlinx.coroutines.flow.flowOf("discrete")
-            }.collectAsState(initial = "discrete")
-
-            val dayStartTime by remember(entryPoint) {
-                entryPoint?.settingsRepository()?.dayStartHourFlow?.let { hourFlow ->
-                    combine(hourFlow, entryPoint.settingsRepository().dayStartMinuteFlow) { h, m ->
-                        LocalTime.of(h, m)
-                    }
-                } ?: kotlinx.coroutines.flow.flowOf(LocalTime.of(8, 30))
-            }.collectAsState(initial = LocalTime.of(8, 30))
-
-            val dayEndTime by remember(entryPoint) {
-                entryPoint?.settingsRepository()?.dayEndHourFlow?.let { hourFlow ->
-                    combine(hourFlow, entryPoint.settingsRepository().dayEndMinuteFlow) { h, m ->
-                        LocalTime.of(h, m)
-                    }
-                } ?: kotlinx.coroutines.flow.flowOf(LocalTime.of(21, 30))
-            }.collectAsState(initial = LocalTime.of(21, 30))
 
             val isDarkTheme = when (themeMode) {
                 "light" -> false
@@ -130,13 +104,9 @@ class ScheduleWidget : GlanceAppWidget() {
                         else -> ScheduleWidgetContent(
                             dayOffset = dayOffset,
                             subjectsWithSlots = data,
-                            showNowLine = showNowLine,
-                            nowLineStyle = nowLineStyle,
                             highContrast = highContrast,
                             isDarkTheme = isDarkTheme,
                             selectedTheme = selectedTheme,
-                            dayStartTime = dayStartTime,
-                            dayEndTime = dayEndTime,
                             launchAppAction = launchAppAction
                         )
                     }

@@ -31,9 +31,8 @@ fun buildTimelineSegments(
     daySlots: List<Pair<Subject, ClassSlot>>
 ): List<WidgetTimelineSegment> {
     val clusters = groupSlotsIntoClusters(daySlots)
-    // No entries means no time scope, so there is nothing to draw and nowhere the Now line
-    // could belong. Returning a full-day EmptySegment here would put a grid — and the line —
-    // on a day with no classes.
+    // No entries means no time scope, so there is nothing to draw. Returning a full-day
+    // EmptySegment here would put a grid on a day with no classes.
     if (clusters.isEmpty()) {
         return emptyList()
     }
@@ -41,8 +40,7 @@ fun buildTimelineSegments(
     val firstClassStart = clusters.minOf { it.startTime }
     val lastClassEnd = clusters.maxOf { it.endTime }
 
-    // The timeline always spans exactly the classes of the day. The "Now" line is only
-    // drawn when the current time falls inside that range (see isNowInSegment in ScheduleWidgetUI).
+    // The timeline always spans exactly the classes of the day.
     val displayStartTime = firstClassStart
     val displayEndTime = lastClassEnd
 
