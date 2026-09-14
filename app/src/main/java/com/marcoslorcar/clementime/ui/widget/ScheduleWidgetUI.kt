@@ -36,12 +36,9 @@ import androidx.glance.text.TextStyle
 import com.marcoslorcar.clementime.R
 import com.marcoslorcar.clementime.data.EntryType
 import com.marcoslorcar.clementime.data.SubjectWithSlots
-import com.marcoslorcar.clementime.utils.DAY_END_TIME
-import com.marcoslorcar.clementime.utils.DAY_START_TIME
 import com.marcoslorcar.clementime.utils.TimelineCluster
 import java.time.Duration
 import java.time.LocalDate
-import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.time.format.TextStyle as JavaTextStyle
@@ -101,13 +98,9 @@ fun getWeekdayDate(todayDate: LocalDate, offset: Int): LocalDate {
 fun ScheduleWidgetContent(
     dayOffset: Int = 0,
     subjectsWithSlots: List<SubjectWithSlots>,
-    showNowLine: Boolean,
-    nowLineStyle: String = "discrete",
     highContrast: Boolean,
     isDarkTheme: Boolean = true,
     selectedTheme: String = "clementine",
-    dayStartTime: LocalTime = DAY_START_TIME,
-    dayEndTime: LocalTime = DAY_END_TIME,
     launchAppAction: Action
 ) {
     val context = LocalContext.current
@@ -122,8 +115,6 @@ fun ScheduleWidgetContent(
             Locale.getDefault()
         }
     }
-
-    val currentTime = LocalTime.now()
 
     val rawDayName = targetDayOfWeek.getDisplayName(JavaTextStyle.SHORT, locale)
     val dayName = rawDayName.replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
@@ -156,10 +147,6 @@ fun ScheduleWidgetContent(
             }
         }
     }
-
-    val isToday = targetDate == todayDate
-    val isWithinTimeRange = currentTime in dayStartTime..dayEndTime
-    val shouldShowNowLine = showNowLine && isToday && isWithinTimeRange
 
     val timelineSegments = remember(daySlots) {
         buildTimelineSegments(daySlots)
@@ -332,15 +319,11 @@ fun ScheduleWidgetContent(
                     Spacer(modifier = GlanceModifier.height(3.dp))
                 }
                 timelineSegments.forEachIndexed { index, segment ->
-                    val isNowInSegment = shouldShowNowLine && (currentTime >= segment.startTime && currentTime < segment.endTime)
                     item {
                         when (segment) {
                             is WidgetTimelineSegment.ClusterSegment -> {
                                 ClusterSegmentRow(
                                     cluster = segment.cluster,
-                                    currentTime = currentTime,
-                                    isNowInSegment = isNowInSegment,
-                                    nowLineStyle = nowLineStyle,
                                     highContrast = highContrast,
                                     launchAppAction = launchAppAction
                                 )
@@ -348,9 +331,6 @@ fun ScheduleWidgetContent(
                             is WidgetTimelineSegment.EmptySegment -> {
                                 EmptySegmentRow(
                                     segment = segment,
-                                    currentTime = currentTime,
-                                    isNowInSegment = isNowInSegment,
-                                    nowLineStyle = nowLineStyle,
                                     isDarkTheme = isDarkTheme,
                                     launchAppAction = launchAppAction,
                                     isFirstSegment = index == 0
@@ -370,9 +350,6 @@ fun ScheduleWidgetContent(
 @Composable
 fun ClusterSegmentRow(
     cluster: TimelineCluster,
-    currentTime: LocalTime,
-    isNowInSegment: Boolean,
-    nowLineStyle: String = "discrete",
     highContrast: Boolean,
     launchAppAction: Action
 ) {
@@ -469,54 +446,12 @@ fun ClusterSegmentRow(
             }
         }
 
-        if (isNowInSegment) {
-            val minutesFromStart = Duration.between(cluster.startTime, currentTime).toMinutes()
-            val nowTopDp = BLOCK_HEIGHT * (minutesFromStart / 30.0).toFloat()
-            WidgetNowLine(
-                modifier = GlanceModifier
-                    .fillMaxWidth()
-                    .padding(top = nowTopDp),
-                style = nowLineStyle
-            )
-        }
-    }
-}
-
-@Composable
-fun WidgetNowLine(
-    modifier: GlanceModifier = GlanceModifier,
-    style: String
-) {
-    val isObvious = style == "obvious"
-    val lineColor = if (isObvious) Color(0xFFFF3B30) else Color(0xFFFF9F0A)
-    val lineThickness = if (isObvious) 2.dp else 1.2.dp
-    val circleSize = if (isObvious) 7.dp else 5.dp
-
-    Row(
-        modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = GlanceModifier
-                .size(circleSize)
-                .cornerRadius(circleSize / 2)
-                .background(lineColor)
-        ) {}
-        Box(
-            modifier = GlanceModifier
-                .defaultWeight()
-                .height(lineThickness)
-                .background(lineColor)
-        ) {}
     }
 }
 
 @Composable
 fun EmptySegmentRow(
     segment: WidgetTimelineSegment.EmptySegment,
-    currentTime: LocalTime,
-    isNowInSegment: Boolean,
-    nowLineStyle: String = "discrete",
     isDarkTheme: Boolean = true,
     launchAppAction: Action,
     isFirstSegment: Boolean = false
@@ -537,7 +472,6 @@ fun EmptySegmentRow(
         var curr = segment.startTime
         repeat(numBlocks) { blockIndex ->
             val isHourMark = curr.minute == 0
-            val isNowInBlock = isNowInSegment && (currentTime >= curr && currentTime < curr.plusMinutes(30))
 
             Box(
                 modifier = GlanceModifier
@@ -573,17 +507,6 @@ fun EmptySegmentRow(
                                 )
                         ) {}
                     }
-                }
-
-                if (isNowInBlock) {
-                    val minutesFromBlockStart = Duration.between(curr, currentTime).toMinutes()
-                    val nowTopDp = BLOCK_HEIGHT * (minutesFromBlockStart / 30.0).toFloat()
-                    WidgetNowLine(
-                        modifier = GlanceModifier
-                            .fillMaxWidth()
-                            .padding(top = nowTopDp),
-                        style = nowLineStyle
-                    )
                 }
             }
 
