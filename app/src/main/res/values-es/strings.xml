@@ -195,6 +195,9 @@
     <string name="schedule_preview_header">Previsualización Semanal</string>
     <string name="slot_editor_title_add">Añadir franja/clase</string>
     <string name="slot_editor_title_edit">Editar franja/clase</string>
+    <string name="slot_editor_title_view">Detalles de la sesión</string>
+    <string name="edit_slot_button">Editar</string>
+    <string name="close">Cerrar</string>
     <string name="total_weekly_hours">%1$.1f hrs/semana</string>
     <string name="total_slots_metric">%1$d Clases</string>
     <string name="edit_subject_button">Editar Asignatura</string>

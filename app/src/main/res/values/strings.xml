@@ -189,6 +189,9 @@
     <string name="schedule_preview_header">Weekly Schedule Preview</string>
     <string name="slot_editor_title_add">Add Class Slot</string>
     <string name="slot_editor_title_edit">Edit Class Slot</string>
+    <string name="slot_editor_title_view">Class Slot Details</string>
+    <string name="edit_slot_button">Edit</string>
+    <string name="close">Close</string>
     <string name="total_weekly_hours">%1$.1f hrs/week</string>
     <string name="total_slots_metric" tools:ignore="PluralsCandidate">%1$d Slots</string>
     <string name="edit_subject_button">Edit Subject</string>
