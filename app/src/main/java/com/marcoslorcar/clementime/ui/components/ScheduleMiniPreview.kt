@@ -50,7 +50,8 @@ fun ScheduleMiniPreview(
     highlightedSlotIds: Set<Long> = emptySet(),
     highlightedSlots: Set<Pair<Subject, ClassSlot>> = emptySet(),
     startTime: LocalTime = LocalTime.of(8, 30),
-    endTime: LocalTime = LocalTime.of(21, 30)
+    endTime: LocalTime = LocalTime.of(21, 30),
+    containerColor: Color = MaterialTheme.colorScheme.surfaceVariant
 ) {
     val days = listOf(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY)
     val locale = LocalConfiguration.current.locales[0]
@@ -66,7 +67,7 @@ fun ScheduleMiniPreview(
 
     Surface(
         modifier = modifier,
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+        color = containerColor,
         shape = RoundedCornerShape(8.dp)
     ) {
         Column(modifier = Modifier.padding(4.dp)) {
@@ -191,7 +192,10 @@ fun ScheduleMiniPreview(
                                                         ),
                                                     contentAlignment = Alignment.Center
                                                 ) {
-                                                    if (clusterHeight > 10.dp) {
+                                                    val luminance = 0.299 * subject.uiColor.red + 0.587 * subject.uiColor.green + 0.114 * subject.uiColor.blue
+                                                    val textColor = if (luminance > 0.5f) Color.Black else Color.White
+
+                                                    if (maxOf(itemHeight, clusterHeight) >= 8.dp) {
                                                         Text(
                                                             text = if (isLab) "${subject.code}-L" else subject.code,
                                                             style = MaterialTheme.typography.labelSmall.copy(
@@ -199,7 +203,7 @@ fun ScheduleMiniPreview(
                                                                 lineHeight = 5.sp,
                                                                 fontWeight = FontWeight.Black
                                                             ),
-                                                            color = Color.White,
+                                                            color = textColor,
                                                             textAlign = TextAlign.Center,
                                                             maxLines = 1
                                                         )

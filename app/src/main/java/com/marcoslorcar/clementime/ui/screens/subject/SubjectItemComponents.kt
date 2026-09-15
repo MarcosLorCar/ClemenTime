@@ -74,7 +74,9 @@ fun SubjectItemCard(
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onNavigateToSchedule: (DayOfWeek, Long?) -> Unit,
-    onToggleSelection: () -> Unit
+    onToggleSelection: () -> Unit,
+    dayStartTime: LocalTime = LocalTime.of(8, 30),
+    dayEndTime: LocalTime = LocalTime.of(21, 30)
 ) {
     val subject = subjectWithSlots.subject
     var isExpanded by remember { mutableStateOf(false) }
@@ -249,15 +251,31 @@ fun SubjectItemCard(
                             Spacer(modifier = Modifier.height(12.dp))
 
                             val previewSlots = remember(subjectWithSlots) {
-                                subjectWithSlots.slots.map { subjectWithSlots.subject to it }
+                                val subject = subjectWithSlots.subject
+                                val labGroups = subjectWithSlots.slots
+                                    .filter { it.entryType == EntryType.LAB }
+                                    .mapNotNull { it.labGroupName }
+                                    .distinct()
+
+                                subjectWithSlots.slots.filter { slot ->
+                                    if (subject.selectedLabGroup != null && slot.entryType == EntryType.LAB) {
+                                        slot.labGroupName == subject.selectedLabGroup
+                                    } else if (labGroups.size == 1 && slot.entryType == EntryType.LAB) {
+                                        true
+                                    } else {
+                                        true
+                                    }
+                                }.map { subject to it }
                             }
 
                             if (previewSlots.isNotEmpty()) {
                                 ScheduleMiniPreview(
                                     slots = previewSlots,
+                                    startTime = dayStartTime,
+                                    endTime = dayEndTime,
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .height(110.dp)
+                                        .height(150.dp)
                                         .padding(bottom = 12.dp)
                                 )
                             }

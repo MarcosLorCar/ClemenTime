@@ -20,6 +20,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.EventBusy
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.AlertDialog
@@ -66,7 +67,10 @@ fun SlotEditBottomSheet(
     initialSlot: ClassSlotUiModel,
     onDismiss: () -> Unit,
     onSaveSlot: (ClassSlotUiModel) -> Unit,
-    onDelete: (() -> Unit)? = null
+    onDelete: (() -> Unit)? = null,
+    isReadOnly: Boolean = false,
+    onSwitchToEditMode: (() -> Unit)? = null,
+    defaultDurationMinutes: Int = 90
 ) {
     var editedSlot by remember(initialSlot) { mutableStateOf(initialSlot) }
     var showStartPicker by remember { mutableStateOf(false) }
@@ -98,7 +102,9 @@ fun SlotEditBottomSheet(
         ) {
             Text(
                 text = stringResource(
-                    if (editedSlot.id == 0L) R.string.slot_editor_title_add else R.string.slot_editor_title_edit
+                    if (isReadOnly) R.string.slot_editor_title_view
+                    else if (editedSlot.id == 0L) R.string.slot_editor_title_add
+                    else R.string.slot_editor_title_edit
                 ),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
@@ -113,13 +119,15 @@ fun SlotEditBottomSheet(
                     selected = editedSlot.entryType == EntryType.THEORY,
                     onClick = { editedSlot = editedSlot.copy(entryType = EntryType.THEORY) },
                     label = { Text(stringResource(R.string.theory_label)) },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    enabled = !isReadOnly
                 )
                 FilterChip(
                     selected = editedSlot.entryType == EntryType.LAB,
                     onClick = { editedSlot = editedSlot.copy(entryType = EntryType.LAB) },
                     label = { Text(stringResource(R.string.lab_label)) },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    enabled = !isReadOnly
                 )
             }
 
@@ -138,7 +146,8 @@ fun SlotEditBottomSheet(
                         FilterChip(
                             selected = editedSlot.dayOfWeek == tab.dayOfWeek,
                             onClick = { editedSlot = editedSlot.copy(dayOfWeek = tab.dayOfWeek) },
-                            label = { Text(tab.dayOfWeek.shortName(locale), fontSize = 12.sp) }
+                            label = { Text(tab.dayOfWeek.shortName(locale), fontSize = 12.sp) },
+                            enabled = !isReadOnly
                         )
                     }
                 }
@@ -151,7 +160,8 @@ fun SlotEditBottomSheet(
             ) {
                 OutlinedButton(
                     onClick = { showStartPicker = true },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    enabled = !isReadOnly
                 ) {
                     Icon(
                         imageVector = Icons.Default.Schedule,
@@ -168,7 +178,8 @@ fun SlotEditBottomSheet(
 
                 OutlinedButton(
                     onClick = { showEndPicker = true },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    enabled = !isReadOnly
                 ) {
                     Icon(
                         imageVector = Icons.Default.Schedule,
@@ -195,6 +206,7 @@ fun SlotEditBottomSheet(
                     label = { Text(stringResource(R.string.room_label)) },
                     placeholder = { Text(stringResource(R.string.room_placeholder)) },
                     singleLine = true,
+                    readOnly = isReadOnly,
                     modifier = Modifier.weight(1f)
                 )
                 OutlinedTextField(
@@ -203,6 +215,7 @@ fun SlotEditBottomSheet(
                     label = { Text(stringResource(R.string.professor_label)) },
                     placeholder = { Text(stringResource(R.string.professor_placeholder)) },
                     singleLine = true,
+                    readOnly = isReadOnly,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -215,6 +228,7 @@ fun SlotEditBottomSheet(
                     label = { Text(stringResource(R.string.lab_group_label)) },
                     placeholder = { Text(stringResource(R.string.lab_group_placeholder)) },
                     singleLine = true,
+                    readOnly = isReadOnly,
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -257,7 +271,8 @@ fun SlotEditBottomSheet(
                     }
                     Switch(
                         checked = editedSlot.isIgnored,
-                        onCheckedChange = { editedSlot = editedSlot.copy(isIgnored = it) }
+                        onCheckedChange = { editedSlot = editedSlot.copy(isIgnored = it) },
+                        enabled = !isReadOnly
                     )
                 }
             }
@@ -270,7 +285,7 @@ fun SlotEditBottomSheet(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (onDelete != null && editedSlot.id != 0L) {
+                if (!isReadOnly && onDelete != null && editedSlot.id != 0L) {
                     IconButton(onClick = { showDeleteConfirmation = true }) {
                         Icon(
                             imageVector = Icons.Default.Delete,
@@ -283,16 +298,34 @@ fun SlotEditBottomSheet(
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = onDismiss) {
-                        Text(stringResource(R.string.cancel))
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Button(
-                        onClick = {
-                            onSaveSlot(editedSlot)
+                    if (isReadOnly) {
+                        TextButton(onClick = onDismiss) {
+                            Text(stringResource(R.string.close))
                         }
-                    ) {
-                        Text(stringResource(R.string.save_button))
+                        if (onSwitchToEditMode != null) {
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Button(onClick = { onSwitchToEditMode() }) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(stringResource(R.string.edit_slot_button))
+                            }
+                        }
+                    } else {
+                        TextButton(onClick = onDismiss) {
+                            Text(stringResource(R.string.cancel))
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Button(
+                            onClick = {
+                                onSaveSlot(editedSlot)
+                            }
+                        ) {
+                            Text(stringResource(R.string.save_button))
+                        }
                     }
                 }
             }
@@ -330,7 +363,7 @@ fun SlotEditBottomSheet(
             onTimeConfirm = { selectedTime ->
                 val end = editedSlot.endTime
                 val newEnd = if (end == null || selectedTime.isAfter(end) || selectedTime == end) {
-                    selectedTime.plusMinutes(90)
+                    selectedTime.plusMinutes(defaultDurationMinutes.toLong())
                 } else end
                 editedSlot = editedSlot.copy(startTime = selectedTime, endTime = newEnd)
                 showStartPicker = false
@@ -339,13 +372,15 @@ fun SlotEditBottomSheet(
     }
 
     if (showEndPicker) {
+        val fallbackEnd = editedSlot.startTime?.plusMinutes(defaultDurationMinutes.toLong())
+            ?: LocalTime.of(9, 0).plusMinutes(defaultDurationMinutes.toLong())
         RadialTimePickerDialog(
-            initialTime = editedSlot.endTime ?: (editedSlot.startTime?.plusMinutes(90) ?: LocalTime.of(10, 30)),
+            initialTime = editedSlot.endTime ?: fallbackEnd,
             onDismiss = { showEndPicker = false },
             onTimeConfirm = { selectedTime ->
                 val start = editedSlot.startTime
                 val newStart = if (start == null || selectedTime.isBefore(start) || selectedTime == start) {
-                    selectedTime.minusMinutes(90)
+                    selectedTime.minusMinutes(defaultDurationMinutes.toLong())
                 } else start
                 editedSlot = editedSlot.copy(startTime = newStart, endTime = selectedTime)
                 showEndPicker = false

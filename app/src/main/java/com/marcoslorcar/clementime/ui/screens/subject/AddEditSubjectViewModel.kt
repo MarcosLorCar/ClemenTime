@@ -25,7 +25,6 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
-import java.time.Duration
 import java.time.LocalTime
 import javax.inject.Inject
 
@@ -71,8 +70,8 @@ class AddEditSubjectViewModel @Inject constructor(
 
     init {
         val route = runCatching { savedStateHandle.toRoute<AddEditSubjectRoute>() }.getOrNull()
-        val routeSubjectId = route?.subjectId
-        val highlightSlotId = route?.highlightSlotId
+        val routeSubjectId = route?.subjectId ?: savedStateHandle.get<Long>("subjectId")
+        val highlightSlotId = route?.highlightSlotId ?: savedStateHandle.get<Long>("highlightSlotId")
 
         if (routeSubjectId != null && routeSubjectId > 0) {
             _uiState.update { it.copy(isEditMode = false, isNewSubject = false) }
@@ -211,11 +210,8 @@ class AddEditSubjectViewModel @Inject constructor(
 
     fun updateActive(isActive: Boolean) {
         _uiState.update { it.copy(isActive = isActive) }
-    }
-
-    fun updateDefaultDuration(durationMinutes: Int) {
-        if (durationMinutes > 0) {
-            _uiState.update { it.copy(defaultDurationMinutes = durationMinutes) }
+        if (!_uiState.value.isEditMode) {
+            saveSubject(shouldExit = false)
         }
     }
 
@@ -227,6 +223,9 @@ class AddEditSubjectViewModel @Inject constructor(
         if (name.isNotBlank()) {
             val fileItem = AttachedFileItem(name = name.trim(), fileType = fileType, uriString = uriString)
             _uiState.update { it.copy(attachedFiles = it.attachedFiles + fileItem) }
+            if (!_uiState.value.isEditMode) {
+                saveSubject(shouldExit = false)
+            }
         }
     }
 
@@ -234,6 +233,13 @@ class AddEditSubjectViewModel @Inject constructor(
         _uiState.update { state ->
             state.copy(attachedFiles = state.attachedFiles.filter { it.id != id })
         }
+        if (!_uiState.value.isEditMode) {
+            saveSubject(shouldExit = false)
+        }
+    }
+
+    fun saveSubjectWithoutExit() {
+        saveSubject(shouldExit = false)
     }
 
     fun addSlot() {
@@ -286,52 +292,6 @@ class AddEditSubjectViewModel @Inject constructor(
                 updatedList.removeAt(index)
                 state.copy(slots = updatedList)
             }
-        }
-    }
-
-    fun onStartTimeSelected(index: Int, newStartTime: LocalTime) {
-        val currentSlots = _uiState.value.slots
-        if (index in currentSlots.indices) {
-            val slot = currentSlots[index]
-            val duration = _uiState.value.defaultDurationMinutes.toLong()
-
-            val calculatedEndTime = if (slot.endTime == null) {
-                newStartTime.plusMinutes(duration)
-            } else if (newStartTime.isBefore(slot.endTime)) {
-                val newDuration = Duration.between(newStartTime, slot.endTime).toMinutes().toInt()
-                if (newDuration > 0) {
-                    _uiState.update { it.copy(defaultDurationMinutes = newDuration) }
-                }
-                slot.endTime
-            } else {
-                newStartTime.plusMinutes(duration)
-            }
-
-            val updatedSlot = slot.copy(startTime = newStartTime, endTime = calculatedEndTime)
-            updateSlot(index, updatedSlot)
-        }
-    }
-
-    fun onEndTimeSelected(index: Int, newEndTime: LocalTime) {
-        val currentSlots = _uiState.value.slots
-        if (index in currentSlots.indices) {
-            val slot = currentSlots[index]
-            val duration = _uiState.value.defaultDurationMinutes.toLong()
-
-            val calculatedStartTime = if (slot.startTime == null) {
-                newEndTime.minusMinutes(duration)
-            } else if (newEndTime.isAfter(slot.startTime)) {
-                val newDuration = Duration.between(slot.startTime, newEndTime).toMinutes().toInt()
-                if (newDuration > 0) {
-                    _uiState.update { it.copy(defaultDurationMinutes = newDuration) }
-                }
-                slot.startTime
-            } else {
-                newEndTime.minusMinutes(duration)
-            }
-
-            val updatedSlot = slot.copy(startTime = calculatedStartTime, endTime = newEndTime)
-            updateSlot(index, updatedSlot)
         }
     }
 

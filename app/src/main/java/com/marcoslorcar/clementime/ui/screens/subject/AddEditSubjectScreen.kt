@@ -100,6 +100,7 @@ fun AddEditSubjectScreen(
         onOpenSlotEditor = viewModel::openSlotEditor,
         onCloseSlotEditor = viewModel::closeSlotEditor,
         onSaveSlotFromEditor = viewModel::saveSlotFromEditor,
+        onSaveSubjectWithoutExit = viewModel::saveSubjectWithoutExit,
         onSelectLabGroup = viewModel::selectLabGroup,
         onMarkLabTooltipSeen = viewModel::markLabSelectionTooltipSeen
     )
@@ -127,6 +128,7 @@ fun AddEditSubjectContent(
     onOpenSlotEditor: (Int?) -> Unit,
     onCloseSlotEditor: () -> Unit,
     onSaveSlotFromEditor: (ClassSlotUiModel) -> Unit,
+    onSaveSubjectWithoutExit: () -> Unit = {},
     onSelectLabGroup: (String?) -> Unit = {},
     onMarkLabTooltipSeen: () -> Unit = {}
 ) {
@@ -398,7 +400,12 @@ fun AddEditSubjectContent(
             initialSlot = editingSlot,
             onDismiss = onCloseSlotEditor,
             onSaveSlot = onSaveSlotFromEditor,
-            onDelete = uiState.editingSlotIndex?.let { index -> { onDeleteSlot(index); onCloseSlotEditor() } }
+            onDelete = if (uiState.isEditMode) {
+                uiState.editingSlotIndex?.let { index -> { onDeleteSlot(index); onCloseSlotEditor() } }
+            } else null,
+            isReadOnly = !uiState.isEditMode,
+            onSwitchToEditMode = onToggleEditMode,
+            defaultDurationMinutes = uiState.defaultDurationMinutes
         )
     }
 
@@ -409,7 +416,12 @@ fun AddEditSubjectContent(
             onUpdateNotesText = onUpdateNotesText,
             onRemoveAttachedFile = onRemoveAttachedFile,
             onAddFileClick = { filePickerLauncher.launch(arrayOf("*/*")) },
-            onDismiss = { showNotesSheet = false }
+            onDismiss = {
+                showNotesSheet = false
+                if (!uiState.isEditMode) {
+                    onSaveSubjectWithoutExit()
+                }
+            }
         )
     }
 

@@ -84,6 +84,14 @@ class SubjectsViewModelTestFakeDao : ScheduleDao {
 class FakeSettingsRepository : com.marcoslorcar.clementime.data.SettingsRepository(context = null) {
     val highContrastSubject = MutableStateFlow(false)
     override val highContrastFlow: Flow<Boolean> = highContrastSubject
+    val startHourFlow = MutableStateFlow(9)
+    val startMinuteFlow = MutableStateFlow(0)
+    val endHourFlow = MutableStateFlow(20)
+    val endMinuteFlow = MutableStateFlow(0)
+    override val dayStartHourFlow: Flow<Int> = startHourFlow
+    override val dayStartMinuteFlow: Flow<Int> = startMinuteFlow
+    override val dayEndHourFlow: Flow<Int> = endHourFlow
+    override val dayEndMinuteFlow: Flow<Int> = endMinuteFlow
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -232,5 +240,14 @@ class SubjectsViewModelTest {
         assertEquals(true, fakeDao.bulkUpdatedActiveStatus[listOf(10L, 20L)] == false)
         assertEquals(emptySet<Long>(), viewModel.uiState.value.selectedSubjectIds)
         assertEquals(false, viewModel.uiState.value.isSelectionModeForced)
+    }
+
+    @Test
+    fun dayStartAndEndTime_observedFromSettings() = runTest {
+        val viewModel = SubjectsViewModel(fakeDao, fakeSettingsRepository, null)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(java.time.LocalTime.of(9, 0), viewModel.uiState.value.dayStartTime)
+        assertEquals(java.time.LocalTime.of(20, 0), viewModel.uiState.value.dayEndTime)
     }
 }

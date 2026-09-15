@@ -200,38 +200,6 @@ class AddEditSubjectViewModelTest {
     }
 
     @Test
-    fun startTimeSelection_autoFillsEndTimeUsingDefaultDuration() {
-        val savedStateHandle = SavedStateHandle()
-        val viewModel = AddEditSubjectViewModel(savedStateHandle, fakeDao, fakeSettingsRepository)
-
-        viewModel.updateDefaultDuration(90)
-        viewModel.addSlot()
-
-        val start = LocalTime.of(10, 0)
-        viewModel.onStartTimeSelected(0, start)
-
-        val updatedSlot = viewModel.uiState.value.slots.first()
-        assertEquals(LocalTime.of(10, 0), updatedSlot.startTime)
-        assertEquals(LocalTime.of(11, 30), updatedSlot.endTime)
-    }
-
-    @Test
-    fun endTimeSelectionFirst_autoFillsStartTimeUsingDefaultDuration() {
-        val savedStateHandle = SavedStateHandle()
-        val viewModel = AddEditSubjectViewModel(savedStateHandle, fakeDao, fakeSettingsRepository)
-
-        viewModel.updateDefaultDuration(90)
-        viewModel.addSlot()
-
-        val end = LocalTime.of(16, 0)
-        viewModel.onEndTimeSelected(0, end)
-
-        val updatedSlot = viewModel.uiState.value.slots.first()
-        assertEquals(LocalTime.of(14, 30), updatedSlot.startTime)
-        assertEquals(LocalTime.of(16, 0), updatedSlot.endTime)
-    }
-
-    @Test
     fun saveSubject_persistsIgnoredStatus() {
         val savedStateHandle = SavedStateHandle()
         val viewModel = AddEditSubjectViewModel(savedStateHandle, fakeDao, fakeSettingsRepository)
@@ -251,5 +219,40 @@ class AddEditSubjectViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
         
         assertEquals(true, fakeDao.slots.first().isIgnored)
+    }
+
+    @Test
+    fun updateActive_inViewMode_autoSaves() {
+        val subject = Subject(id = 1L, code = "TEST", name = "Test Subject", color = 0, isActive = true)
+        fakeDao.subjects.add(subject)
+
+        val savedStateHandle = SavedStateHandle(mapOf("subjectId" to 1L))
+        val viewModel = AddEditSubjectViewModel(savedStateHandle, fakeDao, fakeSettingsRepository)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(false, viewModel.uiState.value.isEditMode)
+
+        viewModel.updateActive(false)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(false, fakeDao.subjects.first().isActive)
+        assertEquals(false, viewModel.uiState.value.isSaved)
+    }
+
+    @Test
+    fun saveSubjectWithoutExit_savesSubjectWithoutSettingIsSaved() {
+        val subject = Subject(id = 1L, code = "TEST", name = "Test Subject", color = 0, isActive = true)
+        fakeDao.subjects.add(subject)
+
+        val savedStateHandle = SavedStateHandle(mapOf("subjectId" to 1L))
+        val viewModel = AddEditSubjectViewModel(savedStateHandle, fakeDao, fakeSettingsRepository)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.updateNotesText("New note from sheet")
+        viewModel.saveSubjectWithoutExit()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("New note from sheet", fakeDao.subjects.first().notes)
+        assertEquals(false, viewModel.uiState.value.isSaved)
     }
 }
