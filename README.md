@@ -17,7 +17,7 @@
 
 ## About
 
-**ClemenTime** helps ESI students organize timetables and tasks effortlessly. Import class schedules, manage daily tasks, and resolve timetable overlaps through a reactive, privacy-conscious interface built entirely with Jetpack Compose and Material 3.
+**ClemenTime** helps ESI students organize classes and labs effortlessly. Import class schedules and resolve timetable overlaps through a reactive, privacy-conscious interface built entirely with Jetpack Compose and Material 3.
 
 ## Features
 
