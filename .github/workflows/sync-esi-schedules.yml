@@ -11,6 +11,12 @@ on:
       - 'process_schedules.py'
       - '.github/workflows/sync-esi-schedules.yml'
   workflow_dispatch:
+    inputs:
+      force:
+        description: 'Force re-download and re-process from ESI TV endpoint'
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: sync-esi-schedules-${{ github.ref }}
@@ -43,7 +49,11 @@ jobs:
         env:
           SCHEDULE_SOURCE_URL: ${{ secrets.SCHEDULE_SOURCE_URL }}
         run: |
-          OUTPUT=$(python3 -u schedules/script/check_esi_update.py)
+          CMD="python3 -u schedules/script/check_esi_update.py"
+          if [ "${{ inputs.force }}" = "true" ]; then
+            CMD="$CMD --force"
+          fi
+          OUTPUT=$($CMD)
           echo "$OUTPUT"
           if [[ "$OUTPUT" == *"[Update Detected]"* ]]; then
             echo "has_update=true" >> $GITHUB_OUTPUT
