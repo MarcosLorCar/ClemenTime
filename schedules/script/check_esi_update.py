@@ -40,6 +40,17 @@ def compute_sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def write_github_output(has_update: bool):
+    """Emit has_update boolean to $GITHUB_OUTPUT if running inside GitHub Actions."""
+    gh_output = os.getenv("GITHUB_OUTPUT")
+    if gh_output:
+        try:
+            with open(gh_output, "a", encoding="utf-8") as f:
+                f.write(f"has_update={'true' if has_update else 'false'}\n")
+        except Exception as e:
+            print(f"[Warning] Failed to write to GITHUB_OUTPUT: {e}", file=sys.stderr)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Check ESI schedule URL headers for updates and download fresh schedules.json."
@@ -78,13 +89,14 @@ def main():
         headers={"User-Agent": "ClemenTime-UpdateChecker/1.0"},
     )
     try:
-        with urllib.request.urlopen(req) as resp:
+        with urllib.request.urlopen(req, timeout=10) as resp:
             headers = dict(resp.headers)
             last_modified = headers.get("Last-Modified", "")
             etag = headers.get("ETag", "")
     except Exception as e:
         if args.mock_etag is None and args.mock_last_modified is None and not args.force:
             print(f"[Error] Failed to fetch HEAD from {target_url}: {e}", file=sys.stderr)
+            write_github_output(False)
             sys.exit(1)
         else:
             print(f"[Warning] HEAD request failed ({e}), proceeding with mocks/force mode.", file=sys.stderr)
@@ -123,10 +135,11 @@ def main():
                 target_url,
                 headers={"User-Agent": "ClemenTime-UpdateChecker/1.0"},
             )
-            with urllib.request.urlopen(req_get) as resp_get:
+            with urllib.request.urlopen(req_get, timeout=30) as resp_get:
                 content_bytes = resp_get.read()
         except Exception as e:
             print(f"[Error] Failed to download schedule from {target_url}: {e}", file=sys.stderr)
+            write_github_output(False)
             sys.exit(1)
 
         sha256_val = compute_sha256(content_bytes)
@@ -151,11 +164,14 @@ def main():
         print(f"[Success] Downloaded {len(content_bytes)} bytes. Saved to {INPUT_JSON}.")
 
         if content_changed or args.force or mock_provided:
+            write_github_output(True)
             print("[Update Detected] ESI schedule content changed or force flag enabled.")
         else:
+            write_github_output(False)
             print("[No Change] Remote headers changed but file content is identical; skipping.")
         sys.exit(0)
     else:
+        write_github_output(False)
         print("[No Update] ESI schedule headers unchanged.")
         sys.exit(0)
 

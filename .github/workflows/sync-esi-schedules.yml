@@ -33,31 +33,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          cache: 'pip'
-
-      - name: Install Python Dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install python-dotenv
-
       - name: Check ESI API Endpoint for Schedule Updates
         id: check
         env:
           SCHEDULE_SOURCE_URL: ${{ secrets.SCHEDULE_SOURCE_URL }}
         run: |
-          CMD="python3 -u schedules/script/check_esi_update.py"
+          ARGS=""
           if [ "${{ inputs.force }}" = "true" ]; then
-            CMD="$CMD --force"
+            ARGS="--force"
           fi
-          OUTPUT=$($CMD)
-          echo "$OUTPUT"
-          if [[ "$OUTPUT" == *"[Update Detected]"* ]]; then
-            echo "has_update=true" >> $GITHUB_OUTPUT
-          fi
+          python3 -u schedules/script/check_esi_update.py $ARGS
 
       - name: Process Schedules
         id: process
