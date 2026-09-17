@@ -1,103 +1,53 @@
-# Schedule PDF to Structured JSON Converter (`parse_schedule.py`)
+# ESI Schedule Processing Scripts (`schedules/script/`)
 
-Automated tool to convert course schedule PDFs into structured JSON schedule files (`output_schedule.json`). Uses **Google Gemini (LLM)** for visual table extraction and an **interactive CLI** for subject/professor name mapping.
+Automated tools to fetch timetable data from the official ESI TV hall endpoint (`https://esi.uclm.es/TV/hall/horarios.json`), apply name normalization via `mappings.json`, handle deduplication and faculty event collapse, and publish semester distribution files (`dist/1C.json`, `dist/2C.json`, `dist/schedules_index.json`).
 
 ---
 
-## Architecture Overview
+## Pipeline Overview
 
 ```
-               +-----------------------------+
-               |     Input Schedule PDF      |
-               +--------------+--------------+
-                              |
-                              v
-               +-----------------------------+
-               | pdf2image (Page Conversion) |
-               +--------------+--------------+
-                              |
-                              v
-               +-----------------------------+
-               |    Gemini-2.0-Flash API     | <---> mappings.json (Context)
-               +--------------+--------------+
-                              |
-                              v
-               +-----------------------------+
-               |  Interactive CLI Mapper     | <---> mappings.json (Update)
-               +--------------+--------------+
-                              |
-                              v
-               +-----------------------------+
-               |   Output Schedule JSON      |
-               +-----------------------------+
+https://esi.uclm.es/TV/hall/horarios.json
+             │
+   check_esi_update.py  (HTTP HEAD ETag / Last-Modified)
+             │
+schedules/input/schedules.json
+             │
+   parse_schedule.py    (mappings.json + deduplication + normalization)
+             │
+   schedules/dist/1C.json & 2C.json
+             │
+   generate_index.py    (deterministic metadata + SHA256 hashes)
+             │
+   schedules/dist/schedules_index.json
 ```
 
 ---
 
-## Installation & Dependencies
+## Dependencies & Setup
 
-This project uses `uv` for dependency management.
+Uses `uv` for dependency management:
 
 ```bash
 uv sync
 ```
 
-> [!IMPORTANT]
-> You must also have `poppler` installed on your system for `pdf2image` to work.
-
 ---
 
-## Setup
-
-1.  **API Key**: Obtain a Gemini API key from [Google AI Studio](https://aistudio.google.com/).
-2.  **Configuration**: You can set your API key and preferred model in two ways:
-    - **Option A: .env file (Recommended)**: Create a file named `.env` in the same directory as the script:
-      ```text
-      GEMINI_API_KEY=your_api_key_here
-      GEMINI_MODEL=gemini-2.0-flash
-      ```
-    - **Option B: Environment Variable**:
-      ```bash
-      export GEMINI_API_KEY="your_api_key_here"
-      ```
-
----
-
-## Usage Instructions
-
-### 1. Run the script
-
-By default, the script looks for `horarios.pdf` in the current directory:
+## Usage Commands
 
 ```bash
-uv run parse_schedule.py
+# Check live ESI TV endpoint and process if updated
+python process_schedules.py --check-esi
+
+# Force a redownload and regenerate distributions
+python process_schedules.py --check-esi --force
+
+# Strict mode for CI (fails if unknown mappings exist)
+python process_schedules.py --strict
+
+# Regenerate schedules_index.json only
+python schedules/script/generate_index.py
 ```
 
-Or specify a custom file:
-
-```bash
-uv run parse_schedule.py my_schedule.pdf
-```
-
-### 2. Interactive Mapping
-
-If Gemini finds an abbreviation or code (subject, professor, or classroom) that is not in `mappings.json`, the script will pause and prompt you:
-
-```
-[?] Unknown matter found: 'TeCo'
-    Enter full name for 'TeCo' (or press Enter to use as is): Tecnologia de Computadores
-```
-
-Your answers are automatically saved to `mappings.json` and used in future runs (including being sent to Gemini as context).
-
-### 3. Rate Limiting Handling
-
-The script includes exponential backoff retry logic. If the API returns a rate limit error (`429`), it will wait and retry automatically until the page is successfully processed.
-
----
-
-## Output Configuration
-
-- **Input**: PDF files (converted to 200 DPI images).
-- **Mappings**: `mappings.json` (stores persistent name resolutions).
-- **Output**: `output_schedule.json` (structured JSON for the app).
+See [`docs/api_schedule_pipeline.md`](../../docs/api_schedule_pipeline.md) for full architectural documentation.

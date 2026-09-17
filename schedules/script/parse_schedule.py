@@ -9,11 +9,17 @@ import hashlib
 import time
 import unicodedata
 from difflib import SequenceMatcher
-from typing import Dict, List, Optional, Tuple, Any
-from pydantic import BaseModel, Field
-from pdf2image import convert_from_path
-from google import genai
-from google.genai import types, errors
+from typing import Any, Dict, List, Optional, Tuple, Union
+try:
+    from pydantic import BaseModel, Field
+    from pdf2image import convert_from_path
+    from google import genai
+    from google.genai import types, errors
+    HAVE_PDF_DEPS = True
+except ImportError:
+    HAVE_PDF_DEPS = False
+    BaseModel = object
+    Field = lambda **kwargs: None
 
 try:
     from dotenv import load_dotenv
@@ -71,6 +77,13 @@ UNRESOLVED: Dict[str, set] = {}
 
 def record_unresolved(code: str, category: str):
     UNRESOLVED.setdefault(category, set()).add(code)
+
+
+def clean_subject_code(code: str) -> str:
+    """Removes laboratory suffixes like '-L', '-Lab', '(L)' from subject codes."""
+    if not code:
+        return code
+    return re.sub(r'(-L|\(L\)|-Lab|\.L|\.Lab)$', '', code.strip(), flags=re.IGNORECASE)
 
 
 def resolve_mapping(
@@ -607,36 +620,122 @@ def process_pdf_schedule(
     print(f"[Deduplicated] {len(processed_slots)} unique slots remaining.")
     return processed_slots
 
-def main():
-    parser = argparse.ArgumentParser(description="Parse schedule PDF files directly into flat schedule JSONs.")
-    parser.add_argument("pdf_file", help="Path to PDF schedule file.")
-    parser.add_argument("--non-interactive", action="store_true", help="Run without interactive mapping prompts.")
-    parser.add_argument("--model", default=None, help=f"Gemini model ID (default: {DEFAULT_MODEL}).")
-    parser.add_argument("--clear-cache", action="store_true", help="Clear page response cache before running.")
-    parser.add_argument("--page", type=int, action="append", dest="target_pages", help="Specific 1-based page number to re-parse (e.g. --page 10).")
-    parser.add_argument("--pages", type=int, nargs="+", dest="target_pages_list", help="Specific 1-based page numbers to re-parse (e.g. --pages 10 11).")
-    args = parser.parse_args()
+def process_json_schedule(
+    json_path: str,
+    interactive: bool = True,
+    output_dir: str = DEFAULT_DIST_DIR
+) -> Dict[str, List[Dict]]:
+    """
+    Parses a raw JSON schedule feed (such as from the ESI TV hall endpoint) into
+    normalized, deduplicated flat slot lists split by semester.
+    """
+    with open(json_path, "r", encoding="utf-8") as f:
+        raw_entries = json.load(f)
 
-    target_pages = args.target_pages or []
-    if args.target_pages_list:
-        target_pages.extend(args.target_pages_list)
-    target_pages = list(set(target_pages)) if target_pages else None
-
-    if not os.path.exists(args.pdf_file):
-        print(f"[Error] File '{args.pdf_file}' not found.")
+    if not isinstance(raw_entries, list):
+        print(f"[Error] Expected a JSON list of slot entries in {json_path}", file=sys.stderr)
         sys.exit(1)
 
-    interactive = not args.non_interactive
-    slots = process_pdf_schedule(
-        pdf_path=args.pdf_file,
-        interactive=interactive,
-        model_id=args.model,
-        clear_cache=args.clear_cache,
-        target_pages=target_pages
-    )
+    mappings = load_mappings()
+    processed_slots = []
+    seen_keys = set()
 
-    # Fail before writing anything: in non-interactive mode unknown codes are passed
-    # through verbatim, so writing them would publish raw codes to users' devices.
+    for entry in raw_entries:
+        raw_asig = (entry.get("asignatura") or "").strip()
+        raw_aula = (entry.get("aula") or "").strip()
+
+        clean_asig, clean_aula = sanitize_subject_and_classroom(raw_asig, raw_aula)
+
+        # 1. Filter Universidad de Mayores
+        if not clean_asig or "universidad de mayores" in clean_asig.lower() or "univmayores" in clean_asig.lower():
+            continue
+
+        sem_val = str(entry.get("cuatrimestre") or "1C").strip().upper()
+        sem_key = "2C" if "2" in sem_val else "1C"
+
+        is_lab = bool(entry.get("es_laboratorio", False))
+        grupo_prac = (entry.get("grupo_practicas") or "").strip()
+        slot_type = (entry.get("tipo") or "teoría").strip().lower()
+
+        # 2. Strip lab suffix from subject code
+        clean_code = clean_subject_code(clean_asig)
+        is_lab_indicator = (
+            bool(grupo_prac) or
+            clean_asig != clean_code or
+            clean_asig.endswith("-L") or clean_asig.endswith("-L.") or
+            bool(re.search(r'\bLD\d?', clean_aula, re.IGNORECASE))
+        )
+
+        if is_lab_indicator:
+            is_lab = True
+            if slot_type != "evento":
+                slot_type = "laboratorio"
+
+        canonical_code, asig_norm = resolve_mapping(clean_code, "matters", mappings, interactive)
+
+        prof_raw = sanitize_professor(entry.get("profesor") or "")
+        prof = resolve_professors(prof_raw, mappings, interactive) if prof_raw else ""
+
+        classroom = clean_aula
+        day_norm = normalize_spanish_day(entry.get("dia", ""))
+        group = normalize_group_name(entry.get("grupo") or "")
+
+        # 3. Collapse 87 Replicated Faculty-wide events (Pruebas de Progreso & Conferencias)
+        if asig_norm in ["Pruebas de Progreso", "Conferencias", "PruebasProgreso"] or canonical_code in ["Pruebas de Progreso", "Conferencias", "PruebasProgreso"]:
+            group = "GENERAL"
+            prof = ""
+            slot_type = "evento"
+            is_lab = False
+            grupo_prac = ""
+            if "pruebas" in asig_norm.lower() or "pruebas" in canonical_code.lower():
+                canonical_code = "Pruebas de Progreso"
+                asig_norm = "Pruebas de Progreso"
+                classroom = clean_aula or "Charles Babbage - 0.02+3"
+            elif asig_norm == "Conferencias" or canonical_code == "Conferencias":
+                canonical_code = "Conferencias"
+                asig_norm = "Conferencias"
+                classroom = clean_aula or "Alan Turing - Salón de Actos"
+
+        # 4. Format and round times (padding 8:30 -> 08:30 and rounding :50 -> :00)
+        start_time = format_time(entry.get("hora_inicio", ""), is_end_time=False)
+        end_time = format_time(entry.get("hora_fin", ""), is_end_time=True)
+
+        # 5. Composite deduplication key
+        # Retains group so 53 shared multi-group classes are preserved for each attending group
+        slot_key = (
+            group,
+            sem_key,
+            day_norm,
+            start_time,
+            end_time,
+            asig_norm,
+            slot_type,
+            classroom,
+            prof,
+            is_lab,
+            grupo_prac
+        )
+
+        if slot_key not in seen_keys:
+            seen_keys.add(slot_key)
+            processed_slots.append({
+                "grupo": group,
+                "cuatrimestre": sem_key,
+                "dia": day_norm,
+                "hora_inicio": start_time,
+                "hora_fin": end_time,
+                "codigo": canonical_code,
+                "asignatura": asig_norm,
+                "tipo": slot_type,
+                "aula": classroom,
+                "profesor": prof,
+                "es_laboratorio": is_lab,
+                "grupo_practicas": grupo_prac
+            })
+
+    print(f"[Extracted] {len(raw_entries)} raw entries from {json_path}.")
+    print(f"[Deduplicated] {len(processed_slots)} unique slots remaining.")
+
     if not interactive and UNRESOLVED:
         print("\n[Error] Unresolved mappings (nothing was written):", file=sys.stderr)
         for category in sorted(UNRESOLVED):
@@ -649,17 +748,84 @@ def main():
         )
         sys.exit(1)
 
+    os.makedirs(output_dir, exist_ok=True)
     by_semester: Dict[str, List[Dict]] = {"1C": [], "2C": []}
-    for s in slots:
+    for s in processed_slots:
         sem = s.get("cuatrimestre", "1C")
-        by_semester[sem].append(s)
+        by_semester.setdefault(sem, []).append(s)
 
+    day_order = {"Lunes": 1, "Martes": 2, "Miércoles": 3, "Jueves": 4, "Viernes": 5, "Sábado": 6, "Domingo": 7}
     for sem_key, sem_slots in by_semester.items():
         if sem_slots:
-            out_file = os.path.join(DEFAULT_DIST_DIR, f"{sem_key}.json")
+            sem_slots.sort(key=lambda x: (x["grupo"], day_order.get(x["dia"], 99), x["hora_inicio"], x["codigo"]))
+            out_file = os.path.join(output_dir, f"{sem_key}.json")
             with open(out_file, "w", encoding="utf-8") as f:
                 json.dump(sem_slots, f, indent=2, ensure_ascii=False)
             print(f"  -> Wrote {len(sem_slots)} slots to {out_file}")
+
+    return by_semester
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Parse schedule JSON or PDF files directly into flat schedule JSONs.")
+    parser.add_argument("file", help="Path to schedule file (JSON or PDF).")
+    parser.add_argument("--non-interactive", action="store_true", help="Run without interactive mapping prompts.")
+    parser.add_argument("--model", default=None, help=f"Gemini model ID for PDF parsing (default: {DEFAULT_MODEL}).")
+    parser.add_argument("--clear-cache", action="store_true", help="Clear page response cache before running.")
+    parser.add_argument("--page", type=int, action="append", dest="target_pages", help="Specific 1-based page number to re-parse (e.g. --page 10).")
+    parser.add_argument("--pages", type=int, nargs="+", dest="target_pages_list", help="Specific 1-based page numbers to re-parse (e.g. --pages 10 11).")
+    args = parser.parse_args()
+
+    if not os.path.exists(args.file):
+        print(f"[Error] File '{args.file}' not found.")
+        sys.exit(1)
+
+    interactive = not args.non_interactive
+
+    if args.file.endswith(".json"):
+        process_json_schedule(args.file, interactive=interactive)
+    else:
+        if not HAVE_PDF_DEPS:
+            print("[Error] PDF parsing dependencies (pdf2image, google-genai) are not installed.", file=sys.stderr)
+            sys.exit(1)
+
+        target_pages = args.target_pages or []
+        if args.target_pages_list:
+            target_pages.extend(args.target_pages_list)
+        target_pages = list(set(target_pages)) if target_pages else None
+
+        slots = process_pdf_schedule(
+            pdf_path=args.file,
+            interactive=interactive,
+            model_id=args.model,
+            clear_cache=args.clear_cache,
+            target_pages=target_pages
+        )
+
+        if not interactive and UNRESOLVED:
+            print("\n[Error] Unresolved mappings (nothing was written):", file=sys.stderr)
+            for category in sorted(UNRESOLVED):
+                for code in sorted(UNRESOLVED[category]):
+                    print(f"    {category}: {code}", file=sys.stderr)
+            print(
+                f"\nAdd them to {MAPPINGS_FILE} and re-run, or run without --non-interactive "
+                "to be prompted for each.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+        by_semester: Dict[str, List[Dict]] = {"1C": [], "2C": []}
+        for s in slots:
+            sem = s.get("cuatrimestre", "1C")
+            by_semester.setdefault(sem, []).append(s)
+
+        for sem_key, sem_slots in by_semester.items():
+            if sem_slots:
+                out_file = os.path.join(DEFAULT_DIST_DIR, f"{sem_key}.json")
+                with open(out_file, "w", encoding="utf-8") as f:
+                    json.dump(sem_slots, f, indent=2, ensure_ascii=False)
+                print(f"  -> Wrote {len(sem_slots)} slots to {out_file}")
+
 
 if __name__ == "__main__":
     main()
