@@ -7,7 +7,7 @@ This file provides guidance to AI coding agents (such as Antigravity / agy CLI, 
 ClemenTime is an offline-first Android timetable app for ESI students (Jetpack Compose, Material 3). The repo contains two distinct halves:
 
 - `app/` — the Android application (Kotlin, single Gradle module `:app`).
-- `schedules/` + `process_schedules.py` — a Python pipeline that scrapes the ESI web page, turns university schedule PDFs into JSON via Gemini, and publishes the files the app downloads at runtime.
+- `schedules/` + `process_schedules.py` — a Python pipeline that checks the official ESI TV hall endpoint (`https://esi.uclm.es/TV/hall/horarios.json`), processes raw JSON schedules into normalized flat JSON files (`dist/1C.json` and `dist/2C.json`), and publishes the files the app downloads at runtime.
 
 ## Commands
 
@@ -26,17 +26,18 @@ Single test class / method:
 .\gradlew testDebugUnitTest --tests "*.ConflictSolverTest.someTestMethod"
 ```
 
-Python schedule pipeline (`uv`, requires Python ≥3.14 and system `poppler` for `pdf2image`):
+Python schedule pipeline (`uv`, requires Python ≥3.11):
 
 ```powershell
 uv sync
-python schedules/script/check_esi_update.py          # scrape ESI page, download changed PDFs
-python process_schedules.py [file.pdf] [--strict]    # PDF -> schedules/dist/{1C,2C}.json + index
-python process_schedules.py --check-esi              # run the ESI check first, then process
+python schedules/script/check_esi_update.py          # check ESI TV endpoint via HTTP HEAD, download if changed
+python process_schedules.py                          # process schedules/input/schedules.json -> dist/{1C,2C}.json + index
+python process_schedules.py --check-esi              # check live ESI endpoint first, then process if updated
+python process_schedules.py --check-esi --force      # force redownload from ESI API and regenerate dist
 python schedules/script/generate_index.py            # regenerate schedules_index.json only
 ```
 
-`process_schedules.py` orchestrates everything: it runs `parse_schedule.py` per PDF, then `generate_index.py`, then `check_pdf_update.py`. `parse_schedule.py` needs `GEMINI_API_KEY` (`.env` or env var); `GEMINI_API_KEY_ALT` is used as failover when the primary key hits `RESOURCE_EXHAUSTED`/429. `GEMINI_MODEL` overrides the default model.
+`process_schedules.py` orchestrates everything: it runs `check_esi_update.py` (when `--check-esi`), then `parse_schedule.py`, then `generate_index.py`.
 
 `--strict` passes `--non-interactive` down to `parse_schedule.py`. Unknown subject/professor/classroom names are then **not** prompted for and **not** passed through: the script collects them, prints them, and exits non-zero *before writing anything*, so raw codes can never reach `dist/`. Fix by adding the name to `mappings.json`, or drop `--strict` to be prompted for each.
 
@@ -68,13 +69,13 @@ Two Room entities: `Subject` (1) → `ClassSlot` (N, cascade delete), exposed vi
 ### Schedule data pipeline (crosses the repo boundary)
 
 ```
-ESI web page -> check_esi_update.py (scrape + HEAD/ETag check) -> schedules/pdf/*.pdf
-             -> parse_schedule.py (Gemini vision + mappings.json) -> schedules/dist/{1C,2C}.json
-             -> generate_index.py -> schedules/dist/schedules_index.json
-             -> app downloads over HTTPS
+ESI TV hall API -> check_esi_update.py (HTTP HEAD ETag/Last-Modified) -> schedules/input/schedules.json
+                -> parse_schedule.py (mappings.json + deduplication)  -> schedules/dist/{1C,2C}.json
+                -> generate_index.py                                  -> schedules/dist/schedules_index.json
+                -> app downloads over HTTPS
 ```
 
-State lives in committed files, not workflow state: `schedules/input/esi_meta.json` (per-semester URL/ETag/Last-Modified/sha256) and `schedules/input/pdf_meta.json`. `schedules/script/mappings.json` maps the PDF's abbreviated codes to display names in three categories — `matters`, `professors`, `classrooms`. Gemini responses are cached in `schedules/script/.cache/`, keyed by **page-image content hash**, so a changed PDF can never hit a stale entry. In CI (`sync-esi-schedules.yml`), cache is restored via `actions/cache/restore` and saved via `actions/cache/save` with `always()` so runs that halt on unknown mappings still preserve cached pages across runs.
+State lives in committed files: `schedules/input/esi_meta.json` (`url`, `etag`, `last_modified`, `sha256`). `schedules/script/mappings.json` maps abbreviated codes and raw names to canonical display names in three categories — `matters`, `professors`, `classrooms`. See `docs/api_schedule_pipeline.md` for a full breakdown of domain quirks (87 faculty event collapse into `GENERAL`, 53 shared group slots retention, `:50` rounding rule, TV screen grid layout strip, `-L` stripping).
 
 The app fetches `schedules_index.json` from `SettingsRepository.DEFAULT_GITHUB_REPO_BASE_URL` (a `buildConfigField`), user-overridable in settings. `ImportRepository` rewrites `github.com` → `raw.githubusercontent.com` and appends `schedules_index.json` when the configured URL is a directory. Retrofit uses `@Url` for full URLs, so the `baseUrl` in `NetworkModule` is only a placeholder.
 
@@ -119,8 +120,7 @@ Nothing in the suite exercises WorkManager, so worker wiring regressions are inv
 All workflows trigger on **`master`**, the default branch. `ci.yml` and `update-schedules-index.yml` were once pointed at `main` and silently never ran — check the branch name before trusting that a workflow is live.
 
 - `ci.yml` — `test` + `assembleDebug` on pushes/PRs to `master`.
-- `sync-esi-schedules.yml` — every 6h, on `workflow_dispatch`, and on pushes to `master` touching `schedules/pdf/**`, `schedules/script/**`, `process_schedules.py`, or the workflow itself. Runs `check_esi_update.py`, then `process_schedules.py --strict` when an update is detected, and commits `schedules/` back with `[skip ci]`. Needs the `SCHEDULE_SOURCE_URL`, `GEMINI_API_KEY`, `GEMINI_API_KEY_ALT`, and `GEMINI_MODEL` secrets. Push trigger is deliberately `master`-only: the job runs a paid Gemini parse and auto-commits, so a wildcard branch filter burns quota and pushes commits onto feature branches. Use `workflow_dispatch` to test from a branch.
-- Any step in that workflow intended to run only on success must include `success()` (such as `Commit and Push`) — supplying an `if` replaces the implicit `success()` check, so a step can otherwise run after an earlier one failed. The `Save Gemini AI Responses Cache` step intentionally pairs with `always()` so cache is saved even if parsing halted on unresolved mappings.
+- `sync-esi-schedules.yml` — every 6h, on `workflow_dispatch`, and on pushes to `master` touching `schedules/script/**`, `schedules/input/**`, `process_schedules.py`, or the workflow itself. Runs `check_esi_update.py`, then `process_schedules.py --strict` when an update is detected, and commits `schedules/` back with `[skip ci]`. Any step in that workflow intended to run only on success must include `success()` (such as `Commit and Push`) — supplying an `if` replaces the implicit `success()` check, so a step can otherwise run after an earlier one failed.
 - `update-schedules-index.yml` — regenerates `schedules_index.json` when `schedules/dist/**` changes. Redundant for pipeline commits (`process_schedules.py` already regenerates it, and `[skip ci]` suppresses this workflow); it only really fires for hand-committed dist files.
 - `release.yml` — builds and publishes on `v*` tags or manual dispatch with a version input.
 

@@ -4,21 +4,14 @@ on:
   schedule:
     - cron: '0 */6 * * *'
   push:
-    # master only. This job runs the paid Gemini parse and auto-commits its output, so on
-    # '**' every feature-branch push touching these paths burned quota and pushed a commit
-    # back to that branch. Use workflow_dispatch to test from a branch.
     branches: [master]
     paths:
-      - 'schedules/pdf/**'
       - 'schedules/script/**'
+      - 'schedules/input/**'
       - 'process_schedules.py'
       - '.github/workflows/sync-esi-schedules.yml'
   workflow_dispatch:
 
-# Prevents concurrent runs from colliding during git commits/pushes.
-# cancel-in-progress must stay false: this job commits and pushes, and cancelling it
-# mid-push can leave downloaded PDFs and an updated esi_meta.json uncommitted while the
-# metadata claims they were already seen.
 concurrency:
   group: sync-esi-schedules-${{ github.ref }}
   cancel-in-progress: false
@@ -38,29 +31,14 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip' # Caches downloaded wheels across runs
-
-      - name: Install System Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y poppler-utils
+          cache: 'pip'
 
       - name: Install Python Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install google-genai pdf2image pillow pydantic python-dotenv
+          pip install python-dotenv
 
-      - name: Restore Gemini AI Responses Cache
-        uses: actions/cache/restore@v4
-        id: restore-gemini-cache
-        with:
-          path: schedules/script/.cache
-          key: gemini-cache-v3-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: |
-            gemini-cache-v3-${{ runner.os }}-
-            gemini-cache-v2-${{ runner.os }}-
-
-      - name: Check ESI Web Page for Schedule Updates
+      - name: Check ESI API Endpoint for Schedule Updates
         id: check
         env:
           SCHEDULE_SOURCE_URL: ${{ secrets.SCHEDULE_SOURCE_URL }}
@@ -73,40 +51,14 @@ jobs:
 
       - name: Process Schedules
         id: process
-        # Runs if:
-        # 1. ESI web check detects an update, OR
-        # 2. Triggered manually via GitHub UI, OR
-        # 3. A git push touched the paths in this workflow's `on.push.paths` filter.
-        #
-        # (3) is just `event_name == 'push'`: the paths filter above already guarantees a
-        # push only reaches this job when those files changed. The previous condition tried
-        # to re-check with contains(github.event.head_commit.added, 'schedules/pdf/'), which
-        # can never be true — those fields are arrays of full file paths and contains() does
-        # exact element matching, not prefix matching.
         if: >
           steps.check.outputs.has_update == 'true' ||
           github.event_name == 'workflow_dispatch' ||
           github.event_name == 'push'
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GEMINI_API_KEY_ALT: ${{ secrets.GEMINI_API_KEY_ALT }}
-          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || secrets.GEMINI_MODEL || 'gemini-2.0-flash' }}
         run: |
           python3 -u process_schedules.py --strict
 
-      - name: Save Gemini AI Responses Cache
-        uses: actions/cache/save@v4
-        # Saves even if process_schedules.py failed with unresolved mappings (so parsed
-        # pages are preserved across runs), but skips saving on no-op scheduled checks.
-        if: always() && steps.process.outcome != 'skipped' && hashFiles('schedules/script/.cache/**') != ''
-        with:
-          path: schedules/script/.cache
-          key: gemini-cache-v3-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
-
       - name: Commit and Push
-        # success() is required: supplying any `if` replaces the implicit success() check,
-        # so without it a failed "Process Schedules" step would still commit whatever
-        # half-written state it left behind.
         if: >
           success() && (
           steps.check.outputs.has_update == 'true' ||
@@ -119,6 +71,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "chore: auto-sync ESI schedules from PDF via AI pipeline [skip ci]"
+            git commit -m "chore: auto-sync ESI schedules from TV hall API [skip ci]"
             git push
           fi

@@ -2,22 +2,23 @@
 """
 process_schedules.py
 
-Project-root wrapper script to process PDF schedule files (PDF -> flat JSON),
-regenerate the schedule index, and update PDF metadata hashes.
+Project-root wrapper script to fetch ESI schedule data from the TV hall endpoint,
+process it into flat semester JSON files (dist/1C.json and dist/2C.json),
+and regenerate schedules_index.json with per-semester SHA256 hashes.
 
 Usage:
-  python3 process_schedules.py               # Process all PDFs in schedules/pdf/
-  python3 process_schedules.py my.pdf        # Process specific PDF
-  python3 process_schedules.py --strict      # Non-interactive mode (CI)
-  python3 process_schedules.py --model ...   # Specify Gemini model
-  python3 process_schedules.py --clear-cache # Clear AI response cache
+  python3 process_schedules.py               # Process schedules/input/schedules.json
+  python3 process_schedules.py --check-esi   # Check live ESI API for updates first
+  python3 process_schedules.py --force       # Force redownload from ESI API
+  python3 process_schedules.py --strict      # Non-interactive mode (fails on unknown mappings)
+  python3 process_schedules.py custom.json   # Process a specific JSON file
 """
 
 import sys
 import os
 import subprocess
-import glob
 import argparse
+
 
 def main():
     try:
@@ -33,102 +34,62 @@ def main():
     except ImportError:
         pass
 
-    env_model = os.getenv("GEMINI_MODEL")
-    default_model = env_model if env_model else "gemini-2.0-flash"
-
-    parser = argparse.ArgumentParser(description="Process schedule PDF files into flat semester JSONs.")
-    parser.add_argument("pdf", nargs="?", help="Specific PDF to process. If omitted, processes all in schedules/pdf/")
-    parser.add_argument("--strict", action="store_true", help="Non-interactive mode (CI)")
-    parser.add_argument("--model", default=default_model, help=f"Gemini model ID to use (default: {default_model}).")
-    parser.add_argument("--clear-cache", action="store_true", help="Clear AI response cache before running.")
-    parser.add_argument("--check-esi", action="store_true", help="Check live ESI web page for updated PDFs before processing.")
-    parser.add_argument("--page", type=int, action="append", dest="target_pages", help="Specific 1-based page number to re-parse (e.g. --page 10).")
-    parser.add_argument("--pages", type=int, nargs="+", dest="target_pages_list", help="Specific 1-based page numbers to re-parse (e.g. --pages 10 11).")
+    parser = argparse.ArgumentParser(description="Process schedule files into flat semester JSONs.")
+    parser.add_argument("file", nargs="?", help="Specific JSON or PDF file to process (defaults to schedules/input/schedules.json).")
+    parser.add_argument("--strict", action="store_true", help="Non-interactive mode (halts on unresolved mappings)")
+    parser.add_argument("--check-esi", action="store_true", help="Check live ESI API for updates before processing.")
+    parser.add_argument("--force", action="store_true", help="Force redownload from ESI API during check.")
 
     args, unknown = parser.parse_known_args()
 
-    target_pages = args.target_pages or []
-    if args.target_pages_list:
-        target_pages.extend(args.target_pages_list)
-    target_pages = list(set(target_pages)) if target_pages else None
-
     root_dir = os.path.dirname(os.path.abspath(__file__))
     script_dir = os.path.join(root_dir, "schedules", "script")
-    pdf_dir = os.path.join(root_dir, "schedules", "pdf")
+    input_dir = os.path.join(root_dir, "schedules", "input")
+    default_json = os.path.join(input_dir, "schedules.json")
 
+    check_esi_script = os.path.join(script_dir, "check_esi_update.py")
     parse_script = os.path.join(script_dir, "parse_schedule.py")
     index_script = os.path.join(script_dir, "generate_index.py")
-    check_esi_script = os.path.join(script_dir, "check_esi_update.py")
-    check_meta_script = os.path.join(script_dir, "check_pdf_update.py")
 
-    # 0. Check live ESI web page if requested
-    if args.check_esi and os.path.exists(check_esi_script):
-        print("\n[Run] Checking live ESI web page for schedule updates...", flush=True)
-        sys.stdout.flush()
-        res_esi = subprocess.run([sys.executable, "-u", check_esi_script])
+    # 1. Check live ESI API if requested or if default input is missing
+    if (args.check_esi or (not args.file and not os.path.exists(default_json))) and os.path.exists(check_esi_script):
+        print("\n[Run] Checking live ESI API endpoint for updates...", flush=True)
+        check_cmd = [sys.executable, "-u", check_esi_script]
+        if args.force:
+            check_cmd.append("--force")
+        res_esi = subprocess.run(check_cmd)
         if res_esi.returncode != 0:
-            print("[Warning] Live ESI check encountered an error.", flush=True)
+            print(f"[Error] Live ESI check failed with exit code {res_esi.returncode}.", file=sys.stderr)
+            if args.strict or not os.path.exists(default_json):
+                sys.exit(res_esi.returncode)
 
-    # 1. Determine PDFs to process
-    pdfs_to_process = []
-    if args.pdf:
-        if os.path.exists(args.pdf):
-            pdfs_to_process.append(args.pdf)
-        else:
-            print(f"[Error] File '{args.pdf}' not found.", flush=True)
-            sys.exit(1)
-    else:
-        pdfs_to_process = sorted(glob.glob(os.path.join(pdf_dir, "*.pdf")))
-        if not pdfs_to_process:
-            print(f"[Warning] No PDFs found in {pdf_dir}", flush=True)
+    # 2. Determine file to process
+    target_file = args.file if args.file else default_json
+    if not os.path.exists(target_file):
+        print(f"[Error] Schedule input file '{target_file}' not found.", file=sys.stderr)
+        sys.exit(1)
 
-    failed_pdfs = []
-    if not pdfs_to_process:
-        print("[Info] No files to process.", flush=True)
-    else:
-        # 2. Run schedule parsing for each PDF
-        for pdf in pdfs_to_process:
-            cmd = [sys.executable, "-u", parse_script, pdf]
-            if args.strict:
-                cmd.append("--non-interactive")
-            if args.model:
-                cmd.extend(["--model", args.model])
-            if args.clear_cache:
-                cmd.append("--clear-cache")
-            if target_pages:
-                for p in target_pages:
-                    cmd.extend(["--page", str(p)])
+    # 3. Run parse_schedule.py
+    print(f"\n[Run] Processing {os.path.basename(target_file)}...", flush=True)
+    parse_cmd = [sys.executable, "-u", parse_script, target_file]
+    if args.strict:
+        parse_cmd.append("--non-interactive")
 
-            print(f"\n[Run] Processing {os.path.basename(pdf)} with Gemini ({args.model})...", flush=True)
-            sys.stdout.flush()
-            res = subprocess.run(cmd)
-            if res.returncode != 0:
-                print(f"[Error] Parsing failed for {pdf}", flush=True)
-                failed_pdfs.append(pdf)
+    res_parse = subprocess.run(parse_cmd)
+    if res_parse.returncode != 0:
+        print(f"[Error] Schedule parsing failed with exit code {res_parse.returncode}", file=sys.stderr)
+        sys.exit(res_parse.returncode)
 
-        if failed_pdfs:
-            print(f"\n[Error] Parsing failed for {len(failed_pdfs)} PDF(s):", file=sys.stderr)
-            for p in failed_pdfs:
-                print(f"  - {os.path.basename(p)}", file=sys.stderr)
-            if args.strict:
-                sys.exit(1)
-
-    # 3. Regenerate index
+    # 4. Regenerate schedule index
     if os.path.exists(index_script):
-        print("\n[Run] Regenerating index...", flush=True)
-        sys.stdout.flush()
+        print("\n[Run] Regenerating schedule index...", flush=True)
         res_index = subprocess.run([sys.executable, "-u", index_script])
         if res_index.returncode != 0:
-            print("[Error] Schedule index generation failed.", flush=True)
+            print("[Error] Schedule index generation failed.", file=sys.stderr)
             sys.exit(res_index.returncode)
 
-    # 4. Update PDF metadata hashes
-    if os.path.exists(check_meta_script):
-        print("\n[Run] Updating PDF metadata hash file...", flush=True)
-        sys.stdout.flush()
-        subprocess.run([sys.executable, "-u", check_meta_script])
-
     print("\n[Done] Pipeline finished successfully!", flush=True)
+
 
 if __name__ == "__main__":
     main()

@@ -1,16 +1,6 @@
 {
-  "1C": {
-    "filename": "ESI2026-27-GRADO_1C_Grupos_v1.4.pdf",
-    "url": "https://esi.uclm.es/assets/uploads/2026/09/ESI2026-27-GRADO_1C_Grupos_v1.4.pdf",
-    "last_modified": "Thu, 10 Sep 2026 09:26:27 GMT",
-    "etag": "\"4028f-65b1d8fef8c87\"",
-    "sha256": "30063ce91de2324b06a976de9dc2cdf8970fc30b11086fa4074b658e9fa1fb84"
-  },
-  "2C": {
-    "filename": "ESI2026-27-GRADO_2C_Grupos_v1.4.pdf",
-    "url": "https://esi.uclm.es/assets/uploads/2026/09/ESI2026-27-GRADO_2C_Grupos_v1.4.pdf",
-    "last_modified": "Thu, 10 Sep 2026 09:26:52 GMT",
-    "etag": "\"3702e-65b1d9168d716\"",
-    "sha256": "46650f4a7fe89265a2a8c0c8c7ccf084a8a4e05f0c3fcb78f71dea4bd217df14"
-  }
+  "url": "https://esi.uclm.es/TV/hall/horarios.json",
+  "last_modified": "Tue, 15 Sep 2026 15:14:59 GMT",
+  "etag": "\"3395b-65b87039cfc0c\"",
+  "sha256": "0d9cc6b9ccf55821ffbf3328824548dfddea46df0b0708b72dc3349a56c453c6"
 }
