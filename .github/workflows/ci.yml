@@ -3,8 +3,20 @@ name: CI Build & Test
 on:
   push:
     branches: [ master ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.gitignore'
+      - '.env.example'
+      - 'LICENSE'
   pull_request:
     branches: [ master ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.gitignore'
+      - '.env.example'
+      - 'LICENSE'
 
 # Superseded PR builds are cancelled: pushing three times to a PR used to run three full
 # test+assemble jobs to completion. cancel-in-progress is gated on the event so that master
