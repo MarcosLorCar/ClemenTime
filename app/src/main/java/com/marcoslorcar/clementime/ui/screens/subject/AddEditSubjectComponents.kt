@@ -39,8 +39,10 @@ import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FilePresent
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Card
@@ -82,6 +84,7 @@ import com.marcoslorcar.clementime.data.AttachedFileItem
 import com.marcoslorcar.clementime.data.Subject
 import com.marcoslorcar.clementime.ui.components.SemesterSwitcher
 import com.marcoslorcar.clementime.utils.fadingEdges
+import com.marcoslorcar.clementime.utils.formatFileSize
 import com.marcoslorcar.clementime.utils.isImageFile
 import com.marcoslorcar.clementime.utils.isUriAccessible
 import com.marcoslorcar.clementime.utils.openFile
@@ -440,7 +443,8 @@ fun NotesAndFilesBottomSheet(
     onUpdateNotesText: (String) -> Unit,
     onRemoveAttachedFile: (String) -> Unit,
     onAddFileClick: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onRenameAttachedFile: (String, String) -> Unit = { _, _ -> }
 ) {
     val sheetState = rememberBottomSheetState(
         initialValue = SheetValue.Hidden,
@@ -465,7 +469,8 @@ fun NotesAndFilesBottomSheet(
                 attachedFiles = attachedFiles,
                 onUpdateNotesText = onUpdateNotesText,
                 onRemoveAttachedFile = onRemoveAttachedFile,
-                onAddFileClick = onAddFileClick
+                onAddFileClick = onAddFileClick,
+                onRenameAttachedFile = onRenameAttachedFile
             )
         }
     }
@@ -477,9 +482,12 @@ fun SubjectNotesAndLinksCard(
     attachedFiles: List<AttachedFileItem>,
     onUpdateNotesText: (String) -> Unit,
     onRemoveAttachedFile: (String) -> Unit,
-    onAddFileClick: () -> Unit
+    onAddFileClick: () -> Unit,
+    onRenameAttachedFile: (String, String) -> Unit = { _, _ -> }
 ) {
     val context = LocalContext.current
+    var renamingFile by remember { mutableStateOf<AttachedFileItem?>(null) }
+    var renameNewName by remember { mutableStateOf("") }
     var notesList by remember(notesText) {
         mutableStateOf(if (notesText.isBlank()) listOf("") else notesText.split("\n\n"))
     }
@@ -566,11 +574,53 @@ fun SubjectNotesAndLinksCard(
                 }
             }
 
+            if (renamingFile != null) {
+                AlertDialog(
+                    onDismissRequest = { renamingFile = null },
+                    title = { Text(stringResource(R.string.rename_file_title)) },
+                    text = {
+                        OutlinedTextField(
+                            value = renameNewName,
+                            onValueChange = { renameNewName = it },
+                            label = { Text(stringResource(R.string.file_name_label)) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                renamingFile?.let { file ->
+                                    if (renameNewName.isNotBlank()) {
+                                        onRenameAttachedFile(file.id, renameNewName.trim())
+                                    }
+                                }
+                                renamingFile = null
+                            },
+                            enabled = renameNewName.isNotBlank()
+                        ) {
+                            Text(stringResource(R.string.rename_button))
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { renamingFile = null }) {
+                            Text(stringResource(R.string.cancel))
+                        }
+                    }
+                )
+            }
+
             if (attachedFiles.isNotEmpty()) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     attachedFiles.forEach { file ->
                         val isImage = remember(file.uriString) { isImageFile(context, file.uriString) }
                         val isAccessible = remember(file.uriString) { isUriAccessible(context, file.uriString) }
+                        val sizeFormatted = remember(file.fileSizeBytes) { formatFileSize(file.fileSizeBytes) }
+                        val subtitleText = if (isAccessible) {
+                            listOfNotNull(file.fileType.ifBlank { null }, sizeFormatted).joinToString(" • ")
+                        } else {
+                            stringResource(R.string.file_not_found_message)
+                        }
 
                         Surface(
                             shape = RoundedCornerShape(12.dp),
@@ -618,23 +668,41 @@ fun SubjectNotesAndLinksCard(
                                             color = if (isAccessible) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.error
                                         )
                                         Text(
-                                            text = if (isAccessible) file.fileType else stringResource(R.string.file_not_found_message),
+                                            text = subtitleText,
                                             style = MaterialTheme.typography.bodySmall,
                                             color = if (isAccessible) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error
                                         )
                                     }
                                 }
 
-                                IconButton(
-                                    onClick = { onRemoveAttachedFile(file.id) },
-                                    modifier = Modifier.size(32.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Close,
-                                        contentDescription = stringResource(R.string.delete_subject_confirm),
-                                        tint = MaterialTheme.colorScheme.error,
-                                        modifier = Modifier.size(18.dp)
-                                    )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    if (isAccessible) {
+                                        IconButton(
+                                            onClick = {
+                                                renameNewName = file.name
+                                                renamingFile = file
+                                            },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Edit,
+                                                contentDescription = stringResource(R.string.rename_button),
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    }
+                                    IconButton(
+                                        onClick = { onRemoveAttachedFile(file.id) },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = stringResource(R.string.delete_subject_confirm),
+                                            tint = MaterialTheme.colorScheme.error,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
                                 }
                             }
                         }

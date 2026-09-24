@@ -5,6 +5,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
+import android.net.Uri
+import android.widget.Toast
+import com.marcoslorcar.clementime.R
 import com.marcoslorcar.clementime.data.AttachedFileItem
 import com.marcoslorcar.clementime.data.EntryType
 import com.marcoslorcar.clementime.data.ScheduleDao
@@ -15,8 +18,14 @@ import com.marcoslorcar.clementime.ui.model.toEntity
 import com.marcoslorcar.clementime.ui.model.toUiModel
 import com.marcoslorcar.clementime.ui.navigation.AddEditSubjectRoute
 import com.marcoslorcar.clementime.ui.widget.ScheduleWidgetUtils
+import com.marcoslorcar.clementime.utils.copyUriToInternalAttachments
+import com.marcoslorcar.clementime.utils.deleteInternalAttachment
+import com.marcoslorcar.clementime.utils.deleteOriginalDocument
+import com.marcoslorcar.clementime.utils.getFriendlyFileType
+import com.marcoslorcar.clementime.utils.resolveFileName
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,9 +33,15 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.DayOfWeek
 import java.time.LocalTime
 import javax.inject.Inject
+
+data class DeleteOriginalPrompt(
+    val uri: Uri,
+    val fileName: String
+)
 
 data class AddEditSubjectUiState(
     val subjectId: Long? = null,
@@ -54,7 +69,8 @@ data class AddEditSubjectUiState(
     val isSaved: Boolean = false,
     val errorMessage: String? = null,
     val dayStartTime: LocalTime = LocalTime.of(8, 30),
-    val dayEndTime: LocalTime = LocalTime.of(21, 30)
+    val dayEndTime: LocalTime = LocalTime.of(21, 30),
+    val deleteOriginalPrompt: DeleteOriginalPrompt? = null
 )
 
 @HiltViewModel
@@ -219,9 +235,81 @@ class AddEditSubjectViewModel @Inject constructor(
         _uiState.update { it.copy(notesText = notes) }
     }
 
-    fun addAttachedFile(name: String, fileType: String, uriString: String) {
+    fun addAttachedFile(sourceUri: Uri) {
+        val ctx = context
+        if (ctx == null) {
+            val fileName = sourceUri.lastPathSegment ?: "file"
+            addAttachedFile(name = fileName, fileType = "File", uriString = sourceUri.toString())
+            return
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            val originalName = resolveFileName(ctx, sourceUri)
+            val copyResult = copyUriToInternalAttachments(ctx, sourceUri, originalName)
+            val fileItem = if (copyResult != null) {
+                val (file, sizeBytes) = copyResult
+                val friendlyType = getFriendlyFileType(originalName, ctx.contentResolver.getType(sourceUri) ?: "")
+                AttachedFileItem(
+                    name = originalName.trim(),
+                    fileType = friendlyType,
+                    uriString = file.absolutePath,
+                    fileSizeBytes = sizeBytes
+                )
+            } else {
+                val mimeType = ctx.contentResolver.getType(sourceUri) ?: "File"
+                val friendlyType = getFriendlyFileType(originalName, mimeType)
+                AttachedFileItem(
+                    name = originalName.trim(),
+                    fileType = friendlyType,
+                    uriString = sourceUri.toString(),
+                    fileSizeBytes = null
+                )
+            }
+
+            withContext(Dispatchers.Main) {
+                _uiState.update {
+                    it.copy(
+                        attachedFiles = it.attachedFiles + fileItem,
+                        deleteOriginalPrompt = if (copyResult != null) DeleteOriginalPrompt(sourceUri, originalName) else null
+                    )
+                }
+                if (!_uiState.value.isEditMode) {
+                    saveSubject(shouldExit = false)
+                }
+            }
+        }
+    }
+
+    fun confirmDeleteOriginal() {
+        val prompt = _uiState.value.deleteOriginalPrompt ?: return
+        val ctx = context
+        _uiState.update { it.copy(deleteOriginalPrompt = null) }
+        if (ctx != null) {
+            viewModelScope.launch(Dispatchers.IO) {
+                val deleted = deleteOriginalDocument(ctx, prompt.uri)
+                withContext(Dispatchers.Main) {
+                    val msgRes = if (deleted) {
+                        R.string.original_file_deleted_message
+                    } else {
+                        R.string.original_file_delete_failed_message
+                    }
+                    Toast.makeText(ctx, ctx.getString(msgRes), Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    fun dismissDeleteOriginalPrompt() {
+        _uiState.update { it.copy(deleteOriginalPrompt = null) }
+    }
+
+    fun addAttachedFile(name: String, fileType: String, uriString: String, fileSizeBytes: Long? = null) {
         if (name.isNotBlank()) {
-            val fileItem = AttachedFileItem(name = name.trim(), fileType = fileType, uriString = uriString)
+            val fileItem = AttachedFileItem(
+                name = name.trim(),
+                fileType = fileType,
+                uriString = uriString,
+                fileSizeBytes = fileSizeBytes
+            )
             _uiState.update { it.copy(attachedFiles = it.attachedFiles + fileItem) }
             if (!_uiState.value.isEditMode) {
                 saveSubject(shouldExit = false)
@@ -230,8 +318,29 @@ class AddEditSubjectViewModel @Inject constructor(
     }
 
     fun removeAttachedFile(id: String) {
+        val itemToRemove = _uiState.value.attachedFiles.find { it.id == id }
+        if (itemToRemove != null && context != null) {
+            val ctx = context
+            viewModelScope.launch(Dispatchers.IO) {
+                deleteInternalAttachment(ctx, itemToRemove)
+            }
+        }
         _uiState.update { state ->
             state.copy(attachedFiles = state.attachedFiles.filter { it.id != id })
+        }
+        if (!_uiState.value.isEditMode) {
+            saveSubject(shouldExit = false)
+        }
+    }
+
+    fun renameAttachedFile(id: String, newName: String) {
+        if (newName.isBlank()) return
+        _uiState.update { state ->
+            state.copy(
+                attachedFiles = state.attachedFiles.map {
+                    if (it.id == id) it.copy(name = newName.trim()) else it
+                }
+            )
         }
         if (!_uiState.value.isEditMode) {
             saveSubject(shouldExit = false)

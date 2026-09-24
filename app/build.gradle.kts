@@ -98,6 +98,12 @@ android {
         disable.addAll(listOf("WebpUnsupported", "UnusedResources", "VectorRaster"))
     }
 
+    testOptions {
+        unitTests.all { test ->
+            test.maxParallelForks = (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(1)
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11

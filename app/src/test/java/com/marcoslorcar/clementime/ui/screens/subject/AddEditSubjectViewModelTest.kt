@@ -255,4 +255,65 @@ class AddEditSubjectViewModelTest {
         assertEquals("New note from sheet", fakeDao.subjects.first().notes)
         assertEquals(false, viewModel.uiState.value.isSaved)
     }
+
+    @Test
+    fun addAttachedFile_addsFileToUiState() {
+        val savedStateHandle = SavedStateHandle()
+        val viewModel = AddEditSubjectViewModel(savedStateHandle, fakeDao, fakeSettingsRepository)
+
+        viewModel.addAttachedFile(
+            name = "notes.pdf",
+            fileType = "PDF",
+            uriString = "/path/to/notes.pdf",
+            fileSizeBytes = 1024L
+        )
+
+        val files = viewModel.uiState.value.attachedFiles
+        assertEquals(1, files.size)
+        assertEquals("notes.pdf", files.first().name)
+        assertEquals("PDF", files.first().fileType)
+        assertEquals(1024L, files.first().fileSizeBytes)
+    }
+
+    @Test
+    fun removeAttachedFile_removesFileFromUiState() {
+        val savedStateHandle = SavedStateHandle()
+        val viewModel = AddEditSubjectViewModel(savedStateHandle, fakeDao, fakeSettingsRepository)
+
+        viewModel.addAttachedFile("notes.pdf", "PDF", "/path/to/notes.pdf")
+        val fileId = viewModel.uiState.value.attachedFiles.first().id
+
+        viewModel.removeAttachedFile(fileId)
+        assertEquals(0, viewModel.uiState.value.attachedFiles.size)
+    }
+
+    @Test
+    fun renameAttachedFile_updatesFileNameInUiState() {
+        val savedStateHandle = SavedStateHandle()
+        val viewModel = AddEditSubjectViewModel(savedStateHandle, fakeDao, fakeSettingsRepository)
+
+        viewModel.addAttachedFile("old_name.pdf", "PDF", "/path/to/old_name.pdf")
+        val fileId = viewModel.uiState.value.attachedFiles.first().id
+
+        viewModel.renameAttachedFile(fileId, "new_renamed.pdf")
+        assertEquals("new_renamed.pdf", viewModel.uiState.value.attachedFiles.first().name)
+    }
+
+    @Test
+    fun dismissDeleteOriginalPrompt_clearsPromptState() {
+        val savedStateHandle = SavedStateHandle()
+        val viewModel = AddEditSubjectViewModel(savedStateHandle, fakeDao, fakeSettingsRepository)
+
+        viewModel.dismissDeleteOriginalPrompt()
+        assertNull(viewModel.uiState.value.deleteOriginalPrompt)
+    }
+
+    @Test
+    fun confirmDeleteOriginal_whenPromptNull_doesNothing() {
+        val savedStateHandle = SavedStateHandle()
+        val viewModel = AddEditSubjectViewModel(savedStateHandle, fakeDao, fakeSettingsRepository)
+
+        viewModel.confirmDeleteOriginal()
+        assertNull(viewModel.uiState.value.deleteOriginalPrompt)
+    }
 }
