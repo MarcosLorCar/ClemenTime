@@ -8,5 +8,6 @@ data class AttachedFileItem(
     val id: String = UUID.randomUUID().toString(),
     val name: String,
     val fileType: String = "File",
-    val uriString: String
+    val uriString: String,
+    val fileSizeBytes: Long? = null
 )
