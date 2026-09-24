@@ -102,6 +102,15 @@
     <string name="file_not_found_message">File not found</string>
     <string name="attachment_failed_message">Failed to attach file: %1$s</string>
     <string name="no_apps_for_file_message">No app available to open this file type</string>
+    <string name="rename_file_title">Rename Attachment</string>
+    <string name="rename_button">Rename</string>
+    <string name="file_name_label">File Name</string>
+    <string name="delete_original_file_title">Delete Original File?</string>
+    <string name="delete_original_file_message">“%1$s” has been copied to ClemenTime. Do you want to delete the original file from your device to save storage space?</string>
+    <string name="delete_original_button">Delete Original</string>
+    <string name="keep_original_button">Keep Original</string>
+    <string name="original_file_deleted_message">Original file deleted</string>
+    <string name="original_file_delete_failed_message">Could not delete original file</string>
     <string name="language_selector_label">Select Language</string>
     <string name="theme_selector_label">Select Theme</string>
 

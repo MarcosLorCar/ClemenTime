@@ -107,6 +107,15 @@
     <string name="file_not_found_message">Archivo no encontrado</string>
     <string name="attachment_failed_message">Error al adjuntar el archivo: %1$s</string>
     <string name="no_apps_for_file_message">No hay ninguna aplicación disponible para abrir este tipo de archivo</string>
+    <string name="rename_file_title">Renombrar Archivo Adjunto</string>
+    <string name="rename_button">Renombrar</string>
+    <string name="file_name_label">Nombre del archivo</string>
+    <string name="delete_original_file_title">¿Eliminar Archivo Original?</string>
+    <string name="delete_original_file_message">«%1$s» se ha copiado en ClemenTime. ¿Quieres eliminar el archivo original de tu dispositivo para ahorrar espacio?</string>
+    <string name="delete_original_button">Eliminar Original</string>
+    <string name="keep_original_button">Mantener Original</string>
+    <string name="original_file_deleted_message">Archivo original eliminado</string>
+    <string name="original_file_delete_failed_message">No se pudo eliminar el archivo original</string>
     <string name="language_selector_label">Seleccionar Idioma</string>
     <string name="theme_selector_label">Seleccionar Tema</string>
 

@@ -91,7 +91,9 @@ fun AddEditSubjectScreen(
         onUpdateNotesText = viewModel::updateNotesText,
         onUpdateActive = viewModel::updateActive,
         onAddAttachedFile = viewModel::addAttachedFile,
+        onAddAttachedFileUri = viewModel::addAttachedFile,
         onRemoveAttachedFile = viewModel::removeAttachedFile,
+        onRenameAttachedFile = viewModel::renameAttachedFile,
         onDeleteSlot = viewModel::deleteSlot,
         onAddSlot = viewModel::addSlot,
         onDuplicateSlot = viewModel::duplicateSlot,
@@ -102,7 +104,9 @@ fun AddEditSubjectScreen(
         onSaveSlotFromEditor = viewModel::saveSlotFromEditor,
         onSaveSubjectWithoutExit = viewModel::saveSubjectWithoutExit,
         onSelectLabGroup = viewModel::selectLabGroup,
-        onMarkLabTooltipSeen = viewModel::markLabSelectionTooltipSeen
+        onMarkLabTooltipSeen = viewModel::markLabSelectionTooltipSeen,
+        onConfirmDeleteOriginal = viewModel::confirmDeleteOriginal,
+        onDismissDeleteOriginalPrompt = viewModel::dismissDeleteOriginalPrompt
     )
 }
 
@@ -119,7 +123,9 @@ fun AddEditSubjectContent(
     onUpdateNotesText: (String) -> Unit,
     onUpdateActive: (Boolean) -> Unit,
     onAddAttachedFile: (String, String, String) -> Unit,
+    onAddAttachedFileUri: (Uri) -> Unit = {},
     onRemoveAttachedFile: (String) -> Unit,
+    onRenameAttachedFile: (String, String) -> Unit = { _, _ -> },
     onDeleteSlot: (Int) -> Unit,
     onAddSlot: () -> Unit,
     onDuplicateSlot: (Int) -> Unit,
@@ -130,7 +136,9 @@ fun AddEditSubjectContent(
     onSaveSlotFromEditor: (ClassSlotUiModel) -> Unit,
     onSaveSubjectWithoutExit: () -> Unit = {},
     onSelectLabGroup: (String?) -> Unit = {},
-    onMarkLabTooltipSeen: () -> Unit = {}
+    onMarkLabTooltipSeen: () -> Unit = {},
+    onConfirmDeleteOriginal: () -> Unit = {},
+    onDismissDeleteOriginalPrompt: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
@@ -174,15 +182,7 @@ fun AddEditSubjectContent(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         uri?.let {
-            runCatching {
-                context.contentResolver.takePersistableUriPermission(
-                    it,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION
-                )
-            }
-            val fileName = resolveFileName(context, it)
-            val mimeType = context.contentResolver.getType(it) ?: "File"
-            onAddAttachedFile(fileName, mimeType, it.toString())
+            onAddAttachedFileUri(it)
         }
     }
 
@@ -416,6 +416,7 @@ fun AddEditSubjectContent(
             onUpdateNotesText = onUpdateNotesText,
             onRemoveAttachedFile = onRemoveAttachedFile,
             onAddFileClick = { filePickerLauncher.launch(arrayOf("*/*")) },
+            onRenameAttachedFile = onRenameAttachedFile,
             onDismiss = {
                 showNotesSheet = false
                 if (!uiState.isEditMode) {
@@ -433,6 +434,27 @@ fun AddEditSubjectContent(
             confirmButton = {
                 TextButton(onClick = { showLabHelpDialog = false }) {
                     Text(stringResource(R.string.onboarding_got_it))
+                }
+            }
+        )
+    }
+
+    uiState.deleteOriginalPrompt?.let { prompt ->
+        AlertDialog(
+            onDismissRequest = onDismissDeleteOriginalPrompt,
+            title = { Text(stringResource(R.string.delete_original_file_title)) },
+            text = { Text(stringResource(R.string.delete_original_file_message, prompt.fileName)) },
+            confirmButton = {
+                TextButton(onClick = onConfirmDeleteOriginal) {
+                    Text(
+                        text = stringResource(R.string.delete_original_button),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismissDeleteOriginalPrompt) {
+                    Text(stringResource(R.string.keep_original_button))
                 }
             }
         )
