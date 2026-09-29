@@ -106,11 +106,6 @@ class ImportViewModel @Inject constructor(
                 }
 
                 val baseUrl = repository.normalizeGitHubUrl(rawBaseUrl)
-                val folderUrl = when {
-                    baseUrl.endsWith("schedules_index.json") -> baseUrl.substringBeforeLast("/") + "/"
-                    baseUrl.endsWith("/") -> baseUrl
-                    else -> "$baseUrl/"
-                }
 
                 val cacheMetadata = repository.getCachedRemoteSchedules(context)
                 val cacheDir = repository.getCacheDir(context)

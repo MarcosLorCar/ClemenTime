@@ -379,7 +379,7 @@ class ImportRepository @Inject constructor(
 
         try {
             if (apiService == null) throw Exception("Network service unavailable")
-            var fullUrl = normalizeGitHubUrl(file.remotePath ?: throw Exception("Remote path is null"))
+            val fullUrl = normalizeGitHubUrl(file.remotePath ?: throw Exception("Remote path is null"))
             var response = apiService.getRawScheduleSchema(fullUrl)
             if (!response.isSuccessful) {
                 val fallbackUrl = normalizeGitHubUrl(SettingsRepository.FALLBACK_GITHUB_REPO_BASE_URL)
