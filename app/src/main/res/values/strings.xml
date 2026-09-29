@@ -115,7 +115,6 @@
     <string name="import_cached_label">Saved</string>
     <string name="import_update_available_label">Update Available</string>
     <string name="import_select_file_device">Import JSON from device</string>
-    <string name="import_bundled_label">Bundled</string>
     <string name="import_custom_label">Custom</string>
     <string name="import_delete_confirm_title">Delete Import File</string>
     <string name="import_delete_confirm_message">Are you sure you want to remove \"%1$s\" from your import library?</string>

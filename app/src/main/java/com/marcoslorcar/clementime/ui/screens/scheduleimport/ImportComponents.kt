@@ -242,7 +242,6 @@ fun ImportLibraryContent(
                                 Text(
                                     text = when (sourceType) {
                                         com.marcoslorcar.clementime.data.importing.model.ImportSourceType.REMOTE -> stringResource(R.string.online_repository_title)
-                                        com.marcoslorcar.clementime.data.importing.model.ImportSourceType.BUNDLED -> stringResource(R.string.import_bundled_label)
                                         com.marcoslorcar.clementime.data.importing.model.ImportSourceType.CUSTOM -> stringResource(R.string.import_custom_label)
                                     },
                                     style = MaterialTheme.typography.titleSmall,
