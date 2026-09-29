@@ -119,7 +119,6 @@
     <string name="import_cached_label">Guardado</string>
     <string name="import_update_available_label">Actualización Disponible</string>
     <string name="import_select_file_device">Importar JSON desde el dispositivo</string>
-    <string name="import_bundled_label">Incluido</string>
     <string name="import_custom_label">Personalizado</string>
     <string name="import_delete_confirm_title">Eliminar Archivo de Importación</string>
     <string name="import_delete_confirm_message">¿Estás seguro de que deseas eliminar \"%1$s\" de tu biblioteca de importación?</string>

@@ -10,7 +10,6 @@ import com.marcoslorcar.clementime.data.Subject
 import com.marcoslorcar.clementime.data.SubjectWithSlots
 import com.marcoslorcar.clementime.data.importing.model.ImportFile
 import com.marcoslorcar.clementime.data.importing.model.ImportSourceType
-import com.marcoslorcar.clementime.data.importing.model.JsonFlatSlot
 import com.marcoslorcar.clementime.data.importing.model.JsonSubject
 import com.marcoslorcar.clementime.data.importing.model.ScheduleJsonSchema
 import com.marcoslorcar.clementime.data.importing.model.SelectedSubject
@@ -21,7 +20,6 @@ import com.marcoslorcar.clementime.ui.screens.scheduleimport.model.ConflictStatu
 import com.marcoslorcar.clementime.ui.screens.scheduleimport.model.TheoryOverlap
 import com.marcoslorcar.clementime.ui.widget.ScheduleWidgetUtils
 import com.marcoslorcar.clementime.utils.ConflictSolver
-import com.marcoslorcar.clementime.utils.SlotDiff
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -108,11 +106,6 @@ class ImportViewModel @Inject constructor(
                 }
 
                 val baseUrl = repository.normalizeGitHubUrl(rawBaseUrl)
-                val folderUrl = when {
-                    baseUrl.endsWith("schedules_index.json") -> baseUrl.substringBeforeLast("/") + "/"
-                    baseUrl.endsWith("/") -> baseUrl
-                    else -> "$baseUrl/"
-                }
 
                 val cacheMetadata = repository.getCachedRemoteSchedules(context)
                 val cacheDir = repository.getCacheDir(context)
@@ -141,7 +134,6 @@ class ImportViewModel @Inject constructor(
                             ImportFile(
                                 id = summary.id,
                                 title = summary.title,
-                                isBundled = false,
                                 fileUri = null,
                                 sourceType = ImportSourceType.REMOTE,
                                 remotePath = fullPath,
@@ -159,7 +151,6 @@ class ImportViewModel @Inject constructor(
                             ImportFile(
                                 id = entry.id,
                                 title = entry.title,
-                                isBundled = false,
                                 fileUri = null,
                                 sourceType = ImportSourceType.REMOTE,
                                 remotePath = entry.remotePath,
@@ -191,19 +182,11 @@ class ImportViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = ImportUiState.Parsing
             try {
-                val schemaResult: Result<ScheduleJsonSchema> = when {
-                    file.sourceType == ImportSourceType.REMOTE -> {
+                val schemaResult: Result<ScheduleJsonSchema> = when (file.sourceType) {
+                    ImportSourceType.REMOTE -> {
                         repository.fetchRemoteScheduleSchema(context, file)
                     }
-                    file.isBundled -> {
-                        val jsonString = withContext(Dispatchers.IO) {
-                            context.assets.open("schedules/primer_cuatrimestre.json").use { stream ->
-                                stream.bufferedReader().readText()
-                            }
-                        }
-                        repository.parseJsonString(jsonString)
-                    }
-                    else -> {
+                    ImportSourceType.CUSTOM -> {
                         val jsonString = withContext(Dispatchers.IO) {
                             File(file.fileUri!!).readText()
                         }
@@ -256,7 +239,7 @@ class ImportViewModel @Inject constructor(
 
     fun deleteFile(context: Context, file: ImportFile) {
         viewModelScope.launch {
-            if (!file.isBundled) {
+            if (file.sourceType == ImportSourceType.CUSTOM) {
                 repository.deleteCustomImportFile(context, file.id)
                 loadLibrary(context)
             }
@@ -505,24 +488,6 @@ class ImportViewModel @Inject constructor(
     fun markPreviewTooltipSeen() {
         viewModelScope.launch {
             settingsRepository.setHasSeenImportPreviewTooltip(true)
-        }
-    }
-
-    @Suppress("unused")
-    fun applySlotDiffs(
-        diffs: List<SlotDiff>,
-        remoteSlots: List<JsonFlatSlot> = emptyList(),
-        onSuccess: (() -> Unit)? = null
-    ) {
-        viewModelScope.launch {
-            try {
-                val currentSemester = settingsRepository.currentSemesterFlow.first()
-                repository.applySlotDiffs(diffs, remoteSlots, currentSemester)
-                context?.let { ScheduleWidgetUtils.updateWidget(it) }
-                onSuccess?.invoke()
-            } catch (_: Exception) {
-                // Log or handle error
-            }
         }
     }
 
