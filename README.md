@@ -9,6 +9,8 @@
 </p>
 
 <p align="center">
+  <a href="https://play.google.com/store/apps/details?id=com.marcoslorcar.clementime"><img src="https://img.shields.io/badge/Google_Play-ClemenTime-414141?logo=google-play&logoColor=white" alt="Get it on Google Play"></a>
+  <a href="https://github.com/marcoslorcar/ClemenTime/releases"><img src="https://img.shields.io/github/v/release/marcoslorcar/ClemenTime?logo=github" alt="GitHub Release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPL_v3-orange.svg" alt="License: GPL v3"></a>
   <a href="https://ko-fi.com/marcoslorocarrasco"><img src="https://img.shields.io/badge/Ko--fi-Support-FF5E5B.svg?logo=ko-fi&logoColor=white" alt="Support on Ko-fi"></a>
 </p>
@@ -18,6 +20,18 @@
 ## About
 
 **ClemenTime** helps ESI students organize classes and labs effortlessly. Import class schedules and resolve timetable overlaps through a reactive, privacy-conscious interface built entirely with Jetpack Compose and Material 3.
+
+## Download
+
+ClemenTime is available on Google Play and GitHub Releases:
+
+<p align="center">
+  <a href="https://play.google.com/store/apps/details?id=com.marcoslorcar.clementime">
+    <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="80">
+  </a>
+</p>
+
+You can also download the latest APK directly from [GitHub Releases](https://github.com/marcoslorcar/ClemenTime/releases).
 
 ## Features
 
