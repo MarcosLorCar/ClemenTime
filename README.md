@@ -24,10 +24,12 @@
 * **Timetable Management:** Organize daily and weekly class schedules with ease.
 * **Conflict Resolution:** Automatically detect and resolve overlapping schedule slots upon import.
 * **Home Screen Widget:** Glanceable, reactive widget displaying ongoing and upcoming events.
-* **Adaptive Layouts:** Native UI scaling for smartphones, foldables, and tablets.
+* **Adaptive Layouts:** Native UI scaling for smartphones, foldables, and tablets. Eng/Esp language support.
 * **Material You Design:** Full support for Material 3 dynamic color, along with Light and Dark themes.
 * **Data Portability:** Full backup/restore capabilities with `.ics` calendar export support.
 * **Privacy First:** 100% offline functionality. No account creation, login, or analytics tracking.
+
+<img width="1024" height="500" alt="funciones" src="https://github.com/user-attachments/assets/981c55ea-2051-45f4-aab5-9c04ce1eb973" />
 
 ## Support & Contribution
 
