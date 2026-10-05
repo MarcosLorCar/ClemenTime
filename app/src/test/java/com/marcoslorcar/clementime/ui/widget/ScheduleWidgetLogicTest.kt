@@ -3,6 +3,7 @@ package com.marcoslorcar.clementime.ui.widget
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
 
@@ -116,5 +117,119 @@ class ScheduleWidgetLogicTest {
             direction = -1
         )
         assertEquals(4, backwardOnNewDay)
+    }
+
+    @Test
+    fun testResolveWidgetDayPillText_onSaturday_displaysDayNameWithoutTomorrow() {
+        // On Saturday, offset 0 shows Monday (baseDate is Monday).
+        // Monday is NOT tomorrow on Saturday; it should display "Mon".
+        val saturday = LocalDate.of(2026, 10, 10)
+        val monday = getWeekdayDate(saturday, 0)
+        assertEquals(LocalDate.of(2026, 10, 12), monday)
+
+        val pillText = resolveWidgetDayPillText(
+            targetDate = monday,
+            todayDate = saturday,
+            dayName = "Mon",
+            todayFormat = "Today • %s",
+            tomorrowFormat = "Tomorrow • %s"
+        )
+        assertEquals("Mon", pillText)
+    }
+
+    @Test
+    fun testResolveWidgetDayPillText_onSunday_displaysTomorrowMon() {
+        // On Sunday, offset 0 shows Monday.
+        // Monday IS tomorrow on Sunday; it should display "Tomorrow • Mon".
+        val sunday = LocalDate.of(2026, 10, 11)
+        val monday = getWeekdayDate(sunday, 0)
+        assertEquals(LocalDate.of(2026, 10, 12), monday)
+
+        val pillText = resolveWidgetDayPillText(
+            targetDate = monday,
+            todayDate = sunday,
+            dayName = "Mon",
+            todayFormat = "Today • %s",
+            tomorrowFormat = "Tomorrow • %s"
+        )
+        assertEquals("Tomorrow • Mon", pillText)
+    }
+
+    @Test
+    fun testResolveWidgetDayPillText_onFriday_displaysTodayFri() {
+        val friday = LocalDate.of(2026, 10, 9)
+        val target = getWeekdayDate(friday, 0)
+        assertEquals(friday, target)
+
+        val pillText = resolveWidgetDayPillText(
+            targetDate = target,
+            todayDate = friday,
+            dayName = "Fri",
+            todayFormat = "Today • %s",
+            tomorrowFormat = "Tomorrow • %s"
+        )
+        assertEquals("Today • Fri", pillText)
+    }
+
+    @Test
+    fun testResolveWidgetDayPillText_onFriday_navigatingToMonday_displaysMonWithoutTomorrow() {
+        val friday = LocalDate.of(2026, 10, 9)
+        val monday = getWeekdayDate(friday, 1)
+        assertEquals(LocalDate.of(2026, 10, 12), monday)
+
+        val pillText = resolveWidgetDayPillText(
+            targetDate = monday,
+            todayDate = friday,
+            dayName = "Mon",
+            todayFormat = "Today • %s",
+            tomorrowFormat = "Tomorrow • %s"
+        )
+        assertEquals("Mon", pillText)
+    }
+
+    @Test
+    fun testResolveWidgetDayPillText_midweekTomorrow() {
+        val monday = LocalDate.of(2026, 10, 5)
+        val tuesday = getWeekdayDate(monday, 1)
+        assertEquals(LocalDate.of(2026, 10, 6), tuesday)
+
+        val pillText = resolveWidgetDayPillText(
+            targetDate = tuesday,
+            todayDate = monday,
+            dayName = "Tue",
+            todayFormat = "Today • %s",
+            tomorrowFormat = "Tomorrow • %s"
+        )
+        assertEquals("Tomorrow • Tue", pillText)
+    }
+
+    @Test
+    fun testResolveWidgetForwardBtnText_onFriday_displaysMonArrow() {
+        val friday = LocalDate.of(2026, 10, 9)
+        val nextWeekday = stepWeekday(friday, 1)
+        assertEquals(LocalDate.of(2026, 10, 12), nextWeekday)
+
+        val btnText = resolveWidgetForwardBtnText(
+            todayDate = friday,
+            nextWeekday = nextWeekday,
+            nextDayName = "Mon",
+            tomorrowText = "Tomorrow →"
+        )
+        assertEquals("Mon →", btnText)
+    }
+
+    @Test
+    fun testResolveWidgetForwardBtnText_midweek_displaysTomorrowArrow() {
+        val monday = LocalDate.of(2026, 10, 5)
+        val nextWeekday = stepWeekday(monday, 1)
+        assertEquals(LocalDate.of(2026, 10, 6), nextWeekday)
+
+        val btnText = resolveWidgetForwardBtnText(
+            todayDate = monday,
+            nextWeekday = nextWeekday,
+            nextDayName = "Tue",
+            tomorrowText = "Tomorrow →"
+        )
+        assertEquals("Tomorrow →", btnText)
     }
 }
