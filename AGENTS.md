@@ -122,3 +122,28 @@ All workflows trigger on **`master`**, the default branch. `ci.yml` and `update-
 - `release.yml` — builds and publishes on `v*` tags or manual dispatch with a version input.
 
 Pushing changes under `.github/workflows/` requires a token with `workflow` scope (`gh auth refresh -h github.com -s workflow`).
+
+---
+
+## Git Workflow & Contribution Directives
+
+To maintain clean repository history and streamline PR reviews:
+
+1. **Proactive Branching for New Tasks**:
+   - When starting work on a new feature, bug fix, or refactor (i.e. not an ongoing task on a WIP branch), check the active branch with `git branch`.
+   - If on `master`, **create and switch to a dedicated topic branch before writing code**:
+     - `fix/<kebab-case-desc>` for bug fixes (e.g. `fix/widget-tomorrow-date-labeling`)
+     - `feat/<kebab-case-desc>` for features (e.g. `feat/restore-esi-api-pipeline`)
+     - `refactor/<kebab-case-desc>` for refactoring (e.g. `refactor/cleanup-obsolete-code`)
+     - `chore/<kebab-case-desc>` for maintenance and documentation
+   - Never commit feature or fix code directly to `master`.
+
+2. **Commit Conventions & Strict Authorship**:
+   - Use Conventional Commits (`fix: ...`, `feat: ...`, `refactor: ...`, `chore: ...`).
+   - Include a bulleted breakdown of changes in the commit body.
+   - **No Co-Authors**: All commits must be authored exclusively by Marcos Loro (`marcoslorcar03@gmail.com`). Do **not** append `Co-authored-by:` metadata trailers.
+
+3. **Pull Request Protocol**:
+   - Push to `origin <branch-name>` and open a PR against `master` using `gh pr create`.
+   - Format the PR description with clear `## Summary` and `## Changes` bullet points matching the commit.
+
