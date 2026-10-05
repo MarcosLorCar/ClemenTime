@@ -85,6 +85,33 @@ fun stepWeekday(startDate: LocalDate, daysToStep: Int): LocalDate {
     return date
 }
 
+fun resolveWidgetDayPillText(
+    targetDate: LocalDate,
+    todayDate: LocalDate,
+    dayName: String,
+    todayFormat: String,
+    tomorrowFormat: String
+): String {
+    return when (targetDate) {
+        todayDate -> String.format(todayFormat, dayName)
+        todayDate.plusDays(1) -> String.format(tomorrowFormat, dayName)
+        else -> dayName
+    }
+}
+
+fun resolveWidgetForwardBtnText(
+    todayDate: LocalDate,
+    nextWeekday: LocalDate,
+    nextDayName: String,
+    tomorrowText: String
+): String {
+    return if (nextWeekday == todayDate.plusDays(1)) {
+        tomorrowText
+    } else {
+        "$nextDayName →"
+    }
+}
+
 fun getWeekdayDate(todayDate: LocalDate, offset: Int): LocalDate {
     val baseDate = when (todayDate.dayOfWeek) {
         java.time.DayOfWeek.SATURDAY -> todayDate.plusDays(2)
@@ -119,15 +146,25 @@ fun ScheduleWidgetContent(
     val rawDayName = targetDayOfWeek.getDisplayName(JavaTextStyle.SHORT, locale)
     val dayName = rawDayName.replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
 
-    val tomorrowWeekday = stepWeekday(todayDate, 1)
-    val dayPillText = when {
-        targetDate == todayDate -> context.getString(R.string.widget_today_pill, dayName)
-        targetDate == tomorrowWeekday -> context.getString(R.string.widget_tomorrow_pill, dayName)
-        else -> dayName
-    }
+    val dayPillText = resolveWidgetDayPillText(
+        targetDate = targetDate,
+        todayDate = todayDate,
+        dayName = dayName,
+        todayFormat = context.getString(R.string.widget_today_pill),
+        tomorrowFormat = context.getString(R.string.widget_tomorrow_pill)
+    )
+
+    val nextWeekday = stepWeekday(todayDate, 1)
+    val rawNextDayName = nextWeekday.dayOfWeek.getDisplayName(JavaTextStyle.SHORT, locale)
+    val nextDayName = rawNextDayName.replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
 
     val forwardBtnText = if (dayOffset == 0 && targetDate == todayDate) {
-        context.getString(R.string.widget_toggle_tomorrow)
+        resolveWidgetForwardBtnText(
+            todayDate = todayDate,
+            nextWeekday = nextWeekday,
+            nextDayName = nextDayName,
+            tomorrowText = context.getString(R.string.widget_toggle_tomorrow)
+        )
     } else {
         "→"
     }
@@ -280,7 +317,7 @@ fun ScheduleWidgetContent(
         }
 
         if (daySlots.isEmpty()) {
-            val emptyText = if (dayOffset == 0) {
+            val emptyText = if (targetDate == todayDate) {
                 context.getString(R.string.empty_schedule_today)
             } else {
                 val dayOfWeekName = targetDayOfWeek.getDisplayName(JavaTextStyle.FULL, locale)
