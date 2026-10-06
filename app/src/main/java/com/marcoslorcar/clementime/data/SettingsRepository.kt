@@ -48,6 +48,8 @@ open class SettingsRepository @Inject constructor(
     private val autoUpdateIntervalHoursKey = intPreferencesKey("auto_update_interval_hours")
     private val autoUpdateIntervalMinutesKey = intPreferencesKey("auto_update_interval_minutes")
     private val lastScheduleSyncTimestampKey = longPreferencesKey("last_schedule_sync_timestamp")
+    private val selectedUniversityIdKey = stringPreferencesKey("selected_university_id")
+    private val selectedFacultyIdKey = stringPreferencesKey("selected_faculty_id")
     private fun lastKnownScheduleHashKey(semester: Int) = stringPreferencesKey("last_known_schedule_hash_$semester")
     private fun lastNotifiedScheduleHashKey(semester: Int) = stringPreferencesKey("last_notified_schedule_hash_$semester")
 
@@ -567,12 +569,43 @@ open class SettingsRepository @Inject constructor(
         } catch (_: Throwable) {}
     }
 
+    open val selectedUniversityIdFlow: Flow<String>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[selectedUniversityIdKey] ?: DEFAULT_UNIVERSITY_ID
+            } ?: kotlinx.coroutines.flow.flowOf(DEFAULT_UNIVERSITY_ID)
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf(DEFAULT_UNIVERSITY_ID)
+        }
+
+    open val selectedFacultyIdFlow: Flow<String>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[selectedFacultyIdKey] ?: DEFAULT_FACULTY_ID
+            } ?: kotlinx.coroutines.flow.flowOf(DEFAULT_FACULTY_ID)
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf(DEFAULT_FACULTY_ID)
+        }
+
+    open suspend fun setSelectedFaculty(universityId: String, facultyId: String) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[selectedUniversityIdKey] = universityId
+                preferences[selectedFacultyIdKey] = facultyId
+            }
+        } catch (_: Throwable) {}
+    }
+
     companion object {
         const val DEFAULT_GITHUB_REPO_BASE_URL = BuildConfig.DEFAULT_GITHUB_REPO_BASE_URL
         const val FALLBACK_GITHUB_REPO_BASE_URL = BuildConfig.FALLBACK_GITHUB_REPO_BASE_URL
+
+        const val DEFAULT_UNIVERSITY_ID = "uclm"
+        const val DEFAULT_FACULTY_ID = "esi"
 
         /** Hours between background schedule checks. 0 disables them, which is the default. */
         const val DEFAULT_AUTO_UPDATE_INTERVAL_HOURS = 0
     }
 }
+
 
