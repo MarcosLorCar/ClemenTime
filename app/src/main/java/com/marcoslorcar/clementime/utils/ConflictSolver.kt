@@ -30,8 +30,8 @@ object ConflictSolver {
      */
     fun labVariantCount(subjectWithSlots: SubjectWithSlots): Int {
         val labGroups = subjectWithSlots.slots
-            .filter { it.entryType == EntryType.LAB && it.labGroupName != null }
-            .groupBy { it.labGroupName }
+            .filter { it.entryType == EntryType.LAB && !it.labGroupName.isNullOrBlank() }
+            .groupBy { it.labGroupName!! }
 
         return labGroups.values
             .map { slots -> slots.map { it.dayOfWeek to (it.startTime to it.endTime) }.sortedBy { it.first } }
@@ -41,14 +41,17 @@ object ConflictSolver {
 
     /**
      * Generates and ranks possible schedule solutions by selecting one lab variant per subject.
+     * Fully supports curricula with 0 labs (pure lecture mode), 1 lab per subject, or mixed faculties.
      */
     fun findSolutions(subjects: List<SubjectWithSlots>): List<ScheduleSolution> {
+        if (subjects.isEmpty()) return emptyList()
+
         // 1. Separate subjects into those with choices (unpinned with >1 lab group) and fixed ones.
         val subjectsWithChoices = subjects.filter { s ->
             !s.subject.isDummy && s.subject.selectedLabGroup == null && run {
                 val labGroupCount = s.slots
                     .filter { it.entryType == EntryType.LAB }
-                    .mapNotNull { it.labGroupName }
+                    .mapNotNull { it.labGroupName?.takeIf(String::isNotBlank) }
                     .distinct()
                     .size
                 labGroupCount > 1
@@ -65,7 +68,7 @@ object ConflictSolver {
             } else {
                 val labGroupCount = s.slots
                     .filter { it.entryType == EntryType.LAB }
-                    .mapNotNull { it.labGroupName }
+                    .mapNotNull { it.labGroupName?.takeIf(String::isNotBlank) }
                     .distinct()
                     .size
 
@@ -88,14 +91,16 @@ object ConflictSolver {
 
         // 2. Generate Cartesian product of UNIQUE lab schedules for unpinned subjects
         val choices = subjectsWithChoices.map { s ->
-            val labGroups = s.slots.filter { it.entryType == EntryType.LAB }.groupBy { it.labGroupName }
+            val labGroups = s.slots
+                .filter { it.entryType == EntryType.LAB && !it.labGroupName.isNullOrBlank() }
+                .groupBy { it.labGroupName!! }
             
             // Group lab group names by their schedule signature
             val scheduleToGroupNames = labGroups.entries.groupBy(
                 keySelector = { entry -> 
                     entry.value.map { it.dayOfWeek to (it.startTime to it.endTime) }.sortedBy { it.first } 
                 },
-                valueTransform = { it.key!! }
+                valueTransform = { it.key }
             )
 
             scheduleToGroupNames.map { (_, groupNames) ->

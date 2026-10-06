@@ -26,8 +26,15 @@ data class ClassSlot(
     val startTime: LocalTime,
     val endTime: LocalTime,
     val classroom: String? = null,
-    val labGroupName: String? = null, // e.g. "Lab-A1"
+    val labGroupName: String? = null, // e.g. "Lab-A1", "Sem-1"
     val entryType: EntryType = EntryType.THEORY,
     val professor: String? = null,
     val isIgnored: Boolean = false,
-)
+) {
+    /**
+     * Whether this slot represents an elective subgroup variant (e.g. lab, seminar, practice group).
+     * Conceptually generalizes [EntryType.LAB].
+     */
+    val isSubgroup: Boolean get() = entryType == EntryType.LAB
+}
+
