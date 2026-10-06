@@ -47,6 +47,8 @@ data class MoreUiState(
     val dayEndTime: LocalTime = LocalTime.of(21, 30),
     val autoUpdateIntervalHours: Int = SettingsRepository.DEFAULT_AUTO_UPDATE_INTERVAL_HOURS,
     val lastScheduleSyncTimestamp: Long = 0L,
+    val syncMode: com.marcoslorcar.clementime.data.SyncMode = com.marcoslorcar.clementime.data.SyncMode.ONLINE,
+    val notifyEnrolledOnly: Boolean = true,
     val isCheckingUpdates: Boolean = false,
     val pendingDiffs: List<SlotDiff> = emptyList(),
     val pendingRemoteSlots: List<JsonFlatSlot> = emptyList(),
@@ -91,6 +93,8 @@ class MoreViewModel @Inject constructor(
         settingsRepository.dayEndMinuteFlow,
         settingsRepository.autoUpdateIntervalMinutesFlow,
         settingsRepository.lastScheduleSyncTimestampFlow,
+        settingsRepository.syncModeFlow,
+        settingsRepository.notifyEnrolledOnlyFlow,
         _isCheckingUpdates,
         _appLanguage,
         _pendingDiffs,
@@ -111,11 +115,13 @@ class MoreViewModel @Inject constructor(
             dayEndTime = LocalTime.of(args[10] as Int, args[11] as Int),
             autoUpdateIntervalHours = args[12] as Int,
             lastScheduleSyncTimestamp = args[13] as Long,
-            isCheckingUpdates = args[14] as Boolean,
-            appLanguage = args[15] as String,
-            pendingDiffs = args[16] as List<SlotDiff>,
-            pendingRemoteSlots = args[17] as List<JsonFlatSlot>,
-            showDiffBottomSheet = args[18] as Boolean
+            syncMode = args[14] as com.marcoslorcar.clementime.data.SyncMode,
+            notifyEnrolledOnly = args[15] as Boolean,
+            isCheckingUpdates = args[16] as Boolean,
+            appLanguage = args[17] as String,
+            pendingDiffs = args[18] as List<SlotDiff>,
+            pendingRemoteSlots = args[19] as List<JsonFlatSlot>,
+            showDiffBottomSheet = args[20] as Boolean
         )
     }.stateIn(
         scope = viewModelScope,
@@ -197,6 +203,23 @@ class MoreViewModel @Inject constructor(
             val snappedTime = snapTo30Minutes(time)
             settingsRepository.setDayEndTime(snappedTime.hour, snappedTime.minute)
             ScheduleWidgetUtils.updateWidget(context)
+        }
+    }
+
+    fun setSyncMode(mode: com.marcoslorcar.clementime.data.SyncMode) {
+        viewModelScope.launch {
+            settingsRepository.setSyncMode(mode)
+            if (mode == com.marcoslorcar.clementime.data.SyncMode.ONLINE) {
+                ScheduleUpdateWorker.ensurePeriodicWorkScheduled(context, 360)
+            } else {
+                ScheduleUpdateWorker.cancelPeriodicWork(context)
+            }
+        }
+    }
+
+    fun setNotifyEnrolledOnly(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setNotifyEnrolledOnly(enabled)
         }
     }
 

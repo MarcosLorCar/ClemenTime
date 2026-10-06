@@ -153,6 +153,10 @@ class ScheduleUpdateWorker @AssistedInject constructor(
             }
         }
 
+        fun cancelPeriodicWork(context: Context) {
+            WorkManager.getInstance(context).cancelUniqueWork(UNIQUE_WORK_NAME)
+        }
+
         suspend fun performSync(
             @Suppress("UNUSED_PARAMETER") context: Context,
             settingsRepository: SettingsRepository,
@@ -160,6 +164,9 @@ class ScheduleUpdateWorker @AssistedInject constructor(
             apiService: GitHubScheduleApiService?,
             ignoreInterval: Boolean = false
         ): SyncResult {
+            val syncMode = settingsRepository.syncModeFlow.first()
+            if (syncMode == com.marcoslorcar.clementime.data.SyncMode.OFFLINE) return SyncResult()
+
             if (!ignoreInterval) {
                 val intervalMinutes = settingsRepository.autoUpdateIntervalMinutesFlow.first()
                 if (intervalMinutes <= 0) return SyncResult()

@@ -405,4 +405,17 @@
     <string name="onboarding_notifications_permission_granted">Notifications Enabled ✓</string>
     <string name="auto_update_interval_off_short">Off</string>
     <string name="schedule_updated_success">Schedule updated successfully.</string>
+
+    <!-- Sync Mode Strings -->
+    <string name="sync_mode_title">Schedule Synchronization</string>
+    <string name="sync_mode_online_title">Online Services</string>
+    <string name="sync_mode_online_badge">Recommended</string>
+    <string name="sync_mode_online_desc">Automatic timetable download and instant change alerts.</string>
+    <string name="sync_mode_offline_title">Fully Offline</string>
+    <string name="sync_mode_offline_badge">Privacy-First</string>
+    <string name="sync_mode_offline_desc">Zero background network activity. Manual schedule import only.</string>
+    <string name="notify_enrolled_only_title">Notify enrolled subjects only</string>
+    <string name="notify_enrolled_only_desc">Only alert when changes affect your selected classes.</string>
+    <string name="sync_mode_settings_title">Online Synchronization</string>
+    <string name="sync_mode_settings_desc">Automatic schedule updates and change alerts</string>
 </resources>

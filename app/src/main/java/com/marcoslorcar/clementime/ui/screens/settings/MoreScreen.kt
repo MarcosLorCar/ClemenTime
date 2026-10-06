@@ -38,9 +38,11 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.CleaningServices
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.InvertColors
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Policy
@@ -163,6 +165,8 @@ fun MoreScreen(
         onExportData = viewModel::exportData,
         onExportIcs = viewModel::exportFullYearToIcs,
         onAutoUpdateIntervalChanged = viewModel::setAutoUpdateIntervalHours,
+        onSyncModeChanged = viewModel::setSyncMode,
+        onToggleNotifyEnrolledOnly = viewModel::setNotifyEnrolledOnly,
         onCheckUpdatesNow = {
             viewModel.checkScheduleUpdatesNow {
                 Toast.makeText(context, noUpdatesMsg, Toast.LENGTH_SHORT).show()
@@ -195,6 +199,8 @@ fun MoreContent(
     onExportData: (android.content.Context, Uri, (ExportStatus) -> Unit) -> Unit,
     onExportIcs: (android.content.Context, Uri, LocalDate, LocalDate, LocalDate, LocalDate, (ExportStatus) -> Unit) -> Unit,
     onAutoUpdateIntervalChanged: (Int) -> Unit = {},
+    onSyncModeChanged: (com.marcoslorcar.clementime.data.SyncMode) -> Unit = {},
+    onToggleNotifyEnrolledOnly: (Boolean) -> Unit = {},
     onCheckUpdatesNow: () -> Unit = {},
     onDebugTriggerWorker: () -> Unit = {},
     onDebugResetHashes: () -> Unit = {},
@@ -705,51 +711,39 @@ fun MoreContent(
                     }
                 )
 
-                // Auto-Update Interval Setting
-                var showAutoUpdateMenu by remember { mutableStateOf(false) }
-                val autoUpdateLabel = when (uiState.autoUpdateIntervalHours) {
-                    15 -> stringResource(R.string.auto_update_interval_15m)
-                    6, 360 -> stringResource(R.string.auto_update_interval_6h)
-                    12, 720 -> stringResource(R.string.auto_update_interval_12h)
-                    24, 1440 -> stringResource(R.string.auto_update_interval_24h)
-                    else -> stringResource(R.string.auto_update_interval_off)
-                }
-
-                Box {
-                    SettingItem(
-                        icon = Icons.Default.Sync,
-                        title = stringResource(R.string.auto_update_interval_title),
-                        subtitle = autoUpdateLabel,
-                        onClick = { showAutoUpdateMenu = true }
-                    )
-                    DropdownMenu(
-                        expanded = showAutoUpdateMenu,
-                        onDismissRequest = { showAutoUpdateMenu = false }
-                    ) {
-                        val intervalOptions = if (BuildConfig.DEBUG) listOf(15, 6, 12, 24, 0) else listOf(6, 12, 24, 0)
-                        intervalOptions.forEach { hours ->
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        when (hours) {
-                                            15 -> stringResource(R.string.auto_update_interval_15m)
-                                            6 -> stringResource(R.string.auto_update_interval_6h)
-                                            12 -> stringResource(R.string.auto_update_interval_12h)
-                                            24 -> stringResource(R.string.auto_update_interval_24h)
-                                            else -> stringResource(R.string.auto_update_interval_off)
-                                        }
-                                    )
-                                },
-                                onClick = {
-                                    if (hours > 0) {
-                                        requestNotificationPermissionIfNeeded()
-                                    }
-                                    onAutoUpdateIntervalChanged(hours)
-                                    showAutoUpdateMenu = false
+                // Sync Mode Setting
+                val isOnline = uiState.syncMode == com.marcoslorcar.clementime.data.SyncMode.ONLINE
+                SettingItem(
+                    icon = Icons.Default.Sync,
+                    title = stringResource(R.string.sync_mode_settings_title),
+                    subtitle = stringResource(R.string.sync_mode_settings_desc),
+                    trailingContent = {
+                        Switch(
+                            checked = isOnline,
+                            onCheckedChange = { enabled ->
+                                if (enabled) {
+                                    requestNotificationPermissionIfNeeded()
+                                    onSyncModeChanged(com.marcoslorcar.clementime.data.SyncMode.ONLINE)
+                                } else {
+                                    onSyncModeChanged(com.marcoslorcar.clementime.data.SyncMode.OFFLINE)
                                 }
+                            }
+                        )
+                    }
+                )
+
+                if (isOnline) {
+                    SettingItem(
+                        icon = Icons.Default.NotificationsActive,
+                        title = stringResource(R.string.notify_enrolled_only_title),
+                        subtitle = stringResource(R.string.notify_enrolled_only_desc),
+                        trailingContent = {
+                            Switch(
+                                checked = uiState.notifyEnrolledOnly,
+                                onCheckedChange = onToggleNotifyEnrolledOnly
                             )
                         }
-                    }
+                    )
                 }
 
                 // Check for Updates Now Button

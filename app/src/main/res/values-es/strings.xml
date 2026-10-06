@@ -408,5 +408,18 @@
     <string name="onboarding_notifications_permission_granted">Notificaciones permitidas ✓</string>
     <string name="auto_update_interval_off_short">Off</string>
     <string name="schedule_updated_success">Horario actualizado con éxito.</string>
+
+    <!-- Sync Mode Strings -->
+    <string name="sync_mode_title">Sincronización de horarios</string>
+    <string name="sync_mode_online_title">Servicios en línea</string>
+    <string name="sync_mode_online_badge">Recomendado</string>
+    <string name="sync_mode_online_desc">Descarga automática de horarios y avisos instantáneos ante cambios.</string>
+    <string name="sync_mode_offline_title">Modo sin conexión</string>
+    <string name="sync_mode_offline_badge">Privacidad máxima</string>
+    <string name="sync_mode_offline_desc">Cero actividad en segundo plano. Importación manual únicamente.</string>
+    <string name="notify_enrolled_only_title">Avisar solo de mis asignaturas</string>
+    <string name="notify_enrolled_only_desc">Recibe alertas solo cuando los cambios afecten a tu horario personal.</string>
+    <string name="sync_mode_settings_title">Sincronización en línea</string>
+    <string name="sync_mode_settings_desc">Actualizaciones automáticas y avisos de cambios</string>
 </resources>
 

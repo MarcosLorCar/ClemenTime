@@ -15,11 +15,14 @@ import kotlinx.coroutines.launch
 import java.util.Locale
 import javax.inject.Inject
 
+import com.marcoslorcar.clementime.data.SyncMode
+
 data class OnboardingUiState(
     val themeMode: String = "system",
     val selectedTheme: String = "clementine",
     val appLanguage: String = "en",
-    val autoUpdateIntervalHours: Int = 0
+    val autoUpdateIntervalHours: Int = 0,
+    val syncMode: SyncMode = SyncMode.ONLINE
 )
 
 @HiltViewModel
@@ -32,14 +35,14 @@ class OnboardingViewModel @Inject constructor(
     val uiState: StateFlow<OnboardingUiState> = combine(
         settingsRepository.themeFlow,
         settingsRepository.selectedThemeFlow,
-        settingsRepository.autoUpdateIntervalHoursFlow,
+        settingsRepository.syncModeFlow,
         _appLanguage
-    ) { theme: String, selectedTheme: String, interval: Int, lang: String ->
+    ) { theme: String, selectedTheme: String, mode: SyncMode, lang: String ->
         OnboardingUiState(
             themeMode = theme,
             selectedTheme = selectedTheme,
             appLanguage = lang,
-            autoUpdateIntervalHours = interval
+            syncMode = mode
         )
     }.stateIn(
         scope = viewModelScope,
@@ -73,6 +76,17 @@ class OnboardingViewModel @Inject constructor(
         _appLanguage.value = lang
         val localeList = LocaleListCompat.forLanguageTags(lang)
         AppCompatDelegate.setApplicationLocales(localeList)
+    }
+
+    fun setSyncMode(mode: SyncMode, context: android.content.Context) {
+        viewModelScope.launch {
+            settingsRepository.setSyncMode(mode)
+            if (mode == SyncMode.ONLINE) {
+                com.marcoslorcar.clementime.worker.ScheduleUpdateWorker.ensurePeriodicWorkScheduled(context, 360)
+            } else {
+                com.marcoslorcar.clementime.worker.ScheduleUpdateWorker.cancelPeriodicWork(context)
+            }
+        }
     }
 
     fun setAutoUpdateIntervalHours(hours: Int, context: android.content.Context) {

@@ -22,5 +22,14 @@ class SettingsRepositoryTest {
         assertEquals("uclm", uni)
         assertEquals("esi", faculty)
     }
+
+    @Test
+    fun defaultSyncModeAndNotifyEnrolledOnly_fallbacksToDefaults() = runTest {
+        val repository = SettingsRepository(null)
+        val syncMode = repository.syncModeFlow.first()
+        val notifyEnrolledOnly = repository.notifyEnrolledOnlyFlow.first()
+        assertEquals(SyncMode.ONLINE, syncMode)
+        assertEquals(true, notifyEnrolledOnly)
+    }
 }
 
