@@ -43,7 +43,7 @@ def generate_index(dist_dir: str = None) -> str:
 
     index_entries = []
     files = sorted(os.listdir(dist_dir))
-    json_files = [f for f in files if f.endswith(".json") and f != "schedules_index.json"]
+    json_files = [f for f in files if f.endswith(".json") and f not in ("schedules_index.json", "schedules_catalog.json")]
 
     if not json_files:
         print(f"[Warning] No schedule JSON files found in {dist_dir}")
@@ -112,6 +112,43 @@ def generate_index(dist_dir: str = None) -> str:
         f.write("\n")
 
     print(f"Successfully generated {output_path} with {len(index_entries)} schedules.")
+
+    catalog_path = os.path.join(dist_dir, "schedules_catalog.json")
+    terms = []
+    for entry in index_entries:
+        terms.append({
+            "id": entry["id"],
+            "name": entry["title"],
+            "description": entry["description"],
+            "path": entry["path"],
+            "hash": entry["hash"],
+            "updatedTime": entry["updatedTime"]
+        })
+
+    catalog_data = {
+        "version": 2,
+        "universities": [
+            {
+                "id": "uclm",
+                "name": "Universidad de Castilla-La Mancha",
+                "faculties": [
+                    {
+                        "id": "esi",
+                        "name": "Escuela Superior de Informática (Ciudad Real)",
+                        "fcm_topic_prefix": "uclm_esi",
+                        "subgroups_label": "Laboratorios",
+                        "terms": terms
+                    }
+                ]
+            }
+        ]
+    }
+
+    with open(catalog_path, "w", encoding="utf-8") as f:
+        json.dump(catalog_data, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+
+    print(f"Successfully generated {catalog_path} (catalog schema v2).")
     return output_path
 
 

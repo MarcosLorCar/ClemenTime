@@ -15,9 +15,12 @@ class SettingsRepositoryTest {
     }
 
     @Test
-    fun defaultAutoUpdateIntervalHours_isDisabled() = runTest {
+    fun defaultUniversityAndFaculty_fallbacksToUclmAndEsi() = runTest {
         val repository = SettingsRepository(null)
-        val hours = repository.autoUpdateIntervalHoursFlow.first()
-        assertEquals(0, hours)
+        val uni = repository.selectedUniversityIdFlow.first()
+        val faculty = repository.selectedFacultyIdFlow.first()
+        assertEquals("uclm", uni)
+        assertEquals("esi", faculty)
     }
 }
+

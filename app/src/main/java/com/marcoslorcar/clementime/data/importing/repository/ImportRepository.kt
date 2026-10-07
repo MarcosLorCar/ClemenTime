@@ -11,6 +11,7 @@ import com.marcoslorcar.clementime.data.api.GitHubScheduleApiService
 import com.marcoslorcar.clementime.data.importing.model.ImportFile
 import com.marcoslorcar.clementime.data.importing.model.JsonFlatSlot
 import com.marcoslorcar.clementime.data.importing.model.RemoteScheduleSummary
+import com.marcoslorcar.clementime.data.importing.model.ScheduleCatalog
 import com.marcoslorcar.clementime.data.importing.model.ScheduleJsonSchema
 import com.marcoslorcar.clementime.data.importing.model.SelectedSubject
 import com.marcoslorcar.clementime.data.importing.parser.JsonScheduleParser
@@ -301,10 +302,35 @@ class ImportRepository @Inject constructor(
         return trimmed
     }
 
-    suspend fun fetchRemoteSchedules(rawBaseUrl: String): Result<Pair<String, List<RemoteScheduleSummary>>> = withContext(Dispatchers.IO) {
+    suspend fun fetchRemoteSchedules(
+        rawBaseUrl: String,
+        facultyId: String? = null
+    ): Result<Pair<String, List<RemoteScheduleSummary>>> = withContext(Dispatchers.IO) {
         try {
             if (apiService == null) return@withContext Result.failure(Exception("Network service unavailable"))
             val baseUrl = normalizeGitHubUrl(rawBaseUrl)
+
+            // 1. Try fetching 3-level schedules_catalog.json first
+            val catalogUrl = when {
+                baseUrl.endsWith("schedules_catalog.json") -> baseUrl
+                baseUrl.endsWith("/") -> "${baseUrl}schedules_catalog.json"
+                else -> "$baseUrl/schedules_catalog.json"
+            }
+            val catalogResponse = runCatching { apiService.getScheduleCatalog(catalogUrl) }.getOrNull()
+            if (catalogResponse != null && catalogResponse.isSuccessful && catalogResponse.body() != null) {
+                val catalog = catalogResponse.body()!!
+                val targetFaculty = catalog.universities
+                    .flatMap { it.faculties }
+                    .firstOrNull { facultyId == null || it.id.equals(facultyId, ignoreCase = true) }
+                    ?: catalog.universities.firstOrNull()?.faculties?.firstOrNull()
+
+                if (targetFaculty != null && targetFaculty.terms.isNotEmpty()) {
+                    val summaries = targetFaculty.terms.map { it.toRemoteSummary() }
+                    return@withContext Result.success(Pair(baseUrl, summaries))
+                }
+            }
+
+            // 2. Gracefully fall back to legacy flat schedules_index.json
             val indexUrl = when {
                 baseUrl.endsWith("schedules_index.json") -> baseUrl
                 baseUrl.endsWith("/") -> "${baseUrl}schedules_index.json"
@@ -316,7 +342,7 @@ class ImportRepository @Inject constructor(
             } else {
                 val fallbackUrl = SettingsRepository.FALLBACK_GITHUB_REPO_BASE_URL
                 if (normalizeGitHubUrl(rawBaseUrl) != normalizeGitHubUrl(fallbackUrl)) {
-                    fetchRemoteSchedules(fallbackUrl)
+                    fetchRemoteSchedules(fallbackUrl, facultyId)
                 } else {
                     Result.failure(Exception("Failed to fetch remote index: ${response.code()} ${response.message()}"))
                 }
@@ -324,7 +350,37 @@ class ImportRepository @Inject constructor(
         } catch (e: Exception) {
             val fallbackUrl = SettingsRepository.FALLBACK_GITHUB_REPO_BASE_URL
             if (normalizeGitHubUrl(rawBaseUrl) != normalizeGitHubUrl(fallbackUrl)) {
-                fetchRemoteSchedules(fallbackUrl)
+                fetchRemoteSchedules(fallbackUrl, facultyId)
+            } else {
+                Result.failure(e)
+            }
+        }
+    }
+
+    suspend fun fetchRemoteCatalog(rawBaseUrl: String): Result<Pair<String, ScheduleCatalog>> = withContext(Dispatchers.IO) {
+        try {
+            if (apiService == null) return@withContext Result.failure(Exception("Network service unavailable"))
+            val baseUrl = normalizeGitHubUrl(rawBaseUrl)
+            val catalogUrl = when {
+                baseUrl.endsWith("schedules_catalog.json") -> baseUrl
+                baseUrl.endsWith("/") -> "${baseUrl}schedules_catalog.json"
+                else -> "$baseUrl/schedules_catalog.json"
+            }
+            val response = apiService.getScheduleCatalog(catalogUrl)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(Pair(baseUrl, response.body()!!))
+            } else {
+                val fallbackUrl = SettingsRepository.FALLBACK_GITHUB_REPO_BASE_URL
+                if (normalizeGitHubUrl(rawBaseUrl) != normalizeGitHubUrl(fallbackUrl)) {
+                    fetchRemoteCatalog(fallbackUrl)
+                } else {
+                    Result.failure(Exception("Failed to fetch catalog: ${response.code()} ${response.message()}"))
+                }
+            }
+        } catch (e: Exception) {
+            val fallbackUrl = SettingsRepository.FALLBACK_GITHUB_REPO_BASE_URL
+            if (normalizeGitHubUrl(rawBaseUrl) != normalizeGitHubUrl(fallbackUrl)) {
+                fetchRemoteCatalog(fallbackUrl)
             } else {
                 Result.failure(e)
             }
