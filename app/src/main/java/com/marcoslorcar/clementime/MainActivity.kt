@@ -84,12 +84,18 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Re-arm background sync. Onboarding and Settings enqueue it when the interval
-        // changes, but neither runs for a user who onboarded before this feature existed,
-        // and WorkManager state does not survive "clear data" or some restores.
+        // Re-arm background sync based on sync mode.
         lifecycleScope.launch {
-            val intervalMinutes = settingsRepository.autoUpdateIntervalMinutesFlow.first()
-            ScheduleUpdateWorker.ensurePeriodicWorkScheduled(this@MainActivity, intervalMinutes)
+            val syncMode = settingsRepository.syncModeFlow.first()
+            if (syncMode == com.marcoslorcar.clementime.data.SyncMode.ONLINE) {
+                val intervalMinutes = settingsRepository.autoUpdateIntervalMinutesFlow.first()
+                ScheduleUpdateWorker.ensurePeriodicWorkScheduled(
+                    this@MainActivity,
+                    if (intervalMinutes > 0) intervalMinutes else 360
+                )
+            } else {
+                ScheduleUpdateWorker.cancelPeriodicWork(this@MainActivity)
+            }
         }
 
         // Read once: the extra lives on the Activity's intent for its whole lifetime, so

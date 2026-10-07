@@ -50,6 +50,8 @@ open class SettingsRepository @Inject constructor(
     private val lastScheduleSyncTimestampKey = longPreferencesKey("last_schedule_sync_timestamp")
     private val selectedUniversityIdKey = stringPreferencesKey("selected_university_id")
     private val selectedFacultyIdKey = stringPreferencesKey("selected_faculty_id")
+    private val syncModeKey = stringPreferencesKey("sync_mode")
+    private val notifyEnrolledOnlyKey = booleanPreferencesKey("notify_enrolled_only")
     private fun lastKnownScheduleHashKey(semester: Int) = stringPreferencesKey("last_known_schedule_hash_$semester")
     private fun lastNotifiedScheduleHashKey(semester: Int) = stringPreferencesKey("last_notified_schedule_hash_$semester")
 
@@ -592,6 +594,54 @@ open class SettingsRepository @Inject constructor(
             context?.dataStore?.edit { preferences ->
                 preferences[selectedUniversityIdKey] = universityId
                 preferences[selectedFacultyIdKey] = facultyId
+            }
+        } catch (_: Throwable) {}
+    }
+
+    open val syncModeFlow: Flow<SyncMode>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                val raw = preferences[syncModeKey]
+                if (raw != null) {
+                    try {
+                        SyncMode.valueOf(raw)
+                    } catch (_: Exception) {
+                        SyncMode.ONLINE
+                    }
+                } else {
+                    // Smooth migration from legacy intervals:
+                    // If user had interval configured > 0, keep them in ONLINE mode.
+                    // Default to ONLINE mode for best out-of-the-box experience.
+                    val legacyMinutes = preferences[autoUpdateIntervalMinutesKey]
+                        ?: ((preferences[autoUpdateIntervalHoursKey] ?: DEFAULT_AUTO_UPDATE_INTERVAL_HOURS) * 60)
+                    if (legacyMinutes > 0) SyncMode.ONLINE else SyncMode.ONLINE
+                }
+            } ?: kotlinx.coroutines.flow.flowOf(SyncMode.ONLINE)
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf(SyncMode.ONLINE)
+        }
+
+    open suspend fun setSyncMode(mode: SyncMode) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[syncModeKey] = mode.name
+            }
+        } catch (_: Throwable) {}
+    }
+
+    open val notifyEnrolledOnlyFlow: Flow<Boolean>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[notifyEnrolledOnlyKey] ?: true
+            } ?: kotlinx.coroutines.flow.flowOf(true)
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf(true)
+        }
+
+    open suspend fun setNotifyEnrolledOnly(enabled: Boolean) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[notifyEnrolledOnlyKey] = enabled
             }
         } catch (_: Throwable) {}
     }

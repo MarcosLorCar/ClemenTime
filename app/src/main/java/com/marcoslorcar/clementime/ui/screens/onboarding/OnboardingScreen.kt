@@ -20,18 +20,25 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.CloudDone
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -97,9 +104,9 @@ fun OnboardingScreen(
                         onThemeModeSelected = viewModel::setThemeMode,
                         onColorThemeSelected = viewModel::setSelectedTheme
                     )
-                    3 -> AutoUpdatePage(
-                        selectedInterval = uiState.autoUpdateIntervalHours,
-                        onIntervalSelected = { hours -> viewModel.setAutoUpdateIntervalHours(hours, context) }
+                    3 -> SyncModePage(
+                        selectedMode = uiState.syncMode,
+                        onModeSelected = { mode -> viewModel.setSyncMode(mode, context) }
                     )
                     4 -> ReadyPage()
                 }
@@ -330,11 +337,10 @@ fun ReadyPage() {
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AutoUpdatePage(
-    selectedInterval: Int,
-    onIntervalSelected: (Int) -> Unit
+fun SyncModePage(
+    selectedMode: com.marcoslorcar.clementime.data.SyncMode,
+    onModeSelected: (com.marcoslorcar.clementime.data.SyncMode) -> Unit
 ) {
     val context = LocalContext.current
     var isPermissionGranted by remember {
@@ -364,69 +370,148 @@ fun AutoUpdatePage(
         Icon(
             imageVector = Icons.Default.Sync,
             contentDescription = null,
-            modifier = Modifier.size(80.dp),
+            modifier = Modifier.size(64.dp),
             tint = MaterialTheme.colorScheme.primary
         )
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = stringResource(R.string.onboarding_autoupdate_title),
+            text = stringResource(R.string.sync_mode_title),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
         )
-        Spacer(modifier = Modifier.height(12.dp))
-        Text(
-            text = stringResource(R.string.onboarding_autoupdate_desc),
-            style = MaterialTheme.typography.bodyMedium,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            lineHeight = 22.sp
-        )
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
-        Text(
-            text = stringResource(R.string.onboarding_autoupdate_frequency),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.secondary,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-
-        SingleChoiceSegmentedButtonRow(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp)
-        ) {
-            val intervals = listOf(6, 12, 24, 0)
-            intervals.forEachIndexed { index, hours ->
-                val label = when (hours) {
-                    6 -> "6h"
-                    12 -> "12h"
-                    24 -> "24h"
-                    else -> stringResource(R.string.auto_update_interval_off_short)
+        // Card 1: Online Services (Recommended)
+        val isOnlineSelected = selectedMode == com.marcoslorcar.clementime.data.SyncMode.ONLINE
+        Card(
+            onClick = {
+                onModeSelected(com.marcoslorcar.clementime.data.SyncMode.ONLINE)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !isPermissionGranted) {
+                    permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
                 }
-                SegmentedButton(
-                    selected = selectedInterval == hours,
-                    onClick = {
-                        onIntervalSelected(hours)
-                        if (hours > 0 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !isPermissionGranted) {
-                            permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-                        }
-                    },
-                    shape = SegmentedButtonDefaults.itemShape(index = index, count = intervals.size)
-                ) {
+            },
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = if (isOnlineSelected) {
+                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                } else {
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                }
+            ),
+            border = if (isOnlineSelected) {
+                BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+            } else null,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CloudDone,
+                    contentDescription = null,
+                    modifier = Modifier.size(32.dp),
+                    tint = if (isOnlineSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = stringResource(R.string.sync_mode_online_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(R.string.sync_mode_online_badge),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = label,
-                        style = MaterialTheme.typography.labelMedium,
-                        textAlign = TextAlign.Center,
-                        maxLines = 1
+                        text = stringResource(R.string.sync_mode_online_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+                RadioButton(
+                    selected = isOnlineSelected,
+                    onClick = null
+                )
             }
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && selectedInterval > 0) {
-            Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Card 2: Fully Offline (Privacy-First)
+        val isOfflineSelected = selectedMode == com.marcoslorcar.clementime.data.SyncMode.OFFLINE
+        Card(
+            onClick = {
+                onModeSelected(com.marcoslorcar.clementime.data.SyncMode.OFFLINE)
+            },
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = if (isOfflineSelected) {
+                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                } else {
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                }
+            ),
+            border = if (isOfflineSelected) {
+                BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+            } else null,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CloudOff,
+                    contentDescription = null,
+                    modifier = Modifier.size(32.dp),
+                    tint = if (isOfflineSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = stringResource(R.string.sync_mode_offline_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(R.string.sync_mode_offline_badge),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.secondary,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.sync_mode_offline_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                RadioButton(
+                    selected = isOfflineSelected,
+                    onClick = null
+                )
+            }
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && isOnlineSelected) {
+            Spacer(modifier = Modifier.height(20.dp))
             OutlinedButton(
                 onClick = {
                     if (!isPermissionGranted) {
