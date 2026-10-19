@@ -520,7 +520,7 @@
   "asignatura": "TeCo-L",
   "tipo": "laboratorio",
   "aula": "Bill Gates - LD3",
-  "profesor": "Inocente.Sánchez",
+  "profesor": "Jesus.Salido",
   "es_laboratorio": true,
   "grupo_practicas": "Lab-BC"
  },
@@ -565,7 +565,7 @@
   "asignatura": "TeCo-L",
   "tipo": "laboratorio",
   "aula": "Dennis Ritchie - LD2",
-  "profesor": "Jesus.Salido",
+  "profesor": "Inocente.Sánchez",
   "es_laboratorio": true,
   "grupo_practicas": "Lab-B2"
  },
@@ -925,7 +925,7 @@
   "asignatura": "TeCo-L",
   "tipo": "laboratorio",
   "aula": "Bill Gates - LD3",
-  "profesor": "Inocente.Sánchez",
+  "profesor": "Jesus.Salido",
   "es_laboratorio": true,
   "grupo_practicas": "Lab-BC"
  },
