@@ -13,6 +13,7 @@ import hashlib
 import json
 import os
 import sys
+import time
 import urllib.request
 
 try:
@@ -36,6 +37,12 @@ else:
     DEFAULT_ESI_URL = "https://esi.uclm.es/TV/hall/horarios.json"
 
 
+REQUEST_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (compatible; ClemenTime-UpdateChecker/1.0; +https://github.com/MarcosLorCar/ClemenTime)",
+    "Accept": "application/json, text/plain, */*",
+}
+
+
 def compute_sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
@@ -51,6 +58,19 @@ def write_github_output(has_update: bool):
             print(f"[Warning] Failed to write to GITHUB_OUTPUT: {e}", file=sys.stderr)
 
 
+def fetch_with_retry(req: urllib.request.Request, timeout: int, max_retries: int = 2):
+    """Attempt HTTP request up to max_retries + 1 times on transient network failures."""
+    last_err = None
+    for attempt in range(max_retries + 1):
+        try:
+            return urllib.request.urlopen(req, timeout=timeout)
+        except Exception as e:
+            last_err = e
+            if attempt < max_retries:
+                time.sleep(1.0 * (attempt + 1))
+    raise last_err
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Check ESI schedule URL headers for updates and download fresh schedules.json."
@@ -64,6 +84,11 @@ def main():
         "--force",
         action="store_true",
         help="Force download of schedule file even if headers haven't changed",
+    )
+    parser.add_argument(
+        "--fail-on-error",
+        action="store_true",
+        help="Exit with non-zero code on network/HTTP errors (default: exit 0 and emit has_update=false)",
     )
     parser.add_argument(
         "--mock-etag",
@@ -86,18 +111,25 @@ def main():
     req = urllib.request.Request(
         target_url,
         method="HEAD",
-        headers={"User-Agent": "ClemenTime-UpdateChecker/1.0"},
+        headers=REQUEST_HEADERS,
     )
     try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with fetch_with_retry(req, timeout=10) as resp:
             headers = dict(resp.headers)
             last_modified = headers.get("Last-Modified", "")
             etag = headers.get("ETag", "")
     except Exception as e:
         if args.mock_etag is None and args.mock_last_modified is None and not args.force:
-            print(f"[Error] Failed to fetch HEAD from {target_url}: {e}", file=sys.stderr)
-            write_github_output(False)
-            sys.exit(1)
+            msg = f"Failed to fetch HEAD from {target_url}: {e}. Remote endpoint may be unreachable or down."
+            if args.fail_on_error:
+                print(f"[Error] {msg}", file=sys.stderr)
+                write_github_output(False)
+                sys.exit(1)
+            else:
+                print(f"[Warning] {msg}", file=sys.stderr)
+                print("[Skip] Skipping schedule sync due to remote unavailability.", file=sys.stderr)
+                write_github_output(False)
+                sys.exit(0)
         else:
             print(f"[Warning] HEAD request failed ({e}), proceeding with mocks/force mode.", file=sys.stderr)
 
@@ -133,14 +165,36 @@ def main():
         try:
             req_get = urllib.request.Request(
                 target_url,
-                headers={"User-Agent": "ClemenTime-UpdateChecker/1.0"},
+                headers=REQUEST_HEADERS,
             )
-            with urllib.request.urlopen(req_get, timeout=30) as resp_get:
+            with fetch_with_retry(req_get, timeout=30) as resp_get:
                 content_bytes = resp_get.read()
         except Exception as e:
-            print(f"[Error] Failed to download schedule from {target_url}: {e}", file=sys.stderr)
-            write_github_output(False)
-            sys.exit(1)
+            msg = f"Failed to download schedule from {target_url}: {e}."
+            if args.fail_on_error:
+                print(f"[Error] {msg}", file=sys.stderr)
+                write_github_output(False)
+                sys.exit(1)
+            else:
+                print(f"[Warning] {msg} Remote endpoint may be unreachable or down. Preserving existing schedule.", file=sys.stderr)
+                write_github_output(False)
+                sys.exit(0)
+
+        # Validate that content_bytes is valid JSON structure (not HTML error page or empty)
+        try:
+            parsed = json.loads(content_bytes.decode("utf-8"))
+            if not isinstance(parsed, (list, dict)) or not parsed:
+                raise ValueError("Payload is empty or not a valid JSON object/array")
+        except Exception as e:
+            msg = f"Downloaded payload from {target_url} is invalid JSON: {e}."
+            if args.fail_on_error:
+                print(f"[Error] {msg}", file=sys.stderr)
+                write_github_output(False)
+                sys.exit(1)
+            else:
+                print(f"[Warning] {msg} Preserving existing schedule.", file=sys.stderr)
+                write_github_output(False)
+                sys.exit(0)
 
         sha256_val = compute_sha256(content_bytes)
         prev_sha256 = saved_meta.get("sha256", "")
