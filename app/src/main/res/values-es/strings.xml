@@ -378,12 +378,12 @@
 
     <!-- Developer / Debug Settings strings -->
     <string name="developer_settings_header">Opciones de desarrollo</string>
-    <string name="debug_trigger_worker_title">Ejecutar Worker de Horarios</string>
-    <string name="debug_trigger_worker_desc">Ejecuta WorkManager ScheduleUpdateWorker inmediatamente</string>
+    <string name="debug_fcm_status_title">Estado de FCM y Sincronización</string>
+    <string name="debug_fcm_status_desc">Ver SyncMode, disponibilidad de GMS, tema suscrito y hashes guardados</string>
     <string name="debug_reset_hashes_title">Restablecer Hashes de Horario</string>
     <string name="debug_reset_hashes_desc">Borra los hashes guardados para forzar la detección de cambios</string>
     <string name="debug_simulate_diff_title">Simular Cambios de Horario</string>
-    <string name="debug_simulate_diff_desc">Muestra una notificación de prueba y el panel de diferencias</string>
+    <string name="debug_simulate_diff_desc">Muestra el panel de diferencias con un cambio simulado</string>
     <string name="debug_reset_onboarding_title">Restablecer Guías y Tutoriales</string>
     <string name="debug_reset_onboarding_desc">Restablece la bienvenida y los avisos de ayuda para pruebas</string>
     <string name="debug_action_triggered">Acción de desarrollo ejecutada</string>

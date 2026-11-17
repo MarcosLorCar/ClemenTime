@@ -375,12 +375,12 @@
 
     <!-- Developer / Debug Settings strings -->
     <string name="developer_settings_header">Developer Settings</string>
-    <string name="debug_trigger_worker_title">Run Schedule Worker Now</string>
-    <string name="debug_trigger_worker_desc">Trigger WorkManager ScheduleUpdateWorker immediately</string>
+    <string name="debug_fcm_status_title">FCM &amp; Sync Status</string>
+    <string name="debug_fcm_status_desc">Inspect SyncMode, GMS availability, subscribed topic, and stored hashes</string>
     <string name="debug_reset_hashes_title">Reset Schedule Hashes</string>
     <string name="debug_reset_hashes_desc">Clear last known and notified hashes to test schedule sync detection</string>
     <string name="debug_simulate_diff_title">Simulate Schedule Diff</string>
-    <string name="debug_simulate_diff_desc">Show mock schedule update notification and diff bottom sheet</string>
+    <string name="debug_simulate_diff_desc">Show mock schedule diff bottom sheet</string>
     <string name="debug_reset_onboarding_title">Reset Tooltips &amp; Onboarding</string>
     <string name="debug_reset_onboarding_desc">Reset onboarding tutorial and tooltip flags for testing</string>
     <string name="debug_action_triggered">Developer action performed</string>

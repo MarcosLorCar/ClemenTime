@@ -224,8 +224,26 @@ class MoreViewModel @Inject constructor(
         }
     }
 
-    fun debugTriggerWorkerNow() {
-        ScheduleUpdateWorker.enqueueOneTimeWork(context)
+    fun debugShowFcmStatus(onResult: (String) -> Unit) {
+        viewModelScope.launch {
+            val syncMode = settingsRepository.syncModeFlow.first()
+            val gmsAvailable = FcmTopicManager.isGooglePlayServicesAvailable(context)
+            val uni = settingsRepository.selectedUniversityIdFlow.first()
+            val faculty = settingsRepository.selectedFacultyIdFlow.first()
+            val targetTopic = FcmTopicManager.topicFor(uni, faculty)
+            val subscribedTopic = settingsRepository.subscribedFcmTopicFlow.first()
+            val hash1c = settingsRepository.getLastKnownScheduleHashFlow(1).first()
+            val hash2c = settingsRepository.getLastKnownScheduleHashFlow(2).first()
+            val report = buildString {
+                appendLine("Sync Mode: $syncMode")
+                appendLine("GMS Available: $gmsAvailable")
+                appendLine("Target Topic: $targetTopic")
+                appendLine("Subscribed Topic: ${subscribedTopic ?: "(none)"}")
+                appendLine("1C Hash: ${hash1c.take(12).ifBlank { "(empty)" }}")
+                append("2C Hash: ${hash2c.take(12).ifBlank { "(empty)" }}")
+            }
+            onResult(report)
+        }
     }
 
     fun debugResetScheduleHashes() {
