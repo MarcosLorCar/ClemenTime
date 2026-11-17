@@ -54,6 +54,7 @@ jobs:
           python3 -u process_schedules.py --strict
 
       - name: Commit and Push
+        id: commit
         if: >
           success() && (
           steps.check.outputs.has_update == 'true' ||
@@ -65,7 +66,16 @@ jobs:
           git add schedules/
           if git diff --cached --quiet; then
             echo "No changes to commit"
+            echo "committed=false" >> $GITHUB_OUTPUT
           else
             git commit -m "chore: auto-sync ESI schedules from TV hall API [skip ci]"
             git push
+            echo "committed=true" >> $GITHUB_OUTPUT
           fi
+
+      - name: Notify FCM Topic Subscribers
+        if: success() && steps.commit.outputs.committed == 'true'
+        env:
+          FCM_SERVICE_ACCOUNT_KEY: ${{ secrets.FCM_SERVICE_ACCOUNT_KEY }}
+        run: |
+          python3 -u schedules/script/notify_fcm.py

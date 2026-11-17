@@ -42,7 +42,6 @@ import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.InvertColors
 import androidx.compose.material.icons.filled.Language
-import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Policy
@@ -139,8 +138,8 @@ fun MoreScreen(
     if (uiState.showDiffBottomSheet && uiState.pendingDiffs.isNotEmpty()) {
         ScheduleDiffBottomSheet(
             diffs = uiState.pendingDiffs,
-            onApply = {
-                viewModel.applyPendingSlotDiffs {
+            onApply = { selectedSubjectKeys ->
+                viewModel.applyPendingSlotDiffs(selectedSubjectKeys) {
                     Toast.makeText(context, updatedSuccessMsg, Toast.LENGTH_SHORT).show()
                 }
             },
@@ -166,7 +165,6 @@ fun MoreScreen(
         onExportIcs = viewModel::exportFullYearToIcs,
         onAutoUpdateIntervalChanged = viewModel::setAutoUpdateIntervalHours,
         onSyncModeChanged = viewModel::setSyncMode,
-        onToggleNotifyEnrolledOnly = viewModel::setNotifyEnrolledOnly,
         onCheckUpdatesNow = {
             viewModel.checkScheduleUpdatesNow {
                 Toast.makeText(context, noUpdatesMsg, Toast.LENGTH_SHORT).show()
@@ -200,7 +198,6 @@ fun MoreContent(
     onExportIcs: (android.content.Context, Uri, LocalDate, LocalDate, LocalDate, LocalDate, (ExportStatus) -> Unit) -> Unit,
     onAutoUpdateIntervalChanged: (Int) -> Unit = {},
     onSyncModeChanged: (com.marcoslorcar.clementime.data.SyncMode) -> Unit = {},
-    onToggleNotifyEnrolledOnly: (Boolean) -> Unit = {},
     onCheckUpdatesNow: () -> Unit = {},
     onDebugTriggerWorker: () -> Unit = {},
     onDebugResetHashes: () -> Unit = {},
@@ -731,20 +728,6 @@ fun MoreContent(
                         )
                     }
                 )
-
-                if (isOnline) {
-                    SettingItem(
-                        icon = Icons.Default.NotificationsActive,
-                        title = stringResource(R.string.notify_enrolled_only_title),
-                        subtitle = stringResource(R.string.notify_enrolled_only_desc),
-                        trailingContent = {
-                            Switch(
-                                checked = uiState.notifyEnrolledOnly,
-                                onCheckedChange = onToggleNotifyEnrolledOnly
-                            )
-                        }
-                    )
-                }
 
                 // Check for Updates Now Button
                 SettingItem(

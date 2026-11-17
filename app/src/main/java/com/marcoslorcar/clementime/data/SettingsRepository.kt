@@ -13,6 +13,7 @@ import com.marcoslorcar.clementime.BuildConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -51,9 +52,10 @@ open class SettingsRepository @Inject constructor(
     private val selectedUniversityIdKey = stringPreferencesKey("selected_university_id")
     private val selectedFacultyIdKey = stringPreferencesKey("selected_faculty_id")
     private val syncModeKey = stringPreferencesKey("sync_mode")
-    private val notifyEnrolledOnlyKey = booleanPreferencesKey("notify_enrolled_only")
+    private val subscribedFcmTopicKey = stringPreferencesKey("subscribed_fcm_topic")
     private fun lastKnownScheduleHashKey(semester: Int) = stringPreferencesKey("last_known_schedule_hash_$semester")
     private fun lastNotifiedScheduleHashKey(semester: Int) = stringPreferencesKey("last_notified_schedule_hash_$semester")
+    private fun lastRemoteSubjectHashesKey(semester: Int) = stringPreferencesKey("last_remote_subject_hashes_$semester")
 
 
     open val themeFlow: Flow<String>
@@ -526,6 +528,8 @@ open class SettingsRepository @Inject constructor(
                 preferences.remove(lastKnownScheduleHashKey(2))
                 preferences.remove(lastNotifiedScheduleHashKey(1))
                 preferences.remove(lastNotifiedScheduleHashKey(2))
+                preferences.remove(lastRemoteSubjectHashesKey(1))
+                preferences.remove(lastRemoteSubjectHashesKey(2))
                 preferences.remove(lastScheduleSyncTimestampKey)
             }
         } catch (_: Throwable) {}
@@ -601,21 +605,11 @@ open class SettingsRepository @Inject constructor(
     open val syncModeFlow: Flow<SyncMode>
         get() = try {
             context?.dataStore?.data?.map { preferences ->
-                val raw = preferences[syncModeKey]
-                if (raw != null) {
-                    try {
-                        SyncMode.valueOf(raw)
-                    } catch (_: Exception) {
-                        SyncMode.ONLINE
-                    }
-                } else {
-                    // Smooth migration from legacy intervals:
-                    // If user had interval configured > 0, keep them in ONLINE mode.
-                    // Default to ONLINE mode for best out-of-the-box experience.
-                    val legacyMinutes = preferences[autoUpdateIntervalMinutesKey]
-                        ?: ((preferences[autoUpdateIntervalHoursKey] ?: DEFAULT_AUTO_UPDATE_INTERVAL_HOURS) * 60)
-                    if (legacyMinutes > 0) SyncMode.ONLINE else SyncMode.ONLINE
-                }
+                resolveLegacySyncMode(
+                    rawSyncMode = preferences[syncModeKey],
+                    explicitMinutes = preferences[autoUpdateIntervalMinutesKey],
+                    explicitHours = preferences[autoUpdateIntervalHoursKey]
+                )
             } ?: kotlinx.coroutines.flow.flowOf(SyncMode.ONLINE)
         } catch (_: Throwable) {
             kotlinx.coroutines.flow.flowOf(SyncMode.ONLINE)
@@ -629,19 +623,50 @@ open class SettingsRepository @Inject constructor(
         } catch (_: Throwable) {}
     }
 
-    open val notifyEnrolledOnlyFlow: Flow<Boolean>
+    open val subscribedFcmTopicFlow: Flow<String?>
         get() = try {
             context?.dataStore?.data?.map { preferences ->
-                preferences[notifyEnrolledOnlyKey] ?: true
-            } ?: kotlinx.coroutines.flow.flowOf(true)
+                preferences[subscribedFcmTopicKey]
+            } ?: kotlinx.coroutines.flow.flowOf(null)
         } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(true)
+            kotlinx.coroutines.flow.flowOf(null)
         }
 
-    open suspend fun setNotifyEnrolledOnly(enabled: Boolean) {
+    open suspend fun setSubscribedFcmTopic(topic: String?) {
         try {
             context?.dataStore?.edit { preferences ->
-                preferences[notifyEnrolledOnlyKey] = enabled
+                if (topic.isNullOrBlank()) {
+                    preferences.remove(subscribedFcmTopicKey)
+                } else {
+                    preferences[subscribedFcmTopicKey] = topic
+                }
+            }
+        } catch (_: Throwable) {}
+    }
+
+    open fun getLastRemoteSubjectHashesFlow(semester: Int): Flow<Map<String, String>> = try {
+        context?.dataStore?.data?.map { preferences ->
+            val raw = preferences[lastRemoteSubjectHashesKey(semester)]
+            if (raw.isNullOrBlank()) {
+                emptyMap()
+            } else {
+                runCatching { Json.decodeFromString<Map<String, String>>(raw) }.getOrDefault(emptyMap())
+            }
+        } ?: kotlinx.coroutines.flow.flowOf(emptyMap())
+    } catch (_: Throwable) {
+        kotlinx.coroutines.flow.flowOf(emptyMap())
+    }
+
+    open suspend fun setLastRemoteSubjectHashes(semester: Int, hashes: Map<String, String>) {
+        if (hashes.isEmpty()) return
+        try {
+            context?.dataStore?.edit { preferences ->
+                val key = lastRemoteSubjectHashesKey(semester)
+                val existing = preferences[key]?.let { raw ->
+                    runCatching { Json.decodeFromString<Map<String, String>>(raw) }.getOrDefault(emptyMap())
+                } ?: emptyMap()
+                val merged = existing + hashes
+                preferences[key] = Json.encodeToString(merged)
             }
         } catch (_: Throwable) {}
     }
@@ -655,6 +680,23 @@ open class SettingsRepository @Inject constructor(
 
         /** Hours between background schedule checks. 0 disables them, which is the default. */
         const val DEFAULT_AUTO_UPDATE_INTERVAL_HOURS = 0
+
+        internal fun resolveLegacySyncMode(
+            rawSyncMode: String?,
+            explicitMinutes: Int?,
+            explicitHours: Int?
+        ): SyncMode {
+            if (rawSyncMode != null) {
+                return try {
+                    SyncMode.valueOf(rawSyncMode)
+                } catch (_: Exception) {
+                    SyncMode.ONLINE
+                }
+            }
+            val explicitlyDisabled = (explicitMinutes != null && explicitMinutes <= 0) ||
+                (explicitMinutes == null && explicitHours != null && explicitHours <= 0)
+            return if (explicitlyDisabled) SyncMode.OFFLINE else SyncMode.ONLINE
+        }
     }
 }
 

@@ -236,4 +236,115 @@ class ScheduleDiffCheckerTest {
         assertNull(diff.newDetail)
         assertTrue(diff.oldDetail!!.contains("Miércoles"))
     }
+
+    @Test
+    fun `findDiffs ignores manually edited subject when upstream remote slots are unchanged`() {
+        // Student manually moved their FunProg1 slot to Friday 12:00-13:30 in Room
+        val manuallyMovedSlot = ClassSlot(
+            id = 10L,
+            subjectId = 1L,
+            dayOfWeek = DayOfWeek.FRIDAY,
+            startTime = LocalTime.of(12, 0),
+            endTime = LocalTime.of(13, 30),
+            classroom = "Custom Room",
+            professor = "Jesus.Serrano",
+            entryType = EntryType.THEORY
+        )
+        val existingSubjectWithSlots = SubjectWithSlots(sampleSubject, listOf(manuallyMovedSlot))
+
+        val initialRemoteSlots = listOf(
+            JsonFlatSlot(
+                grupo = "1A",
+                cuatrimestre = "1C",
+                dia = "Lunes",
+                horaInicio = "08:30",
+                horaFin = "10:00",
+                codigo = "FunProg1",
+                asignatura = "Fundamentos de Programación 1",
+                tipo = "teoría",
+                aula = "A1.1",
+                profesor = "Jesus.Serrano"
+            )
+        )
+
+        val previousRemoteHashes = ScheduleDiffChecker.computeRemoteSubjectHashes(
+            existingSubjects = listOf(existingSubjectWithSlots),
+            remoteSlots = initialRemoteSlots,
+            currentSemester = 1
+        )
+
+        // New remote JSON updates another subject, while FunProg1 remains identical upstream
+        val newRemoteSlots = initialRemoteSlots + JsonFlatSlot(
+            grupo = "1A",
+            cuatrimestre = "1C",
+            dia = "Martes",
+            horaInicio = "10:00",
+            horaFin = "11:30",
+            codigo = "Cálculo",
+            asignatura = "Cálculo",
+            tipo = "teoría",
+            aula = "B2.1"
+        )
+
+        val diffs = ScheduleDiffChecker.findDiffs(
+            existingSubjects = listOf(existingSubjectWithSlots),
+            remoteSlots = newRemoteSlots,
+            currentSemester = 1,
+            previousRemoteSubjectHashes = previousRemoteHashes
+        )
+
+        assertTrue(diffs.isEmpty())
+    }
+
+    @Test
+    fun `findDiffs alerts manually edited subject if upstream remote slots actually change`() {
+        val manuallyMovedSlot = ClassSlot(
+            id = 10L,
+            subjectId = 1L,
+            dayOfWeek = DayOfWeek.FRIDAY,
+            startTime = LocalTime.of(12, 0),
+            endTime = LocalTime.of(13, 30),
+            classroom = "Custom Room",
+            professor = "Jesus.Serrano",
+            entryType = EntryType.THEORY
+        )
+        val existingSubjectWithSlots = SubjectWithSlots(sampleSubject, listOf(manuallyMovedSlot))
+
+        val initialRemoteSlots = listOf(
+            JsonFlatSlot(
+                grupo = "1A",
+                cuatrimestre = "1C",
+                dia = "Lunes",
+                horaInicio = "08:30",
+                horaFin = "10:00",
+                codigo = "FunProg1",
+                asignatura = "Fundamentos de Programación 1",
+                tipo = "teoría",
+                aula = "A1.1",
+                profesor = "Jesus.Serrano"
+            )
+        )
+
+        val previousRemoteHashes = ScheduleDiffChecker.computeRemoteSubjectHashes(
+            existingSubjects = listOf(existingSubjectWithSlots),
+            remoteSlots = initialRemoteSlots,
+            currentSemester = 1
+        )
+
+        // Now the university actually changes FunProg1's official classroom
+        val updatedRemoteSlots = listOf(
+            initialRemoteSlots.first().copy(aula = "A2.4")
+        )
+
+        val diffs = ScheduleDiffChecker.findDiffs(
+            existingSubjects = listOf(existingSubjectWithSlots),
+            remoteSlots = updatedRemoteSlots,
+            currentSemester = 1,
+            previousRemoteSubjectHashes = previousRemoteHashes
+        )
+
+        assertEquals(1, diffs.size)
+        assertEquals("FunProg1", diffs.first().subjectCode)
+        assertTrue(diffs.first().newDetail!!.contains("A2.4"))
+    }
 }

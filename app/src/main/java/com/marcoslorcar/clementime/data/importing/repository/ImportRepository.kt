@@ -185,14 +185,25 @@ class ImportRepository @Inject constructor(
     suspend fun applySlotDiffs(
         diffs: List<SlotDiff>,
         remoteSlots: List<JsonFlatSlot> = emptyList(),
-        semester: Int
+        semester: Int,
+        selectedSubjectKeys: Set<String>? = null,
+        facultyId: String? = null
     ): Int = withContext(Dispatchers.IO) {
-        if (diffs.isEmpty()) return@withContext 0
+        val diffsToApply = if (selectedSubjectKeys != null) {
+            diffs.filter { diff ->
+                val groupKey = diff.subjectKey.ifBlank { diff.subjectCode.ifBlank { diff.subjectName } }
+                groupKey in selectedSubjectKeys || diff.subjectCode in selectedSubjectKeys
+            }
+        } else {
+            diffs
+        }
+        if (diffsToApply.isEmpty()) return@withContext 0
 
         var slotsToUse = remoteSlots
         if (slotsToUse.isEmpty()) {
             val baseUrl = SettingsRepository.DEFAULT_GITHUB_REPO_BASE_URL
-            val (effectiveBaseUrl, summaries) = fetchRemoteSchedules(baseUrl).getOrNull() ?: Pair(baseUrl, emptyList())
+            val (effectiveBaseUrl, summaries) = fetchRemoteSchedules(baseUrl, facultyId).getOrNull()
+                ?: Pair(baseUrl, emptyList())
             val targetSemesterId = "${semester}C"
             val summary = summaries.find {
                 it.id.equals(targetSemesterId, ignoreCase = true) ||
@@ -203,7 +214,12 @@ class ImportRepository @Inject constructor(
                 val fullUrl = normalizeGitHubUrl(
                     if (effectiveBaseUrl.endsWith("/")) "${effectiveBaseUrl}${summary.path}" else "${effectiveBaseUrl}/${summary.path}"
                 )
-                val resp = apiService.getRawScheduleSchema(fullUrl)
+                val cacheBustedUrl = if (!summary.hash.isNullOrBlank()) {
+                    if (fullUrl.contains("?")) "$fullUrl&v=${summary.hash}" else "$fullUrl?v=${summary.hash}"
+                } else {
+                    fullUrl
+                }
+                val resp = apiService.getRawScheduleSchema(cacheBustedUrl)
                 if (resp.isSuccessful) {
                     val jsonString = resp.body()?.string().orEmpty()
                     slotsToUse = runCatching { json.decodeFromString<List<JsonFlatSlot>>(jsonString) }.getOrDefault(emptyList())
@@ -214,7 +230,7 @@ class ImportRepository @Inject constructor(
         if (slotsToUse.isEmpty()) return@withContext 0
 
         var appliedCount = 0
-        val affectedKeys = diffs.map { it.subjectCode.ifBlank { it.subjectName }.trim() }.distinct()
+        val affectedKeys = diffsToApply.map { it.subjectCode.ifBlank { it.subjectName }.trim() }.distinct()
         val existingSubjects = dao.getAllSubjectsWithSlotsBySemester(semester).first()
 
         val targetSemesterCode = "${semester}C"
@@ -230,6 +246,7 @@ class ImportRepository @Inject constructor(
             } ?: continue
 
             val subject = existingSws.subject
+            val previouslyIgnored = existingSws.slots.filter { it.isIgnored }
 
             val matchedJsonSlots = semesterRemoteSlots.filter { rSlot ->
                 val asig = rSlot.asignatura.trim()
@@ -245,16 +262,27 @@ class ImportRepository @Inject constructor(
                 val isLab = rSlot.esLaboratorio ||
                         rSlot.tipo.contains("laboratorio", ignoreCase = true) ||
                         rSlot.tipo.contains("lab", ignoreCase = true)
+                val entryType = if (isLab) EntryType.LAB else EntryType.THEORY
+                val dayOfWeek = parser.parseDayOfWeek(rSlot.dia)
+                val startTime = parseLocalTime(rSlot.horaInicio)
+                val endTime = parseLocalTime(rSlot.horaFin)
+                val wasIgnored = previouslyIgnored.any { old ->
+                    old.dayOfWeek == dayOfWeek &&
+                            old.startTime == startTime &&
+                            old.endTime == endTime &&
+                            old.entryType == entryType
+                }
 
                 ClassSlot(
                     subjectId = subject.id,
-                    dayOfWeek = parser.parseDayOfWeek(rSlot.dia),
-                    startTime = parseLocalTime(rSlot.horaInicio),
-                    endTime = parseLocalTime(rSlot.horaFin),
+                    dayOfWeek = dayOfWeek,
+                    startTime = startTime,
+                    endTime = endTime,
                     classroom = rSlot.aula.trim().ifEmpty { null },
                     labGroupName = rSlot.grupoPracticas.trim().ifEmpty { null },
-                    entryType = if (isLab) EntryType.LAB else EntryType.THEORY,
-                    professor = rSlot.profesor.trim().ifEmpty { null }
+                    entryType = entryType,
+                    professor = rSlot.profesor.trim().ifEmpty { null },
+                    isIgnored = wasIgnored
                 )
             }
 
@@ -304,18 +332,26 @@ class ImportRepository @Inject constructor(
 
     suspend fun fetchRemoteSchedules(
         rawBaseUrl: String,
-        facultyId: String? = null
+        facultyId: String? = null,
+        cacheBust: Boolean = false
     ): Result<Pair<String, List<RemoteScheduleSummary>>> = withContext(Dispatchers.IO) {
         try {
             if (apiService == null) return@withContext Result.failure(Exception("Network service unavailable"))
             val baseUrl = normalizeGitHubUrl(rawBaseUrl)
+            val cacheParam = if (cacheBust) "t=${System.currentTimeMillis() / 10_000L}" else null
+            fun withCacheParam(url: String): String {
+                if (cacheParam == null) return url
+                return if (url.contains("?")) "$url&$cacheParam" else "$url?$cacheParam"
+            }
 
             // 1. Try fetching 3-level schedules_catalog.json first
-            val catalogUrl = when {
-                baseUrl.endsWith("schedules_catalog.json") -> baseUrl
-                baseUrl.endsWith("/") -> "${baseUrl}schedules_catalog.json"
-                else -> "$baseUrl/schedules_catalog.json"
-            }
+            val catalogUrl = withCacheParam(
+                when {
+                    baseUrl.endsWith("schedules_catalog.json") -> baseUrl
+                    baseUrl.endsWith("/") -> "${baseUrl}schedules_catalog.json"
+                    else -> "$baseUrl/schedules_catalog.json"
+                }
+            )
             val catalogResponse = runCatching { apiService.getScheduleCatalog(catalogUrl) }.getOrNull()
             if (catalogResponse != null && catalogResponse.isSuccessful && catalogResponse.body() != null) {
                 val catalog = catalogResponse.body()!!
@@ -331,18 +367,20 @@ class ImportRepository @Inject constructor(
             }
 
             // 2. Gracefully fall back to legacy flat schedules_index.json
-            val indexUrl = when {
-                baseUrl.endsWith("schedules_index.json") -> baseUrl
-                baseUrl.endsWith("/") -> "${baseUrl}schedules_index.json"
-                else -> "$baseUrl/schedules_index.json"
-            }
+            val indexUrl = withCacheParam(
+                when {
+                    baseUrl.endsWith("schedules_index.json") -> baseUrl
+                    baseUrl.endsWith("/") -> "${baseUrl}schedules_index.json"
+                    else -> "$baseUrl/schedules_index.json"
+                }
+            )
             val response = apiService.getScheduleIndex(indexUrl)
             if (response.isSuccessful && response.body() != null) {
                 Result.success(Pair(baseUrl, response.body()!!))
             } else {
                 val fallbackUrl = SettingsRepository.FALLBACK_GITHUB_REPO_BASE_URL
                 if (normalizeGitHubUrl(rawBaseUrl) != normalizeGitHubUrl(fallbackUrl)) {
-                    fetchRemoteSchedules(fallbackUrl, facultyId)
+                    fetchRemoteSchedules(fallbackUrl, facultyId, cacheBust)
                 } else {
                     Result.failure(Exception("Failed to fetch remote index: ${response.code()} ${response.message()}"))
                 }
@@ -350,7 +388,7 @@ class ImportRepository @Inject constructor(
         } catch (e: Exception) {
             val fallbackUrl = SettingsRepository.FALLBACK_GITHUB_REPO_BASE_URL
             if (normalizeGitHubUrl(rawBaseUrl) != normalizeGitHubUrl(fallbackUrl)) {
-                fetchRemoteSchedules(fallbackUrl, facultyId)
+                fetchRemoteSchedules(fallbackUrl, facultyId, cacheBust)
             } else {
                 Result.failure(e)
             }
@@ -401,6 +439,18 @@ class ImportRepository @Inject constructor(
 
     fun getCachedRemoteSchedules(context: Context): List<CacheMetadata> {
         return readCacheMetadata(context)
+    }
+
+    fun getCachedRemoteSlotsById(context: Context, fileId: String): List<JsonFlatSlot> {
+        val cacheFile = File(getCacheDir(context), "cache_${fileId}.json")
+        if (!cacheFile.exists()) return emptyList()
+        return runCatching {
+            json.decodeFromString<List<JsonFlatSlot>>(cacheFile.readText())
+        }.getOrDefault(emptyList())
+    }
+
+    fun getCachedRemoteSlotsForSemester(context: Context, semester: Int): List<JsonFlatSlot> {
+        return getCachedRemoteSlotsById(context, "${semester}C")
     }
 
     private fun readCacheMetadata(context: Context): List<CacheMetadata> {

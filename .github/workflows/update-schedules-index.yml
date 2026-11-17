@@ -9,6 +9,7 @@ on:
     paths:
       - 'schedules/dist/**'
       - '!schedules/dist/schedules_index.json'
+      - '!schedules/dist/schedules_catalog.json'
 
 jobs:
   update-index:
@@ -29,13 +30,23 @@ jobs:
         run: python3 schedules/script/generate_index.py
 
       - name: Commit and Push Changes
+        id: commit
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add schedules/dist/schedules_index.json
+          git add schedules/dist/schedules_index.json schedules/dist/schedules_catalog.json
           if git diff --cached --quiet; then
             echo "No changes to commit"
+            echo "committed=false" >> $GITHUB_OUTPUT
           else
             git commit -m "chore: update schedules index [skip ci]"
             git push
+            echo "committed=true" >> $GITHUB_OUTPUT
           fi
+
+      - name: Notify FCM Topic Subscribers
+        if: success() && steps.commit.outputs.committed == 'true'
+        env:
+          FCM_SERVICE_ACCOUNT_KEY: ${{ secrets.FCM_SERVICE_ACCOUNT_KEY }}
+        run: |
+          python3 -u schedules/script/notify_fcm.py
