@@ -43,6 +43,24 @@ jobs:
         run: |
           if [ -n "$GOOGLE_SERVICES_JSON" ]; then
             echo "$GOOGLE_SERVICES_JSON" > app/google-services.json
+            python3 - <<'PY'
+          import copy, json
+          path = "app/google-services.json"
+          with open(path, "r", encoding="utf-8") as f:
+              data = json.load(f)
+          clients = data.get("client", [])
+          has_debug = any(
+              c.get("client_info", {}).get("android_client_info", {}).get("package_name") == "com.marcoslorcar.clementime.debug"
+              for c in clients
+          )
+          if not has_debug and clients:
+              debug_client = copy.deepcopy(clients[0])
+              debug_client.setdefault("client_info", {}).setdefault("android_client_info", {})["package_name"] = "com.marcoslorcar.clementime.debug"
+              clients.append(debug_client)
+              data["client"] = clients
+              with open(path, "w", encoding="utf-8") as f:
+                  json.dump(data, f, indent=2)
+          PY
           fi
 
       - name: Set up JDK 21
