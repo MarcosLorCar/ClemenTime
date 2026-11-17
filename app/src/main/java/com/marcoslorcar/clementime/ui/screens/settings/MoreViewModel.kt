@@ -231,6 +231,7 @@ class MoreViewModel @Inject constructor(
     fun debugResetScheduleHashes() {
         viewModelScope.launch {
             settingsRepository.resetScheduleHashes()
+            importRepository.clearRemoteCache(context)
         }
     }
 
