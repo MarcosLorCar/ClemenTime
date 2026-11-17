@@ -17,6 +17,11 @@ on:
         required: false
         type: boolean
         default: false
+      test_fcm:
+        description: 'Send FCM topic push even if no schedule changes were committed'
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: sync-esi-schedules-${{ github.ref }}
@@ -74,7 +79,7 @@ jobs:
           fi
 
       - name: Notify FCM Topic Subscribers
-        if: success() && steps.commit.outputs.committed == 'true'
+        if: success() && (steps.commit.outputs.committed == 'true' || inputs.test_fcm == true)
         env:
           FCM_SERVICE_ACCOUNT_KEY: ${{ secrets.FCM_SERVICE_ACCOUNT_KEY }}
         run: |
