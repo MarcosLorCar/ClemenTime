@@ -43,6 +43,7 @@ jobs:
         run: |
           if [ -n "$GOOGLE_SERVICES_JSON" ]; then
             echo "$GOOGLE_SERVICES_JSON" > app/google-services.json
+            git update-index --assume-unchanged app/google-services.json
           fi
 
       - name: Set up JDK 21
