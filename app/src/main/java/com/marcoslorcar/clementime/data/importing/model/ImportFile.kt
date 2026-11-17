@@ -14,5 +14,6 @@ data class ImportFile(
     val description: String? = null,
     val isCached: Boolean = false,
     val isUpdateAvailable: Boolean = false,
-    val updatedTime: String? = null
+    val updatedTime: String? = null,
+    val remoteHash: String? = null
 )

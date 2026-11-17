@@ -81,11 +81,7 @@ class OnboardingViewModel @Inject constructor(
     fun setSyncMode(mode: SyncMode, context: android.content.Context) {
         viewModelScope.launch {
             settingsRepository.setSyncMode(mode)
-            if (mode == SyncMode.ONLINE) {
-                com.marcoslorcar.clementime.worker.ScheduleUpdateWorker.ensurePeriodicWorkScheduled(context, 360)
-            } else {
-                com.marcoslorcar.clementime.worker.ScheduleUpdateWorker.cancelPeriodicWork(context)
-            }
+            com.marcoslorcar.clementime.worker.FcmTopicManager.syncRegistration(context, settingsRepository)
         }
     }
 

@@ -39,3 +39,7 @@ schedules/script/.cache/
 *.apk
 *.aab
 /app/release/
+
+# Local Firebase debug config & service account keys (do not commit real keys)
+app/src/debug/google-services.json
+service-account*.json

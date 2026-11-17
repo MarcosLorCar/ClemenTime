@@ -15,6 +15,8 @@ import com.marcoslorcar.clementime.data.importing.parser.JsonScheduleParser
 import com.marcoslorcar.clementime.data.importing.repository.ImportRepository
 import com.marcoslorcar.clementime.ui.widget.ScheduleWidgetUtils
 import com.marcoslorcar.clementime.utils.IcsExporter
+import com.marcoslorcar.clementime.utils.ScheduleDiffChecker
+import com.marcoslorcar.clementime.worker.FcmTopicManager
 import com.marcoslorcar.clementime.worker.ScheduleUpdateWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -48,7 +50,6 @@ data class MoreUiState(
     val autoUpdateIntervalHours: Int = SettingsRepository.DEFAULT_AUTO_UPDATE_INTERVAL_HOURS,
     val lastScheduleSyncTimestamp: Long = 0L,
     val syncMode: com.marcoslorcar.clementime.data.SyncMode = com.marcoslorcar.clementime.data.SyncMode.ONLINE,
-    val notifyEnrolledOnly: Boolean = true,
     val isCheckingUpdates: Boolean = false,
     val pendingDiffs: List<SlotDiff> = emptyList(),
     val pendingRemoteSlots: List<JsonFlatSlot> = emptyList(),
@@ -76,6 +77,7 @@ class MoreViewModel @Inject constructor(
     private val _pendingDiffs = MutableStateFlow<List<SlotDiff>>(emptyList())
     private val _pendingRemoteSlots = MutableStateFlow<List<JsonFlatSlot>>(emptyList())
     private val _pendingRemoteHash = MutableStateFlow("")
+    private val _pendingSemester = MutableStateFlow(1)
     private val _showDiffBottomSheet = MutableStateFlow(false)
 
     val uiState: StateFlow<MoreUiState> = combine(
@@ -94,7 +96,6 @@ class MoreViewModel @Inject constructor(
         settingsRepository.autoUpdateIntervalMinutesFlow,
         settingsRepository.lastScheduleSyncTimestampFlow,
         settingsRepository.syncModeFlow,
-        settingsRepository.notifyEnrolledOnlyFlow,
         _isCheckingUpdates,
         _appLanguage,
         _pendingDiffs,
@@ -116,12 +117,11 @@ class MoreViewModel @Inject constructor(
             autoUpdateIntervalHours = args[12] as Int,
             lastScheduleSyncTimestamp = args[13] as Long,
             syncMode = args[14] as com.marcoslorcar.clementime.data.SyncMode,
-            notifyEnrolledOnly = args[15] as Boolean,
-            isCheckingUpdates = args[16] as Boolean,
-            appLanguage = args[17] as String,
-            pendingDiffs = args[18] as List<SlotDiff>,
-            pendingRemoteSlots = args[19] as List<JsonFlatSlot>,
-            showDiffBottomSheet = args[20] as Boolean
+            isCheckingUpdates = args[15] as Boolean,
+            appLanguage = args[16] as String,
+            pendingDiffs = args[17] as List<SlotDiff>,
+            pendingRemoteSlots = args[18] as List<JsonFlatSlot>,
+            showDiffBottomSheet = args[19] as Boolean
         )
     }.stateIn(
         scope = viewModelScope,
@@ -209,17 +209,7 @@ class MoreViewModel @Inject constructor(
     fun setSyncMode(mode: com.marcoslorcar.clementime.data.SyncMode) {
         viewModelScope.launch {
             settingsRepository.setSyncMode(mode)
-            if (mode == com.marcoslorcar.clementime.data.SyncMode.ONLINE) {
-                ScheduleUpdateWorker.ensurePeriodicWorkScheduled(context, 360)
-            } else {
-                ScheduleUpdateWorker.cancelPeriodicWork(context)
-            }
-        }
-    }
-
-    fun setNotifyEnrolledOnly(enabled: Boolean) {
-        viewModelScope.launch {
-            settingsRepository.setNotifyEnrolledOnly(enabled)
+            FcmTopicManager.syncRegistration(context, settingsRepository)
         }
     }
 
@@ -284,6 +274,7 @@ class MoreViewModel @Inject constructor(
                     _pendingDiffs.value = syncResult.diffs
                     _pendingRemoteSlots.value = syncResult.remoteSlots
                     _pendingRemoteHash.value = syncResult.remoteHash
+                    _pendingSemester.value = syncResult.semester ?: settingsRepository.currentSemesterFlow.first()
                     _showDiffBottomSheet.value = true
                 } else {
                     onNoUpdatesFound?.invoke()
@@ -299,13 +290,25 @@ class MoreViewModel @Inject constructor(
         _showDiffBottomSheet.value = false
     }
 
+    private suspend fun saveCurrentRemoteSubjectHashes(semester: Int, remoteSlots: List<JsonFlatSlot>) {
+        if (remoteSlots.isEmpty()) return
+        val activeSubjects = importRepository.getExistingActiveSubjects(semester)
+        val subjectHashes = ScheduleDiffChecker.computeRemoteSubjectHashes(
+            existingSubjects = activeSubjects,
+            remoteSlots = remoteSlots,
+            currentSemester = semester
+        )
+        settingsRepository.setLastRemoteSubjectHashes(semester, subjectHashes)
+    }
+
     fun ignorePendingSlotDiffs() {
         viewModelScope.launch {
             try {
+                val semester = _pendingSemester.value
                 if (_pendingRemoteHash.value.isNotBlank()) {
-                    val currentSemester = settingsRepository.currentSemesterFlow.first()
-                    settingsRepository.setLastKnownScheduleHash(currentSemester, _pendingRemoteHash.value)
+                    settingsRepository.setLastKnownScheduleHash(semester, _pendingRemoteHash.value)
                 }
+                saveCurrentRemoteSubjectHashes(semester, _pendingRemoteSlots.value)
             } catch (_: Exception) {}
             _showDiffBottomSheet.value = false
             _pendingDiffs.value = emptyList()
@@ -314,17 +317,26 @@ class MoreViewModel @Inject constructor(
         }
     }
 
-    fun applyPendingSlotDiffs(onSuccess: (() -> Unit)? = null) {
+    fun applyPendingSlotDiffs(
+        selectedSubjectKeys: Set<String>? = null,
+        onSuccess: (() -> Unit)? = null
+    ) {
         viewModelScope.launch {
             try {
-                val currentSemester = settingsRepository.currentSemesterFlow.first()
+                val semester = _pendingSemester.value
+                val facultyId = settingsRepository.selectedFacultyIdFlow.first()
                 val applied = importRepository.applySlotDiffs(
-                    _pendingDiffs.value, _pendingRemoteSlots.value, currentSemester
+                    diffs = _pendingDiffs.value,
+                    remoteSlots = _pendingRemoteSlots.value,
+                    semester = semester,
+                    selectedSubjectKeys = selectedSubjectKeys,
+                    facultyId = facultyId
                 )
                 // Only mark the version accepted if something was actually written; otherwise
                 // the diff would never resurface even though nothing changed.
                 if (applied > 0 && _pendingRemoteHash.value.isNotBlank()) {
-                    settingsRepository.setLastKnownScheduleHash(currentSemester, _pendingRemoteHash.value)
+                    settingsRepository.setLastKnownScheduleHash(semester, _pendingRemoteHash.value)
+                    saveCurrentRemoteSubjectHashes(semester, _pendingRemoteSlots.value)
                 }
                 ScheduleWidgetUtils.updateWidget(context)
                 _showDiffBottomSheet.value = false

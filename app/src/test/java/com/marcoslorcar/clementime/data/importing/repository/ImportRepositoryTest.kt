@@ -128,6 +128,101 @@ class ImportRepositoryTest {
         assertEquals("A1.1", slot.classroom)
         assertEquals("Prof. Serrano", slot.professor)
     }
+
+    @Test
+    fun applySlotDiffs_respectsSelectedSubjectKeysAndPreservesIsIgnored() = runTest {
+        val ignoredSlot = ClassSlot(
+            id = 100L,
+            subjectId = 10L,
+            dayOfWeek = java.time.DayOfWeek.TUESDAY,
+            startTime = java.time.LocalTime.of(10, 0),
+            endTime = java.time.LocalTime.of(11, 30),
+            entryType = com.marcoslorcar.clementime.data.EntryType.THEORY,
+            isIgnored = true
+        )
+        val subj1 = Subject(
+            id = 10L,
+            code = "FunProg1",
+            name = "Fundamentos de Programación 1",
+            color = 0xFF4CAF50.toInt(),
+            isActive = true,
+            semester = 1
+        )
+        val subj2 = Subject(
+            id = 20L,
+            code = "Cálculo",
+            name = "Cálculo",
+            color = 0xFF2196F3.toInt(),
+            isActive = true,
+            semester = 1
+        )
+        val fakeDao = FakeScheduleDaoForRepositoryTest(
+            initialSubjects = listOf(
+                SubjectWithSlots(subj1, listOf(ignoredSlot)),
+                SubjectWithSlots(subj2, emptyList())
+            )
+        )
+        val repository = ImportRepository(dao = fakeDao)
+
+        val diffs = listOf(
+            com.marcoslorcar.clementime.utils.SlotDiff(
+                subjectCode = "FunProg1",
+                subjectName = "Fundamentos de Programación 1",
+                changeType = com.marcoslorcar.clementime.utils.DiffType.MODIFIED,
+                oldDetail = "Lunes 08:30",
+                newDetail = "Martes 10:00",
+                subjectKey = "FUNPROG1__"
+            ),
+            com.marcoslorcar.clementime.utils.SlotDiff(
+                subjectCode = "Cálculo",
+                subjectName = "Cálculo",
+                changeType = com.marcoslorcar.clementime.utils.DiffType.MODIFIED,
+                oldDetail = "Jueves 08:30",
+                newDetail = "Viernes 10:00",
+                subjectKey = "CALCULO__"
+            )
+        )
+
+        val remoteSlots = listOf(
+            com.marcoslorcar.clementime.data.importing.model.JsonFlatSlot(
+                grupo = "1A",
+                cuatrimestre = "1C",
+                dia = "Martes",
+                horaInicio = "10:00",
+                horaFin = "11:30",
+                codigo = "FunProg1",
+                asignatura = "Fundamentos de Programación 1",
+                tipo = "teoría",
+                aula = "A1.1"
+            ),
+            com.marcoslorcar.clementime.data.importing.model.JsonFlatSlot(
+                grupo = "1A",
+                cuatrimestre = "1C",
+                dia = "Viernes",
+                horaInicio = "10:00",
+                horaFin = "11:30",
+                codigo = "Cálculo",
+                asignatura = "Cálculo",
+                tipo = "teoría",
+                aula = "B2.2"
+            )
+        )
+
+        // Only apply FunProg1; leave Cálculo untouched
+        val applied = repository.applySlotDiffs(
+            diffs = diffs,
+            remoteSlots = remoteSlots,
+            semester = 1,
+            selectedSubjectKeys = setOf("FUNPROG1__")
+        )
+
+        assertEquals(1, applied)
+        assertEquals(1, fakeDao.upsertedSubjects.size)
+        val (upserted, slots) = fakeDao.upsertedSubjects.single()
+        assertEquals("FunProg1", upserted.code)
+        assertEquals(1, slots.size)
+        assertEquals(true, slots.single().isIgnored)
+    }
 }
 
 class FakeScheduleDaoForRepositoryTest(

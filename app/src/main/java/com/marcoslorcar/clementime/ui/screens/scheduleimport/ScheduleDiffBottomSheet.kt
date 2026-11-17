@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -27,6 +28,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -52,7 +54,7 @@ import java.time.LocalTime
 @Composable
 fun ScheduleDiffBottomSheet(
     diffs: List<SlotDiff>,
-    onApply: () -> Unit,
+    onApply: (Set<String>) -> Unit,
     onIgnore: () -> Unit,
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
@@ -76,23 +78,34 @@ fun ScheduleDiffBottomSheet(
     }
 }
 
+private fun SlotDiff.groupKey(): String = subjectKey.ifBlank { subjectCode.ifBlank { subjectName } }
+
 @Composable
 fun ScheduleDiffSheetContent(
     diffs: List<SlotDiff>,
-    onApply: () -> Unit,
+    onApply: (Set<String>) -> Unit,
     onIgnore: () -> Unit,
     modifier: Modifier = Modifier,
     beforeSlots: List<Pair<Subject, ClassSlot>> = emptyList(),
     afterSlots: List<Pair<Subject, ClassSlot>> = emptyList()
 ) {
+    val groupedBySubject = remember(diffs) { diffs.groupBy { it.groupKey() } }
+    val hasMultipleSubjects = groupedBySubject.size > 1
+    var selectedSubjectKeys by remember(diffs) { mutableStateOf(groupedBySubject.keys) }
+
+    val selectedDiffs = remember(diffs, selectedSubjectKeys) {
+        diffs.filter { it.groupKey() in selectedSubjectKeys }
+    }
+
     // Compute synthetic before/after/changed slots if not explicitly passed
-    val parsedData = remember(diffs, beforeSlots, afterSlots) {
+    val parsedData = remember(diffs, selectedDiffs, beforeSlots, afterSlots) {
         if (beforeSlots.isNotEmpty() || afterSlots.isNotEmpty()) {
             Triple(beforeSlots, afterSlots, afterSlots.filter { pair ->
-                diffs.any { diff -> diff.subjectCode == pair.first.code || diff.subjectName == pair.first.name }
+                selectedDiffs.any { diff -> diff.subjectCode == pair.first.code || diff.subjectName == pair.first.name }
             }.toSet())
         } else {
-            buildSlotsFromDiffs(diffs)
+            val previewDiffs = if (selectedDiffs.isNotEmpty()) selectedDiffs else diffs
+            buildSlotsFromDiffs(previewDiffs)
         }
     }
 
@@ -183,8 +196,30 @@ fun ScheduleDiffSheetContent(
                 .fillMaxWidth()
                 .weight(1f, fill = false)
         ) {
-            items(diffs) { diff ->
-                SlotDiffFooterRow(diff = diff)
+            if (hasMultipleSubjects) {
+                groupedBySubject.forEach { (key, subjectDiffs) ->
+                    item(key = key) {
+                        val isSelected = key in selectedSubjectKeys
+                        val firstDiff = subjectDiffs.first()
+                        SubjectDiffGroupCard(
+                            subjectCode = firstDiff.subjectCode,
+                            subjectName = firstDiff.subjectName,
+                            diffs = subjectDiffs,
+                            isSelected = isSelected,
+                            onToggle = { checked ->
+                                selectedSubjectKeys = if (checked) {
+                                    selectedSubjectKeys + key
+                                } else {
+                                    selectedSubjectKeys - key
+                                }
+                            }
+                        )
+                    }
+                }
+            } else {
+                items(diffs) { diff ->
+                    SlotDiffFooterRow(diff = diff)
+                }
             }
         }
 
@@ -204,7 +239,8 @@ fun ScheduleDiffSheetContent(
             }
 
             Button(
-                onClick = onApply,
+                onClick = { onApply(selectedSubjectKeys) },
+                enabled = selectedSubjectKeys.isNotEmpty(),
                 modifier = Modifier.weight(1f)
             ) {
                 Text(text = stringResource(R.string.apply_updates))
@@ -212,6 +248,97 @@ fun ScheduleDiffSheetContent(
         }
 
         Spacer(modifier = Modifier.height(12.dp))
+    }
+}
+
+@Composable
+private fun SubjectDiffGroupCard(
+    subjectCode: String,
+    subjectName: String,
+    diffs: List<SlotDiff>,
+    isSelected: Boolean,
+    onToggle: (Boolean) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val subjectTitle = if (subjectCode.isNotBlank() && subjectCode != subjectName) {
+        "$subjectCode - $subjectName"
+    } else {
+        subjectName
+    }
+    Surface(
+        onClick = { onToggle(!isSelected) },
+        shape = RoundedCornerShape(10.dp),
+        color = if (isSelected) {
+            MaterialTheme.colorScheme.surfaceContainerLow
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha = 0.6f)
+        },
+        tonalElevation = if (isSelected) 1.dp else 0.dp,
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Checkbox(
+                    checked = isSelected,
+                    onCheckedChange = onToggle
+                )
+                Text(
+                    text = subjectTitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (isSelected) {
+                        MaterialTheme.colorScheme.onSurface
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            diffs.forEach { diff ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        diff.oldDetail?.let { old ->
+                            Text(
+                                text = stringResource(R.string.diff_previous_detail, old),
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    textDecoration = TextDecoration.LineThrough
+                                ),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        diff.newDetail?.let { new ->
+                            Text(
+                                text = stringResource(R.string.diff_new_detail, new),
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium,
+                                color = if (isSelected) {
+                                    MaterialTheme.colorScheme.onSurface
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                }
+                            )
+                        }
+                    }
+                    DiffTypeBadge(changeType = diff.changeType)
+                }
+            }
+        }
     }
 }
 
@@ -435,7 +562,7 @@ fun ScheduleDiffSheetContentPreview() {
         Surface {
             ScheduleDiffSheetContent(
                 diffs = sampleDiffs,
-                onApply = {},
+                onApply = { _ -> },
                 onIgnore = {}
             )
         }
@@ -453,7 +580,7 @@ fun ScheduleDiffSheetContentDarkPreview() {
         Surface {
             ScheduleDiffSheetContent(
                 diffs = sampleDiffs,
-                onApply = {},
+                onApply = { _ -> },
                 onIgnore = {}
             )
         }

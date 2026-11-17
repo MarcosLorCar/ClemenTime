@@ -64,11 +64,10 @@ import com.marcoslorcar.clementime.ui.screens.settings.MoreScreen
 import com.marcoslorcar.clementime.ui.screens.subject.AddEditSubjectScreen
 import com.marcoslorcar.clementime.ui.screens.subject.SubjectsScreen
 import com.marcoslorcar.clementime.ui.theme.ClemenTimeTheme
-import com.marcoslorcar.clementime.worker.ScheduleUpdateWorker
+import com.marcoslorcar.clementime.worker.FcmTopicManager
 import com.marcoslorcar.clementime.worker.ScheduleUpdateWorker.Companion.EXTRA_SHOW_SCHEDULE_DIFF
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.reflect.KClass
@@ -84,18 +83,9 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Re-arm background sync based on sync mode.
+        // Configure FCM push subscription (with periodic WorkManager fallback on non-GMS devices).
         lifecycleScope.launch {
-            val syncMode = settingsRepository.syncModeFlow.first()
-            if (syncMode == com.marcoslorcar.clementime.data.SyncMode.ONLINE) {
-                val intervalMinutes = settingsRepository.autoUpdateIntervalMinutesFlow.first()
-                ScheduleUpdateWorker.ensurePeriodicWorkScheduled(
-                    this@MainActivity,
-                    if (intervalMinutes > 0) intervalMinutes else 360
-                )
-            } else {
-                ScheduleUpdateWorker.cancelPeriodicWork(this@MainActivity)
-            }
+            FcmTopicManager.syncRegistration(this@MainActivity, settingsRepository)
         }
 
         // Read once: the extra lives on the Activity's intent for its whole lifetime, so

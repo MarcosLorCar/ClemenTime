@@ -20,6 +20,7 @@ import com.marcoslorcar.clementime.ui.screens.scheduleimport.model.ConflictStatu
 import com.marcoslorcar.clementime.ui.screens.scheduleimport.model.TheoryOverlap
 import com.marcoslorcar.clementime.ui.widget.ScheduleWidgetUtils
 import com.marcoslorcar.clementime.utils.ConflictSolver
+import com.marcoslorcar.clementime.utils.ScheduleDiffChecker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -110,7 +111,12 @@ class ImportViewModel @Inject constructor(
                 val cacheMetadata = repository.getCachedRemoteSchedules(context)
                 val cacheDir = repository.getCacheDir(context)
 
-                val remoteResult = repository.fetchRemoteSchedules(baseUrl)
+                val facultyId = try {
+                    settingsRepository.selectedFacultyIdFlow.first()
+                } catch (_: Exception) {
+                    null
+                }
+                val remoteResult = repository.fetchRemoteSchedules(baseUrl, facultyId)
                 val remoteFiles = remoteResult.fold(
                     onSuccess = { (effectiveBaseUrl, list) ->
                         val effectiveFolderUrl = when {
@@ -140,7 +146,8 @@ class ImportViewModel @Inject constructor(
                                 description = summary.description,
                                 isCached = isCached,
                                 isUpdateAvailable = isUpdateAvailable,
-                                updatedTime = summary.updatedTime
+                                updatedTime = summary.updatedTime,
+                                remoteHash = summary.hash ?: cachedEntry?.hash
                             )
                         }
                     },
@@ -156,7 +163,8 @@ class ImportViewModel @Inject constructor(
                                 remotePath = entry.remotePath,
                                 description = entry.description,
                                 isCached = true,
-                                updatedTime = entry.updatedTime
+                                updatedTime = entry.updatedTime,
+                                remoteHash = entry.hash
                             )
                         }
                     }
@@ -457,6 +465,43 @@ class ImportViewModel @Inject constructor(
                         val hasManuallyChanged = settingsRepository.hasManuallyChangedSemesterFlow.first()
                         if (!hasManuallyChanged) {
                             settingsRepository.setWasSemesterAutoChanged(true)
+                        }
+                    }
+
+                    if (currentState.selectedFile.sourceType == ImportSourceType.REMOTE) {
+                        val targetSemesters = (listOfNotNull(currentState.schema.semester) +
+                            importedSubjects.mapNotNull { it.subject.semester })
+                            .distinct()
+                            .ifEmpty { listOf(settingsRepository.currentSemesterFlow.first()) }
+
+                        val remoteHash = currentState.selectedFile.remoteHash
+                            ?: context?.let { ctx ->
+                                repository.getCachedRemoteSchedules(ctx)
+                                    .find { it.id == currentState.selectedFile.id }
+                                    ?.hash
+                            }
+
+                        for (sem in targetSemesters) {
+                            if (!remoteHash.isNullOrBlank()) {
+                                settingsRepository.setLastKnownScheduleHash(sem, remoteHash)
+                            }
+                            if (context != null) {
+                                val cachedSlots = repository.getCachedRemoteSlotsById(
+                                    context,
+                                    currentState.selectedFile.id
+                                ).ifEmpty {
+                                    repository.getCachedRemoteSlotsForSemester(context, sem)
+                                }
+                                if (cachedSlots.isNotEmpty()) {
+                                    val activeInSem = repository.getExistingActiveSubjects(sem)
+                                    val subjectHashes = ScheduleDiffChecker.computeRemoteSubjectHashes(
+                                        existingSubjects = activeInSem,
+                                        remoteSlots = cachedSlots,
+                                        currentSemester = sem
+                                    )
+                                    settingsRepository.setLastRemoteSubjectHashes(sem, subjectHashes)
+                                }
+                            }
                         }
                     }
                     

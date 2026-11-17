@@ -15,6 +15,7 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
@@ -23,6 +24,7 @@ import com.marcoslorcar.clementime.R
 import com.marcoslorcar.clementime.data.SettingsRepository
 import com.marcoslorcar.clementime.data.api.GitHubScheduleApiService
 import com.marcoslorcar.clementime.data.importing.model.JsonFlatSlot
+import com.marcoslorcar.clementime.data.importing.model.RemoteScheduleSummary
 import com.marcoslorcar.clementime.data.importing.repository.ImportRepository
 import com.marcoslorcar.clementime.utils.ScheduleDiffChecker
 import com.marcoslorcar.clementime.utils.SlotDiff
@@ -92,21 +94,24 @@ class ScheduleUpdateWorker @AssistedInject constructor(
         const val UNIQUE_WORK_NAME = "ScheduleUpdateWork"
         const val ONE_TIME_WORK_NAME = "ScheduleUpdateWork_OneTime"
 
-        fun enqueueOneTimeWork(context: Context) {
+        fun enqueueOneTimeWork(context: Context, expedited: Boolean = false) {
             val workManager = WorkManager.getInstance(context)
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()
 
-            val request = OneTimeWorkRequestBuilder<ScheduleUpdateWorker>()
+            val requestBuilder = OneTimeWorkRequestBuilder<ScheduleUpdateWorker>()
                 .setConstraints(constraints)
                 .addTag(WORK_TAG)
-                .build()
+
+            if (expedited) {
+                requestBuilder.setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+            }
 
             workManager.enqueueUniqueWork(
                 ONE_TIME_WORK_NAME,
                 ExistingWorkPolicy.REPLACE,
-                request
+                requestBuilder.build()
             )
         }
 
@@ -158,7 +163,7 @@ class ScheduleUpdateWorker @AssistedInject constructor(
         }
 
         suspend fun performSync(
-            @Suppress("UNUSED_PARAMETER") context: Context,
+            context: Context,
             settingsRepository: SettingsRepository,
             importRepository: ImportRepository,
             apiService: GitHubScheduleApiService?,
@@ -173,48 +178,88 @@ class ScheduleUpdateWorker @AssistedInject constructor(
             }
 
             val currentSemester = settingsRepository.currentSemesterFlow.first()
+            val facultyId = settingsRepository.selectedFacultyIdFlow.first()
             val baseUrl = settingsRepository.githubRepoBaseUrlFlow.first()
 
-            val remoteSummariesResult = importRepository.fetchRemoteSchedules(baseUrl)
+            val remoteSummariesResult = importRepository.fetchRemoteSchedules(
+                rawBaseUrl = baseUrl,
+                facultyId = facultyId,
+                cacheBust = true
+            )
             if (remoteSummariesResult.isFailure) {
                 return SyncResult()
             }
 
             val (effectiveBaseUrl, summaries) = remoteSummariesResult.getOrNull() ?: return SyncResult()
-            val targetSemesterId = "${currentSemester}C"
+            val semestersToCheck = listOf(currentSemester, if (currentSemester == 1) 2 else 1)
+
+            for (semester in semestersToCheck) {
+                val result = performSyncForSemester(
+                    context = context,
+                    settingsRepository = settingsRepository,
+                    importRepository = importRepository,
+                    apiService = apiService,
+                    effectiveBaseUrl = effectiveBaseUrl,
+                    summaries = summaries,
+                    semester = semester
+                )
+                if (result != null && result.diffs.isNotEmpty()) {
+                    settingsRepository.setLastScheduleSyncTimestamp(System.currentTimeMillis())
+                    return result
+                }
+            }
+
+            settingsRepository.setLastScheduleSyncTimestamp(System.currentTimeMillis())
+            return SyncResult(semester = currentSemester)
+        }
+
+        private suspend fun performSyncForSemester(
+            context: Context,
+            settingsRepository: SettingsRepository,
+            importRepository: ImportRepository,
+            apiService: GitHubScheduleApiService?,
+            effectiveBaseUrl: String,
+            summaries: List<RemoteScheduleSummary>,
+            semester: Int
+        ): SyncResult? {
+            val targetSemesterId = "${semester}C"
             // No fallback to summaries.first(): diffing against another semester's schedule
             // would mark every subject as changed.
             val summary = summaries.find {
                 it.id.equals(targetSemesterId, ignoreCase = true) ||
                         it.path.contains(targetSemesterId, ignoreCase = true)
-            } ?: return SyncResult()
+            } ?: return null
 
+            val existingActiveSubjects = importRepository.getExistingActiveSubjects(semester)
             val remoteHash = summary.hash ?: ""
-            val lastKnownHash = settingsRepository.getLastKnownScheduleHashFlow(currentSemester).first()
+            val lastKnownHash = settingsRepository.getLastKnownScheduleHashFlow(semester).first()
 
-            if (lastKnownHash.isBlank()) {
-                if (remoteHash.isNotBlank()) {
-                    settingsRepository.setLastKnownScheduleHash(currentSemester, remoteHash)
+            if (existingActiveSubjects.isEmpty()) {
+                if (remoteHash.isNotBlank() && lastKnownHash != remoteHash) {
+                    settingsRepository.setLastKnownScheduleHash(semester, remoteHash)
                 }
-                settingsRepository.setLastScheduleSyncTimestamp(System.currentTimeMillis())
-                return SyncResult(semester = currentSemester)
+                return null
             }
 
-            if (lastKnownHash == remoteHash) {
-                settingsRepository.setLastScheduleSyncTimestamp(System.currentTimeMillis())
-                return SyncResult(semester = currentSemester)
+            if (lastKnownHash.isNotBlank() && lastKnownHash == remoteHash) {
+                return null
             }
 
-            if (apiService == null) return SyncResult()
+            if (apiService == null) return null
 
             val fullUrl = importRepository.normalizeGitHubUrl(
                 if (effectiveBaseUrl.endsWith("/")) "${effectiveBaseUrl}${summary.path}" else "${effectiveBaseUrl}/${summary.path}"
             )
+            val cacheBustedUrl = if (remoteHash.isNotBlank()) {
+                if (fullUrl.contains("?")) "$fullUrl&v=$remoteHash" else "$fullUrl?v=$remoteHash"
+            } else {
+                fullUrl
+            }
 
-            val rawResponse = apiService.getRawScheduleSchema(fullUrl)
-            if (!rawResponse.isSuccessful) return SyncResult()
+            val rawResponse = apiService.getRawScheduleSchema(cacheBustedUrl)
+            if (!rawResponse.isSuccessful) return null
 
-            val jsonString = rawResponse.body()?.string() ?: return SyncResult()
+            val jsonString = rawResponse.body()?.string() ?: return null
 
             val jsonParser = Json { ignoreUnknownKeys = true; coerceInputValues = true }
             val remoteSlots = try {
@@ -223,24 +268,45 @@ class ScheduleUpdateWorker @AssistedInject constructor(
                 emptyList()
             }
 
-            if (remoteSlots.isEmpty()) return SyncResult(semester = currentSemester)
+            if (remoteSlots.isEmpty()) return null
 
-            val existingActiveSubjects = importRepository.getExistingActiveSubjects(currentSemester)
-            val diffs = ScheduleDiffChecker.findDiffs(existingActiveSubjects, remoteSlots, currentSemester)
+            var previousSubjectHashes = settingsRepository.getLastRemoteSubjectHashesFlow(semester).first()
+            if (previousSubjectHashes.isEmpty()) {
+                val cachedSlots = importRepository.getCachedRemoteSlotsForSemester(context, semester)
+                if (cachedSlots.isNotEmpty()) {
+                    previousSubjectHashes = ScheduleDiffChecker.computeRemoteSubjectHashes(
+                        existingSubjects = existingActiveSubjects,
+                        remoteSlots = cachedSlots,
+                        currentSemester = semester
+                    )
+                    settingsRepository.setLastRemoteSubjectHashes(semester, previousSubjectHashes)
+                }
+            }
 
-            settingsRepository.setLastScheduleSyncTimestamp(System.currentTimeMillis())
+            val currentSubjectHashes = ScheduleDiffChecker.computeRemoteSubjectHashes(
+                existingSubjects = existingActiveSubjects,
+                remoteSlots = remoteSlots,
+                currentSemester = semester
+            )
+            val diffs = ScheduleDiffChecker.findDiffs(
+                existingSubjects = existingActiveSubjects,
+                remoteSlots = remoteSlots,
+                currentSemester = semester,
+                previousRemoteSubjectHashes = previousSubjectHashes
+            )
 
-            // The published schedule changed, but not for any subject this user follows.
-            // Accept the version now, or every future run re-downloads and re-diffs it.
+            // The published schedule changed, but not for any subject this user follows
+            // (or only for subjects whose upstream schedule didn't change since manual edits).
             if (diffs.isEmpty() && remoteHash.isNotBlank()) {
-                settingsRepository.setLastKnownScheduleHash(currentSemester, remoteHash)
+                settingsRepository.setLastKnownScheduleHash(semester, remoteHash)
+                settingsRepository.setLastRemoteSubjectHashes(semester, currentSubjectHashes)
             }
 
             return SyncResult(
                 diffs = diffs,
                 remoteSlots = remoteSlots,
                 remoteHash = remoteHash,
-                semester = currentSemester
+                semester = semester
             )
         }
 

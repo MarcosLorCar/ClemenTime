@@ -2,8 +2,10 @@ package com.marcoslorcar.clementime.utils
 
 import com.marcoslorcar.clementime.data.ClassSlot
 import com.marcoslorcar.clementime.data.EntryType
+import com.marcoslorcar.clementime.data.Subject
 import com.marcoslorcar.clementime.data.SubjectWithSlots
 import com.marcoslorcar.clementime.data.importing.model.JsonFlatSlot
+import java.security.MessageDigest
 import java.time.DayOfWeek
 import java.time.LocalTime
 
@@ -14,7 +16,8 @@ data class SlotDiff(
     val subjectName: String,
     val changeType: DiffType,
     val oldDetail: String? = null,
-    val newDetail: String? = null
+    val newDetail: String? = null,
+    val subjectKey: String = ""
 )
 
 object ScheduleDiffChecker {
@@ -29,64 +32,55 @@ object ScheduleDiffChecker {
         val labGroupName: String
     )
 
-    fun findDiffs(
+    fun subjectKey(subjectCode: String, subjectName: String, courseGroup: String?): String {
+        val idPart = normalizeText(subjectCode.ifBlank { subjectName })
+        val groupPart = normalizeGroup(courseGroup)
+        return "${idPart}__${groupPart}"
+    }
+
+    fun computeRemoteSubjectHashes(
         existingSubjects: List<SubjectWithSlots>,
         remoteSlots: List<JsonFlatSlot>,
         currentSemester: Int
+    ): Map<String, String> {
+        val semesterRemoteSlots = filterSemesterSlots(remoteSlots, currentSemester)
+        val activeSubjects = existingSubjects.filter { it.subject.isActive }
+        val hashes = mutableMapOf<String, String>()
+
+        for (subjectWithSlots in activeSubjects) {
+            val subject = subjectWithSlots.subject
+            val key = subjectKey(subject.code, subject.name, subject.courseGroup)
+            val parsedRemoteSlots = matchAndParseRemoteSlots(subject, semesterRemoteSlots)
+            hashes[key] = hashParsedSlots(parsedRemoteSlots)
+        }
+        return hashes
+    }
+
+    fun findDiffs(
+        existingSubjects: List<SubjectWithSlots>,
+        remoteSlots: List<JsonFlatSlot>,
+        currentSemester: Int,
+        previousRemoteSubjectHashes: Map<String, String> = emptyMap()
     ): List<SlotDiff> {
         val diffs = mutableListOf<SlotDiff>()
-        val targetSemesterCode = "${currentSemester}C"
-
-        val semesterRemoteSlots = remoteSlots.filter { slot ->
-            val slotCuat = slot.cuatrimestre.trim()
-            slotCuat.equals(targetSemesterCode, ignoreCase = true) || slotCuat == "$currentSemester"
-        }
-
+        val semesterRemoteSlots = filterSemesterSlots(remoteSlots, currentSemester)
         val activeSubjects = existingSubjects.filter { it.subject.isActive }
+        val currentRemoteHashes = computeRemoteSubjectHashes(activeSubjects, remoteSlots, currentSemester)
 
         for (subjectWithSlots in activeSubjects) {
             val subject = subjectWithSlots.subject
             val existingSlots = subjectWithSlots.slots
+            val key = subjectKey(subject.code, subject.name, subject.courseGroup)
 
-            val matchedJsonSlots = semesterRemoteSlots.filter { rSlot ->
-                val asigNorm = normalizeText(rSlot.asignatura)
-                val codeNorm = normalizeText(subject.code)
-                val nameNorm = normalizeText(subject.name)
-
-                val codeMatch = codeNorm.isNotBlank() && asigNorm == codeNorm
-                val nameMatch = nameNorm.isNotBlank() && asigNorm == nameNorm
-
-                val subjectGroupNorm = normalizeGroup(subject.courseGroup)
-                val rSlotGroupNorm = normalizeGroup(rSlot.grupo)
-                val groupMatch = subject.courseGroup.isNullOrBlank() ||
-                        rSlot.grupo.isBlank() ||
-                        subjectGroupNorm == rSlotGroupNorm ||
-                        (subjectGroupNorm.isNotBlank() && rSlotGroupNorm.contains(subjectGroupNorm)) ||
-                        (rSlotGroupNorm.isNotBlank() && subjectGroupNorm.contains(rSlotGroupNorm))
-
-                (codeMatch || nameMatch) && groupMatch
+            // If this subject's upstream remote slots have not changed since the last known
+            // remote snapshot, any discrepancy in Room is a deliberate manual edit by the user.
+            val previousRemoteHash = previousRemoteSubjectHashes[key]
+            val currentRemoteHash = currentRemoteHashes[key]
+            if (!previousRemoteHash.isNullOrBlank() && previousRemoteHash == currentRemoteHash) {
+                continue
             }
 
-            val parsedRemoteSlots = matchedJsonSlots.map { rSlot ->
-                val isLab = rSlot.esLaboratorio ||
-                        rSlot.tipo.contains("laboratorio", ignoreCase = true) ||
-                        rSlot.tipo.contains("lab", ignoreCase = true)
-                ParsedRemoteSlot(
-                    dayOfWeek = parseDayOfWeek(rSlot.dia),
-                    startTime = parseLocalTime(rSlot.horaInicio),
-                    endTime = parseLocalTime(rSlot.horaFin),
-                    classroom = rSlot.aula.trim(),
-                    professor = rSlot.profesor.trim(),
-                    isLab = isLab,
-                    labGroupName = rSlot.grupoPracticas.trim()
-                )
-            }.filter { rSlot ->
-                if (rSlot.isLab && !subject.selectedLabGroup.isNullOrBlank() && rSlot.labGroupName.isNotBlank()) {
-                    rSlot.labGroupName.equals(subject.selectedLabGroup, ignoreCase = true)
-                } else {
-                    true
-                }
-            }
+            val parsedRemoteSlots = matchAndParseRemoteSlots(subject, semesterRemoteSlots)
 
             val remainingLocal = existingSlots.toMutableList()
             val remainingRemote = parsedRemoteSlots.toMutableList()
@@ -161,7 +155,8 @@ object ScheduleDiffChecker {
                             subjectName = subject.name,
                             changeType = DiffType.MODIFIED,
                             oldDetail = oldDetail,
-                            newDetail = newDetail
+                            newDetail = newDetail,
+                            subjectKey = key
                         )
                     )
                 }
@@ -182,7 +177,8 @@ object ScheduleDiffChecker {
                         subjectName = subject.name,
                         changeType = DiffType.REMOVED,
                         oldDetail = oldDetail,
-                        newDetail = null
+                        newDetail = null,
+                        subjectKey = key
                     )
                 )
             }
@@ -199,13 +195,93 @@ object ScheduleDiffChecker {
                         subjectName = subject.name,
                         changeType = DiffType.ADDED,
                         oldDetail = null,
-                        newDetail = newDetail
+                        newDetail = newDetail,
+                        subjectKey = key
                     )
                 )
             }
         }
 
         return diffs
+    }
+
+    private fun filterSemesterSlots(
+        remoteSlots: List<JsonFlatSlot>,
+        currentSemester: Int
+    ): List<JsonFlatSlot> {
+        val targetSemesterCode = "${currentSemester}C"
+        return remoteSlots.filter { slot ->
+            val slotCuat = slot.cuatrimestre.trim()
+            slotCuat.equals(targetSemesterCode, ignoreCase = true) || slotCuat == "$currentSemester"
+        }
+    }
+
+    private fun matchAndParseRemoteSlots(
+        subject: Subject,
+        semesterRemoteSlots: List<JsonFlatSlot>
+    ): List<ParsedRemoteSlot> {
+        val codeNorm = normalizeText(subject.code)
+        val nameNorm = normalizeText(subject.name)
+        val subjectGroupNorm = normalizeGroup(subject.courseGroup)
+
+        val matchedJsonSlots = semesterRemoteSlots.filter { rSlot ->
+            val asigNorm = normalizeText(rSlot.asignatura)
+            val rCodeNorm = normalizeText(rSlot.codigo)
+
+            val codeMatch = codeNorm.isNotBlank() && (rCodeNorm == codeNorm || asigNorm == codeNorm)
+            val nameMatch = nameNorm.isNotBlank() && asigNorm == nameNorm
+
+            val rSlotGroupNorm = normalizeGroup(rSlot.grupo)
+            val groupMatch = subject.courseGroup.isNullOrBlank() ||
+                    rSlot.grupo.isBlank() ||
+                    subjectGroupNorm == rSlotGroupNorm ||
+                    (subjectGroupNorm.isNotBlank() && rSlotGroupNorm.contains(subjectGroupNorm)) ||
+                    (rSlotGroupNorm.isNotBlank() && subjectGroupNorm.contains(rSlotGroupNorm))
+
+            (codeMatch || nameMatch) && groupMatch
+        }
+
+        return matchedJsonSlots.map { rSlot ->
+            val isLab = rSlot.esLaboratorio ||
+                    rSlot.tipo.contains("laboratorio", ignoreCase = true) ||
+                    rSlot.tipo.contains("lab", ignoreCase = true)
+            ParsedRemoteSlot(
+                dayOfWeek = parseDayOfWeek(rSlot.dia),
+                startTime = parseLocalTime(rSlot.horaInicio),
+                endTime = parseLocalTime(rSlot.horaFin),
+                classroom = rSlot.aula.trim(),
+                professor = rSlot.profesor.trim(),
+                isLab = isLab,
+                labGroupName = rSlot.grupoPracticas.trim()
+            )
+        }.filter { rSlot ->
+            if (rSlot.isLab && !subject.selectedLabGroup.isNullOrBlank() && rSlot.labGroupName.isNotBlank()) {
+                rSlot.labGroupName.equals(subject.selectedLabGroup, ignoreCase = true)
+            } else {
+                true
+            }
+        }
+    }
+
+    private fun hashParsedSlots(slots: List<ParsedRemoteSlot>): String {
+        val canonical = slots
+            .sortedWith(
+                compareBy(
+                    ParsedRemoteSlot::dayOfWeek,
+                    ParsedRemoteSlot::startTime,
+                    ParsedRemoteSlot::endTime,
+                    ParsedRemoteSlot::isLab,
+                    ParsedRemoteSlot::labGroupName,
+                    ParsedRemoteSlot::classroom,
+                    ParsedRemoteSlot::professor
+                )
+            )
+            .joinToString("\n") { slot ->
+                "${slot.dayOfWeek.value}|${slot.startTime}|${slot.endTime}|${slot.classroom}|${slot.professor}|${slot.isLab}|${slot.labGroupName}"
+            }
+        val digest = MessageDigest.getInstance("SHA-256")
+            .digest(canonical.toByteArray(Charsets.UTF_8))
+        return digest.joinToString("") { "%02x".format(it) }
     }
 
     private fun normalizeText(text: String?): String {

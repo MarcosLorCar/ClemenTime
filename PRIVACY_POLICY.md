@@ -4,7 +4,13 @@ This privacy policy applies to the ClemenTime app for mobile devices, together w
 
 **What information does the Application obtain and how is it used?**
 
-The Application does not collect, log, or store any personal information when you download and use it. Registration is not required. If the Application is used with an active internet connection, technical protocol data (such as your ephemeral IP address) is transmitted to facilitate network connectivity, but this data is not retained or used for tracking.
+The Application does not require registration and does not collect, log, or store personal identity information (such as your name, email, student ID, or enrolled subjects) on any external server.
+
+When using the Application, you can choose between two synchronization modes:
+- **Fully Offline (Privacy-First):** The Application makes zero network requests and disables push messaging entirely. Your schedules and notes remain strictly on your device.
+- **Online Services:** The Application downloads public university timetable JSON files hosted on GitHub, Inc. and subscribes to anonymous school-level topics via **Firebase Cloud Messaging (Google LLC)** solely to notify you when your school's official timetable changes.
+
+When Online Services are enabled, technical protocol data (such as your ephemeral IP address) and a Firebase Installation ID / anonymous push registration token are processed by Google LLC (Firebase Cloud Messaging) and GitHub, Inc. exclusively to route topic push messages and serve public schedule files. Your enrolled subjects, class choices, notes, and local modifications are never uploaded or shared with the Service Provider, Google, or any third party; all schedule matching happens locally on your device.
 
 **Does the Application collect precise real time location information of the device?**
 
@@ -12,11 +18,11 @@ This Application does not collect precise information about the location of your
 
 **Do third parties see and/or have access to information obtained by the Application?**
 
-Since the Application does not collect any information, no data is shared with third parties.
+Only the infrastructure providers required to deliver Online Services (Google LLC for Firebase Cloud Messaging push delivery, and GitHub, Inc. for hosting public schedule files) receive standard network transport metadata and anonymous Firebase Installation IDs when Online Services are enabled. No personal data, analytics profiles, or advertising identifiers are collected or sold.
 
 **What are my opt-out rights?**
 
-Since the Application does not collect personal information through normal use, uninstalling it simply removes the Application from your device.
+You can opt out of all network connectivity and Firebase Cloud Messaging at any time directly inside the Application settings (**More -> Online Synchronization -> Off**) or during onboarding by choosing **Fully Offline**. You may also stop all data processing by uninstalling the Application.
 
 If you contact the Service Provider directly or voluntarily provide information by other means, you may request deletion of that information by contacting marcoslorcar03@gmail.com.
 
@@ -26,11 +32,11 @@ The Application is not intended for children under 16 years of age, or such high
 
 **Security**
 
-Because the Application does not collect personal data, the risk of personal data exposure is minimal. However, no security system is completely secure. The Service Provider implements reasonable safeguards to protect systems and any data it holds.
+Because the Application stores schedule data locally and transmits no personal timetable details, the risk of personal data exposure is minimal. All network connections in Online Services mode use encrypted HTTPS/TLS transport.
 
 **Data Breach Notification**
 
-Since the Application does not collect personal data through normal use, the risk of a data breach affecting your personal data is minimal. If a breach occurs involving any data you have voluntarily provided, the Service Provider will notify you as required by applicable law.
+Since the Application does not collect personal data on developer-operated servers, the risk of a data breach affecting your personal data is minimal. If a breach occurs involving any data you have voluntarily provided, the Service Provider will notify you as required by applicable law.
 
 **Changes**
 
@@ -38,11 +44,11 @@ The Service Provider may update this Privacy Policy from time to time. The Servi
 
 Previous versions of this Privacy Policy will be maintained and made available upon request by contacting the Service Provider at marcoslorcar03@gmail.com.
 
-This privacy policy is effective as of 2026-07-24
+This privacy policy is effective as of 2026-11-17
 
 **Your Consent**
 
-If you voluntarily provide information to the Service Provider and processing is based on consent, you may withdraw that consent at any time without affecting processing carried out before withdrawal.
+By selecting Online Services, you consent to anonymous topic messaging via Firebase Cloud Messaging as described above; you may withdraw consent at any time by switching to Fully Offline mode in Settings.
 
 **Contact Us**
 
@@ -50,4 +56,4 @@ If you have any questions regarding privacy while using the Application, or have
 
 * * *
 
-<span>This privacy policy page was generated by</span> [App Privacy Policy Generator](https://app-privacy-policy-generator.nisrulz.com/)
+<span>This privacy policy page was adapted from</span> [App Privacy Policy Generator](https://app-privacy-policy-generator.nisrulz.com/)
