@@ -413,7 +413,7 @@
     <string name="sync_mode_title">Sincronización de horarios</string>
     <string name="sync_mode_online_title">Servicios en línea</string>
     <string name="sync_mode_online_badge">Recomendado</string>
-    <string name="sync_mode_online_desc">Descarga automática de horarios y avisos instantáneos ante cambios.</string>
+    <string name="sync_mode_online_desc">Actualizaciones automáticas de horarios y avisos instantáneos ante cambios.</string>
     <string name="sync_mode_offline_title">Modo sin conexión</string>
     <string name="sync_mode_offline_badge">Privacidad máxima</string>
     <string name="sync_mode_offline_desc">Cero actividad en segundo plano. Importación manual únicamente.</string>

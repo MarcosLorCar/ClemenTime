@@ -410,7 +410,7 @@
     <string name="sync_mode_title">Schedule Synchronization</string>
     <string name="sync_mode_online_title">Online Services</string>
     <string name="sync_mode_online_badge">Recommended</string>
-    <string name="sync_mode_online_desc">Automatic timetable download and instant change alerts.</string>
+    <string name="sync_mode_online_desc">Automatic timetable updates and instant change alerts.</string>
     <string name="sync_mode_offline_title">Fully Offline</string>
     <string name="sync_mode_offline_badge">Privacy-First</string>
     <string name="sync_mode_offline_desc">Zero background network activity. Manual schedule import only.</string>

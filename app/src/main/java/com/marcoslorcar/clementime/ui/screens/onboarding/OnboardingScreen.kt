@@ -115,6 +115,7 @@ fun OnboardingScreen(
             OnboardingNavigation(
                 currentPage = pagerState.currentPage,
                 pageCount = pagerState.pageCount,
+                isNextEnabled = pagerState.currentPage != 3 || uiState.syncMode != null,
                 onNext = {
                     if (pagerState.currentPage < pagerState.pageCount - 1) {
                         coroutineScope.launch {
@@ -339,7 +340,7 @@ fun ReadyPage() {
 
 @Composable
 fun SyncModePage(
-    selectedMode: com.marcoslorcar.clementime.data.SyncMode,
+    selectedMode: com.marcoslorcar.clementime.data.SyncMode?,
     onModeSelected: (com.marcoslorcar.clementime.data.SyncMode) -> Unit
 ) {
     val context = LocalContext.current
@@ -573,6 +574,7 @@ fun OnboardingPageContent(
 fun OnboardingNavigation(
     currentPage: Int,
     pageCount: Int,
+    isNextEnabled: Boolean = true,
     onNext: () -> Unit,
     onBack: () -> Unit,
     onSkip: () -> Unit
@@ -611,7 +613,7 @@ fun OnboardingNavigation(
             }
         }
 
-        Button(onClick = onNext) {
+        Button(onClick = onNext, enabled = isNextEnabled) {
             Text(
                 text = if (currentPage == pageCount - 1) stringResource(R.string.onboarding_finish) else stringResource(R.string.onboarding_next)
             )
