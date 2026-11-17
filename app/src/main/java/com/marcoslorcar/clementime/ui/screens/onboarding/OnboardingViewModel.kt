@@ -22,7 +22,7 @@ data class OnboardingUiState(
     val selectedTheme: String = "clementine",
     val appLanguage: String = "en",
     val autoUpdateIntervalHours: Int = 0,
-    val syncMode: SyncMode = SyncMode.ONLINE
+    val syncMode: SyncMode? = null
 )
 
 @HiltViewModel
@@ -31,13 +31,14 @@ class OnboardingViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _appLanguage = MutableStateFlow(getCurrentLanguage())
+    private val _selectedSyncMode = MutableStateFlow<SyncMode?>(null)
 
     val uiState: StateFlow<OnboardingUiState> = combine(
         settingsRepository.themeFlow,
         settingsRepository.selectedThemeFlow,
-        settingsRepository.syncModeFlow,
+        _selectedSyncMode,
         _appLanguage
-    ) { theme: String, selectedTheme: String, mode: SyncMode, lang: String ->
+    ) { theme: String, selectedTheme: String, mode: SyncMode?, lang: String ->
         OnboardingUiState(
             themeMode = theme,
             selectedTheme = selectedTheme,
@@ -79,6 +80,7 @@ class OnboardingViewModel @Inject constructor(
     }
 
     fun setSyncMode(mode: SyncMode, context: android.content.Context) {
+        _selectedSyncMode.value = mode
         viewModelScope.launch {
             settingsRepository.setSyncMode(mode)
             com.marcoslorcar.clementime.worker.FcmTopicManager.syncRegistration(context, settingsRepository)

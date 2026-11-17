@@ -43,7 +43,6 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.InvertColors
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Policy
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.RestartAlt
@@ -170,7 +169,7 @@ fun MoreScreen(
                 Toast.makeText(context, noUpdatesMsg, Toast.LENGTH_SHORT).show()
             }
         },
-        onDebugTriggerWorker = viewModel::debugTriggerWorkerNow,
+        onDebugShowFcmStatus = viewModel::debugShowFcmStatus,
         onDebugResetHashes = viewModel::debugResetScheduleHashes,
         onDebugSimulateDiff = viewModel::debugSimulateScheduleDiff,
         onDebugResetOnboarding = viewModel::debugResetOnboardingAndTooltips,
@@ -199,7 +198,7 @@ fun MoreContent(
     onAutoUpdateIntervalChanged: (Int) -> Unit = {},
     onSyncModeChanged: (com.marcoslorcar.clementime.data.SyncMode) -> Unit = {},
     onCheckUpdatesNow: () -> Unit = {},
-    onDebugTriggerWorker: () -> Unit = {},
+    onDebugShowFcmStatus: ((String) -> Unit) -> Unit = {},
     onDebugResetHashes: () -> Unit = {},
     onDebugSimulateDiff: () -> Unit = {},
     onDebugResetOnboarding: () -> Unit = {},
@@ -809,14 +808,29 @@ fun MoreContent(
                 )
 
                 val debugActionTriggeredMsg = stringResource(R.string.debug_action_triggered)
+                var debugStatusDialogText by remember { mutableStateOf<String?>(null) }
+
+                if (debugStatusDialogText != null) {
+                    AlertDialog(
+                        onDismissRequest = { debugStatusDialogText = null },
+                        title = { Text(stringResource(R.string.debug_fcm_status_title)) },
+                        text = { Text(debugStatusDialogText ?: "") },
+                        confirmButton = {
+                            TextButton(onClick = { debugStatusDialogText = null }) {
+                                Text(stringResource(R.string.close))
+                            }
+                        }
+                    )
+                }
 
                 SettingItem(
-                    icon = Icons.Default.PlayArrow,
-                    title = stringResource(R.string.debug_trigger_worker_title),
-                    subtitle = stringResource(R.string.debug_trigger_worker_desc),
+                    icon = Icons.Default.Info,
+                    title = stringResource(R.string.debug_fcm_status_title),
+                    subtitle = stringResource(R.string.debug_fcm_status_desc),
                     onClick = {
-                        onDebugTriggerWorker()
-                        Toast.makeText(context, debugActionTriggeredMsg, Toast.LENGTH_SHORT).show()
+                        onDebugShowFcmStatus { report ->
+                            debugStatusDialogText = report
+                        }
                     }
                 )
 

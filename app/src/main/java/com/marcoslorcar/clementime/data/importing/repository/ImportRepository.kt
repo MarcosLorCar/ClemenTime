@@ -453,6 +453,11 @@ class ImportRepository @Inject constructor(
         return getCachedRemoteSlotsById(context, "${semester}C")
     }
 
+    fun clearRemoteCache(context: Context) {
+        val dir = getCacheDir(context)
+        dir.listFiles()?.forEach { it.delete() }
+    }
+
     private fun readCacheMetadata(context: Context): List<CacheMetadata> {
         val file = getMetadataFile(context)
         if (!file.exists()) return emptyList()
