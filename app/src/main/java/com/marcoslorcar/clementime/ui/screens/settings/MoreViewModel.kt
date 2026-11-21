@@ -53,7 +53,10 @@ data class MoreUiState(
     val isCheckingUpdates: Boolean = false,
     val pendingDiffs: List<SlotDiff> = emptyList(),
     val pendingRemoteSlots: List<JsonFlatSlot> = emptyList(),
-    val showDiffBottomSheet: Boolean = false
+    val showDiffBottomSheet: Boolean = false,
+    val selectedUniversityId: String = "",
+    val selectedFacultyId: String = "",
+    val linkedFacultyLabel: String = ""
 )
 
 sealed interface ExportStatus {
@@ -69,8 +72,14 @@ class MoreViewModel @Inject constructor(
     private val jsonScheduleParser: JsonScheduleParser,
     private val importRepository: ImportRepository,
     private val apiService: GitHubScheduleApiService? = null,
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context? = null
 ) : ViewModel() {
+
+    private data class LinkedFacultyInfo(
+        val universityId: String = "",
+        val facultyId: String = "",
+        val label: String = ""
+    )
 
     private val _appLanguage = MutableStateFlow(getCurrentLanguage())
     private val _isCheckingUpdates = MutableStateFlow(false)
@@ -79,6 +88,27 @@ class MoreViewModel @Inject constructor(
     private val _pendingRemoteHash = MutableStateFlow("")
     private val _pendingSemester = MutableStateFlow(1)
     private val _showDiffBottomSheet = MutableStateFlow(false)
+
+    private val linkedFacultyFlow = combine(
+        settingsRepository.selectedUniversityIdFlow,
+        settingsRepository.selectedFacultyIdFlow,
+        settingsRepository.selectedUniversityNameFlow,
+        settingsRepository.selectedFacultyNameFlow
+    ) { uniId, facId, uniName, facName ->
+        val label = if (facId.isBlank()) {
+            ""
+        } else {
+            listOf(
+                uniName.ifBlank { uniId.uppercase() },
+                facName.ifBlank { facId.uppercase() }
+            ).filter { it.isNotBlank() }.joinToString(" · ")
+        }
+        LinkedFacultyInfo(
+            universityId = uniId,
+            facultyId = facId,
+            label = label
+        )
+    }
 
     val uiState: StateFlow<MoreUiState> = combine(
         settingsRepository.themeFlow,
@@ -100,9 +130,11 @@ class MoreViewModel @Inject constructor(
         _appLanguage,
         _pendingDiffs,
         _pendingRemoteSlots,
-        _showDiffBottomSheet
+        _showDiffBottomSheet,
+        linkedFacultyFlow
     ) { args: Array<Any?> ->
         @Suppress("UNCHECKED_CAST")
+        val linkedFaculty = args[20] as LinkedFacultyInfo
         MoreUiState(
             themeMode = args[0] as String,
             scrollableTabs = args[1] as Boolean,
@@ -121,7 +153,10 @@ class MoreViewModel @Inject constructor(
             appLanguage = args[16] as String,
             pendingDiffs = args[17] as List<SlotDiff>,
             pendingRemoteSlots = args[18] as List<JsonFlatSlot>,
-            showDiffBottomSheet = args[19] as Boolean
+            showDiffBottomSheet = args[19] as Boolean,
+            selectedUniversityId = linkedFaculty.universityId,
+            selectedFacultyId = linkedFaculty.facultyId,
+            linkedFacultyLabel = linkedFaculty.label
         )
     }.stateIn(
         scope = viewModelScope,
@@ -130,8 +165,8 @@ class MoreViewModel @Inject constructor(
     )
 
     private fun getCurrentLanguage(): String {
-        val locales = AppCompatDelegate.getApplicationLocales()
-        return if (!locales.isEmpty) {
+        val locales = runCatching { AppCompatDelegate.getApplicationLocales() }.getOrNull()
+        return if (locales != null && !locales.isEmpty) {
             locales.get(0)?.language ?: "en"
         } else {
             val systemLanguage = Locale.getDefault().language
@@ -209,7 +244,9 @@ class MoreViewModel @Inject constructor(
     fun setSyncMode(mode: com.marcoslorcar.clementime.data.SyncMode) {
         viewModelScope.launch {
             settingsRepository.setSyncMode(mode)
-            FcmTopicManager.syncRegistration(context, settingsRepository)
+            if (context != null) {
+                FcmTopicManager.syncRegistration(context, settingsRepository)
+            }
         }
     }
 
@@ -220,17 +257,24 @@ class MoreViewModel @Inject constructor(
     fun setAutoUpdateIntervalMinutes(minutes: Int) {
         viewModelScope.launch {
             settingsRepository.setAutoUpdateIntervalMinutes(minutes)
-            ScheduleUpdateWorker.schedulePeriodicWork(context, minutes)
+            if (context != null) {
+                ScheduleUpdateWorker.schedulePeriodicWork(context, minutes)
+            }
         }
     }
 
     fun debugShowFcmStatus(onResult: (String) -> Unit) {
         viewModelScope.launch {
             val syncMode = settingsRepository.syncModeFlow.first()
-            val gmsAvailable = FcmTopicManager.isGooglePlayServicesAvailable(context)
+            val gmsAvailable = if (context != null) FcmTopicManager.isGooglePlayServicesAvailable(context) else false
             val uni = settingsRepository.selectedUniversityIdFlow.first()
             val faculty = settingsRepository.selectedFacultyIdFlow.first()
-            val targetTopic = FcmTopicManager.topicFor(uni, faculty)
+            val fcmTopicPrefix = settingsRepository.selectedFcmTopicPrefixFlow.first()
+            val targetTopic = if (faculty.isBlank()) {
+                "None (no faculty linked)"
+            } else {
+                FcmTopicManager.topicFor(uni, faculty, fcmTopicPrefix.ifBlank { null })
+            }
             val subscribedTopic = settingsRepository.subscribedFcmTopicFlow.first()
             val hash1c = settingsRepository.getLastKnownScheduleHashFlow(1).first()
             val hash2c = settingsRepository.getLastKnownScheduleHashFlow(2).first()
@@ -249,7 +293,9 @@ class MoreViewModel @Inject constructor(
     fun debugResetScheduleHashes() {
         viewModelScope.launch {
             settingsRepository.resetScheduleHashes()
-            importRepository.clearRemoteCache(context)
+            if (context != null) {
+                importRepository.clearRemoteCache(context)
+            }
         }
     }
 
@@ -274,8 +320,21 @@ class MoreViewModel @Inject constructor(
         }
     }
 
-    fun checkScheduleUpdatesNow(onNoUpdatesFound: (() -> Unit)? = null) {
+    fun checkScheduleUpdatesNow(
+        onNoUpdatesFound: () -> Unit = {},
+        onNoFacultyLinked: () -> Unit = {}
+    ) {
         viewModelScope.launch {
+            val facultyId = settingsRepository.selectedFacultyIdFlow.first()
+            if (facultyId.isBlank()) {
+                onNoFacultyLinked()
+                return@launch
+            }
+            if (context == null) {
+                onNoUpdatesFound()
+                return@launch
+            }
+
             _isCheckingUpdates.value = true
             try {
                 // Deliberately not enqueueOneTimeWork(): performSync below does the same
@@ -296,11 +355,11 @@ class MoreViewModel @Inject constructor(
                     _pendingSemester.value = syncResult.semester ?: settingsRepository.currentSemesterFlow.first()
                     _showDiffBottomSheet.value = true
                 } else {
-                    onNoUpdatesFound?.invoke()
+                    onNoUpdatesFound()
                 }
             } catch (_: Exception) {
                 _isCheckingUpdates.value = false
-                onNoUpdatesFound?.invoke()
+                onNoUpdatesFound()
             }
         }
     }
@@ -338,18 +397,20 @@ class MoreViewModel @Inject constructor(
 
     fun applyPendingSlotDiffs(
         selectedSubjectKeys: Set<String>? = null,
-        onSuccess: (() -> Unit)? = null
+        onSuccess: (Int) -> Unit = {}
     ) {
         viewModelScope.launch {
             try {
                 val semester = _pendingSemester.value
+                val universityId = settingsRepository.selectedUniversityIdFlow.first()
                 val facultyId = settingsRepository.selectedFacultyIdFlow.first()
                 val applied = importRepository.applySlotDiffs(
                     diffs = _pendingDiffs.value,
                     remoteSlots = _pendingRemoteSlots.value,
                     semester = semester,
                     selectedSubjectKeys = selectedSubjectKeys,
-                    facultyId = facultyId
+                    facultyId = facultyId,
+                    universityId = universityId
                 )
                 // Only mark the version accepted if something was actually written; otherwise
                 // the diff would never resurface even though nothing changed.
@@ -362,7 +423,7 @@ class MoreViewModel @Inject constructor(
                 _pendingDiffs.value = emptyList()
                 _pendingRemoteSlots.value = emptyList()
                 _pendingRemoteHash.value = ""
-                onSuccess?.invoke()
+                onSuccess(applied)
             } catch (_: Exception) {
                 _showDiffBottomSheet.value = false
             }

@@ -390,7 +390,7 @@
 
     <!-- Schedule Diff Bottom Sheet strings -->
     <string name="schedule_changes_detected_title">Cambios detectados en el horario</string>
-    <string name="schedule_changes_detected_desc">El horario oficial ESI se ha actualizado con cambios en tus asignaturas activas.</string>
+    <string name="schedule_changes_detected_desc">El horario oficial se ha actualizado con cambios en tus asignaturas activas.</string>
     <string name="apply_updates">Aplicar cambios</string>
     <string name="dismiss">Descartar</string>
     <string name="diff_badge_modified">Modificado</string>
@@ -402,7 +402,7 @@
     <string name="diff_new_label">Nuevo</string>
     <string name="diff_list_title">Resumen de cambios</string>
     <string name="onboarding_autoupdate_title">Actualización automática</string>
-    <string name="onboarding_autoupdate_desc">Recibe avisos cuando la ESI actualice las aulas, profesores o tramos horarios.</string>
+    <string name="onboarding_autoupdate_desc">Recibe avisos cuando se actualicen las aulas, profesores o tramos horarios.</string>
     <string name="onboarding_autoupdate_frequency">Frecuencia de comprobación</string>
     <string name="onboarding_notifications_permission_btn">Permitir notificaciones</string>
     <string name="onboarding_notifications_permission_granted">Notificaciones permitidas ✓</string>
@@ -419,5 +419,15 @@
     <string name="sync_mode_offline_desc">Cero actividad en segundo plano. Importación manual únicamente.</string>
     <string name="sync_mode_settings_title">Sincronización en línea</string>
     <string name="sync_mode_settings_desc">Actualizaciones automáticas y avisos de cambios</string>
+
+    <!-- Multi-Faculty Catalog & Unlisted University strings -->
+    <string name="import_faculty_linked_badge">Vinculada</string>
+    <string name="import_unlisted_university_title">¿No encuentras tu universidad o facultad?</string>
+    <string name="import_unlisted_university_desc">Puedes usar ClemenTime igualmente creando tus asignaturas manualmente o importando un archivo JSON de horarios.</string>
+    <string name="import_unlisted_create_subject">Crear asignatura</string>
+    <string name="import_unlisted_pick_json">Seleccionar JSON local</string>
+    <string name="settings_linked_faculty_title">Facultad vinculada</string>
+    <string name="settings_linked_faculty_none">Ninguna facultad vinculada — importa un horario online</string>
+    <string name="settings_check_updates_no_faculty">Importa primero un horario online para vincular una facultad y buscar actualizaciones.</string>
 </resources>
 

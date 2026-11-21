@@ -1,6 +1,7 @@
 package com.marcoslorcar.clementime.ui.screens.scheduleimport
 
 import com.marcoslorcar.clementime.data.importing.model.ImportFile
+import com.marcoslorcar.clementime.data.importing.model.ImportSourceType
 import com.marcoslorcar.clementime.data.importing.model.JsonGroup
 import com.marcoslorcar.clementime.data.importing.model.JsonSubject
 import com.marcoslorcar.clementime.data.importing.model.JsonYear
@@ -9,14 +10,26 @@ import com.marcoslorcar.clementime.data.importing.model.SelectedSubject
 import com.marcoslorcar.clementime.data.importing.parser.JsonScheduleParser
 import com.marcoslorcar.clementime.data.importing.repository.ImportRepository
 import com.marcoslorcar.clementime.ui.screens.scheduleimport.model.ConflictStatus
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ImportViewModelTest {
 
+    private val testDispatcher = StandardTestDispatcher()
     private lateinit var mockRepository: ImportRepository
 
     private val subject1 = JsonSubject(code = "SO", name = "Sistemas Operativos")
@@ -52,7 +65,13 @@ class ImportViewModelTest {
 
     @Before
     fun setUp() {
+        Dispatchers.setMain(testDispatcher)
         mockRepository = ImportRepository(dao = FakeScheduleDaoForImport())
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
     }
 
     @Test
@@ -231,6 +250,135 @@ class ImportViewModelTest {
         assertTrue(conflict.detail.theoryOverlaps.isNotEmpty())
         assertEquals("S1", conflict.detail.theoryOverlaps[0].subject1Code)
         assertEquals("S2", conflict.detail.theoryOverlaps[0].subject2Code)
+    }
+
+    @Test
+    fun confirmImport_remoteFileLinksFacultyInSettings() = runTest {
+        val recordingSettings = RecordingSettingsRepositoryForImport()
+        val viewModel = ImportViewModel(mockRepository, JsonScheduleParser(), null, recordingSettings)
+
+        val stateField = ImportViewModel::class.java.getDeclaredField("_uiState")
+        stateField.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        val stateFlow = stateField.get(viewModel) as MutableStateFlow<ImportUiState>
+        stateFlow.value = ImportUiState.Selection(
+            schema = sampleSchema.copy(semester = 1),
+            selectedSubjects = setOf(selected1),
+            selectedFile = ImportFile(
+                id = "uclm_esi_1C",
+                title = "1er Cuatrimestre",
+                sourceType = ImportSourceType.REMOTE,
+                remotePath = "https://example.com/1C.json",
+                remoteHash = "hash_1c",
+                universityId = "uclm",
+                universityName = "UCLM",
+                facultyId = "esi",
+                facultyName = "Escuela Superior de Informática (ESI)",
+                fcmTopicPrefix = "uclm_esi",
+                termId = "1C"
+            )
+        )
+
+        viewModel.confirmImport()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is ImportUiState.Success)
+        assertEquals(0, recordingSettings.resetHashesCount)
+        assertEquals(1, recordingSettings.setFacultyCalls.size)
+        val call = recordingSettings.setFacultyCalls.single()
+        assertEquals("uclm", call.universityId)
+        assertEquals("esi", call.facultyId)
+        assertEquals("UCLM", call.universityName)
+        assertEquals("Escuela Superior de Informática (ESI)", call.facultyName)
+        assertEquals("uclm_esi", call.fcmTopicPrefix)
+    }
+
+    @Test
+    fun confirmImport_switchingFacultyResetsHashesBeforeSavingNewFaculty() = runTest {
+        val recordingSettings = RecordingSettingsRepositoryForImport(
+            initialUniversityId = "uclm",
+            initialFacultyId = "esi"
+        )
+        val viewModel = ImportViewModel(mockRepository, JsonScheduleParser(), null, recordingSettings)
+
+        val stateField = ImportViewModel::class.java.getDeclaredField("_uiState")
+        stateField.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        val stateFlow = stateField.get(viewModel) as MutableStateFlow<ImportUiState>
+        stateFlow.value = ImportUiState.Selection(
+            schema = sampleSchema.copy(semester = 1),
+            selectedSubjects = setOf(selected1),
+            selectedFile = ImportFile(
+                id = "uclm_eii_1C",
+                title = "1er Cuatrimestre",
+                sourceType = ImportSourceType.REMOTE,
+                remotePath = "https://example.com/eii/1C.json",
+                remoteHash = "hash_eii_1c",
+                universityId = "uclm",
+                universityName = "UCLM",
+                facultyId = "eii",
+                facultyName = "EII Toledo",
+                fcmTopicPrefix = "uclm_eii",
+                termId = "1C"
+            )
+        )
+
+        viewModel.confirmImport()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is ImportUiState.Success)
+        assertEquals(1, recordingSettings.resetHashesCount)
+        val resetIdx = recordingSettings.events.indexOf("resetHashes")
+        val setFacultyIdx = recordingSettings.events.indexOf("setFaculty:uclm:eii")
+        val setHashIdx = recordingSettings.events.indexOf("setHash:1:hash_eii_1c")
+        assertTrue(resetIdx >= 0)
+        assertTrue(resetIdx < setFacultyIdx)
+        assertTrue(resetIdx < setHashIdx)
+    }
+}
+
+private class RecordingSettingsRepositoryForImport(
+    initialUniversityId: String = "",
+    initialFacultyId: String = ""
+) : com.marcoslorcar.clementime.data.SettingsRepository(context = null) {
+    data class FacultyCall(
+        val universityId: String,
+        val facultyId: String,
+        val universityName: String?,
+        val facultyName: String?,
+        val fcmTopicPrefix: String?
+    )
+
+    private val uniIdFlow = MutableStateFlow(initialUniversityId)
+    private val facIdFlow = MutableStateFlow(initialFacultyId)
+
+    override val selectedUniversityIdFlow: Flow<String> = uniIdFlow
+    override val selectedFacultyIdFlow: Flow<String> = facIdFlow
+
+    val events = mutableListOf<String>()
+    val setFacultyCalls = mutableListOf<FacultyCall>()
+    var resetHashesCount = 0
+
+    override suspend fun resetScheduleHashes() {
+        resetHashesCount++
+        events.add("resetHashes")
+    }
+
+    override suspend fun setSelectedFaculty(
+        universityId: String,
+        facultyId: String,
+        universityName: String?,
+        facultyName: String?,
+        fcmTopicPrefix: String?
+    ) {
+        uniIdFlow.value = universityId
+        facIdFlow.value = facultyId
+        setFacultyCalls.add(FacultyCall(universityId, facultyId, universityName, facultyName, fcmTopicPrefix))
+        events.add("setFaculty:$universityId:$facultyId")
+    }
+
+    override suspend fun setLastKnownScheduleHash(semester: Int, hash: String) {
+        events.add("setHash:$semester:$hash")
     }
 }
 

@@ -35,6 +35,7 @@ import com.marcoslorcar.clementime.R
 fun ImportScreen(
     onNavigateBack: () -> Unit,
     onImportSuccess: () -> Unit,
+    onNavigateToAddSubject: () -> Unit = {},
     viewModel: ImportViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -65,7 +66,8 @@ fun ImportScreen(
                 onFileClick = {},
                 onDeleteFileClick = {},
                 onSelectNewFileClick = { filePickerLauncher.launch(arrayOf("application/json")) },
-                onUpdateSearchQuery = {}
+                onUpdateSearchQuery = {},
+                onCreateSubjectClick = onNavigateToAddSubject
             )
         }
         is ImportUiState.Parsing, is ImportUiState.Importing -> {
@@ -83,7 +85,8 @@ fun ImportScreen(
                 onFileClick = { viewModel.loadFile(context, it) },
                 onDeleteFileClick = { viewModel.deleteFile(context, it) },
                 onSelectNewFileClick = { filePickerLauncher.launch(arrayOf("application/json")) },
-                onUpdateSearchQuery = viewModel::updateSearchQuery
+                onUpdateSearchQuery = viewModel::updateSearchQuery,
+                onCreateSubjectClick = onNavigateToAddSubject
             )
         }
         is ImportUiState.Selection -> {

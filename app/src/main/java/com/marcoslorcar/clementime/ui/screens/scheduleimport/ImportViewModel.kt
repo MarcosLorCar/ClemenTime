@@ -21,6 +21,7 @@ import com.marcoslorcar.clementime.ui.screens.scheduleimport.model.TheoryOverlap
 import com.marcoslorcar.clementime.ui.widget.ScheduleWidgetUtils
 import com.marcoslorcar.clementime.utils.ConflictSolver
 import com.marcoslorcar.clementime.utils.ScheduleDiffChecker
+import com.marcoslorcar.clementime.worker.FcmTopicManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -111,50 +112,77 @@ class ImportViewModel @Inject constructor(
                 val cacheMetadata = repository.getCachedRemoteSchedules(context)
                 val cacheDir = repository.getCacheDir(context)
 
-                val facultyId = try {
-                    settingsRepository.selectedFacultyIdFlow.first()
-                } catch (_: Exception) {
-                    null
-                }
-                val remoteResult = repository.fetchRemoteSchedules(baseUrl, facultyId)
-                val remoteFiles = remoteResult.fold(
-                    onSuccess = { (effectiveBaseUrl, list) ->
+                val activeUniId = runCatching { settingsRepository.selectedUniversityIdFlow.first() }.getOrDefault("")
+                val activeFacId = runCatching { settingsRepository.selectedFacultyIdFlow.first() }.getOrDefault("")
+
+                val catalogResult = repository.fetchRemoteCatalog(baseUrl)
+                val remoteFiles = catalogResult.fold(
+                    onSuccess = { (effectiveBaseUrl, catalog) ->
                         val effectiveFolderUrl = when {
+                            effectiveBaseUrl.endsWith("schedules_catalog.json") -> effectiveBaseUrl.substringBeforeLast("/") + "/"
                             effectiveBaseUrl.endsWith("schedules_index.json") -> effectiveBaseUrl.substringBeforeLast("/") + "/"
                             effectiveBaseUrl.endsWith("/") -> effectiveBaseUrl
                             else -> "$effectiveBaseUrl/"
                         }
-                        list.map { summary ->
-                            val fullPath = when {
-                                summary.path.startsWith("http://") || summary.path.startsWith("https://") -> summary.path
-                                else -> "$effectiveFolderUrl${summary.path.removePrefix("/")}"
+                        catalog.universities.flatMap { uni ->
+                            uni.faculties.flatMap { faculty ->
+                                val isLinked = activeFacId.isNotBlank() &&
+                                    faculty.id.equals(activeFacId, ignoreCase = true) &&
+                                    (activeUniId.isBlank() || uni.id.equals(activeUniId, ignoreCase = true))
+
+                                faculty.terms.map { term ->
+                                    val scopedId = "${uni.id}_${faculty.id}_${term.id}"
+                                    val fullPath = when {
+                                        term.path.startsWith("http://") || term.path.startsWith("https://") -> term.path
+                                        else -> "$effectiveFolderUrl${term.path.removePrefix("/")}"
+                                    }
+                                    val cachedEntry = cacheMetadata.find { it.id == scopedId }
+                                        ?: cacheMetadata.find {
+                                            it.id == term.id &&
+                                                (it.facultyId.isNullOrBlank() || it.facultyId.equals(faculty.id, ignoreCase = true))
+                                        }
+                                    val cacheId = cachedEntry?.id ?: scopedId
+                                    val cacheExists = File(cacheDir, "cache_${cacheId}.json").exists()
+                                    val isCached = cachedEntry != null &&
+                                        cachedEntry.hash == term.hash &&
+                                        cacheExists
+                                    val isUpdateAvailable = cachedEntry != null &&
+                                        term.hash != null &&
+                                        cachedEntry.hash != term.hash &&
+                                        cacheExists
+
+                                    ImportFile(
+                                        id = scopedId,
+                                        title = term.name,
+                                        fileUri = null,
+                                        sourceType = ImportSourceType.REMOTE,
+                                        remotePath = fullPath,
+                                        description = term.description,
+                                        isCached = isCached,
+                                        isUpdateAvailable = isUpdateAvailable,
+                                        updatedTime = term.updatedTime,
+                                        remoteHash = term.hash ?: cachedEntry?.hash,
+                                        universityId = uni.id,
+                                        universityName = uni.name,
+                                        facultyId = faculty.id,
+                                        facultyName = faculty.name,
+                                        fcmTopicPrefix = faculty.fcmTopicPrefix,
+                                        termId = term.id,
+                                        isLinkedFaculty = isLinked
+                                    )
+                                }
                             }
-                            val cachedEntry = cacheMetadata.find { it.id == summary.id }
-                            val isCached = cachedEntry != null && 
-                                           cachedEntry.hash == summary.hash &&
-                                           File(cacheDir, "cache_${summary.id}.json").exists()
-                            val isUpdateAvailable = cachedEntry != null && 
-                                                    summary.hash != null && 
-                                                    cachedEntry.hash != summary.hash &&
-                                                    File(cacheDir, "cache_${summary.id}.json").exists()
-                            ImportFile(
-                                id = summary.id,
-                                title = summary.title,
-                                fileUri = null,
-                                sourceType = ImportSourceType.REMOTE,
-                                remotePath = fullPath,
-                                description = summary.description,
-                                isCached = isCached,
-                                isUpdateAvailable = isUpdateAvailable,
-                                updatedTime = summary.updatedTime,
-                                remoteHash = summary.hash ?: cachedEntry?.hash
-                            )
-                        }
+                        }.sortedByDescending { it.isLinkedFaculty }
                     },
                     onFailure = { _ ->
-                        cacheMetadata.filter { 
-                            File(cacheDir, "cache_${it.id}.json").exists()
+                        cacheMetadata.filter { entry ->
+                            File(cacheDir, "cache_${entry.id}.json").exists() ||
+                                (!entry.termId.isNullOrBlank() && File(cacheDir, "cache_${entry.termId}.json").exists())
                         }.map { entry ->
+                            val isLinked = activeFacId.isNotBlank() &&
+                                entry.facultyId.equals(activeFacId, ignoreCase = true) &&
+                                (activeUniId.isBlank() || entry.universityId.isNullOrBlank() || entry.universityId.equals(activeUniId, ignoreCase = true))
+
                             ImportFile(
                                 id = entry.id,
                                 title = entry.title,
@@ -164,16 +192,23 @@ class ImportViewModel @Inject constructor(
                                 description = entry.description,
                                 isCached = true,
                                 updatedTime = entry.updatedTime,
-                                remoteHash = entry.hash
+                                remoteHash = entry.hash,
+                                universityId = entry.universityId,
+                                universityName = entry.universityName,
+                                facultyId = entry.facultyId,
+                                facultyName = entry.facultyName,
+                                fcmTopicPrefix = entry.fcmTopicPrefix,
+                                termId = entry.termId,
+                                isLinkedFaculty = isLinked
                             )
-                        }
+                        }.sortedByDescending { it.isLinkedFaculty }
                     }
                 )
 
                 val combined = remoteFiles + localFiles
-                val errorMsg = if (remoteResult.isFailure && remoteFiles.isNotEmpty()) {
+                val errorMsg = if (catalogResult.isFailure && remoteFiles.isNotEmpty()) {
                     "Offline: showing cached schedules"
-                } else if (remoteResult.isFailure) {
+                } else if (catalogResult.isFailure) {
                     "Online library unreachable. Check your connection."
                 } else {
                     null
@@ -469,15 +504,48 @@ class ImportViewModel @Inject constructor(
                     }
 
                     if (currentState.selectedFile.sourceType == ImportSourceType.REMOTE) {
-                        val targetSemesters = (listOfNotNull(currentState.schema.semester) +
+                        val selectedFile = currentState.selectedFile
+                        val semesterKey = selectedFile.termId ?: selectedFile.id
+                        val inferredTermSemester = when {
+                            semesterKey.equals("1C", ignoreCase = true) || semesterKey.endsWith("_1C", ignoreCase = true) -> 1
+                            semesterKey.equals("2C", ignoreCase = true) || semesterKey.endsWith("_2C", ignoreCase = true) -> 2
+                            else -> null
+                        }
+
+                        val targetSemesters = (listOfNotNull(currentState.schema.semester ?: inferredTermSemester) +
                             importedSubjects.mapNotNull { it.subject.semester })
                             .distinct()
                             .ifEmpty { listOf(settingsRepository.currentSemesterFlow.first()) }
 
-                        val remoteHash = currentState.selectedFile.remoteHash
+                        val prevUniId = settingsRepository.selectedUniversityIdFlow.first()
+                        val prevFacId = settingsRepository.selectedFacultyIdFlow.first()
+
+                        if (!selectedFile.facultyId.isNullOrBlank()) {
+                            val newUniId = selectedFile.universityId ?: ""
+                            val newFacId = selectedFile.facultyId
+                            val isSwitchingFaculty = prevFacId.isNotBlank() && (
+                                !prevFacId.equals(newFacId, ignoreCase = true) ||
+                                    (prevUniId.isNotBlank() && newUniId.isNotBlank() && !prevUniId.equals(newUniId, ignoreCase = true))
+                            )
+                            if (isSwitchingFaculty) {
+                                settingsRepository.resetScheduleHashes()
+                            }
+                            settingsRepository.setSelectedFaculty(
+                                universityId = newUniId,
+                                facultyId = newFacId,
+                                universityName = selectedFile.universityName,
+                                facultyName = selectedFile.facultyName,
+                                fcmTopicPrefix = selectedFile.fcmTopicPrefix
+                            )
+                            if (context != null) {
+                                FcmTopicManager.syncRegistration(context, settingsRepository)
+                            }
+                        }
+
+                        val remoteHash = selectedFile.remoteHash
                             ?: context?.let { ctx ->
                                 repository.getCachedRemoteSchedules(ctx)
-                                    .find { it.id == currentState.selectedFile.id }
+                                    .find { it.id == selectedFile.id || (!selectedFile.termId.isNullOrBlank() && it.id == selectedFile.termId) }
                                     ?.hash
                             }
 
@@ -488,9 +556,14 @@ class ImportViewModel @Inject constructor(
                             if (context != null) {
                                 val cachedSlots = repository.getCachedRemoteSlotsById(
                                     context,
-                                    currentState.selectedFile.id
+                                    selectedFile.id
                                 ).ifEmpty {
-                                    repository.getCachedRemoteSlotsForSemester(context, sem)
+                                    repository.getCachedRemoteSlotsForSemester(
+                                        context = context,
+                                        semester = sem,
+                                        universityId = selectedFile.universityId,
+                                        facultyId = selectedFile.facultyId
+                                    )
                                 }
                                 if (cachedSlots.isNotEmpty()) {
                                     val activeInSem = repository.getExistingActiveSubjects(sem)

@@ -15,5 +15,12 @@ data class ImportFile(
     val isCached: Boolean = false,
     val isUpdateAvailable: Boolean = false,
     val updatedTime: String? = null,
-    val remoteHash: String? = null
+    val remoteHash: String? = null,
+    val universityId: String? = null,
+    val universityName: String? = null,
+    val facultyId: String? = null,
+    val facultyName: String? = null,
+    val fcmTopicPrefix: String? = null,
+    val termId: String? = null,
+    val isLinkedFaculty: Boolean = false
 )

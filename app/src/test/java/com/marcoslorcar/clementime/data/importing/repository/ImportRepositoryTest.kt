@@ -8,7 +8,10 @@ import com.marcoslorcar.clementime.data.importing.model.JsonSubject
 import com.marcoslorcar.clementime.data.importing.model.SelectedSubject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ImportRepositoryTest {
@@ -222,6 +225,73 @@ class ImportRepositoryTest {
         assertEquals("FunProg1", upserted.code)
         assertEquals(1, slots.size)
         assertEquals(true, slots.single().isIgnored)
+    }
+
+    @Test
+    fun cacheMetadata_deserializesLegacyEntriesWithoutFacultyFields() {
+        val legacyJson = """
+            {
+              "entries": [
+                {
+                  "id": "1C",
+                  "title": "1st Semester",
+                  "description": "ESI 1C",
+                  "remotePath": "https://example.com/1C.json",
+                  "lastUsed": 1700000000000,
+                  "hash": "abc123",
+                  "updatedTime": "2026-01-01"
+                }
+              ]
+            }
+        """.trimIndent()
+        val parser = Json { ignoreUnknownKeys = true; coerceInputValues = true }
+        val decoded = parser.decodeFromString<RemoteCacheList>(legacyJson)
+        assertEquals(1, decoded.entries.size)
+        val entry = decoded.entries.single()
+        assertEquals("1C", entry.id)
+        assertNull(entry.universityId)
+        assertNull(entry.facultyId)
+        assertNull(entry.fcmTopicPrefix)
+        assertNull(entry.termId)
+    }
+
+    @Test
+    fun cacheMetadata_roundTripsWithFacultyMetadata() {
+        val parser = Json { ignoreUnknownKeys = true; coerceInputValues = true; encodeDefaults = true }
+        val list = RemoteCacheList(
+            entries = listOf(
+                CacheMetadata(
+                    id = "uclm_esi_1C",
+                    title = "1st Semester",
+                    description = "ESI 1C",
+                    remotePath = "https://example.com/1C.json",
+                    lastUsed = 1700000000000L,
+                    hash = "hash123",
+                    updatedTime = "2026-09-01",
+                    universityId = "uclm",
+                    universityName = "UCLM",
+                    facultyId = "esi",
+                    facultyName = "Escuela Superior de Informática (ESI)",
+                    fcmTopicPrefix = "uclm_esi",
+                    termId = "1C"
+                )
+            )
+        )
+        val encoded = parser.encodeToString(list)
+        val decoded = parser.decodeFromString<RemoteCacheList>(encoded)
+        assertEquals(list, decoded)
+    }
+
+    @Test
+    fun getCachedRemoteSlotsForSemester_returnsEmptyWhenContextIsNull() {
+        val repository = ImportRepository(dao = FakeScheduleDaoForRepositoryTest())
+        val slots = repository.getCachedRemoteSlotsForSemester(
+            context = null,
+            semester = 1,
+            universityId = "uclm",
+            facultyId = "esi"
+        )
+        assertTrue(slots.isEmpty())
     }
 }
 
