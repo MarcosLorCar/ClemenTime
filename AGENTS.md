@@ -1,13 +1,13 @@
 # AGENTS.md
 
-ClemenTime is an offline-first Android timetable app for ESI students (Jetpack Compose, Material 3).
+ClemenTime is an offline-first Android timetable app for university students (Jetpack Compose, Material 3), supporting a multi-faculty searchable catalog, dynamic FCM push topic binding, and lab/subgroup conflict optimization.
 The repo contains:
 - `app/` — Android application (Kotlin, single Gradle module `:app`).
-- `schedules/` + `process_schedules.py` — Python pipeline generating normalized flat JSON schedules (`dist/1C.json`, `dist/2C.json`).
+- `schedules/` + `process_schedules.py` — Python pipeline generating normalized flat JSON schedules (`dist/1C.json`, `dist/2C.json`, and dynamic catalog indexes).
 
 Specialized subsystem documentation is available via Antigravity workspace skills in `.agents/skills/`:
 - `schedule-pipeline`: Python pipeline, ESI TV hall API, mappings, flat wire format, strict mode.
-- `room-and-data`: Room migrations (`MIGRATION_1_2`), `ScheduleDao.upsertSubjectWithSlots` caveats, DataStore hashes.
+- `room-and-data`: Room migrations (`MIGRATION_1_2`), `ScheduleDao.upsertSubjectWithSlots` caveats, DataStore hashes, and multi-faculty legacy migration fallbacks (`LEGACY_FALLBACK_UNIVERSITY_ID`, `LEGACY_FALLBACK_FACULTY_ID`).
 - `widget-and-workers`: Glance widget push updates (500 ms settlement delay), `HiltWorkerFactory` constraints.
 
 ---
@@ -59,6 +59,11 @@ python process_schedules.py                          # regenerate dist/{1C,2C}.j
 - **Conflict resolution**: `utils/ConflictSolver` is pure Kotlin with zero Android dependencies. Keep it that way so `ConflictSolverTest` remains a fast plain JVM test.
 - **Versioning**: Derived from git (`versionCode = 1000 + git rev-list --count HEAD`; `versionName = git describe --tags --always --dirty`). Never add a hardcoded version.
 - **Release signing**: Reads `KEYSTORE_*` from environment; falls back silently to debug keystore locally.
+- **Multi-Faculty Architecture & Legacy Fallbacks**:
+  - `selectedUniversityId` and `selectedFacultyId` default to `""` (empty string / unlinked) for fresh installs.
+  - `LEGACY_FALLBACK_UNIVERSITY_ID` (`"uclm"`) and `LEGACY_FALLBACK_FACULTY_ID` (`"esi"`) are used **exclusively** for migrating legacy users (detected via presence of pre-v1.5 `last_known_schedule_hash_1/2`) or when generating a fallback synthetic catalog for `schedules_index.json`.
+  - **Do NOT re-introduce hardcoded `"esi"` or `"uclm"` defaults for new installs or general features.**
+  - **Deprecation Roadmap**: Once legacy adoption of pre-v1.5 builds approaches zero in future major releases (e.g., v2.0), `resolveSelectedUniversityId`/`resolveSelectedFacultyId` fallback branches and `LEGACY_FALLBACK_*` constants can be safely removed. See `docs/multi_faculty_and_fcm_architecture.md`.
 
 ### Testability Conventions (Do Not "Clean These Up")
 

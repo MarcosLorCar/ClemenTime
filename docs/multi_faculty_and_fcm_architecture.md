@@ -231,6 +231,36 @@ sequenceDiagram
 
 ---
 
+## 5. Legacy Fallback Migration & Deprecation Roadmap
+
+### 5.1. Purpose of Legacy Constants
+During the transition from an ESI-only application to a multi-faculty platform, legacy users upgrading from earlier releases (v1.4.1 and below) do not have explicit `selected_university_id` or `selected_faculty_id` preferences stored in DataStore.
+
+To ensure zero friction and preserve background schedule checks for existing users, `SettingsRepository` defines:
+- `LEGACY_FALLBACK_UNIVERSITY_ID` = `"uclm"`
+- `LEGACY_FALLBACK_FACULTY_ID` = `"esi"`
+
+These constants are **gated strictly behind the presence of pre-v1.5 schedule hashes** (`lastKnownScheduleHash_1` or `lastKnownScheduleHash_2`). 
+
+> [!IMPORTANT]
+> Fresh installs receive an empty string `""` (unlinked state) and do NOT default to UCLM/ESI.
+
+### 5.2. Future Deprecation & Removal Roadmap (For Future AI Agents & Developers)
+Once pre-v1.5 adoption approaches zero (e.g., in a major release like v2.0), the legacy migration fallback logic can be safely removed to complete total decoupling:
+
+1. **Step 1 — Remove Hash-Based Resolution in `SettingsRepository.kt`**:
+   - Simplify `resolveSelectedUniversityId` and `resolveSelectedFacultyId` to return `storedUniversityId ?: ""` / `storedFacultyId ?: ""`.
+   - Remove `LEGACY_FALLBACK_UNIVERSITY_ID` and `LEGACY_FALLBACK_FACULTY_ID` constants.
+
+2. **Step 2 — Remove Synthetic Index Fallback in `ImportRepository.kt`**:
+   - Remove `canFallbackToLegacyIndex` and `syntheticCatalog` generation that wraps legacy `schedules_index.json` as UCLM · ESI.
+   - Require all remote schedule lookups to resolve strictly through `schedules_catalog.json`.
+
+3. **Step 3 — Clean Up Legacy Tests**:
+   - Remove unit tests asserting legacy hash fallback to `"uclm"` / `"esi"`.
+
+---
+
 ## 5. Unified Onboarding & Settings Flow
 
 ### 5.1. New Onboarding Flow (3 Simple Steps)

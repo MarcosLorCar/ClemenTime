@@ -23,7 +23,7 @@ flowchart TD
 ### `app/src/main/java/com/marcoslorcar/clementime/data/SettingsRepository.kt`
 - **Unset Default on Fresh Install with Legacy Migration Fallback**:
   - Instead of unconditionally returning `"uclm"` / `"esi"` when `selected_university_id` / `selected_faculty_id` are absent in DataStore, check if legacy remote hashes exist (`last_known_schedule_hash_1` or `last_known_schedule_hash_2` is non-empty) via pure testable `resolveSelectedUniversityId(...)` and `resolveSelectedFacultyId(...)` helpers.
-  - If legacy hashes exist, fall back to `"uclm"` / `"esi"` so existing ESI users remain linked without interruption.
+  - If legacy hashes exist, fall back to `LEGACY_FALLBACK_UNIVERSITY_ID` ("uclm") / `LEGACY_FALLBACK_FACULTY_ID` ("esi") so existing ESI users remain linked without interruption.
   - Otherwise, emit `""` (empty string) on fresh installs until the user imports a remote schedule.
 - **Persist Faculty Display Metadata & Topic Prefix**:
   - Extend `setSelectedFaculty(universityId: String, facultyId: String, universityName: String? = null, facultyName: String? = null, fcmTopicPrefix: String? = null)` and expose `selectedUniversityNameFlow`, `selectedFacultyNameFlow`, and `selectedFcmTopicPrefixFlow` so `MoreScreen` and `FcmTopicManager` know the human-readable label and custom `fcm_topic_prefix` without needing a network call.
