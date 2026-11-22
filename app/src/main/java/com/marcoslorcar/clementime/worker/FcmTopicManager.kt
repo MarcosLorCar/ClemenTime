@@ -20,11 +20,22 @@ object FcmTopicManager {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    fun topicFor(universityId: String, facultyId: String): String {
-        val uni = universityId.trim().lowercase().replace(Regex("[^a-z0-9_.-]"), "_")
-            .ifBlank { SettingsRepository.DEFAULT_UNIVERSITY_ID }
-        val fac = facultyId.trim().lowercase().replace(Regex("[^a-z0-9_.-]"), "_")
-            .ifBlank { SettingsRepository.DEFAULT_FACULTY_ID }
+    fun topicFor(
+        universityId: String,
+        facultyId: String,
+        fcmTopicPrefix: String? = null
+    ): String {
+        val customPrefix = fcmTopicPrefix?.trim()?.removePrefix("sched_")
+            ?.lowercase()
+            ?.replace(Regex("[^a-z0-9_-]"), "_")
+            ?.takeIf { it.isNotBlank() }
+        if (customPrefix != null) {
+            return "sched_$customPrefix"
+        }
+        val uni = universityId.trim().lowercase().ifBlank { SettingsRepository.LEGACY_FALLBACK_UNIVERSITY_ID }
+            .replace(Regex("[^a-z0-9_-]"), "_")
+        val fac = facultyId.trim().lowercase().ifBlank { SettingsRepository.LEGACY_FALLBACK_FACULTY_ID }
+            .replace(Regex("[^a-z0-9_-]"), "_")
         return "sched_${uni}_${fac}"
     }
 
@@ -42,22 +53,29 @@ object FcmTopicManager {
         val syncMode = settingsRepository.syncModeFlow.first()
         val universityId = settingsRepository.selectedUniversityIdFlow.first()
         val facultyId = settingsRepository.selectedFacultyIdFlow.first()
+        val fcmTopicPrefix = settingsRepository.selectedFcmTopicPrefixFlow.first()
         val previousTopic = settingsRepository.subscribedFcmTopicFlow.first()
-        val targetTopic = topicFor(universityId, facultyId)
 
-        if (syncMode == SyncMode.OFFLINE) {
-            ScheduleUpdateWorker.cancelPeriodicWork(context)
-            runCatching {
-                val messaging = FirebaseMessaging.getInstance()
-                if (!previousTopic.isNullOrBlank()) {
-                    messaging.unsubscribeFromTopic(previousTopic)
+        if (syncMode == SyncMode.OFFLINE || universityId.isBlank() || facultyId.isBlank()) {
+            if (isGooglePlayServicesAvailable(context)) {
+                runCatching {
+                    val messaging = FirebaseMessaging.getInstance()
+                    if (!previousTopic.isNullOrBlank()) {
+                        messaging.unsubscribeFromTopic(previousTopic)
+                    }
+                    if (syncMode == SyncMode.OFFLINE) {
+                        messaging.isAutoInitEnabled = false
+                    }
                 }
-                messaging.unsubscribeFromTopic(targetTopic)
-                messaging.isAutoInitEnabled = false
             }
-            settingsRepository.setSubscribedFcmTopic(null)
+            if (!previousTopic.isNullOrBlank()) {
+                settingsRepository.setSubscribedFcmTopic("")
+            }
+            ScheduleUpdateWorker.cancelPeriodicWork(context)
             return@withContext
         }
+
+        val targetTopic = topicFor(universityId, facultyId, fcmTopicPrefix)
 
         // Online mode: prefer FCM topic push when GMS is available; fall back to periodic
         // WorkManager only on de-Googled devices without Google Play Services.

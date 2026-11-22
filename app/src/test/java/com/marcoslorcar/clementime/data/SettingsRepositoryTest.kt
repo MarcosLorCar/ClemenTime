@@ -1,5 +1,6 @@
 package com.marcoslorcar.clementime.data
 
+import com.marcoslorcar.clementime.worker.FcmTopicManager
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -17,12 +18,63 @@ class SettingsRepositoryTest {
     }
 
     @Test
-    fun defaultUniversityAndFaculty_fallbacksToUclmAndEsi() = runTest {
+    fun defaultUniversityAndFaculty_emitsEmptyOnFreshInstall() = runTest {
         val repository = SettingsRepository(null)
         val uni = repository.selectedUniversityIdFlow.first()
         val faculty = repository.selectedFacultyIdFlow.first()
-        assertEquals("uclm", uni)
-        assertEquals("esi", faculty)
+        val uniName = repository.selectedUniversityNameFlow.first()
+        val facultyName = repository.selectedFacultyNameFlow.first()
+        val prefix = repository.selectedFcmTopicPrefixFlow.first()
+        assertEquals("", uni)
+        assertEquals("", faculty)
+        assertEquals("", uniName)
+        assertEquals("", facultyName)
+        assertEquals("", prefix)
+    }
+
+    @Test
+    fun resolveSelectedUniversityAndFaculty_migratesLegacyHashesOrDefaultsEmpty() {
+        // Fresh install: stored ID null/blank and no legacy hashes -> ""
+        assertEquals("", SettingsRepository.resolveSelectedUniversityId(null, null, null))
+        assertEquals("", SettingsRepository.resolveSelectedUniversityId("", "", ""))
+        assertEquals("", SettingsRepository.resolveSelectedFacultyId(null, null, null))
+        assertEquals("", SettingsRepository.resolveSelectedFacultyId("", "", ""))
+
+        // Legacy user with saved hash 1 or 2 -> "uclm" / "esi"
+        assertEquals(
+            SettingsRepository.LEGACY_FALLBACK_UNIVERSITY_ID,
+            SettingsRepository.resolveSelectedUniversityId(null, "abc123", null)
+        )
+        assertEquals(
+            SettingsRepository.LEGACY_FALLBACK_FACULTY_ID,
+            SettingsRepository.resolveSelectedFacultyId(null, null, "def456")
+        )
+
+        // Explicit stored ID wins even if legacy hashes exist
+        assertEquals(
+            "upm",
+            SettingsRepository.resolveSelectedUniversityId("upm", "abc123", "def456")
+        )
+        assertEquals(
+            "etsiinf",
+            SettingsRepository.resolveSelectedFacultyId("etsiinf", "abc123", "def456")
+        )
+    }
+
+    @Test
+    fun fcmTopicManager_topicFor_handlesCustomPrefixAndFallbacks() {
+        assertEquals(
+            "sched_uclm_esi",
+            FcmTopicManager.topicFor("uclm", "esi")
+        )
+        assertEquals(
+            "sched_uclm_medicina_cr",
+            FcmTopicManager.topicFor("UCLM", "Medicina CR", "uclm_medicina_cr")
+        )
+        assertEquals(
+            "sched_upm_etsiinf",
+            FcmTopicManager.topicFor("upm", "etsiinf", "sched_UPM ETSiInf")
+        )
     }
 
     @Test

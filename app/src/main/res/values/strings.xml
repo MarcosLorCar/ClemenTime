@@ -387,7 +387,7 @@
 
     <!-- Schedule Diff Bottom Sheet strings -->
     <string name="schedule_changes_detected_title">Schedule Changes Detected</string>
-    <string name="schedule_changes_detected_desc">The official ESI schedule has been updated with changes affecting your active subjects.</string>
+    <string name="schedule_changes_detected_desc">The official schedule has been updated with changes affecting your active subjects.</string>
     <string name="apply_updates">Apply Updates</string>
     <string name="dismiss">Dismiss</string>
     <string name="diff_badge_modified">Modified</string>
@@ -416,4 +416,14 @@
     <string name="sync_mode_offline_desc">Zero background network activity. Manual schedule import only.</string>
     <string name="sync_mode_settings_title">Online Synchronization</string>
     <string name="sync_mode_settings_desc">Automatic schedule updates and change alerts</string>
+
+    <!-- Multi-Faculty Catalog & Unlisted University strings -->
+    <string name="import_faculty_linked_badge">Linked</string>
+    <string name="import_unlisted_university_title">Don\'t see your university or faculty?</string>
+    <string name="import_unlisted_university_desc">You can still use ClemenTime by creating subjects manually or importing a custom schedule JSON file.</string>
+    <string name="import_unlisted_create_subject">Create Subject</string>
+    <string name="import_unlisted_pick_json">Select Local JSON</string>
+    <string name="settings_linked_faculty_title">Linked faculty</string>
+    <string name="settings_linked_faculty_none">No faculty linked yet — import an online schedule</string>
+    <string name="settings_check_updates_no_faculty">Import an online schedule first to link a faculty and check for updates.</string>
 </resources>

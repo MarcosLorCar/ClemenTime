@@ -53,6 +53,12 @@ class ScheduleUpdateWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         return try {
+            val facultyId = settingsRepository.selectedFacultyIdFlow.first()
+            if (facultyId.isBlank()) {
+                android.util.Log.d(WORK_TAG, "Skipping schedule update check: no faculty linked yet.")
+                return Result.success()
+            }
+
             val syncResult = performSync(
                 context = context,
                 settingsRepository = settingsRepository,
@@ -178,13 +184,17 @@ class ScheduleUpdateWorker @AssistedInject constructor(
             }
 
             val currentSemester = settingsRepository.currentSemesterFlow.first()
+            val universityId = settingsRepository.selectedUniversityIdFlow.first()
             val facultyId = settingsRepository.selectedFacultyIdFlow.first()
+            if (facultyId.isBlank()) return SyncResult()
+
             val baseUrl = settingsRepository.githubRepoBaseUrlFlow.first()
 
             val remoteSummariesResult = importRepository.fetchRemoteSchedules(
                 rawBaseUrl = baseUrl,
                 facultyId = facultyId,
-                cacheBust = true
+                cacheBust = true,
+                universityId = universityId
             )
             if (remoteSummariesResult.isFailure) {
                 return SyncResult()
@@ -201,7 +211,9 @@ class ScheduleUpdateWorker @AssistedInject constructor(
                     apiService = apiService,
                     effectiveBaseUrl = effectiveBaseUrl,
                     summaries = summaries,
-                    semester = semester
+                    semester = semester,
+                    universityId = universityId,
+                    facultyId = facultyId
                 )
                 if (result != null && result.diffs.isNotEmpty()) {
                     settingsRepository.setLastScheduleSyncTimestamp(System.currentTimeMillis())
@@ -220,7 +232,9 @@ class ScheduleUpdateWorker @AssistedInject constructor(
             apiService: GitHubScheduleApiService?,
             effectiveBaseUrl: String,
             summaries: List<RemoteScheduleSummary>,
-            semester: Int
+            semester: Int,
+            universityId: String,
+            facultyId: String
         ): SyncResult? {
             val targetSemesterId = "${semester}C"
             // No fallback to summaries.first(): diffing against another semester's schedule
@@ -272,7 +286,12 @@ class ScheduleUpdateWorker @AssistedInject constructor(
 
             var previousSubjectHashes = settingsRepository.getLastRemoteSubjectHashesFlow(semester).first()
             if (previousSubjectHashes.isEmpty()) {
-                val cachedSlots = importRepository.getCachedRemoteSlotsForSemester(context, semester)
+                val cachedSlots = importRepository.getCachedRemoteSlotsForSemester(
+                    context = context,
+                    semester = semester,
+                    universityId = universityId,
+                    facultyId = facultyId
+                )
                 if (cachedSlots.isNotEmpty()) {
                     previousSubjectHashes = ScheduleDiffChecker.computeRemoteSubjectHashes(
                         existingSubjects = existingActiveSubjects,
@@ -300,6 +319,23 @@ class ScheduleUpdateWorker @AssistedInject constructor(
             if (diffs.isEmpty() && remoteHash.isNotBlank()) {
                 settingsRepository.setLastKnownScheduleHash(semester, remoteHash)
                 settingsRepository.setLastRemoteSubjectHashes(semester, currentSubjectHashes)
+                val scopedId = if (universityId.isNotBlank() && facultyId.isNotBlank()) {
+                    "${universityId}_${facultyId}_${semester}C"
+                } else {
+                    "${semester}C"
+                }
+                importRepository.cacheRemoteSlots(
+                    context = context,
+                    fileId = scopedId,
+                    title = summary.title,
+                    description = summary.description,
+                    remotePath = fullUrl,
+                    rawJson = jsonString,
+                    updatedTime = summary.updatedTime,
+                    universityId = universityId.ifBlank { null },
+                    facultyId = facultyId.ifBlank { null },
+                    termId = "${semester}C"
+                )
             }
 
             return SyncResult(

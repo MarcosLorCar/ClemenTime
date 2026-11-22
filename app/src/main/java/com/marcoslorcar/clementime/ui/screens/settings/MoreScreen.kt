@@ -48,6 +48,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material.icons.filled.ViewCompact
@@ -133,6 +134,7 @@ fun MoreScreen(
 
     val updatedSuccessMsg = stringResource(R.string.schedule_updated_success)
     val noUpdatesMsg = stringResource(R.string.no_schedule_updates_found)
+    val noFacultyMsg = stringResource(R.string.settings_check_updates_no_faculty)
 
     if (uiState.showDiffBottomSheet && uiState.pendingDiffs.isNotEmpty()) {
         ScheduleDiffBottomSheet(
@@ -165,9 +167,14 @@ fun MoreScreen(
         onAutoUpdateIntervalChanged = viewModel::setAutoUpdateIntervalHours,
         onSyncModeChanged = viewModel::setSyncMode,
         onCheckUpdatesNow = {
-            viewModel.checkScheduleUpdatesNow {
-                Toast.makeText(context, noUpdatesMsg, Toast.LENGTH_SHORT).show()
-            }
+            viewModel.checkScheduleUpdatesNow(
+                onNoUpdatesFound = {
+                    Toast.makeText(context, noUpdatesMsg, Toast.LENGTH_SHORT).show()
+                },
+                onNoFacultyLinked = {
+                    Toast.makeText(context, noFacultyMsg, Toast.LENGTH_SHORT).show()
+                }
+            )
         },
         onDebugShowFcmStatus = viewModel::debugShowFcmStatus,
         onDebugResetHashes = viewModel::debugResetScheduleHashes,
@@ -705,6 +712,14 @@ fun MoreContent(
                         tempRepoUrl = uiState.githubRepoBaseUrl
                         showRepoUrlDialog = true
                     }
+                )
+
+                // Linked Faculty Status
+                SettingItem(
+                    icon = Icons.Default.School,
+                    title = stringResource(R.string.settings_linked_faculty_title),
+                    subtitle = uiState.linkedFacultyLabel.ifBlank { stringResource(R.string.settings_linked_faculty_none) },
+                    onClick = onImportClick
                 )
 
                 // Sync Mode Setting

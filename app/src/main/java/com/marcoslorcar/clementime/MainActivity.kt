@@ -362,6 +362,9 @@ fun ClemenTimeApp(
                     },
                     onImportSuccess = {
                         navigateToTab(SubjectsRoute)
+                    },
+                    onNavigateToAddSubject = {
+                        navController.navigate(AddEditSubjectRoute())
                     }
                 )
             }

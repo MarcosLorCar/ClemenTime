@@ -51,6 +51,9 @@ open class SettingsRepository @Inject constructor(
     private val lastScheduleSyncTimestampKey = longPreferencesKey("last_schedule_sync_timestamp")
     private val selectedUniversityIdKey = stringPreferencesKey("selected_university_id")
     private val selectedFacultyIdKey = stringPreferencesKey("selected_faculty_id")
+    private val selectedUniversityNameKey = stringPreferencesKey("selected_university_name")
+    private val selectedFacultyNameKey = stringPreferencesKey("selected_faculty_name")
+    private val selectedFcmTopicPrefixKey = stringPreferencesKey("selected_fcm_topic_prefix")
     private val syncModeKey = stringPreferencesKey("sync_mode")
     private val subscribedFcmTopicKey = stringPreferencesKey("subscribed_fcm_topic")
     private fun lastKnownScheduleHashKey(semester: Int) = stringPreferencesKey("last_known_schedule_hash_$semester")
@@ -578,26 +581,112 @@ open class SettingsRepository @Inject constructor(
     open val selectedUniversityIdFlow: Flow<String>
         get() = try {
             context?.dataStore?.data?.map { preferences ->
-                preferences[selectedUniversityIdKey] ?: DEFAULT_UNIVERSITY_ID
-            } ?: kotlinx.coroutines.flow.flowOf(DEFAULT_UNIVERSITY_ID)
+                resolveSelectedUniversityId(
+                    storedUniversityId = preferences[selectedUniversityIdKey],
+                    legacyHash1 = preferences[lastKnownScheduleHashKey(1)],
+                    legacyHash2 = preferences[lastKnownScheduleHashKey(2)]
+                )
+            } ?: kotlinx.coroutines.flow.flowOf("")
         } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(DEFAULT_UNIVERSITY_ID)
+            kotlinx.coroutines.flow.flowOf("")
         }
 
     open val selectedFacultyIdFlow: Flow<String>
         get() = try {
             context?.dataStore?.data?.map { preferences ->
-                preferences[selectedFacultyIdKey] ?: DEFAULT_FACULTY_ID
-            } ?: kotlinx.coroutines.flow.flowOf(DEFAULT_FACULTY_ID)
+                resolveSelectedFacultyId(
+                    storedFacultyId = preferences[selectedFacultyIdKey],
+                    legacyHash1 = preferences[lastKnownScheduleHashKey(1)],
+                    legacyHash2 = preferences[lastKnownScheduleHashKey(2)]
+                )
+            } ?: kotlinx.coroutines.flow.flowOf("")
         } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(DEFAULT_FACULTY_ID)
+            kotlinx.coroutines.flow.flowOf("")
         }
 
-    open suspend fun setSelectedFaculty(universityId: String, facultyId: String) {
+    open val selectedUniversityNameFlow: Flow<String>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                val storedName = preferences[selectedUniversityNameKey]
+                if (!storedName.isNullOrBlank()) {
+                    storedName
+                } else {
+                    val storedId = preferences[selectedUniversityIdKey]
+                    val resolvedId = resolveSelectedUniversityId(
+                        storedUniversityId = storedId,
+                        legacyHash1 = preferences[lastKnownScheduleHashKey(1)],
+                        legacyHash2 = preferences[lastKnownScheduleHashKey(2)]
+                    )
+                    if (storedId.isNullOrBlank() && resolvedId == LEGACY_FALLBACK_UNIVERSITY_ID) {
+                        "UCLM"
+                    } else {
+                        storedName ?: ""
+                    }
+                }
+            } ?: kotlinx.coroutines.flow.flowOf("")
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf("")
+        }
+
+    open val selectedFacultyNameFlow: Flow<String>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                val storedName = preferences[selectedFacultyNameKey]
+                if (!storedName.isNullOrBlank()) {
+                    storedName
+                } else {
+                    val storedId = preferences[selectedFacultyIdKey]
+                    val resolvedId = resolveSelectedFacultyId(
+                        storedFacultyId = storedId,
+                        legacyHash1 = preferences[lastKnownScheduleHashKey(1)],
+                        legacyHash2 = preferences[lastKnownScheduleHashKey(2)]
+                    )
+                    if (storedId.isNullOrBlank() && resolvedId == LEGACY_FALLBACK_FACULTY_ID) {
+                        "Escuela Superior de Informática (ESI)"
+                    } else {
+                        storedName ?: ""
+                    }
+                }
+            } ?: kotlinx.coroutines.flow.flowOf("")
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf("")
+        }
+
+    open val selectedFcmTopicPrefixFlow: Flow<String>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                preferences[selectedFcmTopicPrefixKey] ?: ""
+            } ?: kotlinx.coroutines.flow.flowOf("")
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf("")
+        }
+
+    open suspend fun setSelectedFaculty(
+        universityId: String,
+        facultyId: String,
+        universityName: String? = null,
+        facultyName: String? = null,
+        fcmTopicPrefix: String? = null
+    ) {
         try {
             context?.dataStore?.edit { preferences ->
-                preferences[selectedUniversityIdKey] = universityId
-                preferences[selectedFacultyIdKey] = facultyId
+                preferences[selectedUniversityIdKey] = universityId.trim()
+                preferences[selectedFacultyIdKey] = facultyId.trim()
+                if (universityName.isNullOrBlank()) {
+                    preferences.remove(selectedUniversityNameKey)
+                } else {
+                    preferences[selectedUniversityNameKey] = universityName.trim()
+                }
+                if (facultyName.isNullOrBlank()) {
+                    preferences.remove(selectedFacultyNameKey)
+                } else {
+                    preferences[selectedFacultyNameKey] = facultyName.trim()
+                }
+                if (fcmTopicPrefix.isNullOrBlank()) {
+                    preferences.remove(selectedFcmTopicPrefixKey)
+                } else {
+                    preferences[selectedFcmTopicPrefixKey] = fcmTopicPrefix.trim()
+                }
             }
         } catch (_: Throwable) {}
     }
@@ -675,8 +764,28 @@ open class SettingsRepository @Inject constructor(
         const val DEFAULT_GITHUB_REPO_BASE_URL = BuildConfig.DEFAULT_GITHUB_REPO_BASE_URL
         const val FALLBACK_GITHUB_REPO_BASE_URL = BuildConfig.FALLBACK_GITHUB_REPO_BASE_URL
 
-        const val DEFAULT_UNIVERSITY_ID = "uclm"
-        const val DEFAULT_FACULTY_ID = "esi"
+        const val LEGACY_FALLBACK_UNIVERSITY_ID = "uclm"
+        const val LEGACY_FALLBACK_FACULTY_ID = "esi"
+
+        internal fun resolveSelectedUniversityId(
+            storedUniversityId: String?,
+            legacyHash1: String?,
+            legacyHash2: String?
+        ): String {
+            if (!storedUniversityId.isNullOrBlank()) return storedUniversityId
+            val hasLegacyHashes = !legacyHash1.isNullOrBlank() || !legacyHash2.isNullOrBlank()
+            return if (hasLegacyHashes) LEGACY_FALLBACK_UNIVERSITY_ID else ""
+        }
+
+        internal fun resolveSelectedFacultyId(
+            storedFacultyId: String?,
+            legacyHash1: String?,
+            legacyHash2: String?
+        ): String {
+            if (!storedFacultyId.isNullOrBlank()) return storedFacultyId
+            val hasLegacyHashes = !legacyHash1.isNullOrBlank() || !legacyHash2.isNullOrBlank()
+            return if (hasLegacyHashes) LEGACY_FALLBACK_FACULTY_ID else ""
+        }
 
         /** Hours between background schedule checks. 0 disables them, which is the default. */
         const val DEFAULT_AUTO_UPDATE_INTERVAL_HOURS = 0
