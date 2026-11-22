@@ -617,7 +617,7 @@ open class SettingsRepository @Inject constructor(
                         legacyHash1 = preferences[lastKnownScheduleHashKey(1)],
                         legacyHash2 = preferences[lastKnownScheduleHashKey(2)]
                     )
-                    if (storedId.isNullOrBlank() && resolvedId == DEFAULT_UNIVERSITY_ID) {
+                    if (storedId.isNullOrBlank() && resolvedId == LEGACY_FALLBACK_UNIVERSITY_ID) {
                         "UCLM"
                     } else {
                         storedName ?: ""
@@ -641,7 +641,7 @@ open class SettingsRepository @Inject constructor(
                         legacyHash1 = preferences[lastKnownScheduleHashKey(1)],
                         legacyHash2 = preferences[lastKnownScheduleHashKey(2)]
                     )
-                    if (storedId.isNullOrBlank() && resolvedId == DEFAULT_FACULTY_ID) {
+                    if (storedId.isNullOrBlank() && resolvedId == LEGACY_FALLBACK_FACULTY_ID) {
                         "Escuela Superior de Informática (ESI)"
                     } else {
                         storedName ?: ""
@@ -764,8 +764,8 @@ open class SettingsRepository @Inject constructor(
         const val DEFAULT_GITHUB_REPO_BASE_URL = BuildConfig.DEFAULT_GITHUB_REPO_BASE_URL
         const val FALLBACK_GITHUB_REPO_BASE_URL = BuildConfig.FALLBACK_GITHUB_REPO_BASE_URL
 
-        const val DEFAULT_UNIVERSITY_ID = "uclm"
-        const val DEFAULT_FACULTY_ID = "esi"
+        const val LEGACY_FALLBACK_UNIVERSITY_ID = "uclm"
+        const val LEGACY_FALLBACK_FACULTY_ID = "esi"
 
         internal fun resolveSelectedUniversityId(
             storedUniversityId: String?,
@@ -774,7 +774,7 @@ open class SettingsRepository @Inject constructor(
         ): String {
             if (!storedUniversityId.isNullOrBlank()) return storedUniversityId
             val hasLegacyHashes = !legacyHash1.isNullOrBlank() || !legacyHash2.isNullOrBlank()
-            return if (hasLegacyHashes) DEFAULT_UNIVERSITY_ID else ""
+            return if (hasLegacyHashes) LEGACY_FALLBACK_UNIVERSITY_ID else ""
         }
 
         internal fun resolveSelectedFacultyId(
@@ -784,7 +784,7 @@ open class SettingsRepository @Inject constructor(
         ): String {
             if (!storedFacultyId.isNullOrBlank()) return storedFacultyId
             val hasLegacyHashes = !legacyHash1.isNullOrBlank() || !legacyHash2.isNullOrBlank()
-            return if (hasLegacyHashes) DEFAULT_FACULTY_ID else ""
+            return if (hasLegacyHashes) LEGACY_FALLBACK_FACULTY_ID else ""
         }
 
         /** Hours between background schedule checks. 0 disables them, which is the default. */

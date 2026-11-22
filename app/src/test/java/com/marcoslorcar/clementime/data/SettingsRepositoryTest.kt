@@ -42,11 +42,11 @@ class SettingsRepositoryTest {
 
         // Legacy user with saved hash 1 or 2 -> "uclm" / "esi"
         assertEquals(
-            SettingsRepository.DEFAULT_UNIVERSITY_ID,
+            SettingsRepository.LEGACY_FALLBACK_UNIVERSITY_ID,
             SettingsRepository.resolveSelectedUniversityId(null, "abc123", null)
         )
         assertEquals(
-            SettingsRepository.DEFAULT_FACULTY_ID,
+            SettingsRepository.LEGACY_FALLBACK_FACULTY_ID,
             SettingsRepository.resolveSelectedFacultyId(null, null, "def456")
         )
 

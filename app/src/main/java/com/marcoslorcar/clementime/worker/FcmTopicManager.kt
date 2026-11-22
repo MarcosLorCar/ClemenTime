@@ -32,9 +32,9 @@ object FcmTopicManager {
         if (customPrefix != null) {
             return "sched_$customPrefix"
         }
-        val uni = universityId.trim().lowercase().ifBlank { SettingsRepository.DEFAULT_UNIVERSITY_ID }
+        val uni = universityId.trim().lowercase().ifBlank { SettingsRepository.LEGACY_FALLBACK_UNIVERSITY_ID }
             .replace(Regex("[^a-z0-9_-]"), "_")
-        val fac = facultyId.trim().lowercase().ifBlank { SettingsRepository.DEFAULT_FACULTY_ID }
+        val fac = facultyId.trim().lowercase().ifBlank { SettingsRepository.LEGACY_FALLBACK_FACULTY_ID }
             .replace(Regex("[^a-z0-9_-]"), "_")
         return "sched_${uni}_${fac}"
     }

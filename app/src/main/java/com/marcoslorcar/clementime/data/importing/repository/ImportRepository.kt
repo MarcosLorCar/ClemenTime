@@ -197,7 +197,7 @@ class ImportRepository @Inject constructor(
         semester: Int,
         selectedSubjectKeys: Set<String>? = null,
         facultyId: String? = null,
-        universityId: String = SettingsRepository.DEFAULT_UNIVERSITY_ID,
+        universityId: String = SettingsRepository.LEGACY_FALLBACK_UNIVERSITY_ID,
         context: Context? = null,
         rawBaseUrl: String = SettingsRepository.DEFAULT_GITHUB_REPO_BASE_URL
     ): Int = withContext(Dispatchers.IO) {
@@ -211,7 +211,7 @@ class ImportRepository @Inject constructor(
         }
         if (diffsToApply.isEmpty()) return@withContext 0
 
-        val effectiveFacultyId = facultyId ?: SettingsRepository.DEFAULT_FACULTY_ID
+        val effectiveFacultyId = facultyId ?: SettingsRepository.LEGACY_FALLBACK_FACULTY_ID
         var slotsToUse = remoteSlots
         var downloadedSummary: RemoteScheduleSummary? = null
         var downloadedUrl: String? = null
@@ -432,8 +432,8 @@ class ImportRepository @Inject constructor(
 
             // 2. Fall back to legacy flat schedules_index.json only when catalog failed and ESI is requested
             val canFallbackToLegacyIndex =
-                facultyId.equals(SettingsRepository.DEFAULT_FACULTY_ID, ignoreCase = true) &&
-                    (universityId.isNullOrBlank() || universityId.equals(SettingsRepository.DEFAULT_UNIVERSITY_ID, ignoreCase = true))
+                facultyId.equals(SettingsRepository.LEGACY_FALLBACK_FACULTY_ID, ignoreCase = true) &&
+                    (universityId.isNullOrBlank() || universityId.equals(SettingsRepository.LEGACY_FALLBACK_UNIVERSITY_ID, ignoreCase = true))
 
             if (canFallbackToLegacyIndex) {
                 val indexUrl = withCacheParam(
@@ -515,13 +515,13 @@ class ImportRepository @Inject constructor(
                 val syntheticCatalog = ScheduleCatalog(
                     universities = listOf(
                         UniversityCatalogEntry(
-                            id = SettingsRepository.DEFAULT_UNIVERSITY_ID,
+                            id = SettingsRepository.LEGACY_FALLBACK_UNIVERSITY_ID,
                             name = "UCLM",
                             faculties = listOf(
                                 FacultyCatalogEntry(
-                                    id = SettingsRepository.DEFAULT_FACULTY_ID,
+                                    id = SettingsRepository.LEGACY_FALLBACK_FACULTY_ID,
                                     name = "Escuela Superior de Informática (ESI)",
-                                    fcmTopicPrefix = "${SettingsRepository.DEFAULT_UNIVERSITY_ID}_${SettingsRepository.DEFAULT_FACULTY_ID}",
+                                    fcmTopicPrefix = "${SettingsRepository.LEGACY_FALLBACK_UNIVERSITY_ID}_${SettingsRepository.LEGACY_FALLBACK_FACULTY_ID}",
                                     terms = terms
                                 )
                             )
