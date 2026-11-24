@@ -14,21 +14,13 @@ Specialized subsystem documentation is available via Antigravity workspace skill
 
 ## Token & Context Efficiency Directives
 
-To keep conversation context fast and prevent token inflation (especially with large-context models like Gemini 3.8):
-1. **Targeted File Reading**:
-   - For files >100 lines, ALWAYS specify `StartLine` and `EndLine` with `view_file`.
-   - Never view full files when inspecting a single function, interface, or layout block.
-   - Do NOT re-view files immediately after editing if `replace_file_content` confirmed the replacement.
-2. **Never Dump Schedule Data**:
-   - `schedules/input/schedules.json` (~9,300 lines) and `schedules/dist/{1C,2C}.json` (~4,000 lines) must NEVER be opened with full `view_file`.
-   - Use targeted CLI queries (`jq`, `grep`, `head -n 30`, or small Python one-liners) to inspect specific keys.
-3. **Targeted Test Execution**:
+1. **Never Dump Schedule Data**:
+   - `schedules/input/schedules.json` (~9,300 lines) and `schedules/dist/{1C,2C}.json` (~4,000 lines) must NEVER be read in full.
+   - Use targeted CLI queries (`jq`, `rg`/`grep`, `head -n 30`, or small Python one-liners) to inspect specific keys.
+2. **Targeted Test Execution**:
    - Run tests targeting the specific class/method being modified:
      `./gradlew testDebugUnitTest --tests "com.marcoslorcar.clementime.utils.ConflictSolverTest"`
    - Pipe or filter noisy outputs where possible.
-4. **Delegate Deep Research to Subagents**:
-   - For broad codebase exploration or multi-file research, invoke the `research` subagent via `invoke_subagent`.
-   - Subagents discard intermediate file dumps and return only concise summaries, keeping the main context lean.
 
 ---
 
@@ -82,22 +74,7 @@ All workflows trigger on **`master`** (the default branch). Check branch names b
 
 ## Git Workflow & Contribution Directives
 
-To maintain clean repository history and streamline PR reviews:
-
-1. **Proactive Branching for New Tasks**:
-   - When starting work on a new feature, bug fix, or refactor (i.e. not an ongoing task on a WIP branch), check the active branch with `git branch`.
-   - If on `master`, **create and switch to a dedicated topic branch before writing code**:
-     - `fix/<kebab-case-desc>` for bug fixes (e.g. `fix/widget-tomorrow-date-labeling`)
-     - `feat/<kebab-case-desc>` for features (e.g. `feat/restore-esi-api-pipeline`)
-     - `refactor/<kebab-case-desc>` for refactoring (e.g. `refactor/cleanup-obsolete-code`)
-     - `chore/<kebab-case-desc>` for maintenance and documentation
-   - Never commit feature or fix code directly to `master`.
-
-2. **Commit Conventions & Strict Authorship**:
-   - Use Conventional Commits (`fix: ...`, `feat: ...`, `refactor: ...`, `chore: ...`).
-   - Include a bulleted breakdown of changes in the commit body.
-   - **No Co-Authors**: All commits must be authored exclusively by Marcos Loro (`marcoslorcar03@gmail.com`). Do **not** append `Co-authored-by:` metadata trailers.
-
-3. **Pull Request Protocol**:
-   - Push to `origin <branch-name>` and open a PR against `master` using `gh pr create`.
-   - Format the PR description with clear `## Summary` and `## Changes` bullet points matching the commit.
+- **Workspace & UI workflow**: Leave changes uncommitted for review unless asked to commit, push, or open a PR. Stay on an active worktree or topic branch when already on one; never commit directly to `master`.
+- **Branch naming** *(when creating a branch)*: `fix/<kebab-case-desc>`, `feat/<kebab-case-desc>`, `refactor/<kebab-case-desc>`, or `chore/<kebab-case-desc>`.
+- **Commits & authorship** *(when committing)*: Use Conventional Commits (`fix:`, `feat:`, `refactor:`, `chore:`), authored exclusively by Marcos Loro (`marcoslorcar03@gmail.com`) with no `Co-Authored-By:` trailers.
+- **Pull Requests** *(when requested)*: Target `master` (`gh pr create`) with concise `## Summary` and `## Changes` sections.
