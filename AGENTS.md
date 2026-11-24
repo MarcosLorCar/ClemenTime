@@ -72,9 +72,6 @@ All workflows trigger on **`master`** (the default branch). Check branch names b
 
 ---
 
-## Git Workflow & Contribution Directives
+## Git & Contribution Notes
 
-- **Workspace & UI workflow**: Leave changes uncommitted for review unless asked to commit, push, or open a PR. Stay on an active worktree or topic branch when already on one; never commit directly to `master`.
-- **Branch naming** *(when creating a branch)*: `fix/<kebab-case-desc>`, `feat/<kebab-case-desc>`, `refactor/<kebab-case-desc>`, or `chore/<kebab-case-desc>`.
-- **Commits & authorship** *(when committing)*: Use Conventional Commits (`fix:`, `feat:`, `refactor:`, `chore:`), authored exclusively by Marcos Loro (`marcoslorcar03@gmail.com`) with no `Co-Authored-By:` trailers.
-- **Pull Requests** *(when requested)*: Target `master` (`gh pr create`) with concise `## Summary` and `## Changes` sections.
+- Leave edits uncommitted for review unless explicitly asked to commit, push, or open a PR. When asked to commit, never commit directly to `master` or append `Co-Authored-By:` trailers.
