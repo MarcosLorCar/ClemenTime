@@ -347,4 +347,53 @@ class ScheduleDiffCheckerTest {
         assertEquals("FunProg1", diffs.first().subjectCode)
         assertTrue(diffs.first().newDetail!!.contains("A2.4"))
     }
+
+    @Test
+    fun `findDiffs isolates third trimester slots from earlier periods`() {
+        val term3Subject = sampleSubject.copy(id = 3L, code = "OPT3", name = "Optativa III", semester = 3)
+        val existingSlot = ClassSlot(
+            id = 30L,
+            subjectId = 3L,
+            dayOfWeek = DayOfWeek.WEDNESDAY,
+            startTime = LocalTime.of(10, 0),
+            endTime = LocalTime.of(11, 30),
+            classroom = "B1.1",
+            entryType = EntryType.THEORY
+        )
+        val remoteSlots = listOf(
+            JsonFlatSlot(
+                grupo = "1A",
+                cuatrimestre = "1T",
+                dia = "Lunes",
+                horaInicio = "08:30",
+                horaFin = "10:00",
+                codigo = "OPT3",
+                asignatura = "Optativa III",
+                tipo = "teoría",
+                aula = "A1.1"
+            ),
+            JsonFlatSlot(
+                grupo = "1A",
+                cuatrimestre = "3T",
+                dia = "Miércoles",
+                horaInicio = "10:00",
+                horaFin = "11:30",
+                codigo = "OPT3",
+                asignatura = "Optativa III",
+                tipo = "teoría",
+                aula = "B2.5"
+            )
+        )
+
+        val diffs = ScheduleDiffChecker.findDiffs(
+            existingSubjects = listOf(SubjectWithSlots(term3Subject, listOf(existingSlot))),
+            remoteSlots = remoteSlots,
+            currentSemester = 3
+        )
+
+        assertEquals(1, diffs.size)
+        assertEquals(DiffType.MODIFIED, diffs.first().changeType)
+        assertTrue(diffs.first().oldDetail!!.contains("B1.1"))
+        assertTrue(diffs.first().newDetail!!.contains("B2.5"))
+    }
 }

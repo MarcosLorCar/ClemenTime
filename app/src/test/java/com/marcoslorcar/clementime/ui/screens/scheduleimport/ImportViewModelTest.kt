@@ -1,5 +1,7 @@
 package com.marcoslorcar.clementime.ui.screens.scheduleimport
 
+import com.marcoslorcar.clementime.data.PeriodConfig
+import com.marcoslorcar.clementime.data.PeriodType
 import com.marcoslorcar.clementime.data.importing.model.ImportFile
 import com.marcoslorcar.clementime.data.importing.model.ImportSourceType
 import com.marcoslorcar.clementime.data.importing.model.JsonGroup
@@ -335,6 +337,73 @@ class ImportViewModelTest {
         assertTrue(resetIdx < setFacultyIdx)
         assertTrue(resetIdx < setHashIdx)
     }
+
+    @Test
+    fun confirmImport_remoteTrimesterFaculty_adoptsPeriodConfigBeforeSwitchingSemester() = runTest {
+        val recordingSettings = RecordingSettingsRepositoryForImport()
+        val viewModel = ImportViewModel(mockRepository, JsonScheduleParser(), null, recordingSettings)
+
+        val trimesterSubject = JsonSubject(code = "TR3", name = "Trimester 3", semester = 3)
+        val stateField = ImportViewModel::class.java.getDeclaredField("_uiState")
+        stateField.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        val stateFlow = stateField.get(viewModel) as MutableStateFlow<ImportUiState>
+        stateFlow.value = ImportUiState.Selection(
+            schema = ScheduleJsonSchema(title = "3º Trimestre", semester = 3, subjects = listOf(trimesterSubject)),
+            selectedSubjects = setOf(SelectedSubject(trimesterSubject, "General")),
+            selectedFile = ImportFile(
+                id = "uni_fac_3T",
+                title = "3º Trimestre",
+                sourceType = ImportSourceType.REMOTE,
+                remotePath = "https://example.com/fac/3T.json",
+                remoteHash = "hash_3t",
+                universityId = "uni",
+                facultyId = "fac",
+                termId = "3T",
+                facultyPeriodConfig = PeriodConfig(PeriodType.TRIMESTERS, 3)
+            )
+        )
+
+        viewModel.confirmImport()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is ImportUiState.Success)
+        assertEquals(PeriodConfig(PeriodType.TRIMESTERS, 3), recordingSettings.periodConfigState.value)
+        assertEquals(3, recordingSettings.currentSemesterState.value)
+        val periodIdx = recordingSettings.events.indexOf("setPeriodConfig:TRIMESTERS:3")
+        val semIdx = recordingSettings.events.indexOf("setCurrentSemester:3")
+        assertTrue(periodIdx >= 0)
+        assertTrue(periodIdx < semIdx)
+        assertTrue(recordingSettings.events.contains("setHash:3:hash_3t"))
+    }
+
+    @Test
+    fun confirmImport_customImportWithHigherPeriod_autoExpandsPeriodConfig() = runTest {
+        val recordingSettings = RecordingSettingsRepositoryForImport()
+        val viewModel = ImportViewModel(mockRepository, JsonScheduleParser(), null, recordingSettings)
+
+        val period5Subject = JsonSubject(code = "P5", name = "Period 5 Subject", semester = 5)
+        val stateField = ImportViewModel::class.java.getDeclaredField("_uiState")
+        stateField.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        val stateFlow = stateField.get(viewModel) as MutableStateFlow<ImportUiState>
+        stateFlow.value = ImportUiState.Selection(
+            schema = ScheduleJsonSchema(title = "Periodo 5", semester = 5, subjects = listOf(period5Subject)),
+            selectedSubjects = setOf(SelectedSubject(period5Subject, "General")),
+            selectedFile = ImportFile(
+                id = "custom_p5.json",
+                title = "Periodo 5",
+                sourceType = ImportSourceType.CUSTOM
+            )
+        )
+
+        viewModel.confirmImport()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is ImportUiState.Success)
+        assertEquals(PeriodConfig(PeriodType.CUSTOM, 5), recordingSettings.periodConfigState.value)
+        assertEquals(5, recordingSettings.currentSemesterState.value)
+    }
 }
 
 private class RecordingSettingsRepositoryForImport(
@@ -351,13 +420,31 @@ private class RecordingSettingsRepositoryForImport(
 
     private val uniIdFlow = MutableStateFlow(initialUniversityId)
     private val facIdFlow = MutableStateFlow(initialFacultyId)
+    val periodConfigState = MutableStateFlow(PeriodConfig.DEFAULT)
+    val currentSemesterState = MutableStateFlow(1)
 
     override val selectedUniversityIdFlow: Flow<String> = uniIdFlow
     override val selectedFacultyIdFlow: Flow<String> = facIdFlow
+    override val periodConfigFlow: Flow<PeriodConfig> = periodConfigState
+    override val currentSemesterFlow: Flow<Int> = currentSemesterState
 
     val events = mutableListOf<String>()
     val setFacultyCalls = mutableListOf<FacultyCall>()
     var resetHashesCount = 0
+
+    override suspend fun setPeriodConfig(config: PeriodConfig) {
+        val normalized = PeriodConfig.normalized(config.type, config.count)
+        periodConfigState.value = normalized
+        if (currentSemesterState.value > normalized.count) {
+            currentSemesterState.value = normalized.count
+        }
+        events.add("setPeriodConfig:${normalized.type.name}:${normalized.count}")
+    }
+
+    override suspend fun setCurrentSemester(semester: Int) {
+        currentSemesterState.value = semester
+        events.add("setCurrentSemester:$semester")
+    }
 
     override suspend fun resetScheduleHashes() {
         resetHashesCount++

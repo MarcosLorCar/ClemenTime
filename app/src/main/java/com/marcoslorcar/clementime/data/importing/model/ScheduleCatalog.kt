@@ -28,6 +28,10 @@ data class FacultyCatalogEntry(
     val fcmTopicPrefix: String? = null,
     @SerialName("subgroups_label")
     val subgroupsLabel: String? = null,
+    @SerialName("period_type")
+    val periodType: String? = null,
+    @SerialName("period_count")
+    val periodCount: Int? = null,
     val terms: List<TermCatalogEntry> = emptyList()
 )
 

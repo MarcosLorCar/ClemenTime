@@ -1,5 +1,7 @@
 package com.marcoslorcar.clementime.data.importing.model
 
+import com.marcoslorcar.clementime.data.PeriodConfig
+
 enum class ImportSourceType {
     REMOTE,
     CUSTOM
@@ -22,5 +24,6 @@ data class ImportFile(
     val facultyName: String? = null,
     val fcmTopicPrefix: String? = null,
     val termId: String? = null,
-    val isLinkedFaculty: Boolean = false
+    val isLinkedFaculty: Boolean = false,
+    val facultyPeriodConfig: PeriodConfig? = null
 )

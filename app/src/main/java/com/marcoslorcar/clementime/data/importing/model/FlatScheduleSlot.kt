@@ -1,11 +1,15 @@
 package com.marcoslorcar.clementime.data.importing.model
 
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonNames
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class JsonFlatSlot(
     val grupo: String = "",
+    @JsonNames("trimestre", "periodo", "term", "semester")
     val cuatrimestre: String = "1C",
     val dia: String = "",
     @SerialName("hora_inicio") val horaInicio: String = "",

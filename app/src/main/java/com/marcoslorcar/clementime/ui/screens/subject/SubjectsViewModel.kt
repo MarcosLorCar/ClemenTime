@@ -3,6 +3,7 @@ package com.marcoslorcar.clementime.ui.screens.subject
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.marcoslorcar.clementime.data.PeriodConfig
 import com.marcoslorcar.clementime.data.ScheduleDao
 import com.marcoslorcar.clementime.data.SubjectWithSlots
 import com.marcoslorcar.clementime.ui.widget.ScheduleWidgetUtils
@@ -20,6 +21,7 @@ import javax.inject.Inject
 data class SubjectsUiState(
     val subjects: List<SubjectWithSlots> = emptyList(),
     val selectedSemester: Int = 1,
+    val periodConfig: PeriodConfig = PeriodConfig.DEFAULT,
     val searchQuery: String = "",
     val isLoading: Boolean = false,
     val selectedSubjectIds: Set<Long> = emptySet(),
@@ -87,7 +89,20 @@ class SubjectsViewModel @Inject constructor(
         }
         viewModelScope.launch {
             settingsRepository.currentSemesterFlow.collect { semester ->
-                _uiState.update { it.copy(selectedSemester = semester) }
+                _uiState.update { state ->
+                    state.copy(selectedSemester = semester.coerceIn(1, state.periodConfig.count))
+                }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.periodConfigFlow.collect { config ->
+                _uiState.update { state ->
+                    state.copy(
+                        periodConfig = config,
+                        selectedSemester = state.selectedSemester.coerceIn(1, config.count),
+                        isSemesterSwitcherVisible = if (config.count <= 1) false else state.isSemesterSwitcherVisible
+                    )
+                }
             }
         }
         viewModelScope.launch {

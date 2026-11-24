@@ -81,8 +81,10 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.marcoslorcar.clementime.R
 import com.marcoslorcar.clementime.data.AttachedFileItem
+import com.marcoslorcar.clementime.data.PeriodConfig
 import com.marcoslorcar.clementime.data.Subject
 import com.marcoslorcar.clementime.ui.components.SemesterSwitcher
+import com.marcoslorcar.clementime.ui.components.periodLabel
 import com.marcoslorcar.clementime.utils.fadingEdges
 import com.marcoslorcar.clementime.utils.formatFileSize
 import com.marcoslorcar.clementime.utils.isImageFile
@@ -102,7 +104,8 @@ fun SubjectBasicDetailsCard(
     onUpdateColor: (Int) -> Unit,
     onUpdateSemester: (Int) -> Unit,
     onUpdateActive: (Boolean) -> Unit = {},
-    showActiveToggle: Boolean = true
+    showActiveToggle: Boolean = true,
+    periodConfig: PeriodConfig = PeriodConfig.DEFAULT
 ) {
     if (!isEditMode) {
         Card(
@@ -146,7 +149,7 @@ fun SubjectBasicDetailsCard(
                             )
                         }
                         Text(
-                            text = stringResource(if (selectedSemester == 1) R.string.semester_1_label else R.string.semester_2_label),
+                            text = periodLabel(semester = selectedSemester, type = periodConfig.type),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isActive) 1f else 0.6f)
                         )
@@ -236,7 +239,9 @@ fun SubjectBasicDetailsCard(
 
             SemesterSwitcher(
                 selectedSemester = selectedSemester,
-                onSemesterSelected = onUpdateSemester
+                onSemesterSelected = onUpdateSemester,
+                periodConfig = periodConfig,
+                minVisibleCount = maxOf(periodConfig.count, selectedSemester)
             )
 
             if (showActiveToggle) {

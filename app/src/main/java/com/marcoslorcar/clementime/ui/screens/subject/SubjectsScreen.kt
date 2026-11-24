@@ -216,12 +216,14 @@ fun SubjectsContent(
                             }
                         } else {
                             if (uiState.subjects.isNotEmpty()) {
-                                IconButton(onClick = { onEvent(SubjectsUiEvent.ToggleSemesterSwitcher) }) {
-                                    Icon(
-                                        imageVector = Icons.Default.DateRange,
-                                        contentDescription = stringResource(R.string.content_description_toggle_semester_switcher),
-                                        tint = if (uiState.isSemesterSwitcherVisible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                                    )
+                                if (uiState.periodConfig.count > 1) {
+                                    IconButton(onClick = { onEvent(SubjectsUiEvent.ToggleSemesterSwitcher) }) {
+                                        Icon(
+                                            imageVector = Icons.Default.DateRange,
+                                            contentDescription = stringResource(R.string.content_description_toggle_semester_switcher),
+                                            tint = if (uiState.isSemesterSwitcherVisible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
                                 }
                                 IconButton(onClick = { onEvent(SubjectsUiEvent.ToggleTools) }) {
                                     Icon(
@@ -239,13 +241,14 @@ fun SubjectsContent(
                 )
                 
                 AnimatedVisibility(
-                    visible = uiState.isSemesterSwitcherVisible,
+                    visible = uiState.isSemesterSwitcherVisible && uiState.periodConfig.count > 1,
                     enter = expandVertically(),
                     exit = shrinkVertically()
                 ) {
                     SemesterSwitcher(
                         selectedSemester = uiState.selectedSemester,
                         onSemesterSelected = { onEvent(SubjectsUiEvent.SemesterChanged(it)) },
+                        periodConfig = uiState.periodConfig,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
                 }
