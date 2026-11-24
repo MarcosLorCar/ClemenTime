@@ -55,6 +55,8 @@ data class AddEditSubjectUiState(
     val name: String = "",
     val color: Int = Subject.PRESET_COLORS.first(),
     val semester: Int = 1,
+    val semesterCount: Int = SettingsRepository.DEFAULT_SEMESTERS_PER_YEAR,
+    val semesterLabels: Map<Int, String> = emptyMap(),
     val isActive: Boolean = true,
     val defaultDurationMinutes: Int = 90,
     val notesText: String = "",
@@ -113,7 +115,19 @@ class AddEditSubjectViewModel @Inject constructor(
         }
         viewModelScope.launch {
             settingsRepository.currentSemesterFlow.firstOrNull()?.let { semester ->
-                _uiState.update { it.copy(semester = semester) }
+                _uiState.update { state ->
+                    if (state.isNewSubject) state.copy(semester = semester) else state
+                }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.semestersPerYearFlow.collect { count ->
+                _uiState.update { it.copy(semesterCount = count) }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.selectedFacultyTermLabelsFlow.collect { labels ->
+                _uiState.update { it.copy(semesterLabels = labels) }
             }
         }
         viewModelScope.launch {

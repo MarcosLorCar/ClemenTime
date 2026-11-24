@@ -22,5 +22,8 @@ data class ImportFile(
     val facultyName: String? = null,
     val fcmTopicPrefix: String? = null,
     val termId: String? = null,
-    val isLinkedFaculty: Boolean = false
+    val isLinkedFaculty: Boolean = false,
+    val termSemester: Int? = null,
+    val facultyTermCount: Int? = null,
+    val facultyTermLabels: Map<Int, String> = emptyMap()
 )

@@ -314,17 +314,32 @@
     <string name="widget_toggle_tomorrow">Mañana →</string>
     <string name="semester_1_label">1º Cuatrimestre</string>
     <string name="semester_2_label">2º Cuatrimestre</string>
+    <string name="semester_3_label">3º Periodo</string>
+    <string name="semester_4_label">4º Periodo</string>
+    <string name="semester_5_label">5º Periodo</string>
+    <string name="semester_6_label">6º Periodo</string>
+    <string name="semester_generic_label">%1$dº Periodo</string>
+    <string name="semester_medium_format">Per. %1$d</string>
+    <string name="semester_compact_format">P%1$d</string>
     <string name="semester_label">Cuatrimestre</string>
+    <string name="semesters_per_year_setting_title">Periodos por año</string>
+    <string name="semesters_per_year_setting_desc">Número de cuatrimestres o periodos mostrados en la app</string>
+    <plurals name="semesters_per_year_value">
+        <item quantity="one">%1$d periodo</item>
+        <item quantity="other">%1$d periodos</item>
+    </plurals>
 
     <string name="export_ics_setting_title">Exportar al Calendario (.ics)</string>
     <string name="export_ics_desc">Añadir horario a Google Calendar, Outlook o Apple Calendar</string>
-    <string name="export_ics_range_picker_title">Seleccionar Duración del Semestre</string>
-    <string name="export_ics_s1_picker_title">Duración del 1er Cuatrimestre</string>
-    <string name="export_ics_s2_picker_title">Duración del 2º Cuatrimestre</string>
-    <string name="export_ics_step_course_start">Inicio de Curso</string>
-    <string name="export_ics_step_s2_start">Inicio 2º Cuatrimestre</string>
-    <string name="export_ics_step_course_end">Fin de Curso</string>
-    <string name="export_ics_step_indicator">Paso %1$d de 3</string>
+    <string name="export_ics_no_active_subjects">No hay asignaturas activas para exportar.</string>
+    <string name="export_ics_scope_dialog_title">Exportar al Calendario</string>
+    <string name="export_ics_scope_dialog_desc">Elige qué periodos quieres incluir en el archivo de calendario (.ics):</string>
+    <string name="export_ics_scope_active_only">Solo el periodo activo (%1$s)</string>
+    <string name="export_ics_scope_single_term">Solo %1$s</string>
+    <string name="export_ics_scope_all_populated">Todos los periodos con asignaturas (%1$d)</string>
+    <string name="export_ics_step_dynamic_indicator">Paso %1$d de %2$d</string>
+    <string name="export_ics_term_start_date">%1$s — Fecha de inicio</string>
+    <string name="export_ics_term_end_date">%1$s — Fecha de fin</string>
 
     <string name="delete_slot_confirmation">¿Estás seguro de que deseas eliminar este horario de clase?</string>
     <string name="room_prefix">Aula: %1$s</string>

@@ -83,9 +83,13 @@ class SettingsRepositoryTest {
         val syncMode = repository.syncModeFlow.first()
         val topic = repository.subscribedFcmTopicFlow.first()
         val subjectHashes = repository.getLastRemoteSubjectHashesFlow(1).first()
+        val semestersPerYear = repository.semestersPerYearFlow.first()
+        val termLabels = repository.selectedFacultyTermLabelsFlow.first()
         assertEquals(SyncMode.ONLINE, syncMode)
         assertNull(topic)
         assertTrue(subjectHashes.isEmpty())
+        assertEquals(2, semestersPerYear)
+        assertTrue(termLabels.isEmpty())
     }
 
     @Test

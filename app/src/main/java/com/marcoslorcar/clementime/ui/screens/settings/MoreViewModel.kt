@@ -35,6 +35,12 @@ import javax.inject.Inject
 import com.marcoslorcar.clementime.data.importing.model.JsonFlatSlot
 import com.marcoslorcar.clementime.utils.SlotDiff
 
+data class SemesterDateRange(
+    val semester: Int,
+    val startDate: LocalDate,
+    val endDate: LocalDate
+)
+
 data class MoreUiState(
     val themeMode: String = "system",
     val appLanguage: String = "en",
@@ -56,7 +62,11 @@ data class MoreUiState(
     val showDiffBottomSheet: Boolean = false,
     val selectedUniversityId: String = "",
     val selectedFacultyId: String = "",
-    val linkedFacultyLabel: String = ""
+    val linkedFacultyLabel: String = "",
+    val semestersPerYear: Int = SettingsRepository.DEFAULT_SEMESTERS_PER_YEAR,
+    val currentSemester: Int = 1,
+    val populatedSemesters: List<Int> = emptyList(),
+    val semesterLabels: Map<Int, String> = emptyMap()
 )
 
 sealed interface ExportStatus {
@@ -79,6 +89,13 @@ class MoreViewModel @Inject constructor(
         val universityId: String = "",
         val facultyId: String = "",
         val label: String = ""
+    )
+
+    private data class SemesterSettingsInfo(
+        val semestersPerYear: Int = SettingsRepository.DEFAULT_SEMESTERS_PER_YEAR,
+        val currentSemester: Int = 1,
+        val populatedSemesters: List<Int> = emptyList(),
+        val semesterLabels: Map<Int, String> = emptyMap()
     )
 
     private val _appLanguage = MutableStateFlow(getCurrentLanguage())
@@ -110,6 +127,28 @@ class MoreViewModel @Inject constructor(
         )
     }
 
+    private val semesterSettingsFlow = combine(
+        settingsRepository.semestersPerYearFlow,
+        settingsRepository.currentSemesterFlow,
+        settingsRepository.selectedFacultyTermLabelsFlow,
+        scheduleDao.getAllSubjectsWithSlots()
+    ) { count, current, labels, allSubjects ->
+        val populated = allSubjects
+            .asSequence()
+            .filter { it.subject.isActive }
+            .map { it.subject.semester }
+            .distinct()
+            .sorted()
+            .toList()
+        SemesterSettingsInfo(
+            semestersPerYear = count,
+            currentSemester = current,
+            populatedSemesters = populated,
+            semesterLabels = labels
+        )
+    }
+
+    @Suppress("UNCHECKED_CAST")
     val uiState: StateFlow<MoreUiState> = combine(
         settingsRepository.themeFlow,
         settingsRepository.scrollableTabsFlow,
@@ -131,10 +170,12 @@ class MoreViewModel @Inject constructor(
         _pendingDiffs,
         _pendingRemoteSlots,
         _showDiffBottomSheet,
-        linkedFacultyFlow
+        linkedFacultyFlow,
+        semesterSettingsFlow
     ) { args: Array<Any?> ->
         @Suppress("UNCHECKED_CAST")
         val linkedFaculty = args[20] as LinkedFacultyInfo
+        val semesterInfo = args[21] as SemesterSettingsInfo
         MoreUiState(
             themeMode = args[0] as String,
             scrollableTabs = args[1] as Boolean,
@@ -156,7 +197,11 @@ class MoreViewModel @Inject constructor(
             showDiffBottomSheet = args[19] as Boolean,
             selectedUniversityId = linkedFaculty.universityId,
             selectedFacultyId = linkedFaculty.facultyId,
-            linkedFacultyLabel = linkedFaculty.label
+            linkedFacultyLabel = linkedFaculty.label,
+            semestersPerYear = semesterInfo.semestersPerYear,
+            currentSemester = semesterInfo.currentSemester,
+            populatedSemesters = semesterInfo.populatedSemesters,
+            semesterLabels = semesterInfo.semesterLabels
         )
     }.stateIn(
         scope = viewModelScope,
@@ -189,6 +234,18 @@ class MoreViewModel @Inject constructor(
     fun setScrollableTabs(scrollable: Boolean) {
         viewModelScope.launch {
             settingsRepository.setScrollableTabs(scrollable)
+        }
+    }
+
+    fun setSemestersPerYear(count: Int) {
+        val coerced = count.coerceAtLeast(1)
+        viewModelScope.launch {
+            settingsRepository.setSemestersPerYear(coerced)
+            val current = settingsRepository.currentSemesterFlow.first()
+            if (current > coerced) {
+                settingsRepository.setCurrentSemester(coerced)
+                ScheduleWidgetUtils.updateWidget(context)
+            }
         }
     }
 
@@ -276,15 +333,22 @@ class MoreViewModel @Inject constructor(
                 FcmTopicManager.topicFor(uni, faculty, fcmTopicPrefix.ifBlank { null })
             }
             val subscribedTopic = settingsRepository.subscribedFcmTopicFlow.first()
-            val hash1c = settingsRepository.getLastKnownScheduleHashFlow(1).first()
-            val hash2c = settingsRepository.getLastKnownScheduleHashFlow(2).first()
+            val configuredSemesters = settingsRepository.semestersPerYearFlow.first()
+            val maxSubjectSem = scheduleDao.getAllSubjectsWithSlots().first().maxOfOrNull { it.subject.semester } ?: 0
+            val maxSem = maxOf(configuredSemesters, maxSubjectSem, 1)
+            val hashes = (1..maxSem).map { sem ->
+                sem to settingsRepository.getLastKnownScheduleHashFlow(sem).first()
+            }
             val report = buildString {
                 appendLine("Sync Mode: $syncMode")
                 appendLine("GMS Available: $gmsAvailable")
                 appendLine("Target Topic: $targetTopic")
                 appendLine("Subscribed Topic: ${subscribedTopic ?: "(none)"}")
-                appendLine("1C Hash: ${hash1c.take(12).ifBlank { "(empty)" }}")
-                append("2C Hash: ${hash2c.take(12).ifBlank { "(empty)" }}")
+                appendLine("Terms per year: $configuredSemesters")
+                hashes.forEachIndexed { idx, (sem, hash) ->
+                    val line = "${sem}C Hash: ${hash.take(12).ifBlank { "(empty)" }}"
+                    if (idx == hashes.lastIndex) append(line) else appendLine(line)
+                }
             }
             onResult(report)
         }
@@ -461,39 +525,41 @@ class MoreViewModel @Inject constructor(
         }
     }
 
-    fun exportFullYearToIcs(
+    suspend fun buildIcsExportData(ranges: List<SemesterDateRange>): List<IcsExporter.SemesterExportData> {
+        fun filterSlots(subjects: List<com.marcoslorcar.clementime.data.SubjectWithSlots>): List<com.marcoslorcar.clementime.data.SubjectWithSlots> {
+            return subjects.map { sws ->
+                sws.copy(
+                    slots = sws.slots.filter { slot ->
+                        !slot.isIgnored && (
+                            slot.entryType == EntryType.THEORY ||
+                                sws.subject.selectedLabGroup == null ||
+                                slot.labGroupName == sws.subject.selectedLabGroup
+                            )
+                    }
+                )
+            }
+        }
+
+        return ranges.map { range ->
+            val semSubjects = scheduleDao.getActiveSubjectsWithSlotsBySemester(range.semester).first()
+            IcsExporter.SemesterExportData(
+                subjectsWithSlots = filterSlots(semSubjects),
+                startDate = range.startDate,
+                endDate = range.endDate
+            )
+        }
+    }
+
+    fun exportSemestersToIcs(
         context: Context,
         customUri: Uri,
-        s1Start: LocalDate,
-        s1End: LocalDate,
-        s2Start: LocalDate,
-        s2End: LocalDate,
+        ranges: List<SemesterDateRange>,
         onResult: (ExportStatus) -> Unit
     ) {
         viewModelScope.launch {
             onResult(ExportStatus.Exporting)
             try {
-                val s1Subjects = scheduleDao.getActiveSubjectsWithSlotsBySemester(1).first()
-                val s2Subjects = scheduleDao.getActiveSubjectsWithSlotsBySemester(2).first()
-
-                fun filterSlots(subjects: List<com.marcoslorcar.clementime.data.SubjectWithSlots>): List<com.marcoslorcar.clementime.data.SubjectWithSlots> {
-                    return subjects.map { sws ->
-                        sws.copy(
-                            slots = sws.slots.filter { slot ->
-                                !slot.isIgnored && (
-                                        slot.entryType == EntryType.THEORY ||
-                                                slot.labGroupName == sws.subject.selectedLabGroup
-                                        )
-                            }
-                        )
-                    }
-                }
-
-                val semesters = listOf(
-                    IcsExporter.SemesterExportData(filterSlots(s1Subjects), s1Start, s1End),
-                    IcsExporter.SemesterExportData(filterSlots(s2Subjects), s2Start, s2End)
-                )
-
+                val semesters = buildIcsExportData(ranges)
                 val icsString = IcsExporter.generateIcsContent(semesters)
 
                 context.contentResolver.openOutputStream(customUri)?.use { out ->
@@ -504,5 +570,25 @@ class MoreViewModel @Inject constructor(
                 onResult(ExportStatus.Error(context.getString(R.string.export_error_prefix, e.localizedMessage)))
             }
         }
+    }
+
+    fun exportFullYearToIcs(
+        context: Context,
+        customUri: Uri,
+        s1Start: LocalDate,
+        s1End: LocalDate,
+        s2Start: LocalDate,
+        s2End: LocalDate,
+        onResult: (ExportStatus) -> Unit
+    ) {
+        exportSemestersToIcs(
+            context = context,
+            customUri = customUri,
+            ranges = listOf(
+                SemesterDateRange(1, s1Start, s1End),
+                SemesterDateRange(2, s2Start, s2End)
+            ),
+            onResult = onResult
+        )
     }
 }

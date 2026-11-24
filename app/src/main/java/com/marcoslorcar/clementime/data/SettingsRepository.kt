@@ -40,6 +40,8 @@ open class SettingsRepository @Inject constructor(
     private val hasSeenImportPreviewTooltipKey = booleanPreferencesKey("has_seen_import_preview_tooltip")
     private val hasSeenLabSelectionTooltipKey = booleanPreferencesKey("has_seen_lab_selection_tooltip")
     private val currentSemesterKey = intPreferencesKey("current_semester")
+    private val semestersPerYearKey = intPreferencesKey("semesters_per_year")
+    private val selectedFacultyTermLabelsKey = stringPreferencesKey("selected_faculty_term_labels")
     private val hasManuallyChangedSemesterKey = booleanPreferencesKey("has_manually_changed_semester")
     private val wasSemesterAutoChangedKey = booleanPreferencesKey("was_semester_auto_changed")
     private val dayStartHourKey = intPreferencesKey("day_start_hour")
@@ -225,6 +227,29 @@ open class SettingsRepository @Inject constructor(
             } ?: kotlinx.coroutines.flow.flowOf(1)
         } catch (_: Throwable) {
             kotlinx.coroutines.flow.flowOf(1)
+        }
+
+    open val semestersPerYearFlow: Flow<Int>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                (preferences[semestersPerYearKey] ?: DEFAULT_SEMESTERS_PER_YEAR).coerceAtLeast(1)
+            } ?: kotlinx.coroutines.flow.flowOf(DEFAULT_SEMESTERS_PER_YEAR)
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf(DEFAULT_SEMESTERS_PER_YEAR)
+        }
+
+    open val selectedFacultyTermLabelsFlow: Flow<Map<Int, String>>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                val raw = preferences[selectedFacultyTermLabelsKey]
+                if (raw.isNullOrBlank()) {
+                    emptyMap()
+                } else {
+                    runCatching { Json.decodeFromString<Map<Int, String>>(raw) }.getOrDefault(emptyMap())
+                }
+            } ?: kotlinx.coroutines.flow.flowOf(emptyMap())
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf(emptyMap())
         }
 
     open val hasManuallyChangedSemesterFlow: Flow<Boolean>
@@ -472,7 +497,27 @@ open class SettingsRepository @Inject constructor(
     open suspend fun setCurrentSemester(semester: Int) {
         try {
             context?.dataStore?.edit { preferences ->
-                preferences[currentSemesterKey] = semester
+                preferences[currentSemesterKey] = semester.coerceAtLeast(1)
+            }
+        } catch (_: Throwable) {}
+    }
+
+    open suspend fun setSemestersPerYear(count: Int) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[semestersPerYearKey] = count.coerceAtLeast(1)
+            }
+        } catch (_: Throwable) {}
+    }
+
+    open suspend fun setSelectedFacultyTermLabels(labels: Map<Int, String>) {
+        try {
+            context?.dataStore?.edit { preferences ->
+                if (labels.isEmpty()) {
+                    preferences.remove(selectedFacultyTermLabelsKey)
+                } else {
+                    preferences[selectedFacultyTermLabelsKey] = Json.encodeToString(labels)
+                }
             }
         } catch (_: Throwable) {}
     }
@@ -527,12 +572,12 @@ open class SettingsRepository @Inject constructor(
     open suspend fun resetScheduleHashes() {
         try {
             context?.dataStore?.edit { preferences ->
-                preferences.remove(lastKnownScheduleHashKey(1))
-                preferences.remove(lastKnownScheduleHashKey(2))
-                preferences.remove(lastNotifiedScheduleHashKey(1))
-                preferences.remove(lastNotifiedScheduleHashKey(2))
-                preferences.remove(lastRemoteSubjectHashesKey(1))
-                preferences.remove(lastRemoteSubjectHashesKey(2))
+                val keysToRemove = preferences.asMap().keys.filter { key ->
+                    key.name.startsWith("last_known_schedule_hash_") ||
+                        key.name.startsWith("last_notified_schedule_hash_") ||
+                        key.name.startsWith("last_remote_subject_hashes_")
+                }
+                keysToRemove.forEach { preferences.remove(it) }
                 preferences.remove(lastScheduleSyncTimestampKey)
             }
         } catch (_: Throwable) {}
@@ -789,6 +834,7 @@ open class SettingsRepository @Inject constructor(
 
         /** Hours between background schedule checks. 0 disables them, which is the default. */
         const val DEFAULT_AUTO_UPDATE_INTERVAL_HOURS = 0
+        const val DEFAULT_SEMESTERS_PER_YEAR = 2
 
         internal fun resolveLegacySyncMode(
             rawSyncMode: String?,

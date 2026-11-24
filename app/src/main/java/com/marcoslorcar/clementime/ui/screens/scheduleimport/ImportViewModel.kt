@@ -21,6 +21,7 @@ import com.marcoslorcar.clementime.ui.screens.scheduleimport.model.TheoryOverlap
 import com.marcoslorcar.clementime.ui.widget.ScheduleWidgetUtils
 import com.marcoslorcar.clementime.utils.ConflictSolver
 import com.marcoslorcar.clementime.utils.ScheduleDiffChecker
+import com.marcoslorcar.clementime.utils.SemesterUtils
 import com.marcoslorcar.clementime.worker.FcmTopicManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -129,6 +130,9 @@ class ImportViewModel @Inject constructor(
                                 val isLinked = activeFacId.isNotBlank() &&
                                     faculty.id.equals(activeFacId, ignoreCase = true) &&
                                     (activeUniId.isBlank() || uni.id.equals(activeUniId, ignoreCase = true))
+                                val termSemesterMap = SemesterUtils.resolveCatalogTermSemesters(faculty.terms)
+                                val facultyTermCount = SemesterUtils.resolveFacultySemesterCount(faculty.terms)
+                                val facultyTermLabels = SemesterUtils.extractCustomCatalogLabels(faculty.terms)
 
                                 faculty.terms.map { term ->
                                     val scopedId = "${uni.id}_${faculty.id}_${term.id}"
@@ -168,7 +172,10 @@ class ImportViewModel @Inject constructor(
                                         facultyName = faculty.name,
                                         fcmTopicPrefix = faculty.fcmTopicPrefix,
                                         termId = term.id,
-                                        isLinkedFaculty = isLinked
+                                        isLinkedFaculty = isLinked,
+                                        termSemester = termSemesterMap[term.id],
+                                        facultyTermCount = facultyTermCount,
+                                        facultyTermLabels = facultyTermLabels
                                     )
                                 }
                             }
@@ -199,7 +206,8 @@ class ImportViewModel @Inject constructor(
                                 facultyName = entry.facultyName,
                                 fcmTopicPrefix = entry.fcmTopicPrefix,
                                 termId = entry.termId,
-                                isLinkedFaculty = isLinked
+                                isLinkedFaculty = isLinked,
+                                termSemester = SemesterUtils.parseTermSemester(entry.termId ?: entry.id)
                             )
                         }.sortedByDescending { it.isLinkedFaculty }
                     }
@@ -237,12 +245,27 @@ class ImportViewModel @Inject constructor(
                     }
                 }
 
-                val existing = repository.getExistingActiveSubjects(schemaResult.getOrNull()?.semester ?: 1)
+                val normalizedResult = schemaResult.map { parsedSchema ->
+                    val targetTermSem = file.termSemester
+                        ?: if (file.sourceType == ImportSourceType.REMOTE) {
+                            SemesterUtils.parseTermSemester(file.termId ?: file.id)
+                        } else {
+                            null
+                        }
+                    if (targetTermSem != null && parsedSchema.semester != null && parsedSchema.semester != targetTermSem) {
+                        remapSchemaSemester(parsedSchema, targetTermSem)
+                    } else {
+                        parsedSchema
+                    }
+                }
+
+                val schemaSemesters = normalizedResult.getOrNull()?.let { collectSchemaSemesters(it) } ?: setOf(1)
+                val existing = repository.getExistingActiveSubjectsForSemesters(schemaSemesters)
                 val onboardingEnabled = settingsRepository.onboardingTooltipsEnabledFlow.first()
                 val hasSeenConflictTooltip = settingsRepository.hasSeenImportConflictTooltipFlow.first()
                 val hasSeenPreviewTooltip = settingsRepository.hasSeenImportPreviewTooltipFlow.first()
                 
-                schemaResult.fold(
+                normalizedResult.fold(
                     onSuccess = { schema ->
                         _uiState.value = ImportUiState.Selection(
                             schema = schema,
@@ -426,7 +449,7 @@ class ImportViewModel @Inject constructor(
             for (j in i + 1 until theorySlots.size) {
                 val (subj1, slot1) = theorySlots[i]
                 val (subj2, slot2) = theorySlots[j]
-                if (slot1.dayOfWeek == slot2.dayOfWeek && slot1.startTime < slot2.endTime && slot2.startTime < slot1.endTime) {
+                if (subj1.semester == subj2.semester && slot1.dayOfWeek == slot2.dayOfWeek && slot1.startTime < slot2.endTime && slot2.startTime < slot1.endTime) {
                     theoryOverlaps.add(
                         TheoryOverlap(
                             subject1Code = subj1.code,
@@ -506,16 +529,23 @@ class ImportViewModel @Inject constructor(
                     if (currentState.selectedFile.sourceType == ImportSourceType.REMOTE) {
                         val selectedFile = currentState.selectedFile
                         val semesterKey = selectedFile.termId ?: selectedFile.id
-                        val inferredTermSemester = when {
-                            semesterKey.equals("1C", ignoreCase = true) || semesterKey.endsWith("_1C", ignoreCase = true) -> 1
-                            semesterKey.equals("2C", ignoreCase = true) || semesterKey.endsWith("_2C", ignoreCase = true) -> 2
-                            else -> null
-                        }
+                        val inferredTermSemester = selectedFile.termSemester
+                            ?: SemesterUtils.parseTermSemester(semesterKey)
 
                         val targetSemesters = (listOfNotNull(currentState.schema.semester ?: inferredTermSemester) +
                             importedSubjects.mapNotNull { it.subject.semester })
                             .distinct()
                             .ifEmpty { listOf(settingsRepository.currentSemesterFlow.first()) }
+
+                        val maxImportedSemester = targetSemesters.maxOrNull() ?: 1
+                        val remoteTermCount = maxOf(
+                            selectedFile.facultyTermCount ?: 0,
+                            maxImportedSemester,
+                            SemesterUtils.inferMinSemestersFromTermId(semesterKey)
+                        )
+                        if (remoteTermCount >= 1) {
+                            settingsRepository.setSemestersPerYear(remoteTermCount)
+                        }
 
                         val prevUniId = settingsRepository.selectedUniversityIdFlow.first()
                         val prevFacId = settingsRepository.selectedFacultyIdFlow.first()
@@ -537,6 +567,7 @@ class ImportViewModel @Inject constructor(
                                 facultyName = selectedFile.facultyName,
                                 fcmTopicPrefix = selectedFile.fcmTopicPrefix
                             )
+                            settingsRepository.setSelectedFacultyTermLabels(selectedFile.facultyTermLabels)
                             if (context != null) {
                                 FcmTopicManager.syncRegistration(context, settingsRepository)
                             }
@@ -576,6 +607,15 @@ class ImportViewModel @Inject constructor(
                                 }
                             }
                         }
+                    } else {
+                        val maxCustomSemester = (
+                            collectSchemaSemesters(currentState.schema) +
+                                importedSubjects.mapNotNull { it.subject.semester }
+                            ).maxOrNull() ?: 1
+                        val configuredSemesters = settingsRepository.semestersPerYearFlow.first()
+                        if (maxCustomSemester > configuredSemesters) {
+                            settingsRepository.setSemestersPerYear(maxCustomSemester)
+                        }
                     }
                     
                     settingsRepository.setHasSeenAddSlotTooltip(true)
@@ -607,6 +647,35 @@ class ImportViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.setHasSeenImportPreviewTooltip(true)
         }
+    }
+
+    private fun collectSchemaSemesters(schema: ScheduleJsonSchema): Set<Int> {
+        val result = mutableSetOf<Int>()
+        schema.semester?.let { result.add(it) }
+        schema.subjects.mapNotNull { it.semester }.let { result.addAll(it) }
+        schema.years.forEach { year ->
+            year.subjects.mapNotNull { it.semester }.let { result.addAll(it) }
+            year.groups.forEach { group ->
+                group.subjects.mapNotNull { it.semester }.let { result.addAll(it) }
+            }
+        }
+        if (result.isEmpty()) result.add(1)
+        return result
+    }
+
+    private fun remapSchemaSemester(schema: ScheduleJsonSchema, targetSemester: Int): ScheduleJsonSchema {
+        return schema.copy(
+            semester = targetSemester,
+            subjects = schema.subjects.map { it.copy(semester = targetSemester) },
+            years = schema.years.map { year ->
+                year.copy(
+                    subjects = year.subjects.map { it.copy(semester = targetSemester) },
+                    groups = year.groups.map { group ->
+                        group.copy(subjects = group.subjects.map { it.copy(semester = targetSemester) })
+                    }
+                )
+            }
+        )
     }
 
 }

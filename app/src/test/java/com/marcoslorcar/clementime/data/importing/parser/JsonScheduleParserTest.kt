@@ -100,6 +100,64 @@ class JsonScheduleParserTest {
     }
 
     @Test
+    fun parseJson_thirdTermFlatArray_infersSemester3() {
+        val flatJson = """
+            [
+              {
+                "grupo": "3A",
+                "cuatrimestre": "3T",
+                "dia": "Jueves",
+                "hora_inicio": "09:00",
+                "hora_fin": "11:00",
+                "codigo": "IA3",
+                "asignatura": "Inteligencia Artificial Avanzada",
+                "tipo": "teoría"
+              }
+            ]
+        """.trimIndent()
+
+        val schema = parser.parseJson(flatJson).getOrThrow()
+        assertEquals("Tercer Cuatrimestre", schema.title)
+        assertEquals(3, schema.semester)
+        val subj = schema.years.single().groups.single().subjects.single()
+        assertEquals(3, subj.semester)
+    }
+
+    @Test
+    fun exportToJson_andReimport_preservesThreeSemesters() {
+        val slotTemplate = ClassSlot(
+            id = 1L,
+            subjectId = 1L,
+            dayOfWeek = DayOfWeek.MONDAY,
+            startTime = LocalTime.of(9, 0),
+            endTime = LocalTime.of(10, 30),
+            entryType = EntryType.THEORY
+        )
+        val subjects = listOf(1, 2, 3).map { sem ->
+            val subj = Subject(
+                id = sem.toLong(),
+                code = "SUB$sem",
+                name = "Subject $sem",
+                color = 0,
+                courseGroup = "1º A",
+                isActive = true,
+                semester = sem
+            )
+            SubjectWithSlots(subj, listOf(slotTemplate.copy(id = sem.toLong(), subjectId = sem.toLong())))
+        }
+
+        val exported = parser.exportToJson("Full Backup", subjects)
+        assertTrue(exported.contains("\"cuatrimestre\": \"1C\""))
+        assertTrue(exported.contains("\"cuatrimestre\": \"2C\""))
+        assertTrue(exported.contains("\"cuatrimestre\": \"3C\""))
+
+        val reimported = parser.parseJson(exported).getOrThrow()
+        assertEquals(null, reimported.semester)
+        val importedSubjects = reimported.years.single().groups.single().subjects
+        assertEquals(mapOf("SUB1" to 1, "SUB2" to 2, "SUB3" to 3), importedSubjects.associate { it.code to it.semester })
+    }
+
+    @Test
     fun parseDayOfWeek_handlesSpanishAndEnglish() {
         assertEquals(DayOfWeek.MONDAY, parser.parseDayOfWeek("Lunes"))
         assertEquals(DayOfWeek.TUESDAY, parser.parseDayOfWeek("Martes"))

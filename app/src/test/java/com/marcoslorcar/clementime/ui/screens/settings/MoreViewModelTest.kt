@@ -105,6 +105,94 @@ class MoreViewModelTest {
         assertFalse(noUpdatesCalled)
         assertFalse(viewModel.uiState.value.isCheckingUpdates)
     }
+
+    @Test
+    fun setSemestersPerYear_updatesCountAndClampsCurrentSemesterWhenHigher() = runTest {
+        fakeSettings.currentSemFlow.value = 4
+        fakeSettings.semestersPerYearState.value = 4
+
+        val viewModel = MoreViewModel(
+            settingsRepository = fakeSettings,
+            scheduleDao = fakeDao,
+            jsonScheduleParser = JsonScheduleParser(),
+            importRepository = importRepository,
+            context = null
+        )
+
+        val collectJob = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+        advanceUntilIdle()
+        assertEquals(4, viewModel.uiState.value.semestersPerYear)
+        assertEquals(4, viewModel.uiState.value.currentSemester)
+
+        viewModel.setSemestersPerYear(2)
+        advanceUntilIdle()
+
+        assertEquals(2, fakeSettings.semestersPerYearState.value)
+        assertEquals(2, fakeSettings.currentSemFlow.value)
+        assertEquals(2, viewModel.uiState.value.semestersPerYear)
+        assertEquals(2, viewModel.uiState.value.currentSemester)
+
+        collectJob.cancel()
+    }
+
+    @Test
+    fun populatedSemesters_andBuildIcsExportData_supportsActiveOnlyAndAllPopulatedSemesters() = runTest {
+        val slot = ClassSlot(
+            id = 1L,
+            subjectId = 1L,
+            dayOfWeek = java.time.DayOfWeek.MONDAY,
+            startTime = java.time.LocalTime.of(9, 0),
+            endTime = java.time.LocalTime.of(10, 30)
+        )
+        val s1 = SubjectWithSlots(
+            Subject(id = 1L, code = "S1", name = "Sem 1 Active", color = 0, isActive = true, semester = 1),
+            listOf(slot.copy(id = 1L, subjectId = 1L))
+        )
+        val s2Inactive = SubjectWithSlots(
+            Subject(id = 2L, code = "S2", name = "Sem 2 Inactive", color = 0, isActive = false, semester = 2),
+            listOf(slot.copy(id = 2L, subjectId = 2L))
+        )
+        val s3 = SubjectWithSlots(
+            Subject(id = 3L, code = "S3", name = "Sem 3 Active", color = 0, isActive = true, semester = 3),
+            listOf(slot.copy(id = 3L, subjectId = 3L))
+        )
+        fakeDao.subjectsFlow.value = listOf(s1, s2Inactive, s3)
+
+        val viewModel = MoreViewModel(
+            settingsRepository = fakeSettings,
+            scheduleDao = fakeDao,
+            jsonScheduleParser = JsonScheduleParser(),
+            importRepository = importRepository,
+            context = null
+        )
+
+        val collectJob = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+        advanceUntilIdle()
+
+        assertEquals(listOf(1, 3), viewModel.uiState.value.populatedSemesters)
+
+        val activeOnlyData = viewModel.buildIcsExportData(
+            listOf(SemesterDateRange(1, java.time.LocalDate.of(2026, 9, 7), java.time.LocalDate.of(2026, 12, 18)))
+        )
+        assertEquals(1, activeOnlyData.size)
+        assertEquals("S1", activeOnlyData.single().subjectsWithSlots.single().subject.code)
+
+        val allPopulatedData = viewModel.buildIcsExportData(
+            listOf(
+                SemesterDateRange(1, java.time.LocalDate.of(2026, 9, 7), java.time.LocalDate.of(2026, 12, 18)),
+                SemesterDateRange(3, java.time.LocalDate.of(2027, 4, 5), java.time.LocalDate.of(2027, 6, 25))
+            )
+        )
+        assertEquals(2, allPopulatedData.size)
+        assertEquals("S1", allPopulatedData[0].subjectsWithSlots.single().subject.code)
+        assertEquals("S3", allPopulatedData[1].subjectsWithSlots.single().subject.code)
+
+        collectJob.cancel()
+    }
 }
 
 private class FakeSettingsRepositoryForMore : SettingsRepository(context = null) {
@@ -113,18 +201,34 @@ private class FakeSettingsRepositoryForMore : SettingsRepository(context = null)
     val uniNameFlow = MutableStateFlow("")
     val facNameFlow = MutableStateFlow("")
     val topicPrefixFlow = MutableStateFlow("")
+    val semestersPerYearState = MutableStateFlow(DEFAULT_SEMESTERS_PER_YEAR)
+    val currentSemFlow = MutableStateFlow(1)
 
     override val selectedUniversityIdFlow: Flow<String> = uniIdFlow
     override val selectedFacultyIdFlow: Flow<String> = facIdFlow
     override val selectedUniversityNameFlow: Flow<String> = uniNameFlow
     override val selectedFacultyNameFlow: Flow<String> = facNameFlow
     override val selectedFcmTopicPrefixFlow: Flow<String> = topicPrefixFlow
+    override val semestersPerYearFlow: Flow<Int> = semestersPerYearState
+    override val currentSemesterFlow: Flow<Int> = currentSemFlow
+
+    override suspend fun setSemestersPerYear(count: Int) {
+        semestersPerYearState.value = count
+    }
+
+    override suspend fun setCurrentSemester(semester: Int) {
+        currentSemFlow.value = semester
+    }
 }
 
 private class FakeScheduleDaoForMore : ScheduleDao {
-    override fun getAllSubjectsWithSlots(): Flow<List<SubjectWithSlots>> = flowOf(emptyList())
-    override fun getAllSubjectsWithSlotsBySemester(semester: Int): Flow<List<SubjectWithSlots>> = flowOf(emptyList())
-    override fun getActiveSubjectsWithSlotsBySemester(semester: Int): Flow<List<SubjectWithSlots>> = flowOf(emptyList())
+    val subjectsFlow = MutableStateFlow<List<SubjectWithSlots>>(emptyList())
+
+    override fun getAllSubjectsWithSlots(): Flow<List<SubjectWithSlots>> = subjectsFlow
+    override fun getAllSubjectsWithSlotsBySemester(semester: Int): Flow<List<SubjectWithSlots>> =
+        MutableStateFlow(subjectsFlow.value.filter { it.subject.semester == semester })
+    override fun getActiveSubjectsWithSlotsBySemester(semester: Int): Flow<List<SubjectWithSlots>> =
+        MutableStateFlow(subjectsFlow.value.filter { it.subject.isActive && it.subject.semester == semester })
     override fun getSubjectWithSlotsById(subjectId: Long): Flow<SubjectWithSlots?> = flowOf(null)
     override suspend fun updateSubjectActiveStatus(subjectId: Long, isActive: Boolean) {}
     override suspend fun updateSelectedLabGroup(subjectId: Long, labGroup: String?) {}

@@ -235,6 +235,8 @@ fun AddEditSubjectContent(
                 name = uiState.name,
                 selectedColor = uiState.color,
                 selectedSemester = uiState.semester,
+                semesterCount = uiState.semesterCount,
+                semesterLabels = uiState.semesterLabels,
                 isActive = uiState.isActive,
                 isEditMode = uiState.isEditMode,
                 onUpdateCode = onUpdateCode,

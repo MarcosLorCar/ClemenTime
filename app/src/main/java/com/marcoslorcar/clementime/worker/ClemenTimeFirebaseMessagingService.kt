@@ -5,6 +5,7 @@ import com.google.firebase.messaging.RemoteMessage
 import com.marcoslorcar.clementime.data.ScheduleDao
 import com.marcoslorcar.clementime.data.SettingsRepository
 import com.marcoslorcar.clementime.data.SyncMode
+import com.marcoslorcar.clementime.utils.SemesterUtils
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -43,26 +44,20 @@ class ClemenTimeFirebaseMessagingService : FirebaseMessagingService() {
                 }
 
                 val data = message.data
-                val shouldSync = listOf(1, 2).any { semester ->
-                    val hasActiveSubjects = scheduleDao
-                        .getActiveSubjectsWithSlotsBySemester(semester)
+                val activeSemesters = scheduleDao.getAllSubjectsWithSlots()
+                    .first()
+                    .asSequence()
+                    .filter { it.subject.isActive }
+                    .map { it.subject.semester }
+                    .distinct()
+                    .toList()
+
+                val shouldSync = activeSemesters.any { semester ->
+                    val incomingHash = SemesterUtils.extractIncomingHashForSemester(data, semester)
+                    val lastKnownHash = settingsRepository
+                        .getLastKnownScheduleHashFlow(semester)
                         .first()
-                        .isNotEmpty()
-                    if (!hasActiveSubjects) {
-                        false
-                    } else {
-                        val incomingHash = data["hash_${semester}C"]
-                            ?: data["hash_$semester"]
-                            ?: if (data["semester"] == "${semester}C" || data["semester"] == "$semester") {
-                                data["hash"]
-                            } else {
-                                null
-                            }
-                        val lastKnownHash = settingsRepository
-                            .getLastKnownScheduleHashFlow(semester)
-                            .first()
-                        incomingHash.isNullOrBlank() || incomingHash != lastKnownHash
-                    }
+                    incomingHash.isNullOrBlank() || incomingHash != lastKnownHash
                 }
 
                 if (shouldSync) {

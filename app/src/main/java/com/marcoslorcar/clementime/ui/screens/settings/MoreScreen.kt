@@ -65,6 +65,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -84,6 +85,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -98,16 +100,18 @@ import com.marcoslorcar.clementime.R
 import com.marcoslorcar.clementime.data.SettingsRepository
 import com.marcoslorcar.clementime.ui.components.AppSkeletonPreview
 import com.marcoslorcar.clementime.ui.components.ClemenTimeTopBar
+import com.marcoslorcar.clementime.ui.components.resolveFullSemesterLabel
 import com.marcoslorcar.clementime.ui.screens.scheduleimport.ScheduleDiffBottomSheet
 import com.marcoslorcar.clementime.ui.screens.subject.RadialTimePickerDialog
 import com.marcoslorcar.clementime.ui.theme.ClemenTimeTheme
 import com.marcoslorcar.clementime.ui.theme.getThemeColorScheme
 import com.marcoslorcar.clementime.ui.widget.ScheduleWidgetReceiver
+import com.marcoslorcar.clementime.utils.SemesterUtils
 import com.marcoslorcar.clementime.utils.fadingEdges
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
-import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 @Composable
@@ -164,6 +168,8 @@ fun MoreScreen(
         onToggleOnboardingTooltips = viewModel::setOnboardingTooltipsEnabled,
         onExportData = viewModel::exportData,
         onExportIcs = viewModel::exportFullYearToIcs,
+        onExportSemestersIcs = viewModel::exportSemestersToIcs,
+        onSemestersPerYearChanged = viewModel::setSemestersPerYear,
         onAutoUpdateIntervalChanged = viewModel::setAutoUpdateIntervalHours,
         onSyncModeChanged = viewModel::setSyncMode,
         onCheckUpdatesNow = {
@@ -201,7 +207,9 @@ fun MoreContent(
     onGithubRepoUrlChanged: (String) -> Unit,
     onToggleOnboardingTooltips: (Boolean) -> Unit,
     onExportData: (android.content.Context, Uri, (ExportStatus) -> Unit) -> Unit,
-    onExportIcs: (android.content.Context, Uri, LocalDate, LocalDate, LocalDate, LocalDate, (ExportStatus) -> Unit) -> Unit,
+    onExportIcs: (android.content.Context, Uri, LocalDate, LocalDate, LocalDate, LocalDate, (ExportStatus) -> Unit) -> Unit = { _, _, _, _, _, _, _ -> },
+    onExportSemestersIcs: (android.content.Context, Uri, List<SemesterDateRange>, (ExportStatus) -> Unit) -> Unit = { _, _, _, _ -> },
+    onSemestersPerYearChanged: (Int) -> Unit = {},
     onAutoUpdateIntervalChanged: (Int) -> Unit = {},
     onSyncModeChanged: (com.marcoslorcar.clementime.data.SyncMode) -> Unit = {},
     onCheckUpdatesNow: () -> Unit = {},
@@ -232,10 +240,12 @@ fun MoreContent(
         }
     }
 
-    var icsExportStep by remember { mutableIntStateOf(0) } // 0: Idle, 1: Course Start, 2: S2 Start, 3: Course End
-    var courseStartDate by remember { mutableStateOf<LocalDate?>(null) }
-    var s2StartDate by remember { mutableStateOf<LocalDate?>(null) }
-    var courseEndDate by remember { mutableStateOf<LocalDate?>(null) }
+    var showIcsScopeDialog by remember { mutableStateOf(false) }
+    var icsTargetSemesters by remember { mutableStateOf<List<Int>>(emptyList()) }
+    var icsStepIndex by remember { mutableIntStateOf(-1) }
+    var icsPickedDates by remember { mutableStateOf<List<LocalDate>>(emptyList()) }
+    var icsPendingRanges by remember { mutableStateOf<List<SemesterDateRange>>(emptyList()) }
+    val noActiveSubjectsMsg = stringResource(R.string.export_ics_no_active_subjects)
 
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
@@ -254,9 +264,8 @@ fun MoreContent(
     val icsExportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("text/calendar")
     ) { uri ->
-        if (uri != null && (courseStartDate != null) && (s2StartDate != null) && (courseEndDate != null)) {
-            val s1EndDate = s2StartDate!!.minusDays(1)
-            onExportIcs(context, uri, courseStartDate!!, s1EndDate, s2StartDate!!, courseEndDate!!) { status ->
+        if (uri != null && icsPendingRanges.isNotEmpty()) {
+            onExportSemestersIcs(context, uri, icsPendingRanges) { status ->
                 when (status) {
                     is ExportStatus.Success -> Toast.makeText(context, status.message, Toast.LENGTH_SHORT).show()
                     is ExportStatus.Error -> Toast.makeText(context, status.error, Toast.LENGTH_SHORT).show()
@@ -266,42 +275,123 @@ fun MoreContent(
         }
     }
 
-    if (icsExportStep > 0) {
-        key(icsExportStep) {
-            val datePickerState = rememberDatePickerState()
+    fun startIcsWizardForSemesters(semesters: List<Int>) {
+        showIcsScopeDialog = false
+        icsTargetSemesters = semesters
+        icsPickedDates = emptyList()
+        icsStepIndex = 0
+    }
+
+    if (showIcsScopeDialog) {
+        val populated = uiState.populatedSemesters
+        val activeInPopulated = uiState.currentSemester in populated
+        val activeLabel = resolveFullSemesterLabel(uiState.currentSemester, uiState.semesterLabels)
+
+        AlertDialog(
+            onDismissRequest = { showIcsScopeDialog = false },
+            title = { Text(stringResource(R.string.export_ics_scope_dialog_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = stringResource(R.string.export_ics_scope_dialog_desc),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    if (activeInPopulated) {
+                        OutlinedButton(
+                            onClick = { startIcsWizardForSemesters(listOf(uiState.currentSemester)) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(stringResource(R.string.export_ics_scope_active_only, activeLabel))
+                        }
+                    } else {
+                        populated.forEach { sem ->
+                            val semLabel = resolveFullSemesterLabel(sem, uiState.semesterLabels)
+                            OutlinedButton(
+                                onClick = { startIcsWizardForSemesters(listOf(sem)) },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(stringResource(R.string.export_ics_scope_single_term, semLabel))
+                            }
+                        }
+                    }
+                    if (populated.size > 1) {
+                        OutlinedButton(
+                            onClick = { startIcsWizardForSemesters(populated) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(stringResource(R.string.export_ics_scope_all_populated, populated.size))
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showIcsScopeDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    if (icsStepIndex >= 0 && icsTargetSemesters.isNotEmpty()) {
+        val totalSteps = icsTargetSemesters.size * 2
+        val currentSem = icsTargetSemesters[icsStepIndex / 2]
+        val isEndStep = icsStepIndex % 2 == 1
+        val semLabel = resolveFullSemesterLabel(currentSem, uiState.semesterLabels)
+
+        key(icsStepIndex, icsTargetSemesters) {
+            val previousMillis = icsPickedDates.lastOrNull()
+                ?.atStartOfDay(ZoneOffset.UTC)
+                ?.toInstant()
+                ?.toEpochMilli()
+            val minSelectableMillis = if (isEndStep) previousMillis else null
+            val datePickerState = rememberDatePickerState(
+                initialDisplayedMonthMillis = previousMillis,
+                selectableDates = object : SelectableDates {
+                    override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                        return minSelectableMillis == null || utcTimeMillis >= minSelectableMillis
+                    }
+                }
+            )
             DatePickerDialog(
-                onDismissRequest = { icsExportStep = 0 },
+                onDismissRequest = { icsStepIndex = -1 },
                 confirmButton = {
                     TextButton(
                         onClick = {
                             val millis = datePickerState.selectedDateMillis
                             if (millis != null) {
-                                val date = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
+                                val date = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
+                                val updatedDates = icsPickedDates + date
+                                icsPickedDates = updatedDates
 
-                                when (icsExportStep) {
-                                    1 -> {
-                                        courseStartDate = date
-                                        icsExportStep = 2
+                                if (icsStepIndex + 1 < totalSteps) {
+                                    icsStepIndex += 1
+                                } else {
+                                    val ranges = icsTargetSemesters.mapIndexed { idx, sem ->
+                                        SemesterDateRange(
+                                            semester = sem,
+                                            startDate = updatedDates[idx * 2],
+                                            endDate = updatedDates[idx * 2 + 1]
+                                        )
                                     }
-                                    2 -> {
-                                        s2StartDate = date
-                                        icsExportStep = 3
+                                    icsPendingRanges = ranges
+                                    icsStepIndex = -1
+                                    val filename = if (ranges.size == 1) {
+                                        "ClemenTime_${ranges.single().semester}C_Schedule.ics"
+                                    } else {
+                                        "ClemenTime_Full_Schedule.ics"
                                     }
-                                    3 -> {
-                                        courseEndDate = date
-                                        icsExportStep = 0
-                                        icsExportLauncher.launch("ClemenTime_Full_Schedule.ics")
-                                    }
+                                    icsExportLauncher.launch(filename)
                                 }
                             }
                         },
                         enabled = datePickerState.selectedDateMillis != null
                     ) {
-                        Text(if (icsExportStep < 3) stringResource(R.string.onboarding_next) else stringResource(R.string.save_button))
+                        Text(if (icsStepIndex + 1 < totalSteps) stringResource(R.string.onboarding_next) else stringResource(R.string.save_button))
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { icsExportStep = 0 }) {
+                    TextButton(onClick = { icsStepIndex = -1 }) {
                         Text(stringResource(R.string.cancel))
                     }
                 }
@@ -310,30 +400,33 @@ fun MoreContent(
                     state = datePickerState,
                     title = {
                         AnimatedContent(
-                            targetState = icsExportStep,
+                            targetState = icsStepIndex,
                             transitionSpec = {
                                 (fadeIn() + slideInVertically { it }).togetherWith(fadeOut() + slideOutVertically { -it })
                             },
                             label = "icsStepAnimation"
                         ) { step ->
+                            val stepSem = icsTargetSemesters.getOrElse(step / 2) { currentSem }
+                            val stepSemLabel = resolveFullSemesterLabel(stepSem, uiState.semesterLabels)
+                            val stepIsEnd = step % 2 == 1
                             Column(
                                 modifier = Modifier
                                     .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 8.dp)
                                     .fillMaxWidth()
                             ) {
                                 Text(
-                                    text = stringResource(R.string.export_ics_step_indicator, step).uppercase(),
+                                    text = stringResource(R.string.export_ics_step_dynamic_indicator, step + 1, totalSteps).uppercase(),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.Bold
                                 )
-                                val titleRes = when (step) {
-                                    1 -> R.string.export_ics_step_course_start
-                                    2 -> R.string.export_ics_step_s2_start
-                                    else -> R.string.export_ics_step_course_end
+                                val stepTitle = if (stepIsEnd) {
+                                    stringResource(R.string.export_ics_term_end_date, stepSemLabel)
+                                } else {
+                                    stringResource(R.string.export_ics_term_start_date, stepSemLabel)
                                 }
                                 Text(
-                                    text = stringResource(titleRes),
+                                    text = stepTitle,
                                     style = MaterialTheme.typography.headlineSmall,
                                     fontWeight = FontWeight.Black
                                 )
@@ -586,6 +679,60 @@ fun MoreContent(
                     }
                 )
 
+                // Terms per year
+                var showSemestersMenu by remember { mutableStateOf(false) }
+                val semesterCountOptions = remember(uiState.semestersPerYear) {
+                    (SemesterUtils.CONFIGURABLE_SEMESTER_COUNTS + uiState.semestersPerYear)
+                        .distinct()
+                        .sorted()
+                }
+                SettingItem(
+                    icon = Icons.Default.CalendarMonth,
+                    title = stringResource(R.string.semesters_per_year_setting_title),
+                    subtitle = stringResource(R.string.semesters_per_year_setting_desc),
+                    trailingContent = {
+                        Box {
+                            OutlinedButton(
+                                onClick = { showSemestersMenu = true },
+                                modifier = Modifier.widthIn(max = 150.dp)
+                            ) {
+                                Text(
+                                    text = pluralStringResource(
+                                        R.plurals.semesters_per_year_value,
+                                        uiState.semestersPerYear,
+                                        uiState.semestersPerYear
+                                    ),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                            }
+                            DropdownMenu(
+                                expanded = showSemestersMenu,
+                                onDismissRequest = { showSemestersMenu = false }
+                            ) {
+                                semesterCountOptions.forEach { count ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                pluralStringResource(
+                                                    R.plurals.semesters_per_year_value,
+                                                    count,
+                                                    count
+                                                )
+                                            )
+                                        },
+                                        onClick = {
+                                            onSemestersPerYearChanged(count)
+                                            showSemestersMenu = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                )
+
                 // Schedule Range
                 Text(
                     text = stringResource(R.string.schedule_range_header),
@@ -701,7 +848,19 @@ fun MoreContent(
                     icon = Icons.Default.CalendarMonth,
                     title = stringResource(R.string.export_ics_setting_title),
                     subtitle = stringResource(R.string.export_ics_desc),
-                    onClick = { icsExportStep = 1 }
+                    onClick = {
+                        when {
+                            uiState.populatedSemesters.isEmpty() -> {
+                                Toast.makeText(context, noActiveSubjectsMsg, Toast.LENGTH_SHORT).show()
+                            }
+                            uiState.populatedSemesters.size == 1 && uiState.populatedSemesters.single() == uiState.currentSemester -> {
+                                startIcsWizardForSemesters(uiState.populatedSemesters)
+                            }
+                            else -> {
+                                showIcsScopeDialog = true
+                            }
+                        }
+                    }
                 )
 
                 SettingItem(

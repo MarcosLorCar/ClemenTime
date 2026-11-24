@@ -81,8 +81,10 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.marcoslorcar.clementime.R
 import com.marcoslorcar.clementime.data.AttachedFileItem
+import com.marcoslorcar.clementime.data.SettingsRepository
 import com.marcoslorcar.clementime.data.Subject
 import com.marcoslorcar.clementime.ui.components.SemesterSwitcher
+import com.marcoslorcar.clementime.ui.components.resolveFullSemesterLabel
 import com.marcoslorcar.clementime.utils.fadingEdges
 import com.marcoslorcar.clementime.utils.formatFileSize
 import com.marcoslorcar.clementime.utils.isImageFile
@@ -102,7 +104,9 @@ fun SubjectBasicDetailsCard(
     onUpdateColor: (Int) -> Unit,
     onUpdateSemester: (Int) -> Unit,
     onUpdateActive: (Boolean) -> Unit = {},
-    showActiveToggle: Boolean = true
+    showActiveToggle: Boolean = true,
+    semesterCount: Int = SettingsRepository.DEFAULT_SEMESTERS_PER_YEAR,
+    semesterLabels: Map<Int, String> = emptyMap()
 ) {
     if (!isEditMode) {
         Card(
@@ -146,7 +150,7 @@ fun SubjectBasicDetailsCard(
                             )
                         }
                         Text(
-                            text = stringResource(if (selectedSemester == 1) R.string.semester_1_label else R.string.semester_2_label),
+                            text = resolveFullSemesterLabel(selectedSemester, semesterLabels),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isActive) 1f else 0.6f)
                         )
@@ -234,10 +238,14 @@ fun SubjectBasicDetailsCard(
                 )
             }
 
-            SemesterSwitcher(
-                selectedSemester = selectedSemester,
-                onSemesterSelected = onUpdateSemester
-            )
+            if (semesterCount > 1 || selectedSemester > 1) {
+                SemesterSwitcher(
+                    selectedSemester = selectedSemester,
+                    onSemesterSelected = onUpdateSemester,
+                    semesterCount = semesterCount,
+                    customLabels = semesterLabels
+                )
+            }
 
             if (showActiveToggle) {
                 HorizontalDivider()

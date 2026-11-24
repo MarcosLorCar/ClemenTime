@@ -27,6 +27,7 @@ import com.marcoslorcar.clementime.data.importing.model.JsonFlatSlot
 import com.marcoslorcar.clementime.data.importing.model.RemoteScheduleSummary
 import com.marcoslorcar.clementime.data.importing.repository.ImportRepository
 import com.marcoslorcar.clementime.utils.ScheduleDiffChecker
+import com.marcoslorcar.clementime.utils.SemesterUtils
 import com.marcoslorcar.clementime.utils.SlotDiff
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -201,7 +202,9 @@ class ScheduleUpdateWorker @AssistedInject constructor(
             }
 
             val (effectiveBaseUrl, summaries) = remoteSummariesResult.getOrNull() ?: return SyncResult()
-            val semestersToCheck = listOf(currentSemester, if (currentSemester == 1) 2 else 1)
+            val semestersPerYear = settingsRepository.semestersPerYearFlow.first()
+            val summarySemesters = SemesterUtils.resolveSummarySemesters(summaries).values
+            val semestersToCheck = (listOf(currentSemester) + (1..semestersPerYear) + summarySemesters).distinct()
 
             for (semester in semestersToCheck) {
                 val result = performSyncForSemester(
@@ -236,13 +239,9 @@ class ScheduleUpdateWorker @AssistedInject constructor(
             universityId: String,
             facultyId: String
         ): SyncResult? {
-            val targetSemesterId = "${semester}C"
             // No fallback to summaries.first(): diffing against another semester's schedule
             // would mark every subject as changed.
-            val summary = summaries.find {
-                it.id.equals(targetSemesterId, ignoreCase = true) ||
-                        it.path.contains(targetSemesterId, ignoreCase = true)
-            } ?: return null
+            val summary = SemesterUtils.findSummaryForSemester(summaries, semester) ?: return null
 
             val existingActiveSubjects = importRepository.getExistingActiveSubjects(semester)
             val remoteHash = summary.hash ?: ""
@@ -319,10 +318,11 @@ class ScheduleUpdateWorker @AssistedInject constructor(
             if (diffs.isEmpty() && remoteHash.isNotBlank()) {
                 settingsRepository.setLastKnownScheduleHash(semester, remoteHash)
                 settingsRepository.setLastRemoteSubjectHashes(semester, currentSubjectHashes)
+                val resolvedTermId = summary.id.ifBlank { "${semester}C" }
                 val scopedId = if (universityId.isNotBlank() && facultyId.isNotBlank()) {
-                    "${universityId}_${facultyId}_${semester}C"
+                    "${universityId}_${facultyId}_${resolvedTermId}"
                 } else {
-                    "${semester}C"
+                    resolvedTermId
                 }
                 importRepository.cacheRemoteSlots(
                     context = context,
@@ -334,7 +334,7 @@ class ScheduleUpdateWorker @AssistedInject constructor(
                     updatedTime = summary.updatedTime,
                     universityId = universityId.ifBlank { null },
                     facultyId = facultyId.ifBlank { null },
-                    termId = "${semester}C"
+                    termId = resolvedTermId
                 )
             }
 

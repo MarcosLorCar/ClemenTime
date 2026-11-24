@@ -20,6 +20,8 @@ import javax.inject.Inject
 data class SubjectsUiState(
     val subjects: List<SubjectWithSlots> = emptyList(),
     val selectedSemester: Int = 1,
+    val semesterCount: Int = com.marcoslorcar.clementime.data.SettingsRepository.DEFAULT_SEMESTERS_PER_YEAR,
+    val semesterLabels: Map<Int, String> = emptyMap(),
     val searchQuery: String = "",
     val isLoading: Boolean = false,
     val selectedSubjectIds: Set<Long> = emptySet(),
@@ -35,6 +37,9 @@ data class SubjectsUiState(
 
     val subjectsInSelectedSemester: List<SubjectWithSlots>
         get() = subjects.filter { it.subject.semester == selectedSemester }
+
+    val hasSubjectsInOtherSemesters: Boolean
+        get() = subjects.any { it.subject.semester != selectedSemester }
 
     val filteredSubjects: List<SubjectWithSlots>
         get() = subjectsInSelectedSemester
@@ -88,6 +93,16 @@ class SubjectsViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.currentSemesterFlow.collect { semester ->
                 _uiState.update { it.copy(selectedSemester = semester) }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.semestersPerYearFlow.collect { count ->
+                _uiState.update { it.copy(semesterCount = count) }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.selectedFacultyTermLabelsFlow.collect { labels ->
+                _uiState.update { it.copy(semesterLabels = labels) }
             }
         }
         viewModelScope.launch {
@@ -198,6 +213,7 @@ class SubjectsViewModel @Inject constructor(
                     settingsRepository.setCurrentSemester(event.semester)
                     settingsRepository.setHasManuallyChangedSemester(true)
                     settingsRepository.setWasSemesterAutoChanged(false)
+                    ScheduleWidgetUtils.updateWidget(context)
                 }
             }
             is SubjectsUiEvent.ToggleSemesterSwitcher -> {

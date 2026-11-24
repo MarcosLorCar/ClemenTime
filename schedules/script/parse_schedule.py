@@ -37,7 +37,7 @@ DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 
 class JsonFlatSlot(BaseModel):
     grupo: str = Field(default="", description="Group code, e.g. '1A', '1º A', '3º ISO'")
-    cuatrimestre: str = Field(default="1C", description="'1C' or '2C'")
+    cuatrimestre: str = Field(default="1C", description="Term code, e.g. '1C', '2C', '3C', '1T'")
     dia: str = Field(default="", description="Day of week in Spanish: 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'")
     hora_inicio: str = Field(default="", description="Start time in HH:mm format, e.g. '08:30'")
     hora_fin: str = Field(default="", description="End time in HH:mm format, e.g. '10:00'")
@@ -50,6 +50,50 @@ class JsonFlatSlot(BaseModel):
 
 class PageFlatSchedule(BaseModel):
     slots: List[JsonFlatSlot] = []
+
+def normalize_semester_key(raw_val: Optional[str], default_semester: str = "1C") -> str:
+    """Normalizes raw semester/term strings ('1', '2C', '3C', '2T', 'Q3', 'ANUAL') into canonical term IDs."""
+    if raw_val is None:
+        return default_semester
+    s = str(raw_val).strip().upper()
+    if not s:
+        return default_semester
+    if s in ("ANUAL", "ANNUAL", "YEAR", "UNICO", "ÚNICO"):
+        return "ANUAL"
+
+    exact_suffix = re.match(r"^([1-9]\d*)\s*([CTSQ])$", s)
+    if exact_suffix:
+        return f"{exact_suffix.group(1)}{exact_suffix.group(2)}"
+
+    exact_prefix = re.match(r"^([CTSQ])\s*([1-9]\d*)$", s)
+    if exact_prefix:
+        unit, num = exact_prefix.group(1), exact_prefix.group(2)
+        return f"Q{num}" if unit == "Q" else f"{num}{unit}"
+
+    num_match = re.search(r"([1-9]\d*)", s)
+    if num_match:
+        num = num_match.group(1)
+        if "TRIM" in s:
+            return f"{num}T"
+        if "QUART" in s:
+            return f"Q{num}"
+        return f"{num}C"
+
+    return default_semester
+
+
+def infer_default_semester_from_filename(filename: str) -> str:
+    upper = filename.upper()
+    if "ANUAL" in upper or "ANNUAL" in upper:
+        return "ANUAL"
+    m_trim = re.search(r"(?:^|[^0-9A-Z])([1-9]\d*)(?:T|_?TRIMESTRE)(?:[^0-9A-Z]|$)", upper)
+    if m_trim:
+        return f"{m_trim.group(1)}T"
+    m_cuat = re.search(r"(?:^|[^0-9A-Z])([1-9]\d*)(?:C|_?CUATRIMESTRE|_?SEMESTRE)(?:[^0-9A-Z]|$)", upper)
+    if m_cuat:
+        return f"{m_cuat.group(1)}C"
+    return "1C"
+
 
 # --- Mapping Utilities ---
 
@@ -382,11 +426,7 @@ def process_pdf_schedule(
     mappings = load_mappings()
 
     filename = os.path.basename(pdf_path)
-    default_semester = "1C"
-    if "2C" in filename.upper() or "2_CUATRIMESTRE" in filename.upper():
-        default_semester = "2C"
-    elif "1C" in filename.upper() or "1_CUATRIMESTRE" in filename.upper():
-        default_semester = "1C"
+    default_semester = infer_default_semester_from_filename(filename)
 
     print(f"\n[PDF] Converting '{filename}' to images (Default semester: {default_semester})...", flush=True)
     pages = convert_from_path(pdf_path, dpi=200)
@@ -545,8 +585,7 @@ def process_pdf_schedule(
         if not clean_asig or "universidad de mayores" in clean_asig.lower() or "univmayores" in clean_asig.lower():
             continue
 
-        sem_val = (slot.get("cuatrimestre") or default_semester).strip().upper()
-        sem_key = "2C" if "2" in sem_val else "1C"
+        sem_key = normalize_semester_key(slot.get("cuatrimestre"), default_semester=default_semester)
 
         prof_raw = sanitize_professor(slot.get("profesor") or "")
         prof = resolve_professors(prof_raw, mappings, interactive) if prof_raw else ""
@@ -650,8 +689,7 @@ def process_json_schedule(
         if not clean_asig or "universidad de mayores" in clean_asig.lower() or "univmayores" in clean_asig.lower():
             continue
 
-        sem_val = str(entry.get("cuatrimestre") or "1C").strip().upper()
-        sem_key = "2C" if "2" in sem_val else "1C"
+        sem_key = normalize_semester_key(entry.get("cuatrimestre"), default_semester="1C")
 
         is_lab = bool(entry.get("es_laboratorio", False))
         grupo_prac = (entry.get("grupo_practicas") or "").strip()
@@ -749,7 +787,7 @@ def process_json_schedule(
         sys.exit(1)
 
     os.makedirs(output_dir, exist_ok=True)
-    by_semester: Dict[str, List[Dict]] = {"1C": [], "2C": []}
+    by_semester: Dict[str, List[Dict]] = {}
     for s in processed_slots:
         sem = s.get("cuatrimestre", "1C")
         by_semester.setdefault(sem, []).append(s)
@@ -814,7 +852,7 @@ def main():
             )
             sys.exit(1)
 
-        by_semester: Dict[str, List[Dict]] = {"1C": [], "2C": []}
+        by_semester: Dict[str, List[Dict]] = {}
         for s in slots:
             sem = s.get("cuatrimestre", "1C")
             by_semester.setdefault(sem, []).append(s)

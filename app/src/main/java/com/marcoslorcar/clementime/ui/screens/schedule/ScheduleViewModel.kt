@@ -27,6 +27,9 @@ data class ScheduleUiState(
     val isLoading: Boolean = true,
     val selectedTab: ScheduleTab = ScheduleTab.MONDAY,
     val selectedSemester: Int = 1,
+    val semesterCount: Int = SettingsRepository.DEFAULT_SEMESTERS_PER_YEAR,
+    val semesterLabels: Map<Int, String> = emptyMap(),
+    val hasSubjectsInOtherSemesters: Boolean = false,
     val subjectsWithSlots: List<SubjectWithSlots> = emptyList(),
     val scrollableTabs: Boolean = false,
     val showNowLine: Boolean = true,
@@ -50,6 +53,8 @@ private data class ScheduleSettings(
     val onboardingTooltipsEnabled: Boolean,
     val hasSeenOptimizerTooltip: Boolean,
     val selectedSemester: Int,
+    val semesterCount: Int,
+    val semesterLabels: Map<Int, String>,
     val wasSemesterAutoChanged: Boolean,
     val hasManuallyChangedSemester: Boolean,
     val dayStartTime: LocalTime,
@@ -87,6 +92,8 @@ class ScheduleViewModel @Inject constructor(
             settingsRepository.onboardingTooltipsEnabledFlow,
             settingsRepository.hasSeenOptimizerTooltipFlow,
             settingsRepository.currentSemesterFlow,
+            settingsRepository.semestersPerYearFlow,
+            settingsRepository.selectedFacultyTermLabelsFlow,
             settingsRepository.wasSemesterAutoChangedFlow,
             settingsRepository.hasManuallyChangedSemesterFlow,
             settingsRepository.dayStartHourFlow,
@@ -94,6 +101,7 @@ class ScheduleViewModel @Inject constructor(
             settingsRepository.dayEndHourFlow,
             settingsRepository.dayEndMinuteFlow
         ) { args ->
+            @Suppress("UNCHECKED_CAST")
             ScheduleSettings(
                 scrollable = args[0] as Boolean,
                 showNowLine = args[1] as Boolean,
@@ -102,10 +110,12 @@ class ScheduleViewModel @Inject constructor(
                 onboardingTooltipsEnabled = args[4] as Boolean,
                 hasSeenOptimizerTooltip = args[5] as Boolean,
                 selectedSemester = args[6] as Int,
-                wasSemesterAutoChanged = args[7] as Boolean,
-                hasManuallyChangedSemester = args[8] as Boolean,
-                dayStartTime = LocalTime.of(args[9] as Int, args[10] as Int),
-                dayEndTime = LocalTime.of(args[11] as Int, args[12] as Int)
+                semesterCount = args[7] as Int,
+                semesterLabels = args[8] as Map<Int, String>,
+                wasSemesterAutoChanged = args[9] as Boolean,
+                hasManuallyChangedSemester = args[10] as Boolean,
+                dayStartTime = LocalTime.of(args[11] as Int, args[12] as Int),
+                dayEndTime = LocalTime.of(args[13] as Int, args[14] as Int)
             )
         }
     ) { allSubjects, selectedTab, isSwitcherVisible, settings ->
@@ -128,6 +138,9 @@ class ScheduleViewModel @Inject constructor(
             isLoading = false,
             selectedTab = selectedTab,
             selectedSemester = settings.selectedSemester,
+            semesterCount = settings.semesterCount,
+            semesterLabels = settings.semesterLabels,
+            hasSubjectsInOtherSemesters = hasSubjectsInOtherSemesters,
             subjectsWithSlots = filteredSubjects,
             scrollableTabs = settings.scrollable,
             showNowLine = settings.showNowLine,
@@ -157,6 +170,7 @@ class ScheduleViewModel @Inject constructor(
             settingsRepository.setCurrentSemester(semester)
             settingsRepository.setHasManuallyChangedSemester(true)
             settingsRepository.setWasSemesterAutoChanged(false)
+            ScheduleWidgetUtils.updateWidget(context)
         }
     }
 

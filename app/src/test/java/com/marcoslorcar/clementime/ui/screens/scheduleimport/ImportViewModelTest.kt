@@ -335,6 +335,100 @@ class ImportViewModelTest {
         assertTrue(resetIdx < setFacultyIdx)
         assertTrue(resetIdx < setHashIdx)
     }
+
+    @Test
+    fun confirmImport_threeSemesterFacultyAutoUpdatesSemestersPerYear() = runTest {
+        val recordingSettings = RecordingSettingsRepositoryForImport()
+        val viewModel = ImportViewModel(mockRepository, JsonScheduleParser(), null, recordingSettings)
+
+        val sem3Subj = JsonSubject(code = "ML3", name = "Machine Learning", semester = 3)
+        val stateField = ImportViewModel::class.java.getDeclaredField("_uiState")
+        stateField.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        val stateFlow = stateField.get(viewModel) as MutableStateFlow<ImportUiState>
+        stateFlow.value = ImportUiState.Selection(
+            schema = ScheduleJsonSchema(semester = 3, subjects = listOf(sem3Subj)),
+            selectedSubjects = setOf(SelectedSubject(sem3Subj, "General")),
+            selectedFile = ImportFile(
+                id = "uc3m_eps_3T",
+                title = "3er Trimestre",
+                sourceType = ImportSourceType.REMOTE,
+                remotePath = "https://example.com/uc3m/3T.json",
+                remoteHash = "hash_3t",
+                universityId = "uc3m",
+                universityName = "UC3M",
+                facultyId = "eps",
+                facultyName = "Escuela Politécnica Superior",
+                fcmTopicPrefix = "uc3m_eps",
+                termId = "3T",
+                termSemester = 3,
+                facultyTermCount = 3,
+                facultyTermLabels = mapOf(1 to "1er Trimestre", 2 to "2º Trimestre", 3 to "3er Trimestre")
+            )
+        )
+
+        viewModel.confirmImport()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is ImportUiState.Success)
+        assertEquals(3, recordingSettings.semestersPerYearState.value)
+        assertEquals(3, recordingSettings.currentSemesterState.value)
+        assertTrue(recordingSettings.events.contains("setHash:3:hash_3t"))
+        assertEquals(
+            mapOf(1 to "1er Trimestre", 2 to "2º Trimestre", 3 to "3er Trimestre"),
+            recordingSettings.termLabelsState.value
+        )
+    }
+
+    @Test
+    fun confirmImport_customMultiSemesterFileExpandsSemestersPerYear() = runTest {
+        val recordingSettings = RecordingSettingsRepositoryForImport()
+        val viewModel = ImportViewModel(mockRepository, JsonScheduleParser(), null, recordingSettings)
+
+        val sem4Subj = JsonSubject(code = "Q4SUB", name = "Quarter 4 Subject", semester = 4)
+        val stateField = ImportViewModel::class.java.getDeclaredField("_uiState")
+        stateField.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        val stateFlow = stateField.get(viewModel) as MutableStateFlow<ImportUiState>
+        stateFlow.value = ImportUiState.Selection(
+            schema = ScheduleJsonSchema(semester = 4, subjects = listOf(sem4Subj)),
+            selectedSubjects = setOf(SelectedSubject(sem4Subj, "General")),
+            selectedFile = ImportFile("custom.json", "Custom Quarter 4", sourceType = ImportSourceType.CUSTOM)
+        )
+
+        viewModel.confirmImport()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is ImportUiState.Success)
+        assertEquals(4, recordingSettings.semestersPerYearState.value)
+        assertEquals(4, recordingSettings.currentSemesterState.value)
+    }
+
+    @Test
+    fun conflictCheck_doesNotFlagTheoryOverlapAcrossDifferentSemesters() {
+        val theorySlot = com.marcoslorcar.clementime.data.importing.model.JsonTimeSlot(
+            dayOfWeek = "MONDAY", startTime = "09:00", endTime = "11:00", entryType = "THEORY"
+        )
+        val sem1Sub = JsonSubject(code = "S1", name = "Sem 1 Sub", semester = 1, theorySlots = listOf(theorySlot))
+        val sem3Sub = JsonSubject(code = "S3", name = "Sem 3 Sub", semester = 3, theorySlots = listOf(theorySlot))
+
+        val viewModel = ImportViewModel(mockRepository, JsonScheduleParser(), null, fakeSettingsRepository)
+        val stateField = ImportViewModel::class.java.getDeclaredField("_uiState")
+        stateField.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        val stateFlow = stateField.get(viewModel) as MutableStateFlow<ImportUiState>
+        stateFlow.value = ImportUiState.Selection(
+            schema = ScheduleJsonSchema(semester = null, subjects = listOf(sem1Sub, sem3Sub)),
+            selectedSubjects = emptySet(),
+            selectedFile = ImportFile("backup.json", "Backup")
+        )
+
+        viewModel.toggleSubjectSelection(sem1Sub, "General")
+        viewModel.toggleSubjectSelection(sem3Sub, "General")
+
+        val state = viewModel.uiState.value as ImportUiState.Selection
+        assertEquals(ConflictStatus.Valid, state.conflictStatus)
+    }
 }
 
 private class RecordingSettingsRepositoryForImport(
@@ -351,13 +445,33 @@ private class RecordingSettingsRepositoryForImport(
 
     private val uniIdFlow = MutableStateFlow(initialUniversityId)
     private val facIdFlow = MutableStateFlow(initialFacultyId)
+    val semestersPerYearState = MutableStateFlow(DEFAULT_SEMESTERS_PER_YEAR)
+    val currentSemesterState = MutableStateFlow(1)
+    val termLabelsState = MutableStateFlow<Map<Int, String>>(emptyMap())
 
     override val selectedUniversityIdFlow: Flow<String> = uniIdFlow
     override val selectedFacultyIdFlow: Flow<String> = facIdFlow
+    override val semestersPerYearFlow: Flow<Int> = semestersPerYearState
+    override val currentSemesterFlow: Flow<Int> = currentSemesterState
+    override val selectedFacultyTermLabelsFlow: Flow<Map<Int, String>> = termLabelsState
 
     val events = mutableListOf<String>()
     val setFacultyCalls = mutableListOf<FacultyCall>()
     var resetHashesCount = 0
+
+    override suspend fun setCurrentSemester(semester: Int) {
+        currentSemesterState.value = semester
+        events.add("setCurrentSemester:$semester")
+    }
+
+    override suspend fun setSemestersPerYear(count: Int) {
+        semestersPerYearState.value = count
+        events.add("setSemestersPerYear:$count")
+    }
+
+    override suspend fun setSelectedFacultyTermLabels(labels: Map<Int, String>) {
+        termLabelsState.value = labels
+    }
 
     override suspend fun resetScheduleHashes() {
         resetHashesCount++

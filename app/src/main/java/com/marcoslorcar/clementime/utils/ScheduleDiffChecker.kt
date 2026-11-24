@@ -209,11 +209,14 @@ object ScheduleDiffChecker {
         remoteSlots: List<JsonFlatSlot>,
         currentSemester: Int
     ): List<JsonFlatSlot> {
-        val targetSemesterCode = "${currentSemester}C"
-        return remoteSlots.filter { slot ->
-            val slotCuat = slot.cuatrimestre.trim()
-            slotCuat.equals(targetSemesterCode, ignoreCase = true) || slotCuat == "$currentSemester"
+        val matched = remoteSlots.filter { slot ->
+            SemesterUtils.matchesSemester(slot.cuatrimestre, currentSemester)
         }
+        if (matched.isNotEmpty()) return matched
+
+        // Allow custom term files whose slots carry no recognizable numeric semester tag
+        val hasAnyNumberedTag = remoteSlots.any { SemesterUtils.parseTermSemester(it.cuatrimestre) != null }
+        return if (!hasAnyNumberedTag) remoteSlots else emptyList()
     }
 
     private fun matchAndParseRemoteSlots(

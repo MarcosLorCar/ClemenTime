@@ -18,6 +18,7 @@ import com.marcoslorcar.clementime.data.importing.model.SelectedSubject
 import com.marcoslorcar.clementime.data.importing.model.TermCatalogEntry
 import com.marcoslorcar.clementime.data.importing.model.UniversityCatalogEntry
 import com.marcoslorcar.clementime.data.importing.parser.JsonScheduleParser
+import com.marcoslorcar.clementime.utils.SemesterUtils
 import com.marcoslorcar.clementime.utils.SlotDiff
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -224,11 +225,7 @@ class ImportRepository @Inject constructor(
                 cacheBust = false,
                 universityId = universityId
             ).getOrNull() ?: Pair(rawBaseUrl, emptyList())
-            val targetSemesterId = "${semester}C"
-            val summary = summaries.find {
-                it.id.equals(targetSemesterId, ignoreCase = true) ||
-                        it.path.contains(targetSemesterId, ignoreCase = true)
-            } ?: summaries.firstOrNull()
+            val summary = SemesterUtils.findSummaryForSemester(summaries, semester)
 
             if (summary != null && apiService != null) {
                 val fullUrl = normalizeGitHubUrl(
@@ -268,10 +265,12 @@ class ImportRepository @Inject constructor(
         val affectedKeys = diffsToApply.map { it.subjectCode.ifBlank { it.subjectName }.trim() }.distinct()
         val existingSubjects = dao.getAllSubjectsWithSlotsBySemester(semester).first()
 
-        val targetSemesterCode = "${semester}C"
-        val semesterRemoteSlots = slotsToUse.filter { slot ->
-            val slotCuat = slot.cuatrimestre.trim()
-            slotCuat.equals(targetSemesterCode, ignoreCase = true) || slotCuat == "$semester"
+        val matchedByTag = slotsToUse.filter { slot ->
+            SemesterUtils.matchesSemester(slot.cuatrimestre, semester)
+        }
+        val semesterRemoteSlots = matchedByTag.ifEmpty {
+            val hasAnyNumberedTag = slotsToUse.any { SemesterUtils.parseTermSemester(it.cuatrimestre) != null }
+            if (!hasAnyNumberedTag) slotsToUse else emptyList()
         }
 
         for (affectedKey in affectedKeys) {
@@ -331,10 +330,11 @@ class ImportRepository @Inject constructor(
         }
 
         if (appliedCount > 0 && context != null && downloadedJson != null && downloadedSummary != null && downloadedUrl != null) {
+            val resolvedTermId = downloadedSummary.id.ifBlank { "${semester}C" }
             val scopedId = if (universityId.isNotBlank() && effectiveFacultyId.isNotBlank()) {
-                "${universityId}_${effectiveFacultyId}_${semester}C"
+                "${universityId}_${effectiveFacultyId}_${resolvedTermId}"
             } else {
-                "${semester}C"
+                resolvedTermId
             }
             cacheRemoteSlots(
                 context = context,
@@ -346,7 +346,7 @@ class ImportRepository @Inject constructor(
                 updatedTime = downloadedSummary.updatedTime,
                 universityId = universityId.ifBlank { null },
                 facultyId = effectiveFacultyId.ifBlank { null },
-                termId = "${semester}C"
+                termId = resolvedTermId
             )
         }
 
@@ -372,6 +372,13 @@ class ImportRepository @Inject constructor(
 
     suspend fun getExistingActiveSubjects(semester: Int): List<com.marcoslorcar.clementime.data.SubjectWithSlots> = withContext(Dispatchers.IO) {
         dao.getAllSubjectsWithSlotsBySemester(semester).first().filter { it.subject.isActive }
+    }
+
+    suspend fun getExistingActiveSubjectsForSemesters(semesters: Collection<Int>): List<com.marcoslorcar.clementime.data.SubjectWithSlots> = withContext(Dispatchers.IO) {
+        if (semesters.isEmpty()) return@withContext emptyList()
+        if (semesters.size == 1) return@withContext getExistingActiveSubjects(semesters.first())
+        val semSet = semesters.toSet()
+        dao.getAllSubjectsWithSlots().first().filter { it.subject.isActive && it.subject.semester in semSet }
     }
 
     fun normalizeGitHubUrl(url: String): String {
@@ -595,14 +602,18 @@ class ImportRepository @Inject constructor(
         val legacySlots = getCachedRemoteSlotsById(context, termId)
         if (legacySlots.isNotEmpty()) return legacySlots
 
-        if (universityId.isNullOrBlank() && facultyId.isNullOrBlank()) {
-            val matchingEntry = readCacheMetadata(context).firstOrNull { entry ->
-                entry.termId.equals(termId, ignoreCase = true) ||
-                    entry.id.endsWith("_$termId", ignoreCase = true)
-            }
-            if (matchingEntry != null) {
-                return getCachedRemoteSlotsById(context, matchingEntry.id)
-            }
+        // Support non-"XC" term IDs (e.g. "3T", "Q4", "ANUAL") via cache metadata lookup
+        val metadataEntries = readCacheMetadata(context)
+        val matchingMetadata = metadataEntries.firstOrNull { entry ->
+            val uniMatches = universityId.isNullOrBlank() || entry.universityId.isNullOrBlank() ||
+                entry.universityId.equals(universityId, ignoreCase = true)
+            val facMatches = facultyId.isNullOrBlank() || entry.facultyId.isNullOrBlank() ||
+                entry.facultyId.equals(facultyId, ignoreCase = true)
+            uniMatches && facMatches &&
+                SemesterUtils.parseTermSemester(entry.termId ?: entry.id) == semester
+        }
+        if (matchingMetadata != null) {
+            return getCachedRemoteSlotsById(context, matchingMetadata.id)
         }
 
         return emptyList()
@@ -676,9 +687,9 @@ class ImportRepository @Inject constructor(
             metadataList.removeAll { it.id == fileId }
             metadataList.add(updatedEntry)
 
-            if (metadataList.size > 5) {
+            if (metadataList.size > 10) {
                 metadataList.sortBy { it.lastUsed }
-                while (metadataList.size > 5) {
+                while (metadataList.size > 10) {
                     val oldest = metadataList.removeAt(0)
                     val oldestFile = File(cacheDir, "cache_${oldest.id}.json")
                     if (oldestFile.exists()) {

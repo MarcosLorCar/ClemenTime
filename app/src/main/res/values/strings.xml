@@ -311,17 +311,32 @@
     <string name="widget_toggle_tomorrow">Tomorrow →</string>
     <string name="semester_1_label">1st Semester</string>
     <string name="semester_2_label">2nd Semester</string>
+    <string name="semester_3_label">3rd Semester</string>
+    <string name="semester_4_label">4th Semester</string>
+    <string name="semester_5_label">5th Semester</string>
+    <string name="semester_6_label">6th Semester</string>
+    <string name="semester_generic_label">Term %1$d</string>
+    <string name="semester_medium_format">Term %1$d</string>
+    <string name="semester_compact_format">T%1$d</string>
     <string name="semester_label">Semester</string>
+    <string name="semesters_per_year_setting_title">Terms per year</string>
+    <string name="semesters_per_year_setting_desc">Number of semesters or terms shown across the app</string>
+    <plurals name="semesters_per_year_value">
+        <item quantity="one">%1$d term</item>
+        <item quantity="other">%1$d terms</item>
+    </plurals>
 
     <string name="export_ics_setting_title">Export to Calendar (.ics)</string>
     <string name="export_ics_desc">Add schedule to Google Calendar, Outlook, or Apple Calendar</string>
-    <string name="export_ics_range_picker_title">Select Semester Duration</string>
-    <string name="export_ics_s1_picker_title">Select 1st Semester Duration</string>
-    <string name="export_ics_s2_picker_title">Select 2nd Semester Duration</string>
-    <string name="export_ics_step_course_start">Course Start Date</string>
-    <string name="export_ics_step_s2_start">2nd Semester Start Date</string>
-    <string name="export_ics_step_course_end">Course End Date</string>
-    <string name="export_ics_step_indicator">Step %1$d of 3</string>
+    <string name="export_ics_no_active_subjects">No active subjects to export.</string>
+    <string name="export_ics_scope_dialog_title">Export to Calendar</string>
+    <string name="export_ics_scope_dialog_desc">Choose which terms to include in your calendar (.ics) file:</string>
+    <string name="export_ics_scope_active_only">Active term only (%1$s)</string>
+    <string name="export_ics_scope_single_term">%1$s only</string>
+    <string name="export_ics_scope_all_populated">All populated terms (%1$d)</string>
+    <string name="export_ics_step_dynamic_indicator">Step %1$d of %2$d</string>
+    <string name="export_ics_term_start_date">%1$s — Start Date</string>
+    <string name="export_ics_term_end_date">%1$s — End Date</string>
 
     <string name="delete_slot_confirmation">Are you sure you want to delete this class slot?</string>
     <string name="room_prefix">Room: %1$s</string>

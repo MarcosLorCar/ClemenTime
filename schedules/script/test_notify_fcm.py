@@ -13,6 +13,8 @@ import unittest
 from unittest.mock import patch
 
 import schedules.script.notify_fcm as notify_fcm
+import schedules.script.generate_index as generate_index
+import schedules.script.parse_schedule as parse_schedule
 
 
 class TestNotifyFcm(unittest.TestCase):
@@ -89,6 +91,46 @@ class TestNotifyFcm(unittest.TestCase):
         req = mock_urlopen.call_args[0][0]
         self.assertEqual(req.full_url, "https://fcm.googleapis.com/v1/projects/clementime-test/messages:send")
         self.assertEqual(req.headers["Authorization"], "Bearer fake-oauth-token")
+
+    def test_n_semester_pipeline_normalization_and_fcm_hashes(self):
+        self.assertEqual(parse_schedule.normalize_semester_key("1"), "1C")
+        self.assertEqual(parse_schedule.normalize_semester_key("2C"), "2C")
+        self.assertEqual(parse_schedule.normalize_semester_key("3C"), "3C")
+        self.assertEqual(parse_schedule.normalize_semester_key("3T"), "3T")
+        self.assertEqual(parse_schedule.normalize_semester_key("Q4"), "Q4")
+        self.assertEqual(parse_schedule.normalize_semester_key("ANUAL"), "ANUAL")
+
+        title_3c, _ = generate_index.resolve_term_metadata("3C", "2026-2027")
+        self.assertEqual(title_3c, "Tercer Cuatrimestre")
+        title_3t, _ = generate_index.resolve_term_metadata("3T", "2026-2027")
+        self.assertEqual(title_3t, "Tercer Trimestre")
+
+        trimester_catalog = {
+            "version": 2,
+            "universities": [
+                {
+                    "id": "uc3m",
+                    "name": "UC3M",
+                    "faculties": [
+                        {
+                            "id": "eps",
+                            "name": "EPS",
+                            "terms": [
+                                {"id": "1T", "hash": "h1"},
+                                {"id": "2T", "hash": "h2"},
+                                {"id": "3T", "hash": "h3"},
+                            ],
+                        }
+                    ],
+                }
+            ],
+        }
+        msgs = notify_fcm.build_fcm_messages(trimester_catalog, updated_at="2026-11-24T12:00:00+00:00")
+        self.assertEqual(len(msgs), 1)
+        data = msgs[0]["message"]["data"]
+        self.assertEqual(data["hash_1T"], "h1")
+        self.assertEqual(data["hash_2T"], "h2")
+        self.assertEqual(data["hash_3T"], "h3")
 
 
 if __name__ == "__main__":

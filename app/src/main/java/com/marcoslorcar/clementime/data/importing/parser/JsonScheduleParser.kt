@@ -9,6 +9,7 @@ import com.marcoslorcar.clementime.data.importing.model.JsonSubject
 import com.marcoslorcar.clementime.data.importing.model.JsonTimeSlot
 import com.marcoslorcar.clementime.data.importing.model.JsonYear
 import com.marcoslorcar.clementime.data.importing.model.ScheduleJsonSchema
+import com.marcoslorcar.clementime.utils.SemesterUtils
 import kotlinx.serialization.json.Json
 import java.time.DayOfWeek
 import java.time.LocalTime
@@ -19,6 +20,7 @@ class JsonScheduleParser @Inject constructor() {
     private val json = Json {
         ignoreUnknownKeys = true
         prettyPrint = true
+        encodeDefaults = true
     }
 
     fun parseJson(jsonString: String): Result<ScheduleJsonSchema> {
@@ -39,7 +41,7 @@ class JsonScheduleParser @Inject constructor() {
         subjectsWithSlots.forEach { subjectWithSlots ->
             val (subject, slots) = subjectWithSlots
             val fullGroup = subject.courseGroup?.trim() ?: ""
-            val cuatrimestreStr = if (subject.semester == 2) "2C" else "1C"
+            val cuatrimestreStr = SemesterUtils.formatSemesterCode(subject.semester)
             val asignaturaStr = subject.name
             val codigoStr = subject.code
 
@@ -71,10 +73,21 @@ class JsonScheduleParser @Inject constructor() {
             return ScheduleJsonSchema(title = "Primer Cuatrimestre", semester = 1)
         }
 
-        val semesters = flatSlots.map { it.cuatrimestre.trim().uppercase() }.filter { it.isNotBlank() }
-        val isSecondSemester = semesters.isNotEmpty() && semesters.all { it == "2C" || it == "2" }
-        val semesterInt = if (isSecondSemester) 2 else 1
-        val title = if (isSecondSemester) "Segundo Cuatrimestre" else "Primer Cuatrimestre"
+        val distinctSemesters = flatSlots
+            .mapNotNull { SemesterUtils.parseTermSemester(it.cuatrimestre) }
+            .distinct()
+            .sorted()
+        val schemaSemester: Int? = when {
+            distinctSemesters.isEmpty() -> 1
+            distinctSemesters.size == 1 -> distinctSemesters.first()
+            else -> null
+        }
+        val defaultSemester = schemaSemester ?: 1
+        val title = if (schemaSemester != null) {
+            SemesterUtils.defaultSpanishSemesterTitle(schemaSemester)
+        } else {
+            "Horario Completo"
+        }
 
         class SubjectAccumulator(
             val code: String,
@@ -141,9 +154,11 @@ class JsonScheduleParser @Inject constructor() {
                 }
             }
 
-            val subjectAcc = targetSubjectMap.getOrPut(asig) {
+            val slotSemester = SemesterUtils.parseTermSemester(slot.cuatrimestre) ?: defaultSemester
+            val accKey = if (schemaSemester != null) asig else "${asig}__sem$slotSemester"
+            val subjectAcc = targetSubjectMap.getOrPut(accKey) {
                 val resolvedCode = slot.codigo ?: generateCode(asig)
-                SubjectAccumulator(code = resolvedCode, name = asig, semester = semesterInt)
+                SubjectAccumulator(code = resolvedCode, name = asig, semester = slotSemester)
             }
             if (isEvento) {
                 subjectAcc.isDummy = true
@@ -191,7 +206,7 @@ class JsonScheduleParser @Inject constructor() {
         return ScheduleJsonSchema(
             version = 1,
             title = title,
-            semester = semesterInt,
+            semester = schemaSemester,
             subjects = jsonRootSubjects,
             years = jsonYears
         )
