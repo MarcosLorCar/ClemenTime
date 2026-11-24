@@ -43,3 +43,6 @@ schedules/script/.cache/
 # Local Firebase debug config & service account keys (do not commit real keys)
 app/src/debug/google-services.json
 service-account*.json
+
+# Local knowledge graph output
+/graphify-out/
