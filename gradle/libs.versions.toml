@@ -31,7 +31,7 @@ coil = "3.5.0"
 work = "2.11.2"
 hiltWork = "1.4.0"
 googleServices = "4.4.4"
-firebaseBom = "33.10.0"
+firebaseBom = "35.2.0"
 
 [libraries]
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
