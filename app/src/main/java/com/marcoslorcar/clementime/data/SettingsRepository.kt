@@ -40,6 +40,8 @@ open class SettingsRepository @Inject constructor(
     private val hasSeenImportPreviewTooltipKey = booleanPreferencesKey("has_seen_import_preview_tooltip")
     private val hasSeenLabSelectionTooltipKey = booleanPreferencesKey("has_seen_lab_selection_tooltip")
     private val currentSemesterKey = intPreferencesKey("current_semester")
+    private val periodTypeKey = stringPreferencesKey("period_type")
+    private val periodCountKey = intPreferencesKey("period_count")
     private val hasManuallyChangedSemesterKey = booleanPreferencesKey("has_manually_changed_semester")
     private val wasSemesterAutoChangedKey = booleanPreferencesKey("was_semester_auto_changed")
     private val dayStartHourKey = intPreferencesKey("day_start_hour")
@@ -225,6 +227,19 @@ open class SettingsRepository @Inject constructor(
             } ?: kotlinx.coroutines.flow.flowOf(1)
         } catch (_: Throwable) {
             kotlinx.coroutines.flow.flowOf(1)
+        }
+
+    open val periodConfigFlow: Flow<PeriodConfig>
+        get() = try {
+            context?.dataStore?.data?.map { preferences ->
+                val type = preferences[periodTypeKey]?.let { raw ->
+                    runCatching { PeriodType.valueOf(raw) }.getOrNull()
+                } ?: PeriodType.SEMESTERS
+                val count = preferences[periodCountKey] ?: type.defaultCount
+                PeriodConfig.normalized(type, count)
+            } ?: kotlinx.coroutines.flow.flowOf(PeriodConfig.DEFAULT)
+        } catch (_: Throwable) {
+            kotlinx.coroutines.flow.flowOf(PeriodConfig.DEFAULT)
         }
 
     open val hasManuallyChangedSemesterFlow: Flow<Boolean>
@@ -477,6 +492,20 @@ open class SettingsRepository @Inject constructor(
         } catch (_: Throwable) {}
     }
 
+    open suspend fun setPeriodConfig(config: PeriodConfig) {
+        val normalized = PeriodConfig.normalized(config.type, config.count)
+        try {
+            context?.dataStore?.edit { preferences ->
+                preferences[periodTypeKey] = normalized.type.name
+                preferences[periodCountKey] = normalized.count
+                val current = preferences[currentSemesterKey] ?: 1
+                if (current > normalized.count || current < PeriodConfig.MIN_PERIOD_COUNT) {
+                    preferences[currentSemesterKey] = current.coerceIn(PeriodConfig.MIN_PERIOD_COUNT, normalized.count)
+                }
+            }
+        } catch (_: Throwable) {}
+    }
+
     open suspend fun setHasManuallyChangedSemester(hasChanged: Boolean) {
         try {
             context?.dataStore?.edit { preferences ->
@@ -527,12 +556,11 @@ open class SettingsRepository @Inject constructor(
     open suspend fun resetScheduleHashes() {
         try {
             context?.dataStore?.edit { preferences ->
-                preferences.remove(lastKnownScheduleHashKey(1))
-                preferences.remove(lastKnownScheduleHashKey(2))
-                preferences.remove(lastNotifiedScheduleHashKey(1))
-                preferences.remove(lastNotifiedScheduleHashKey(2))
-                preferences.remove(lastRemoteSubjectHashesKey(1))
-                preferences.remove(lastRemoteSubjectHashesKey(2))
+                for (semester in PeriodConfig.MIN_PERIOD_COUNT..PeriodConfig.MAX_PERIOD_COUNT) {
+                    preferences.remove(lastKnownScheduleHashKey(semester))
+                    preferences.remove(lastNotifiedScheduleHashKey(semester))
+                    preferences.remove(lastRemoteSubjectHashesKey(semester))
+                }
                 preferences.remove(lastScheduleSyncTimestampKey)
             }
         } catch (_: Throwable) {}

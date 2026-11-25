@@ -266,8 +266,8 @@
     <string name="tooltip_resolver_apply_desc">Once you find a lab combination you like, tap Apply to update your active schedule automatically.</string>
     <string name="tooltip_add_slot_title">Add Your First Class</string>
     <string name="tooltip_add_slot_desc">Tap here to add a class slot to this subject. You can set the time, room, and professor.</string>
-    <string name="tooltip_auto_semester_title">Semester Changed</string>
-    <string name="tooltip_auto_semester_desc">We\'ve automatically switched the semester to match your imported subjects. Tap here to change it back manually.</string>
+    <string name="tooltip_auto_semester_title">Period Changed</string>
+    <string name="tooltip_auto_semester_desc">We\'ve automatically switched the academic period to match your imported subjects. Tap here to change it manually.</string>
 
     <!-- Onboarding Screen -->
     <string name="onboarding_welcome_title">Welcome to ClemenTime</string>
@@ -313,6 +313,37 @@
     <string name="semester_2_label">2nd Semester</string>
     <string name="semester_label">Semester</string>
 
+    <string name="period_annual_title">Annual</string>
+    <string name="period_annual_label">Full Year</string>
+    <string name="period_annual_compact">Year</string>
+    <string name="period_semesters_title">Semesters</string>
+    <string name="period_semester_compact_1">1st Sem.</string>
+    <string name="period_semester_compact_2">2nd Sem.</string>
+    <string name="period_trimesters_title">Trimesters</string>
+    <string name="period_trimester_1">1st Trimester</string>
+    <string name="period_trimester_2">2nd Trimester</string>
+    <string name="period_trimester_3">3rd Trimester</string>
+    <string name="period_trimester_compact_1">1st Trim.</string>
+    <string name="period_trimester_compact_2">2nd Trim.</string>
+    <string name="period_trimester_compact_3">3rd Trim.</string>
+    <string name="period_quarters_title">Quarters</string>
+    <string name="period_quarter_1">1st Quarter</string>
+    <string name="period_quarter_2">2nd Quarter</string>
+    <string name="period_quarter_3">3rd Quarter</string>
+    <string name="period_quarter_4">4th Quarter</string>
+    <string name="period_quarter_compact_1">1st Qtr</string>
+    <string name="period_quarter_compact_2">2nd Qtr</string>
+    <string name="period_quarter_compact_3">3rd Qtr</string>
+    <string name="period_quarter_compact_4">4th Qtr</string>
+    <string name="period_custom_title">Custom</string>
+    <string name="period_custom_label">Term %1$d</string>
+    <string name="period_custom_compact">T%1$d</string>
+    <string name="period_config_summary_with_count">%1$s (%2$d)</string>
+    <string name="academic_periods_setting_title">Academic Periods</string>
+    <string name="academic_periods_dialog_title">Academic Periods</string>
+    <string name="academic_periods_custom_count_label">Number of periods</string>
+    <string name="academic_periods_hidden_subjects_warning">%1$d subject(s) in higher periods will be hidden (not deleted) until you increase the count again.</string>
+
     <string name="export_ics_setting_title">Export to Calendar (.ics)</string>
     <string name="export_ics_desc">Add schedule to Google Calendar, Outlook, or Apple Calendar</string>
     <string name="export_ics_range_picker_title">Select Semester Duration</string>
@@ -320,8 +351,9 @@
     <string name="export_ics_s2_picker_title">Select 2nd Semester Duration</string>
     <string name="export_ics_step_course_start">Course Start Date</string>
     <string name="export_ics_step_s2_start">2nd Semester Start Date</string>
+    <string name="export_ics_step_period_start">%1$s Start Date</string>
     <string name="export_ics_step_course_end">Course End Date</string>
-    <string name="export_ics_step_indicator">Step %1$d of 3</string>
+    <string name="export_ics_step_indicator">Step %1$d of %2$d</string>
 
     <string name="delete_slot_confirmation">Are you sure you want to delete this class slot?</string>
     <string name="room_prefix">Room: %1$s</string>
@@ -353,7 +385,7 @@
     <string name="content_description_toggle_active">Toggle active</string>
     <string name="content_description_delete_selected">Delete selected</string>
     <string name="content_description_tools">Tools</string>
-    <string name="content_description_toggle_semester_switcher">Toggle Semester Switcher</string>
+    <string name="content_description_toggle_semester_switcher">Toggle Period Switcher</string>
     <string name="content_description_nuke_all">Nuke all</string>
     <string name="content_description_close_actions">Close actions</string>
     <string name="content_description_open_actions">Open actions</string>

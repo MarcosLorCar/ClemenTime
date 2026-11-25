@@ -55,6 +55,7 @@ data class AddEditSubjectUiState(
     val name: String = "",
     val color: Int = Subject.PRESET_COLORS.first(),
     val semester: Int = 1,
+    val periodConfig: com.marcoslorcar.clementime.data.PeriodConfig = com.marcoslorcar.clementime.data.PeriodConfig.DEFAULT,
     val isActive: Boolean = true,
     val defaultDurationMinutes: Int = 90,
     val notesText: String = "",
@@ -113,7 +114,23 @@ class AddEditSubjectViewModel @Inject constructor(
         }
         viewModelScope.launch {
             settingsRepository.currentSemesterFlow.firstOrNull()?.let { semester ->
-                _uiState.update { it.copy(semester = semester) }
+                _uiState.update { state ->
+                    if (state.isNewSubject) {
+                        state.copy(semester = semester.coerceIn(1, state.periodConfig.count))
+                    } else {
+                        state
+                    }
+                }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.periodConfigFlow.collect { config ->
+                _uiState.update { state ->
+                    state.copy(
+                        periodConfig = config,
+                        semester = if (state.isNewSubject) state.semester.coerceIn(1, config.count) else state.semester
+                    )
+                }
             }
         }
         viewModelScope.launch {

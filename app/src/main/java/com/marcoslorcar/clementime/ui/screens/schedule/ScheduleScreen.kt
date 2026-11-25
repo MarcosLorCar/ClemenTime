@@ -229,7 +229,7 @@ fun ScheduleContent(
                             show = uiState.onboardingTooltipsEnabled && uiState.showAutoChangeTooltip,
                             onDismiss = onMarkAutoSemesterChangeTooltipSeen
                         ) {
-                            if (uiState.hasAnySubjects) {
+                            if (uiState.hasAnySubjects && uiState.periodConfig.count > 1) {
                                 IconButton(onClick = onToggleSemesterSwitcher) {
                                     Icon(
                                         imageVector = Icons.Default.DateRange,
@@ -273,13 +273,14 @@ fun ScheduleContent(
                 )
 
                 AnimatedVisibility(
-                    visible = uiState.isSemesterSwitcherVisible,
+                    visible = uiState.isSemesterSwitcherVisible && uiState.periodConfig.count > 1,
                     enter = expandVertically(),
                     exit = shrinkVertically()
                 ) {
                     SemesterSwitcher(
                         selectedSemester = uiState.selectedSemester,
                         onSemesterSelected = onSemesterSelected,
+                        periodConfig = uiState.periodConfig,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
                 }

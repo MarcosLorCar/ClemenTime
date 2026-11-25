@@ -5,9 +5,11 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.marcoslorcar.clementime.data.EntryType
+import com.marcoslorcar.clementime.data.PeriodConfig
 import com.marcoslorcar.clementime.data.SettingsRepository
 import com.marcoslorcar.clementime.data.Subject
 import com.marcoslorcar.clementime.data.SubjectWithSlots
+import com.marcoslorcar.clementime.data.TermCodeParser
 import com.marcoslorcar.clementime.data.importing.model.ImportFile
 import com.marcoslorcar.clementime.data.importing.model.ImportSourceType
 import com.marcoslorcar.clementime.data.importing.model.JsonSubject
@@ -129,6 +131,11 @@ class ImportViewModel @Inject constructor(
                                 val isLinked = activeFacId.isNotBlank() &&
                                     faculty.id.equals(activeFacId, ignoreCase = true) &&
                                     (activeUniId.isBlank() || uni.id.equals(activeUniId, ignoreCase = true))
+                                val inferredFacultyPeriodConfig = PeriodConfig.inferFromCatalog(
+                                    periodTypeRaw = faculty.periodType,
+                                    periodCountRaw = faculty.periodCount,
+                                    termIds = faculty.terms.map { it.id }
+                                )
 
                                 faculty.terms.map { term ->
                                     val scopedId = "${uni.id}_${faculty.id}_${term.id}"
@@ -168,7 +175,8 @@ class ImportViewModel @Inject constructor(
                                         facultyName = faculty.name,
                                         fcmTopicPrefix = faculty.fcmTopicPrefix,
                                         termId = term.id,
-                                        isLinkedFaculty = isLinked
+                                        isLinkedFaculty = isLinked,
+                                        facultyPeriodConfig = inferredFacultyPeriodConfig
                                     )
                                 }
                             }
@@ -237,7 +245,21 @@ class ImportViewModel @Inject constructor(
                     }
                 }
 
-                val existing = repository.getExistingActiveSubjects(schemaResult.getOrNull()?.semester ?: 1)
+                val parsedSchema = schemaResult.getOrNull()
+                val candidateSemesters = when {
+                    parsedSchema?.semester != null -> listOf(parsedSchema.semester)
+                    parsedSchema != null -> (
+                        parsedSchema.subjects.mapNotNull { it.semester } +
+                            parsedSchema.years.flatMap { y ->
+                                y.subjects.mapNotNull { it.semester } +
+                                    y.groups.flatMap { g -> g.subjects.mapNotNull { it.semester } }
+                            }
+                        ).distinct().ifEmpty {
+                        listOf(TermCodeParser.parseTermIndex(file.termId ?: file.id) ?: 1)
+                    }
+                    else -> listOf(1)
+                }
+                val existing = candidateSemesters.flatMap { repository.getExistingActiveSubjects(it) }
                 val onboardingEnabled = settingsRepository.onboardingTooltipsEnabledFlow.first()
                 val hasSeenConflictTooltip = settingsRepository.hasSeenImportConflictTooltipFlow.first()
                 val hasSeenPreviewTooltip = settingsRepository.hasSeenImportPreviewTooltipFlow.first()
@@ -475,7 +497,22 @@ class ImportViewModel @Inject constructor(
                 try {
                     val importedSubjects = currentState.selectedSubjects.toList()
                     repository.importSubjects(importedSubjects)
-                    
+
+                    val maxImportedSemester = (listOfNotNull(currentState.schema.semester) +
+                        importedSubjects.mapNotNull { it.subject.semester }).maxOrNull() ?: 1
+                    val currentPeriodConfig = settingsRepository.periodConfigFlow.first()
+                    if (currentState.selectedFile.sourceType == ImportSourceType.REMOTE &&
+                        currentState.selectedFile.facultyPeriodConfig != null
+                    ) {
+                        val targetConfig = currentState.selectedFile.facultyPeriodConfig
+                            .expandToInclude(maxImportedSemester)
+                        if (targetConfig != currentPeriodConfig) {
+                            settingsRepository.setPeriodConfig(targetConfig)
+                        }
+                    } else if (maxImportedSemester > currentPeriodConfig.count) {
+                        settingsRepository.setPeriodConfig(currentPeriodConfig.expandToInclude(maxImportedSemester))
+                    }
+
                     val currentSemester = settingsRepository.currentSemesterFlow.first()
                     var shouldAutoChangeSemester = false
                     
@@ -506,11 +543,7 @@ class ImportViewModel @Inject constructor(
                     if (currentState.selectedFile.sourceType == ImportSourceType.REMOTE) {
                         val selectedFile = currentState.selectedFile
                         val semesterKey = selectedFile.termId ?: selectedFile.id
-                        val inferredTermSemester = when {
-                            semesterKey.equals("1C", ignoreCase = true) || semesterKey.endsWith("_1C", ignoreCase = true) -> 1
-                            semesterKey.equals("2C", ignoreCase = true) || semesterKey.endsWith("_2C", ignoreCase = true) -> 2
-                            else -> null
-                        }
+                        val inferredTermSemester = TermCodeParser.parseTermIndex(semesterKey)
 
                         val targetSemesters = (listOfNotNull(currentState.schema.semester ?: inferredTermSemester) +
                             importedSubjects.mapNotNull { it.subject.semester })

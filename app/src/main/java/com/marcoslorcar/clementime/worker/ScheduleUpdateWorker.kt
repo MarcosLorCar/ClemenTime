@@ -22,6 +22,7 @@ import androidx.work.WorkerParameters
 import com.marcoslorcar.clementime.MainActivity
 import com.marcoslorcar.clementime.R
 import com.marcoslorcar.clementime.data.SettingsRepository
+import com.marcoslorcar.clementime.data.TermCodeParser
 import com.marcoslorcar.clementime.data.api.GitHubScheduleApiService
 import com.marcoslorcar.clementime.data.importing.model.JsonFlatSlot
 import com.marcoslorcar.clementime.data.importing.model.RemoteScheduleSummary
@@ -201,7 +202,12 @@ class ScheduleUpdateWorker @AssistedInject constructor(
             }
 
             val (effectiveBaseUrl, summaries) = remoteSummariesResult.getOrNull() ?: return SyncResult()
-            val semestersToCheck = listOf(currentSemester, if (currentSemester == 1) 2 else 1)
+            val periodConfig = settingsRepository.periodConfigFlow.first()
+            val semestersToCheck = (
+                listOf(currentSemester) +
+                    (1..periodConfig.count) +
+                    summaries.mapNotNull { TermCodeParser.parseTermIndex(it.id) }
+                ).distinct()
 
             for (semester in semestersToCheck) {
                 val result = performSyncForSemester(
@@ -236,13 +242,10 @@ class ScheduleUpdateWorker @AssistedInject constructor(
             universityId: String,
             facultyId: String
         ): SyncResult? {
-            val targetSemesterId = "${semester}C"
             // No fallback to summaries.first(): diffing against another semester's schedule
             // would mark every subject as changed.
-            val summary = summaries.find {
-                it.id.equals(targetSemesterId, ignoreCase = true) ||
-                        it.path.contains(targetSemesterId, ignoreCase = true)
-            } ?: return null
+            val summary = summaries.find { TermCodeParser.matchesSummary(it, semester) }
+                ?: return null
 
             val existingActiveSubjects = importRepository.getExistingActiveSubjects(semester)
             val remoteHash = summary.hash ?: ""
