@@ -17,6 +17,10 @@ on:
       - '.gitignore'
       - '.env.example'
       - 'LICENSE'
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 # Superseded PR builds are cancelled: pushing three times to a PR used to run three full
 # test+assemble jobs to completion. cancel-in-progress is gated on the event so that master
@@ -28,9 +32,15 @@ concurrency:
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
       - name: Validate Schedule Pipeline
         run: |
@@ -58,6 +68,9 @@ jobs:
 
       - name: Run Unit Tests
         run: ./gradlew test
+
+      - name: Run Android Lint
+        run: ./gradlew lint
 
       - name: Build Debug APK
         run: ./gradlew assembleDebug
