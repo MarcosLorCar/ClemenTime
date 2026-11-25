@@ -14,15 +14,19 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -33,11 +37,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.CleaningServices
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.InvertColors
@@ -45,6 +51,7 @@ import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Policy
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material.icons.filled.Schedule
@@ -52,8 +59,11 @@ import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material.icons.filled.ViewCompact
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
@@ -61,9 +71,11 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -95,9 +107,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import com.marcoslorcar.clementime.BuildConfig
 import com.marcoslorcar.clementime.R
+import com.marcoslorcar.clementime.data.PeriodConfig
+import com.marcoslorcar.clementime.data.PeriodType
 import com.marcoslorcar.clementime.data.SettingsRepository
 import com.marcoslorcar.clementime.ui.components.AppSkeletonPreview
 import com.marcoslorcar.clementime.ui.components.ClemenTimeTopBar
+import com.marcoslorcar.clementime.ui.components.periodConfigSummaryLabel
+import com.marcoslorcar.clementime.ui.components.periodLabel
+import com.marcoslorcar.clementime.ui.components.periodTypeTitle
 import com.marcoslorcar.clementime.ui.screens.scheduleimport.ScheduleDiffBottomSheet
 import com.marcoslorcar.clementime.ui.screens.subject.RadialTimePickerDialog
 import com.marcoslorcar.clementime.ui.theme.ClemenTimeTheme
@@ -164,6 +181,8 @@ fun MoreScreen(
         onToggleOnboardingTooltips = viewModel::setOnboardingTooltipsEnabled,
         onExportData = viewModel::exportData,
         onExportIcs = viewModel::exportFullYearToIcs,
+        onPeriodConfigChanged = viewModel::setPeriodConfig,
+        onExportIcsBoundaries = viewModel::exportFullYearToIcs,
         onAutoUpdateIntervalChanged = viewModel::setAutoUpdateIntervalHours,
         onSyncModeChanged = viewModel::setSyncMode,
         onCheckUpdatesNow = {
@@ -202,6 +221,8 @@ fun MoreContent(
     onToggleOnboardingTooltips: (Boolean) -> Unit,
     onExportData: (android.content.Context, Uri, (ExportStatus) -> Unit) -> Unit,
     onExportIcs: (android.content.Context, Uri, LocalDate, LocalDate, LocalDate, LocalDate, (ExportStatus) -> Unit) -> Unit,
+    onPeriodConfigChanged: (PeriodConfig) -> Unit = {},
+    onExportIcsBoundaries: (android.content.Context, Uri, List<LocalDate>, (ExportStatus) -> Unit) -> Unit = { _, _, _, _ -> },
     onAutoUpdateIntervalChanged: (Int) -> Unit = {},
     onSyncModeChanged: (com.marcoslorcar.clementime.data.SyncMode) -> Unit = {},
     onCheckUpdatesNow: () -> Unit = {},
@@ -215,6 +236,7 @@ fun MoreContent(
     val context = LocalContext.current
     var showRepoUrlDialog by remember { mutableStateOf(false) }
     var tempRepoUrl by remember { mutableStateOf(uiState.githubRepoBaseUrl) }
+    var showPeriodsDialog by remember { mutableStateOf(false) }
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -232,10 +254,9 @@ fun MoreContent(
         }
     }
 
-    var icsExportStep by remember { mutableIntStateOf(0) } // 0: Idle, 1: Course Start, 2: S2 Start, 3: Course End
-    var courseStartDate by remember { mutableStateOf<LocalDate?>(null) }
-    var s2StartDate by remember { mutableStateOf<LocalDate?>(null) }
-    var courseEndDate by remember { mutableStateOf<LocalDate?>(null) }
+    var icsExportStep by remember { mutableIntStateOf(0) } // 0: Idle, 1..N+1: Boundary dates
+    var icsBoundaries by remember { mutableStateOf<List<LocalDate>>(emptyList()) }
+    val totalIcsSteps = uiState.periodConfig.count + 1
 
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
@@ -254,9 +275,8 @@ fun MoreContent(
     val icsExportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("text/calendar")
     ) { uri ->
-        if (uri != null && (courseStartDate != null) && (s2StartDate != null) && (courseEndDate != null)) {
-            val s1EndDate = s2StartDate!!.minusDays(1)
-            onExportIcs(context, uri, courseStartDate!!, s1EndDate, s2StartDate!!, courseEndDate!!) { status ->
+        if (uri != null && icsBoundaries.size == totalIcsSteps) {
+            onExportIcsBoundaries(context, uri, icsBoundaries) { status ->
                 when (status) {
                     is ExportStatus.Success -> Toast.makeText(context, status.message, Toast.LENGTH_SHORT).show()
                     is ExportStatus.Error -> Toast.makeText(context, status.error, Toast.LENGTH_SHORT).show()
@@ -270,38 +290,37 @@ fun MoreContent(
         key(icsExportStep) {
             val datePickerState = rememberDatePickerState()
             DatePickerDialog(
-                onDismissRequest = { icsExportStep = 0 },
+                onDismissRequest = {
+                    icsExportStep = 0
+                    icsBoundaries = emptyList()
+                },
                 confirmButton = {
                     TextButton(
                         onClick = {
                             val millis = datePickerState.selectedDateMillis
                             if (millis != null) {
                                 val date = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
+                                val updated = icsBoundaries.take(icsExportStep - 1) + date
+                                icsBoundaries = updated
 
-                                when (icsExportStep) {
-                                    1 -> {
-                                        courseStartDate = date
-                                        icsExportStep = 2
-                                    }
-                                    2 -> {
-                                        s2StartDate = date
-                                        icsExportStep = 3
-                                    }
-                                    3 -> {
-                                        courseEndDate = date
-                                        icsExportStep = 0
-                                        icsExportLauncher.launch("ClemenTime_Full_Schedule.ics")
-                                    }
+                                if (icsExportStep < totalIcsSteps) {
+                                    icsExportStep += 1
+                                } else {
+                                    icsExportStep = 0
+                                    icsExportLauncher.launch("ClemenTime_Full_Schedule.ics")
                                 }
                             }
                         },
                         enabled = datePickerState.selectedDateMillis != null
                     ) {
-                        Text(if (icsExportStep < 3) stringResource(R.string.onboarding_next) else stringResource(R.string.save_button))
+                        Text(if (icsExportStep < totalIcsSteps) stringResource(R.string.onboarding_next) else stringResource(R.string.save_button))
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { icsExportStep = 0 }) {
+                    TextButton(onClick = {
+                        icsExportStep = 0
+                        icsBoundaries = emptyList()
+                    }) {
                         Text(stringResource(R.string.cancel))
                     }
                 }
@@ -316,24 +335,28 @@ fun MoreContent(
                             },
                             label = "icsStepAnimation"
                         ) { step ->
+                            if (step <= 0) return@AnimatedContent
                             Column(
                                 modifier = Modifier
                                     .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 8.dp)
                                     .fillMaxWidth()
                             ) {
                                 Text(
-                                    text = stringResource(R.string.export_ics_step_indicator, step).uppercase(),
+                                    text = stringResource(R.string.export_ics_step_indicator, step, totalIcsSteps).uppercase(),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.Bold
                                 )
-                                val titleRes = when (step) {
-                                    1 -> R.string.export_ics_step_course_start
-                                    2 -> R.string.export_ics_step_s2_start
-                                    else -> R.string.export_ics_step_course_end
+                                val titleText = when {
+                                    step == 1 -> stringResource(R.string.export_ics_step_course_start)
+                                    step >= totalIcsSteps -> stringResource(R.string.export_ics_step_course_end)
+                                    else -> stringResource(
+                                        R.string.export_ics_step_period_start,
+                                        periodLabel(semester = step, type = uiState.periodConfig.type)
+                                    )
                                 }
                                 Text(
-                                    text = stringResource(titleRes),
+                                    text = titleText,
                                     style = MaterialTheme.typography.headlineSmall,
                                     fontWeight = FontWeight.Black
                                 )
@@ -344,6 +367,140 @@ fun MoreContent(
                 )
             }
         }
+    }
+
+    if (showPeriodsDialog) {
+        var selectedType by remember(showPeriodsDialog) { mutableStateOf(uiState.periodConfig.type) }
+        var customCount by remember(showPeriodsDialog) { mutableIntStateOf(uiState.periodConfig.count) }
+        val candidateConfig = PeriodConfig.normalized(selectedType, customCount)
+        val hiddenCount = uiState.subjectCountsBySemester
+            .filterKeys { it > candidateConfig.count }
+            .values
+            .sum()
+
+        AlertDialog(
+            onDismissRequest = { showPeriodsDialog = false },
+            title = { Text(stringResource(R.string.academic_periods_dialog_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    listOf(
+                        PeriodType.ANNUAL,
+                        PeriodType.SEMESTERS,
+                        PeriodType.TRIMESTERS,
+                        PeriodType.QUARTERS,
+                        PeriodType.CUSTOM
+                    ).forEach { type ->
+                        val label = if (type == PeriodType.ANNUAL) {
+                            periodTypeTitle(type)
+                        } else if (type == PeriodType.CUSTOM) {
+                            periodTypeTitle(type)
+                        } else {
+                            stringResource(R.string.period_config_summary_with_count, periodTypeTitle(type), type.defaultCount)
+                        }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { selectedType = type }
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = selectedType == type,
+                                onClick = { selectedType = type }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+                    }
+
+                    if (selectedType == PeriodType.CUSTOM) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp, start = 8.dp, end = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.academic_periods_custom_count_label),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(
+                                    onClick = {
+                                        if (customCount > PeriodConfig.MIN_PERIOD_COUNT) customCount--
+                                    },
+                                    enabled = customCount > PeriodConfig.MIN_PERIOD_COUNT
+                                ) {
+                                    Icon(Icons.Default.Remove, contentDescription = null)
+                                }
+                                Text(
+                                    text = customCount.toString(),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 8.dp)
+                                )
+                                IconButton(
+                                    onClick = {
+                                        if (customCount < PeriodConfig.MAX_PERIOD_COUNT) customCount++
+                                    },
+                                    enabled = customCount < PeriodConfig.MAX_PERIOD_COUNT
+                                ) {
+                                    Icon(Icons.Default.Add, contentDescription = null)
+                                }
+                            }
+                        }
+                    }
+
+                    if (hiddenCount > 0) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Warning,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                    text = stringResource(R.string.academic_periods_hidden_subjects_warning, hiddenCount),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onPeriodConfigChanged(candidateConfig)
+                        showPeriodsDialog = false
+                    }
+                ) {
+                    Text(stringResource(R.string.save_button))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPeriodsDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
     }
 
     if (showRepoUrlDialog) {
@@ -586,6 +743,14 @@ fun MoreContent(
                     }
                 )
 
+                // Academic Periods
+                SettingItem(
+                    icon = Icons.Default.DateRange,
+                    title = stringResource(R.string.academic_periods_setting_title),
+                    subtitle = periodConfigSummaryLabel(uiState.periodConfig),
+                    onClick = { showPeriodsDialog = true }
+                )
+
                 // Schedule Range
                 Text(
                     text = stringResource(R.string.schedule_range_header),
@@ -701,7 +866,10 @@ fun MoreContent(
                     icon = Icons.Default.CalendarMonth,
                     title = stringResource(R.string.export_ics_setting_title),
                     subtitle = stringResource(R.string.export_ics_desc),
-                    onClick = { icsExportStep = 1 }
+                    onClick = {
+                        icsBoundaries = emptyList()
+                        icsExportStep = 1
+                    }
                 )
 
                 SettingItem(

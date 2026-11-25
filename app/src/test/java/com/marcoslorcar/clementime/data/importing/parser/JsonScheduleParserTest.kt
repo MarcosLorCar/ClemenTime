@@ -2,6 +2,7 @@ package com.marcoslorcar.clementime.data.importing.parser
 
 import com.marcoslorcar.clementime.data.ClassSlot
 import com.marcoslorcar.clementime.data.EntryType
+import com.marcoslorcar.clementime.data.PeriodType
 import com.marcoslorcar.clementime.data.Subject
 import com.marcoslorcar.clementime.data.SubjectWithSlots
 import org.junit.Assert.assertEquals
@@ -231,5 +232,91 @@ class JsonScheduleParserTest {
                 assertEquals("Expected exactly 1 slot for Conferencias in ${file.name}", 1, conferencias.theorySlots.size)
             }
         }
+    }
+
+    @Test
+    fun parseJson_trimesterAndJsonNamesAliases_parseCorrectly() {
+        val jsonStr = """
+            [
+              {
+                "grupo": "1A",
+                "trimestre": "3T",
+                "dia": "Miércoles",
+                "hora_inicio": "09:00",
+                "hora_fin": "10:30",
+                "codigo": "BIO3",
+                "asignatura": "Bioquímica III",
+                "tipo": "teoría"
+              }
+            ]
+        """.trimIndent()
+
+        val result = parser.parseJson(jsonStr)
+        assertTrue(result.isSuccess)
+        val schema = result.getOrThrow()
+        assertEquals(3, schema.semester)
+        assertEquals("3º Trimestre", schema.title)
+        val subject = schema.years.single().groups.single().subjects.single()
+        assertEquals(3, subject.semester)
+        assertEquals("BIO3", subject.code)
+    }
+
+    @Test
+    fun exportToJson_multiPeriodRoundTrip_preservesAllPeriods() {
+        val s1 = Subject(
+            id = 1L,
+            code = "T1",
+            name = "Term One Subject",
+            color = 0xFF4CAF50.toInt(),
+            courseGroup = "1º A",
+            isActive = true,
+            semester = 1
+        )
+        val s3 = Subject(
+            id = 2L,
+            code = "T3",
+            name = "Term Three Subject",
+            color = 0xFF2196F3.toInt(),
+            courseGroup = "1º A",
+            isActive = true,
+            semester = 3
+        )
+        val slot1 = ClassSlot(1L, 1L, DayOfWeek.MONDAY, LocalTime.of(9, 0), LocalTime.of(10, 30), entryType = EntryType.THEORY)
+        val slot3 = ClassSlot(2L, 2L, DayOfWeek.FRIDAY, LocalTime.of(11, 0), LocalTime.of(12, 30), entryType = EntryType.THEORY)
+
+        val exported = parser.exportToJson(
+            title = "Export",
+            subjectsWithSlots = listOf(SubjectWithSlots(s1, listOf(slot1)), SubjectWithSlots(s3, listOf(slot3))),
+            periodType = PeriodType.TRIMESTERS
+        )
+        assertTrue(exported.contains("\"cuatrimestre\": \"1T\""))
+        assertTrue(exported.contains("\"cuatrimestre\": \"3T\""))
+
+        val reimported = parser.parseJson(exported).getOrThrow()
+        assertEquals(null, reimported.semester)
+        val subjects = reimported.years.single().groups.single().subjects
+        assertEquals(1, subjects.first { it.code == "T1" }.semester)
+        assertEquals(3, subjects.first { it.code == "T3" }.semester)
+    }
+
+    @Test
+    fun exportToJson_customPeriodType_formatsCustomTermCodes() {
+        val s5 = Subject(
+            id = 5L,
+            code = "C5",
+            name = "Custom Period 5",
+            color = 0xFF4CAF50.toInt(),
+            courseGroup = "1º A",
+            isActive = true,
+            semester = 5
+        )
+        val slot5 = ClassSlot(5L, 5L, DayOfWeek.TUESDAY, LocalTime.of(10, 0), LocalTime.of(11, 30), entryType = EntryType.THEORY)
+
+        val exported = parser.exportToJson(
+            title = "Export",
+            subjectsWithSlots = listOf(SubjectWithSlots(s5, listOf(slot5))),
+            periodType = PeriodType.CUSTOM
+        )
+        assertTrue(exported.contains("\"cuatrimestre\": \"5P\""))
     }
 }

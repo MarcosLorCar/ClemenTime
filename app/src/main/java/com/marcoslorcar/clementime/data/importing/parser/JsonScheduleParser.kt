@@ -2,7 +2,9 @@ package com.marcoslorcar.clementime.data.importing.parser
 
 import com.marcoslorcar.clementime.data.ClassSlot
 import com.marcoslorcar.clementime.data.EntryType
+import com.marcoslorcar.clementime.data.PeriodType
 import com.marcoslorcar.clementime.data.SubjectWithSlots
+import com.marcoslorcar.clementime.data.TermCodeParser
 import com.marcoslorcar.clementime.data.importing.model.JsonFlatSlot
 import com.marcoslorcar.clementime.data.importing.model.JsonGroup
 import com.marcoslorcar.clementime.data.importing.model.JsonSubject
@@ -33,13 +35,17 @@ class JsonScheduleParser @Inject constructor() {
         }
     }
 
-    fun exportToJson(@Suppress("UNUSED_PARAMETER") title: String, subjectsWithSlots: List<SubjectWithSlots>): String {
+    fun exportToJson(
+        @Suppress("UNUSED_PARAMETER") title: String,
+        subjectsWithSlots: List<SubjectWithSlots>,
+        periodType: PeriodType = PeriodType.SEMESTERS
+    ): String {
         val flatSlots = mutableListOf<JsonFlatSlot>()
 
         subjectsWithSlots.forEach { subjectWithSlots ->
             val (subject, slots) = subjectWithSlots
             val fullGroup = subject.courseGroup?.trim() ?: ""
-            val cuatrimestreStr = if (subject.semester == 2) "2C" else "1C"
+            val cuatrimestreStr = TermCodeParser.formatTermCode(subject.semester, periodType)
             val asignaturaStr = subject.name
             val codigoStr = subject.code
 
@@ -71,10 +77,23 @@ class JsonScheduleParser @Inject constructor() {
             return ScheduleJsonSchema(title = "Primer Cuatrimestre", semester = 1)
         }
 
-        val semesters = flatSlots.map { it.cuatrimestre.trim().uppercase() }.filter { it.isNotBlank() }
-        val isSecondSemester = semesters.isNotEmpty() && semesters.all { it == "2C" || it == "2" }
-        val semesterInt = if (isSecondSemester) 2 else 1
-        val title = if (isSecondSemester) "Segundo Cuatrimestre" else "Primer Cuatrimestre"
+        val rawTerms = flatSlots.map { it.cuatrimestre.trim().uppercase() }.filter { it.isNotBlank() }
+        val distinctSemesters = flatSlots.map { TermCodeParser.parseTermIndex(it.cuatrimestre) ?: 1 }.distinct()
+        val schemaSemester = distinctSemesters.singleOrNull()
+        val title = when {
+            distinctSemesters.size > 1 -> "Full Schedule"
+            else -> {
+                val sem = distinctSemesters.first()
+                when {
+                    rawTerms.any { it == "ANUAL" || it == "ANNUAL" || it == "YEAR" || it == "1A" || it == "A1" } -> "Anual"
+                    rawTerms.any { it.endsWith("T") || it.startsWith("T") } -> "${sem}º Trimestre"
+                    rawTerms.any { it.endsWith("Q") || it.startsWith("Q") } -> "${sem}º Cuarto"
+                    sem == 1 -> "Primer Cuatrimestre"
+                    sem == 2 -> "Segundo Cuatrimestre"
+                    else -> "Periodo $sem"
+                }
+            }
+        }
 
         class SubjectAccumulator(
             val code: String,
@@ -106,6 +125,7 @@ class JsonScheduleParser @Inject constructor() {
                 continue
             }
 
+            val slotSemester = TermCodeParser.parseTermIndex(slot.cuatrimestre) ?: 1
             val (yearName, groupName) = parseYearAndGroup(slot.grupo)
             val dayOfWeek = parseDayOfWeek(slot.dia).name
             val startTime = formatTime(slot.horaInicio, isEndTime = false)
@@ -141,9 +161,10 @@ class JsonScheduleParser @Inject constructor() {
                 }
             }
 
-            val subjectAcc = targetSubjectMap.getOrPut(asig) {
+            val subjectKey = "$asig|$slotSemester"
+            val subjectAcc = targetSubjectMap.getOrPut(subjectKey) {
                 val resolvedCode = slot.codigo ?: generateCode(asig)
-                SubjectAccumulator(code = resolvedCode, name = asig, semester = semesterInt)
+                SubjectAccumulator(code = resolvedCode, name = asig, semester = slotSemester)
             }
             if (isEvento) {
                 subjectAcc.isDummy = true
@@ -191,7 +212,7 @@ class JsonScheduleParser @Inject constructor() {
         return ScheduleJsonSchema(
             version = 1,
             title = title,
-            semester = semesterInt,
+            semester = schemaSemester,
             subjects = jsonRootSubjects,
             years = jsonYears
         )

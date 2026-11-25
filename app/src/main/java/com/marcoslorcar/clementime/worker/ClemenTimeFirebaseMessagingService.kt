@@ -5,6 +5,7 @@ import com.google.firebase.messaging.RemoteMessage
 import com.marcoslorcar.clementime.data.ScheduleDao
 import com.marcoslorcar.clementime.data.SettingsRepository
 import com.marcoslorcar.clementime.data.SyncMode
+import com.marcoslorcar.clementime.data.TermCodeParser
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -43,26 +44,27 @@ class ClemenTimeFirebaseMessagingService : FirebaseMessagingService() {
                 }
 
                 val data = message.data
-                val shouldSync = listOf(1, 2).any { semester ->
-                    val hasActiveSubjects = scheduleDao
-                        .getActiveSubjectsWithSlotsBySemester(semester)
-                        .first()
-                        .isNotEmpty()
-                    if (!hasActiveSubjects) {
-                        false
-                    } else {
-                        val incomingHash = data["hash_${semester}C"]
-                            ?: data["hash_$semester"]
-                            ?: if (data["semester"] == "${semester}C" || data["semester"] == "$semester") {
-                                data["hash"]
-                            } else {
-                                null
-                            }
-                        val lastKnownHash = settingsRepository
-                            .getLastKnownScheduleHashFlow(semester)
-                            .first()
-                        incomingHash.isNullOrBlank() || incomingHash != lastKnownHash
+                val activeSemesters = scheduleDao.getAllSubjectsWithSlots().first()
+                    .filter { it.subject.isActive }
+                    .map { it.subject.semester }
+                    .distinct()
+
+                val shouldSync = activeSemesters.any { semester ->
+                    val incomingHash = data.entries.firstOrNull { (key, _) ->
+                        key.startsWith("hash_", ignoreCase = true) &&
+                            TermCodeParser.parseTermIndex(key.substringAfter("_")) == semester
+                    }?.value ?: run {
+                        val payloadTerm = data["semester"] ?: data["term"]
+                        if (TermCodeParser.parseTermIndex(payloadTerm) == semester) {
+                            data["hash"]
+                        } else {
+                            null
+                        }
                     }
+                    val lastKnownHash = settingsRepository
+                        .getLastKnownScheduleHashFlow(semester)
+                        .first()
+                    incomingHash.isNullOrBlank() || incomingHash != lastKnownHash
                 }
 
                 if (shouldSync) {

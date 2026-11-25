@@ -4,6 +4,7 @@ import com.marcoslorcar.clementime.data.ClassSlot
 import com.marcoslorcar.clementime.data.EntryType
 import com.marcoslorcar.clementime.data.Subject
 import com.marcoslorcar.clementime.data.SubjectWithSlots
+import com.marcoslorcar.clementime.data.TermCodeParser
 import com.marcoslorcar.clementime.data.importing.model.JsonFlatSlot
 import java.security.MessageDigest
 import java.time.DayOfWeek
@@ -209,10 +210,8 @@ object ScheduleDiffChecker {
         remoteSlots: List<JsonFlatSlot>,
         currentSemester: Int
     ): List<JsonFlatSlot> {
-        val targetSemesterCode = "${currentSemester}C"
         return remoteSlots.filter { slot ->
-            val slotCuat = slot.cuatrimestre.trim()
-            slotCuat.equals(targetSemesterCode, ignoreCase = true) || slotCuat == "$currentSemester"
+            TermCodeParser.matchesSemester(slot.cuatrimestre, currentSemester)
         }
     }
 

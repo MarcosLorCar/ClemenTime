@@ -7,6 +7,7 @@ import com.marcoslorcar.clementime.data.EntryType
 import com.marcoslorcar.clementime.data.ScheduleDao
 import com.marcoslorcar.clementime.data.SettingsRepository
 import com.marcoslorcar.clementime.data.Subject
+import com.marcoslorcar.clementime.data.TermCodeParser
 import com.marcoslorcar.clementime.data.api.GitHubScheduleApiService
 import com.marcoslorcar.clementime.data.importing.model.FacultyCatalogEntry
 import com.marcoslorcar.clementime.data.importing.model.ImportFile
@@ -224,11 +225,8 @@ class ImportRepository @Inject constructor(
                 cacheBust = false,
                 universityId = universityId
             ).getOrNull() ?: Pair(rawBaseUrl, emptyList())
-            val targetSemesterId = "${semester}C"
-            val summary = summaries.find {
-                it.id.equals(targetSemesterId, ignoreCase = true) ||
-                        it.path.contains(targetSemesterId, ignoreCase = true)
-            } ?: summaries.firstOrNull()
+            val summary = summaries.find { TermCodeParser.matchesSummary(it, semester) }
+                ?: summaries.firstOrNull()
 
             if (summary != null && apiService != null) {
                 val fullUrl = normalizeGitHubUrl(
@@ -268,10 +266,8 @@ class ImportRepository @Inject constructor(
         val affectedKeys = diffsToApply.map { it.subjectCode.ifBlank { it.subjectName }.trim() }.distinct()
         val existingSubjects = dao.getAllSubjectsWithSlotsBySemester(semester).first()
 
-        val targetSemesterCode = "${semester}C"
         val semesterRemoteSlots = slotsToUse.filter { slot ->
-            val slotCuat = slot.cuatrimestre.trim()
-            slotCuat.equals(targetSemesterCode, ignoreCase = true) || slotCuat == "$semester"
+            TermCodeParser.matchesSemester(slot.cuatrimestre, semester)
         }
 
         for (affectedKey in affectedKeys) {
@@ -331,10 +327,11 @@ class ImportRepository @Inject constructor(
         }
 
         if (appliedCount > 0 && context != null && downloadedJson != null && downloadedSummary != null && downloadedUrl != null) {
+            val resolvedTermId = downloadedSummary.id.ifBlank { "${semester}C" }
             val scopedId = if (universityId.isNotBlank() && effectiveFacultyId.isNotBlank()) {
-                "${universityId}_${effectiveFacultyId}_${semester}C"
+                "${universityId}_${effectiveFacultyId}_$resolvedTermId"
             } else {
-                "${semester}C"
+                resolvedTermId
             }
             cacheRemoteSlots(
                 context = context,
@@ -346,7 +343,7 @@ class ImportRepository @Inject constructor(
                 updatedTime = downloadedSummary.updatedTime,
                 universityId = universityId.ifBlank { null },
                 facultyId = effectiveFacultyId.ifBlank { null },
-                termId = "${semester}C"
+                termId = resolvedTermId
             )
         }
 
@@ -580,6 +577,22 @@ class ImportRepository @Inject constructor(
         facultyId: String? = null
     ): List<JsonFlatSlot> {
         if (context == null) return emptyList()
+
+        val metadataEntries = readCacheMetadata(context)
+        val metadataMatch = metadataEntries.firstOrNull { entry ->
+            val termMatches = TermCodeParser.parseTermIndex(entry.termId ?: entry.id) == semester
+            if (!termMatches) return@firstOrNull false
+            val uniMatches = universityId.isNullOrBlank() || entry.universityId.isNullOrBlank() ||
+                entry.universityId.equals(universityId, ignoreCase = true)
+            val facMatches = facultyId.isNullOrBlank() || entry.facultyId.isNullOrBlank() ||
+                entry.facultyId.equals(facultyId, ignoreCase = true)
+            uniMatches && facMatches
+        }
+        if (metadataMatch != null) {
+            val cached = getCachedRemoteSlotsById(context, metadataMatch.id)
+            if (cached.isNotEmpty()) return cached
+        }
+
         val termId = "${semester}C"
 
         if (!universityId.isNullOrBlank() && !facultyId.isNullOrBlank()) {
@@ -596,7 +609,7 @@ class ImportRepository @Inject constructor(
         if (legacySlots.isNotEmpty()) return legacySlots
 
         if (universityId.isNullOrBlank() && facultyId.isNullOrBlank()) {
-            val matchingEntry = readCacheMetadata(context).firstOrNull { entry ->
+            val matchingEntry = metadataEntries.firstOrNull { entry ->
                 entry.termId.equals(termId, ignoreCase = true) ||
                     entry.id.endsWith("_$termId", ignoreCase = true)
             }

@@ -270,8 +270,8 @@
     <string name="tooltip_resolver_apply_desc">Cuando encuentres una combinación de laboratorios que te guste, pulsa Aplicar para actualizar tu horario activo automáticamente.</string>
     <string name="tooltip_add_slot_title">Añade Tu Primera Clase</string>
     <string name="tooltip_add_slot_desc">Pulsa aquí para añadir un horario a esta asignatura. Podrás configurar la hora, el aula y el profesor.</string>
-    <string name="tooltip_auto_semester_title">Cuatrimestre Cambiado</string>
-    <string name="tooltip_auto_semester_desc">Hemos cambiado automáticamente el cuatrimestre para que coincida con tus asignaturas importadas. Pulsa aquí para cambiarlo manualmente.</string>
+    <string name="tooltip_auto_semester_title">Periodo Cambiado</string>
+    <string name="tooltip_auto_semester_desc">Hemos cambiado automáticamente el periodo para que coincida con tus asignaturas importadas. Pulsa aquí para cambiarlo manualmente.</string>
 
     <!-- Onboarding Screen -->
     <string name="onboarding_welcome_title">Bienvenido a ClemenTime</string>
@@ -316,6 +316,37 @@
     <string name="semester_2_label">2º Cuatrimestre</string>
     <string name="semester_label">Cuatrimestre</string>
 
+    <string name="period_annual_title">Anual</string>
+    <string name="period_annual_label">Anual</string>
+    <string name="period_annual_compact">Anual</string>
+    <string name="period_semesters_title">Cuatrimestres</string>
+    <string name="period_semester_compact_1">1º Cuat.</string>
+    <string name="period_semester_compact_2">2º Cuat.</string>
+    <string name="period_trimesters_title">Trimestres</string>
+    <string name="period_trimester_1">1º Trimestre</string>
+    <string name="period_trimester_2">2º Trimestre</string>
+    <string name="period_trimester_3">3º Trimestre</string>
+    <string name="period_trimester_compact_1">1º Trim.</string>
+    <string name="period_trimester_compact_2">2º Trim.</string>
+    <string name="period_trimester_compact_3">3º Trim.</string>
+    <string name="period_quarters_title">Cuartos</string>
+    <string name="period_quarter_1">1º Cuarto</string>
+    <string name="period_quarter_2">2º Cuarto</string>
+    <string name="period_quarter_3">3º Cuarto</string>
+    <string name="period_quarter_4">4º Cuarto</string>
+    <string name="period_quarter_compact_1">1º Cto.</string>
+    <string name="period_quarter_compact_2">2º Cto.</string>
+    <string name="period_quarter_compact_3">3º Cto.</string>
+    <string name="period_quarter_compact_4">4º Cto.</string>
+    <string name="period_custom_title">Personalizado</string>
+    <string name="period_custom_label">Periodo %1$d</string>
+    <string name="period_custom_compact">P%1$d</string>
+    <string name="period_config_summary_with_count">%1$s (%2$d)</string>
+    <string name="academic_periods_setting_title">Periodos académicos</string>
+    <string name="academic_periods_dialog_title">Periodos académicos</string>
+    <string name="academic_periods_custom_count_label">Número de periodos</string>
+    <string name="academic_periods_hidden_subjects_warning">%1$d asignatura(s) en periodos superiores quedarán ocultas (sin borrarse) hasta que vuelvas a aumentar el número.</string>
+
     <string name="export_ics_setting_title">Exportar al Calendario (.ics)</string>
     <string name="export_ics_desc">Añadir horario a Google Calendar, Outlook o Apple Calendar</string>
     <string name="export_ics_range_picker_title">Seleccionar Duración del Semestre</string>
@@ -323,8 +354,9 @@
     <string name="export_ics_s2_picker_title">Duración del 2º Cuatrimestre</string>
     <string name="export_ics_step_course_start">Inicio de Curso</string>
     <string name="export_ics_step_s2_start">Inicio 2º Cuatrimestre</string>
+    <string name="export_ics_step_period_start">Inicio %1$s</string>
     <string name="export_ics_step_course_end">Fin de Curso</string>
-    <string name="export_ics_step_indicator">Paso %1$d de 3</string>
+    <string name="export_ics_step_indicator">Paso %1$d de %2$d</string>
 
     <string name="delete_slot_confirmation">¿Estás seguro de que deseas eliminar este horario de clase?</string>
     <string name="room_prefix">Aula: %1$s</string>
@@ -356,7 +388,7 @@
     <string name="content_description_toggle_active">Cambiar estado activo</string>
     <string name="content_description_delete_selected">Eliminar seleccionadas</string>
     <string name="content_description_tools">Herramientas</string>
-    <string name="content_description_toggle_semester_switcher">Cambiar selector de cuatrimestre</string>
+    <string name="content_description_toggle_semester_switcher">Cambiar selector de periodo</string>
     <string name="content_description_nuke_all">Borrar todo</string>
     <string name="content_description_close_actions">Cerrar acciones</string>
     <string name="content_description_open_actions">Abrir acciones</string>
