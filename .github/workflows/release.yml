@@ -11,7 +11,7 @@ on:
         required: false
         type: string
       play_track:
-        description: 'Google Play track (auto = internal for pre-releases, production draft for stable)'
+        description: 'Google Play track (auto = internal for pre-releases, production for stable)'
         required: false
         type: choice
         default: 'auto'
@@ -92,10 +92,8 @@ jobs:
             fi
           fi
 
-          if [ "$TRACK" = "internal" ]; then
+          if [ "$TRACK" = "internal" ] || [ "$TRACK" = "production" ]; then
             PLAY_STATUS="completed"
-          elif [ "$TRACK" = "production" ]; then
-            PLAY_STATUS="draft"
           else
             PLAY_STATUS="skip"
           fi
