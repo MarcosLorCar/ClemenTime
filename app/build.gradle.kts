@@ -30,10 +30,27 @@ android {
 
         val passedVersionName = project.findProperty("versionName") as? String
         val passedVersionCode = (project.findProperty("versionCode") as? String)?.toIntOrNull()
+        val effectiveVersionName = passedVersionName ?: gitVersionName
 
-        // Starting from 1000 to ensure it's higher than previous manual versions
-        versionCode = passedVersionCode ?: (1000 + gitCommitCount)
-        versionName = passedVersionName ?: gitVersionName
+        // SemVer-derived versionCode for exact release/pre-release tags (e.g. 1.5.0 -> 1050099,
+        // 1.5.0-rc.1 -> 1050001). Prevents shallow-clone and hotfix-branch collisions while
+        // guaranteeing internal pre-releases sort strictly below their final production release.
+        // Falls back to commit-count versioning for non-tag local development builds.
+        val semVerMatch = Regex("""^(\d+)\.(\d+)\.(\d+)(?:-([a-zA-Z]+)\.?(\d+)?)?$""")
+            .matchEntire(effectiveVersionName)
+        val semVerVersionCode = semVerMatch?.let { match ->
+            val major = match.groupValues[1].toInt()
+            val minor = match.groupValues[2].toInt()
+            val patch = match.groupValues[3].toInt()
+            val preTag = match.groupValues[4]
+            val preNum = match.groupValues[5].toIntOrNull()
+            val base = major * 1_000_000 + minor * 10_000 + patch * 100
+            if (preTag.isEmpty()) base + 99 else base + (preNum ?: 1).coerceIn(1, 98)
+        }
+
+        // Starting from 1000 for local dev builds to ensure it's higher than previous manual versions
+        versionCode = passedVersionCode ?: semVerVersionCode ?: (1000 + gitCommitCount)
+        versionName = effectiveVersionName
 
         // Dynamic Git branch detection for local builds base URL
         val gitBranch = providers.exec {

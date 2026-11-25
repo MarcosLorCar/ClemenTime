@@ -18,12 +18,15 @@ import os
 import re
 import subprocess
 import sys
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 PLAY_STORE_MAX_CHARS = 500
+GITHUB_REPO_URL = "https://github.com/MarcosLorCar/ClemenTime"
+COMMIT_BODY_MAX_CHARS = 300
 
 
 def load_env(env_path: Optional[Path] = None) -> Dict[str, str]:
@@ -69,18 +72,25 @@ def run_git(args: List[str]) -> str:
 
 def resolve_tags(from_tag: Optional[str], to_ref: str) -> Tuple[Optional[str], str]:
     """Resolve the base tag and target ref."""
-    if not from_tag:
-        # Try to find the most recent tag before to_ref
-        prev_tag = run_git(["describe", "--tags", "--abbrev=0", f"{to_ref}^"])
-        if not prev_tag:
-            # Fallback to the latest tag reachable
-            prev_tag = run_git(["describe", "--tags", "--abbrev=0", to_ref])
-        from_tag = prev_tag if prev_tag else None
-
     # Verify if to_ref exists
     rev = run_git(["rev-parse", "--verify", to_ref])
     if not rev:
         to_ref = "HEAD"
+
+    if not from_tag:
+        is_stable_release = to_ref != "HEAD" and "-" not in to_ref
+        raw_tags = run_git(["tag", "--merged", f"{to_ref}^", "--sort=-v:refname", "v*"])
+        if not raw_tags:
+            raw_tags = run_git(["tag", "--merged", to_ref, "--sort=-v:refname", "v*"])
+
+        candidates = [t.strip() for t in raw_tags.splitlines() if t.strip() and t.strip() != to_ref]
+        if is_stable_release:
+            # For stable releases (e.g. v1.5.0), compare against the previous stable tag
+            # so changes tested in internal pre-releases (v1.5.0-rc.1) are included.
+            stable_candidates = [t for t in candidates if "-" not in t]
+            from_tag = stable_candidates[0] if stable_candidates else (candidates[0] if candidates else None)
+        else:
+            from_tag = candidates[0] if candidates else None
 
     return from_tag, to_ref
 
@@ -139,10 +149,74 @@ def enforce_char_limit(text: str, max_chars: int = PLAY_STORE_MAX_CHARS) -> str:
     return text[: max_chars - 3].rstrip() + "..."
 
 
+DEFAULT_ROLLING_MODELS = [
+    "gemini-flash-latest",
+    "gemini-flash-lite-latest",
+]
+STATIC_FALLBACK_MODELS = [
+    "gemini-3.6-flash",
+    "gemini-3.5-flash-lite",
+    "gemini-2.5-flash",
+]
+EXCLUDED_MODEL_TOKENS = (
+    "embedding",
+    "imagen",
+    "image",
+    "tts",
+    "audio",
+    "live",
+    "veo",
+    "robotics",
+    "computer-use",
+    "aqa",
+    "gemma",
+    "learnlm",
+)
+
+
+def _model_rank(name: str) -> Tuple[int, Tuple[int, ...], int, int]:
+    """Rank discovered Gemini models: prefer stable flash models with highest version."""
+    lower = name.lower()
+    is_flash = 1 if "flash" in lower else 0
+    is_stable = 0 if any(tok in lower for tok in ("exp", "preview", "experimental")) else 1
+    is_lite = 0 if "lite" in lower else 1
+    version_nums = tuple(int(n) for n in re.findall(r"\d+", lower)[:3]) or (0,)
+    return (is_flash, version_nums, is_stable, is_lite)
+
+
+def discover_gemini_models(api_key: str, limit: int = 5) -> List[str]:
+    """Query Gemini ListModels API to dynamically discover working text-generation models."""
+    url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
+    req = urllib.request.Request(url, method="GET")
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except Exception as e:
+        print(f"Warning: Could not list Gemini models dynamically: {e}", file=sys.stderr)
+        return []
+
+    discovered: List[str] = []
+    for entry in data.get("models", []):
+        methods = entry.get("supportedGenerationMethods", [])
+        if "generateContent" not in methods:
+            continue
+        raw_name = entry.get("name", "")
+        short_name = raw_name.removeprefix("models/")
+        lower = short_name.lower()
+        if not lower.startswith("gemini-"):
+            continue
+        if any(tok in lower for tok in EXCLUDED_MODEL_TOKENS):
+            continue
+        discovered.append(short_name)
+
+    discovered.sort(key=_model_rank, reverse=True)
+    return discovered[:limit]
+
+
 def call_gemini(
     prompt: str,
     api_key: str,
-    model: str = "gemini-3.6-flash",
+    model: str = "gemini-flash-latest",
 ) -> Optional[dict]:
     """Call Gemini REST API requesting JSON response."""
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
@@ -161,23 +235,32 @@ def call_gemini(
         method="POST",
     )
 
-    try:
-        with urllib.request.urlopen(req, timeout=25) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            candidates = data.get("candidates", [])
-            if candidates:
-                raw_text = candidates[0]["content"]["parts"][0]["text"].strip()
-                # Clean markdown JSON block if present
-                if raw_text.startswith("```json"):
-                    raw_text = raw_text[7:]
-                if raw_text.startswith("```"):
-                    raw_text = raw_text[3:]
-                if raw_text.endswith("```"):
-                    raw_text = raw_text[:-3]
-                return json.loads(raw_text.strip())
-    except Exception as e:
-        print(f"Warning: Gemini API error with model {model}: {e}", file=sys.stderr)
-        return None
+    for attempt in range(2):
+        try:
+            with urllib.request.urlopen(req, timeout=25) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                candidates = data.get("candidates", [])
+                if candidates:
+                    raw_text = candidates[0]["content"]["parts"][0]["text"].strip()
+                    # Clean markdown JSON block if present
+                    if raw_text.startswith("```json"):
+                        raw_text = raw_text[7:]
+                    if raw_text.startswith("```"):
+                        raw_text = raw_text[3:]
+                    if raw_text.endswith("```"):
+                        raw_text = raw_text[:-3]
+                    return json.loads(raw_text.strip())
+                return None
+        except urllib.error.HTTPError as e:
+            if e.code in (429, 500, 502, 503, 504) and attempt == 0:
+                print(f"Transient HTTP {e.code} from {model}; retrying in 2s...", file=sys.stderr)
+                time.sleep(2)
+                continue
+            print(f"Warning: Gemini API error with model {model}: {e}", file=sys.stderr)
+            return None
+        except Exception as e:
+            print(f"Warning: Gemini API error with model {model}: {e}", file=sys.stderr)
+            return None
 
     return None
 
@@ -209,23 +292,48 @@ def generate_fallback_notes(commits: List[Dict[str, str]], tag_name: str) -> dic
     gh_markdown = "\n\n".join(gh_md)
 
     # Simple bullet points for Play Store
-    play_es_bullets = []
     play_en_bullets = []
-
     for c in (features + fixes)[:4]:
         clean = re.sub(r"^(feat|fix)(\(.*?\))?:\s*", "", c.split(" (")[0].lstrip("- "))
-        play_es_bullets.append(f"• {clean}")
         play_en_bullets.append(f"• {clean}")
 
-    if not play_es_bullets:
-        play_es_bullets = ["• Corrección de errores y mejoras de rendimiento."]
+    if not play_en_bullets:
         play_en_bullets = ["• Bug fixes and performance improvements."]
+
+    # Avoid leaking raw English commit subjects into Spanish Play Store notes
+    play_es_bullets = []
+    if features:
+        play_es_bullets.append("• Nuevas funcionalidades y mejoras en la gestión de horarios.")
+    if fixes:
+        play_es_bullets.append("• Corrección de errores y mejoras de estabilidad.")
+    if not play_es_bullets:
+        play_es_bullets = ["• Mejoras de estabilidad y rendimiento."]
 
     return {
         "github_markdown": gh_markdown,
         "google_play_es": enforce_char_limit("\n".join(play_es_bullets)),
         "google_play_en": enforce_char_limit("\n".join(play_en_bullets)),
     }
+
+
+def append_compare_link(gh_markdown: str, from_tag: Optional[str], to_ref: str) -> str:
+    """Append a GitHub compare link footer when a base tag is known."""
+    if not from_tag or to_ref == "HEAD" or "/compare/" in gh_markdown:
+        return gh_markdown
+    compare_url = f"{GITHUB_REPO_URL}/compare/{from_tag}...{to_ref}"
+    return f"{gh_markdown.rstrip()}\n\n**Full Changelog**: {compare_url}"
+
+
+def format_commit_for_prompt(commit: Dict[str, str]) -> str:
+    """Format commit subject and a compact body excerpt for LLM context."""
+    line = f"- {commit['hash']}: {commit['subject']}"
+    body = commit.get("body", "").strip()
+    if body:
+        compact = re.sub(r"\s+", " ", body)
+        if len(compact) > COMMIT_BODY_MAX_CHARS:
+            compact = compact[: COMMIT_BODY_MAX_CHARS - 3].rstrip() + "..."
+        line += f"\n  Details: {compact}"
+    return line
 
 
 def synthesize_changelog(
@@ -248,14 +356,16 @@ def synthesize_changelog(
 
     if not api_key and not api_key_alt:
         print("Note: No GEMINI_API_KEY found. Generating rule-based fallback changelog.", file=sys.stderr)
-        return generate_fallback_notes(commits, tag_label)
+        res = generate_fallback_notes(commits, tag_label)
+        res["github_markdown"] = append_compare_link(res["github_markdown"], from_tag, to_ref)
+        return res
 
-    # Format commits for prompt
-    commit_lines = [f"- {c['hash']}: {c['subject']}" for c in commits]
+    # Format commits (including compact body excerpts) for prompt
+    commit_lines = [format_commit_for_prompt(c) for c in commits]
     commit_summary = "\n".join(commit_lines)
 
     prompt = f"""
-You are the release manager and technical copywriter for ClemenTime, an Android timetable and schedule app for university students at Escuela Superior de Informática (ESI) in Ciudad Real, Spain (UCLM).
+You are the release manager and technical copywriter for ClemenTime, an offline-first Android timetable and schedule app for university students (supporting UCLM / ESI and a multi-faculty schedule catalog).
 
 Here is the git commit history between {from_tag or 'initial'} and {to_ref}:
 {commit_summary}
@@ -269,8 +379,8 @@ Synthesize these commits into release notes.
    - In English.
 
 2. "google_play_es": Release notes for Google Play in Spanish (Spain).
-   - Tailored specifically for ESI university students. Friendly, natural tone.
-   - Focus on user benefits and app behavior (e.g. horarios, visor, widget, notificaciones).
+   - Tailored for university students. Friendly, natural tone.
+   - Focus on user benefits and app behavior (e.g. horarios, catálogo de facultades, visor, widget, notificaciones).
    - Use bullet points starting with '• '.
    - STRICT CONSTRAINT: Must NOT exceed 450 characters (absolute limit is 500 characters).
 
@@ -288,21 +398,37 @@ Respond ONLY with a valid JSON object matching this schema:
 """
 
     keys_to_try = [k for k in [api_key, api_key_alt] if k]
-    models_to_try = [model, "gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"]
-    # Deduplicate models preserving order
-    seen_models = set()
-    models_to_try = [m for m in models_to_try if not (m in seen_models or seen_models.add(m))]
 
     for k in keys_to_try:
-        for m in models_to_try:
+        # 1. Try explicit model (if given) and Google's rolling aliases first
+        fast_models = [m for m in ([model] if model else []) + DEFAULT_ROLLING_MODELS if m]
+        seen_models = set()
+        fast_models = [m for m in fast_models if not (m in seen_models or seen_models.add(m))]
+
+        for m in fast_models:
             res = call_gemini(prompt, k, m)
             if res and "github_markdown" in res and "google_play_es" in res and "google_play_en" in res:
+                res["github_markdown"] = append_compare_link(res["github_markdown"], from_tag, to_ref)
+                res["google_play_es"] = enforce_char_limit(res["google_play_es"])
+                res["google_play_en"] = enforce_char_limit(res["google_play_en"])
+                return res
+
+        # 2. If aliases/explicit model failed, dynamically discover live models from the API
+        dynamic_models = discover_gemini_models(k) + STATIC_FALLBACK_MODELS
+        fallback_models = [m for m in dynamic_models if not (m in seen_models or seen_models.add(m))]
+
+        for m in fallback_models:
+            res = call_gemini(prompt, k, m)
+            if res and "github_markdown" in res and "google_play_es" in res and "google_play_en" in res:
+                res["github_markdown"] = append_compare_link(res["github_markdown"], from_tag, to_ref)
                 res["google_play_es"] = enforce_char_limit(res["google_play_es"])
                 res["google_play_en"] = enforce_char_limit(res["google_play_en"])
                 return res
 
     print("Warning: Gemini synthesis failed or rate limited across all keys/models. Falling back to rule-based notes.", file=sys.stderr)
-    return generate_fallback_notes(commits, tag_label)
+    res = generate_fallback_notes(commits, tag_label)
+    res["github_markdown"] = append_compare_link(res["github_markdown"], from_tag, to_ref)
+    return res
 
 
 def main():
@@ -324,7 +450,7 @@ def main():
     else:
         api_key = os.environ.get("GEMINI_API_KEY") or env.get("GEMINI_API_KEY")
         api_key_alt = os.environ.get("GEMINI_API_KEY_ALT") or env.get("GEMINI_API_KEY_ALT")
-    model = args.model or os.environ.get("GEMINI_MODEL") or env.get("GEMINI_MODEL") or "gemini-3.6-flash"
+    model = args.model or os.environ.get("GEMINI_MODEL") or env.get("GEMINI_MODEL") or ""
 
     # Resolve git range
     from_tag, to_ref = resolve_tags(args.from_tag, args.to_ref)
@@ -336,11 +462,12 @@ def main():
     result = synthesize_changelog(commits, from_tag, to_ref, api_key, api_key_alt, model)
 
     out_dir = Path(args.output_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
+    whatsnew_dir = out_dir / "whatsnew"
+    whatsnew_dir.mkdir(parents=True, exist_ok=True)
 
     gh_path = out_dir / "github_release.md"
-    es_path = out_dir / "whatsnew-es-ES"
-    en_path = out_dir / "whatsnew-en-US"
+    es_path = whatsnew_dir / "whatsnew-es-ES"
+    en_path = whatsnew_dir / "whatsnew-en-US"
 
     gh_path.write_text(result["github_markdown"], encoding="utf-8")
     es_path.write_text(result["google_play_es"], encoding="utf-8")

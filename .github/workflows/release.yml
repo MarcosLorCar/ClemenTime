@@ -7,21 +7,41 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version tag to create (leave blank to use current tag)'
+        description: 'SemVer tag to create/release (e.g. v1.5.0 or v1.5.0-rc.1; leave blank only if dispatching from a tag)'
         required: false
         type: string
+      play_track:
+        description: 'Google Play track (auto = internal for pre-releases, production draft for stable)'
+        required: false
+        type: choice
+        default: 'auto'
+        options:
+          - auto
+          - internal
+          - production
+          - skip
 
 permissions:
   contents: write
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -33,18 +53,96 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # Determine tags and names for logging/uploading
-      - name: Get Versioning Info
+      - name: Resolve Version & Release Channel
         id: info
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
+          INPUT_PLAY_TRACK: ${{ github.event.inputs.play_track }}
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          REF_TYPE: ${{ github.ref_type }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.version }}" ]; then
-            TAG_NAME="${{ github.event.inputs.version }}"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ -n "$INPUT_VERSION" ]; then
+            TAG_NAME="$INPUT_VERSION"
+          elif [ "$REF_TYPE" = "tag" ]; then
+            TAG_NAME="$REF_NAME"
           else
-            TAG_NAME="${{ github.ref_name }}"
+            echo "::error::When running workflow_dispatch from a branch, you must provide a SemVer 'version' input (e.g. v1.5.0 or v1.5.0-rc.1)."
+            exit 1
           fi
-          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
 
-      # Tag the commit first if manually dispatched and tag doesn't exist
+          if ! [[ "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Invalid version tag '$TAG_NAME'. Expected SemVer format like v1.5.0 or v1.5.0-rc.1."
+            exit 1
+          fi
+
+          VERSION_NAME="${TAG_NAME#v}"
+          if [[ "$TAG_NAME" == *-* ]]; then
+            IS_PRERELEASE="true"
+          else
+            IS_PRERELEASE="false"
+          fi
+
+          TRACK="${INPUT_PLAY_TRACK:-auto}"
+          if [ "$TRACK" = "auto" ]; then
+            if [ "$IS_PRERELEASE" = "true" ]; then
+              TRACK="internal"
+            else
+              TRACK="production"
+            fi
+          fi
+
+          if [ "$TRACK" = "internal" ]; then
+            PLAY_STATUS="completed"
+          elif [ "$TRACK" = "production" ]; then
+            PLAY_STATUS="draft"
+          else
+            PLAY_STATUS="skip"
+          fi
+
+          echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
+          echo "version_name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
+          echo "is_prerelease=$IS_PRERELEASE" >> "$GITHUB_OUTPUT"
+          echo "play_track=$TRACK" >> "$GITHUB_OUTPUT"
+          echo "play_status=$PLAY_STATUS" >> "$GITHUB_OUTPUT"
+
+          echo "Resolved release: tag=$TAG_NAME version=$VERSION_NAME prerelease=$IS_PRERELEASE play_track=$TRACK ($PLAY_STATUS)"
+
+      - name: Verify Required Release Secrets
+        id: secrets_check
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          PLAY_STORE_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          MISSING=""
+          for var in GOOGLE_SERVICES_JSON ANDROID_KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [ -z "${!var}" ]; then
+              MISSING="$MISSING $var"
+            fi
+          done
+          if [ -n "$MISSING" ]; then
+            echo "::error::Missing required release secret(s):$MISSING"
+            exit 1
+          fi
+
+          if [ -n "$PLAY_STORE_SERVICE_ACCOUNT_JSON" ]; then
+            echo "has_play_credentials=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_play_credentials=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::PLAY_STORE_SERVICE_ACCOUNT_JSON secret is not configured; skipping automated Google Play upload."
+          fi
+
+      - name: Validate Schedule Pipeline & Run Unit Tests
+        run: |
+          python3 process_schedules.py --strict
+          python3 -m unittest discover -s schedules/script -p "test_*.py"
+          ./gradlew test
+
+      # Tag the commit only after tests pass (when manually dispatched with a new version)
       - name: Create Git Tag (manual dispatch with version input)
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.version != ''
         run: |
@@ -62,20 +160,20 @@ jobs:
         env:
           GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: |
-          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
-            echo "$GOOGLE_SERVICES_JSON" > app/google-services.json
-            git update-index --assume-unchanged app/google-services.json
-          fi
+          echo "$GOOGLE_SERVICES_JSON" > app/google-services.json
+          git update-index --assume-unchanged app/google-services.json
 
       - name: Decode Keystore
-        run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > release.jks
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > release.jks
 
       - name: Build Release APK & AAB
         run: |
-          ./gradlew assembleRelease bundleRelease
+          ./gradlew assembleRelease bundleRelease -PversionName="${{ steps.info.outputs.version_name }}"
+          mkdir -p build/release_assets
+          cp app/build/outputs/apk/release/app-release.apk "build/release_assets/ClemenTime-${{ steps.info.outputs.tag_name }}.apk"
         env:
           KEYSTORE_PATH: ../release.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -87,18 +185,19 @@ jobs:
           python3 scripts/generate_release_notes.py \
             --to-ref "${{ steps.info.outputs.tag_name }}" \
             --output-dir build/release_notes
-          
-          echo "## 📱 Google Play Release Notes" >> $GITHUB_STEP_SUMMARY
-          echo "### 🇪🇸 Spanish (es-ES)" >> $GITHUB_STEP_SUMMARY
-          echo '```text' >> $GITHUB_STEP_SUMMARY
-          cat build/release_notes/whatsnew-es-ES >> $GITHUB_STEP_SUMMARY
-          echo '' >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "### 🇬🇧 English (en-US)" >> $GITHUB_STEP_SUMMARY
-          echo '```text' >> $GITHUB_STEP_SUMMARY
-          cat build/release_notes/whatsnew-en-US >> $GITHUB_STEP_SUMMARY
-          echo '' >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
+
+          echo "## 📱 Google Play Release Notes" >> "$GITHUB_STEP_SUMMARY"
+          echo "Track: \`${{ steps.info.outputs.play_track }}\` (\`${{ steps.info.outputs.play_status }}\`)" >> "$GITHUB_STEP_SUMMARY"
+          echo "### 🇪🇸 Spanish (es-ES)" >> "$GITHUB_STEP_SUMMARY"
+          echo '```text' >> "$GITHUB_STEP_SUMMARY"
+          cat build/release_notes/whatsnew/whatsnew-es-ES >> "$GITHUB_STEP_SUMMARY"
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "### 🇬🇧 English (en-US)" >> "$GITHUB_STEP_SUMMARY"
+          echo '```text' >> "$GITHUB_STEP_SUMMARY"
+          cat build/release_notes/whatsnew/whatsnew-en-US >> "$GITHUB_STEP_SUMMARY"
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_API_KEY_ALT: ${{ secrets.GEMINI_API_KEY_ALT }}
@@ -108,10 +207,10 @@ jobs:
         with:
           name: ClemenTime-${{ steps.info.outputs.tag_name }}
           path: |
-            app/build/outputs/apk/release/*.apk
+            build/release_assets/*.apk
             app/build/outputs/bundle/release/*.aab
             app/build/outputs/mapping/release/mapping.txt
-            build/release_notes/*
+            build/release_notes/**
           retention-days: 7
 
       - name: Create GitHub Release
@@ -119,14 +218,24 @@ jobs:
         with:
           tag_name: ${{ steps.info.outputs.tag_name }}
           body_path: build/release_notes/github_release.md
+          prerelease: ${{ steps.info.outputs.is_prerelease == 'true' }}
           files: |
-            app/build/outputs/apk/release/*.apk
-            app/build/outputs/mapping/release/mapping.txt
-            build/release_notes/whatsnew-es-ES
-            build/release_notes/whatsnew-en-US
+            build/release_assets/ClemenTime-*.apk
           generate_release_notes: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload to Google Play
+        if: steps.info.outputs.play_track != 'skip' && steps.secrets_check.outputs.has_play_credentials == 'true'
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
+          packageName: com.marcoslorcar.clementime
+          releaseFiles: app/build/outputs/bundle/release/*.aab
+          mappingFile: app/build/outputs/mapping/release/mapping.txt
+          track: ${{ steps.info.outputs.play_track }}
+          status: ${{ steps.info.outputs.play_status }}
+          whatsNewDirectory: build/release_notes/whatsnew
 
       - name: Clean up Keystore
         if: always()

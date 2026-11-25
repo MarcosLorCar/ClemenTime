@@ -24,12 +24,13 @@ on:
         default: false
 
 concurrency:
-  group: sync-esi-schedules-${{ github.ref }}
+  group: schedules-master-write
   cancel-in-progress: false
 
 jobs:
   check-and-sync:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
     env:
@@ -37,6 +38,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
       - name: Check ESI API Endpoint for Schedule Updates
         id: check
@@ -74,6 +80,7 @@ jobs:
             echo "committed=false" >> $GITHUB_OUTPUT
           else
             git commit -m "chore: auto-sync ESI schedules from TV hall API [skip ci]"
+            git pull --rebase origin master
             git push
             echo "committed=true" >> $GITHUB_OUTPUT
           fi
