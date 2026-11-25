@@ -49,7 +49,7 @@ python process_schedules.py                          # regenerate dist/{1C,2C}.j
 
 - **Stack**: Compose-only, Hilt (KSP), Room (v2, explicit migrations), DataStore Preferences, Retrofit + OkHttp + kotlinx.serialization, WorkManager (`HiltWorkerFactory`), Glance home-screen widget. Type-safe navigation in `ui/navigation/Routes.kt` (marked `@Keep`).
 - **Conflict resolution**: `utils/ConflictSolver` is pure Kotlin with zero Android dependencies. Keep it that way so `ConflictSolverTest` remains a fast plain JVM test.
-- **Versioning**: Derived from git (`versionCode = 1000 + git rev-list --count HEAD`; `versionName = git describe --tags --always --dirty`). Never add a hardcoded version.
+- **Versioning**: Derived from git (`versionName = git describe --tags --always --dirty` or `-PversionName`; `versionCode` uses SemVer math `major*1_000_000 + minor*10_000 + patch*100 + (99 for stable, 1..98 for pre-release)` on exact SemVer tags, falling back to `1000 + git rev-list --count HEAD` for dev builds). Never add a hardcoded version.
 - **Release signing**: Reads `KEYSTORE_*` from environment; falls back silently to debug keystore locally.
 - **Multi-Faculty Architecture & Legacy Fallbacks**:
   - `selectedUniversityId` and `selectedFacultyId` default to `""` (empty string / unlinked) for fresh installs.
@@ -67,7 +67,6 @@ Unit tests use JUnit 4 + `kotlinx-coroutines-test` with **hand-written fake DAOs
 ### CI & Workflows
 
 All workflows trigger on **`master`** (the default branch). Check branch names before assuming a workflow is live.
-- Pushing workflow changes under `.github/workflows/` requires a token with `workflow` scope.
 - In `sync-esi-schedules.yml`, steps meant to run only on success must include `success()`.
 
 ---
