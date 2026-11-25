@@ -9,7 +9,11 @@ plugins {
 
 android {
     namespace = "com.marcoslorcar.clementime"
-    compileSdk = 37
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 2
+        }
+    }
 
     defaultConfig {
         applicationId = "com.marcoslorcar.clementime"
