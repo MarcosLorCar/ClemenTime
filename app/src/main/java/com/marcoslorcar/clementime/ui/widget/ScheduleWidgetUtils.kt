@@ -5,40 +5,58 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.util.Log
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import java.time.ZonedDateTime
-import kotlin.time.Duration.Companion.milliseconds
 
 object ScheduleWidgetUtils {
+    private const val TAG = "ScheduleWidgetUtils"
     const val MIDNIGHT_ALARM_REQUEST_CODE = 1001
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
+    internal suspend fun runSafely(
+        onFailure: (Exception) -> Unit = { Log.w(TAG, "Widget update failed", it) },
+        action: suspend () -> Unit
+    ) {
+        try {
+            action()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            onFailure(e)
+        }
+    }
+
     fun updateWidget(context: Context?) {
         if (context == null) return
-        try {
-            scope.launch {
-                // Small delay to ensure DB transaction is fully finalized before widget read
-                kotlinx.coroutines.delay(500.milliseconds)
-                ScheduleWidget().updateAll(context)
-                scheduleMidnightAlarm(context)
+        val appContext = context.applicationContext ?: context
+        scope.launch {
+            runSafely {
+                ScheduleWidget().updateAll(appContext)
+                scheduleMidnightAlarm(appContext)
             }
-        } catch (_: Throwable) {}
+        }
     }
 
     fun updateWidgetFromBroadcast(context: Context, pendingResult: BroadcastReceiver.PendingResult? = null) {
+        val appContext = context.applicationContext ?: context
         scope.launch {
             try {
-                ScheduleWidget().updateAll(context)
-                scheduleMidnightAlarm(context)
-            } catch (_: Throwable) {
+                runSafely {
+                    ScheduleWidget().updateAll(appContext)
+                    scheduleMidnightAlarm(appContext)
+                }
             } finally {
                 try {
                     pendingResult?.finish()
-                } catch (_: Throwable) {}
+                } catch (e: IllegalStateException) {
+                    Log.w(TAG, "Failed to finish broadcast pendingResult", e)
+                }
             }
         }
     }
@@ -64,7 +82,9 @@ object ScheduleWidgetUtils {
             )
             val triggerMillis = calculateNextMidnightMillis()
             alarmManager.setAndAllowWhileIdle(AlarmManager.RTC, triggerMillis, pendingIntent)
-        } catch (_: Throwable) {}
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to schedule widget midnight alarm", e)
+        }
     }
 
     fun cancelMidnightAlarm(context: Context?) {
@@ -84,6 +104,8 @@ object ScheduleWidgetUtils {
                 alarmManager.cancel(pendingIntent)
                 pendingIntent.cancel()
             }
-        } catch (_: Throwable) {}
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to cancel widget midnight alarm", e)
+        }
     }
 }

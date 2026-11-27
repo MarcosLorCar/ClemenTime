@@ -316,36 +316,42 @@ class ImportViewModel @Inject constructor(
     }
 
     fun toggleSubjectSelection(subject: JsonSubject, groupName: String) {
-        val currentState = _uiState.value
-        if (currentState is ImportUiState.Selection) {
-            val selectedSubject = SelectedSubject(subject, groupName)
-            val updatedSelection = currentState.selectedSubjects.toMutableSet()
-            if (updatedSelection.contains(selectedSubject)) {
-                updatedSelection.remove(selectedSubject)
+        _uiState.update { currentState ->
+            if (currentState is ImportUiState.Selection) {
+                val selectedSubject = SelectedSubject(subject, groupName)
+                val updatedSelection = currentState.selectedSubjects.toMutableSet()
+                if (updatedSelection.contains(selectedSubject)) {
+                    updatedSelection.remove(selectedSubject)
+                } else {
+                    updatedSelection.add(selectedSubject)
+                }
+                currentState.copy(
+                    selectedSubjects = updatedSelection,
+                    conflictStatus = calculateConflictStatus(updatedSelection, currentState.existingSubjects)
+                )
             } else {
-                updatedSelection.add(selectedSubject)
+                currentState
             }
-            _uiState.value = currentState.copy(
-                selectedSubjects = updatedSelection,
-                conflictStatus = calculateConflictStatus(updatedSelection, currentState.existingSubjects)
-            )
         }
     }
 
     fun toggleAllSubjects(targetSubjects: Collection<SelectedSubject>) {
-        val currentState = _uiState.value
-        if (currentState is ImportUiState.Selection) {
-            val updatedSelection = currentState.selectedSubjects.toMutableSet()
-            val allSelected = targetSubjects.isNotEmpty() && targetSubjects.all { updatedSelection.contains(it) }
-            if (allSelected) {
-                updatedSelection.removeAll(targetSubjects.toSet())
+        _uiState.update { currentState ->
+            if (currentState is ImportUiState.Selection) {
+                val updatedSelection = currentState.selectedSubjects.toMutableSet()
+                val allSelected = targetSubjects.isNotEmpty() && targetSubjects.all { updatedSelection.contains(it) }
+                if (allSelected) {
+                    updatedSelection.removeAll(targetSubjects.toSet())
+                } else {
+                    updatedSelection.addAll(targetSubjects)
+                }
+                currentState.copy(
+                    selectedSubjects = updatedSelection,
+                    conflictStatus = calculateConflictStatus(updatedSelection, currentState.existingSubjects)
+                )
             } else {
-                updatedSelection.addAll(targetSubjects)
+                currentState
             }
-            _uiState.value = currentState.copy(
-                selectedSubjects = updatedSelection,
-                conflictStatus = calculateConflictStatus(updatedSelection, currentState.existingSubjects)
-            )
         }
     }
 
@@ -354,36 +360,42 @@ class ImportViewModel @Inject constructor(
     }
 
     fun deselectAll() {
-        val currentState = _uiState.value
-        if (currentState is ImportUiState.Selection) {
-            _uiState.value = currentState.copy(
-                selectedSubjects = emptySet(),
-                conflictStatus = ConflictStatus.None
-            )
+        _uiState.update { currentState ->
+            if (currentState is ImportUiState.Selection) {
+                currentState.copy(
+                    selectedSubjects = emptySet(),
+                    conflictStatus = ConflictStatus.None
+                )
+            } else {
+                currentState
+            }
         }
     }
 
     @Suppress("unused")
     fun selectAllSubjects(subjects: Collection<SelectedSubject>? = null) {
-        val currentState = _uiState.value
-        if (currentState is ImportUiState.Selection) {
-            val toSelect = subjects ?: run {
-                val fromRoot = currentState.schema.subjects.map { SelectedSubject(it, "General") }
-                val fromYears = currentState.schema.years.flatMap { year ->
-                    val yearCommon = year.subjects.map { SelectedSubject(it, "${year.name} Common") }
-                    val fromGroups = year.groups.flatMap { group ->
-                        group.subjects.map { SelectedSubject(it, "${year.name} ${group.name}") }
+        _uiState.update { currentState ->
+            if (currentState is ImportUiState.Selection) {
+                val toSelect = subjects ?: run {
+                    val fromRoot = currentState.schema.subjects.map { SelectedSubject(it, "General") }
+                    val fromYears = currentState.schema.years.flatMap { year ->
+                        val yearCommon = year.subjects.map { SelectedSubject(it, "${year.name} Common") }
+                        val fromGroups = year.groups.flatMap { group ->
+                            group.subjects.map { SelectedSubject(it, "${year.name} ${group.name}") }
+                        }
+                        yearCommon + fromGroups
                     }
-                    yearCommon + fromGroups
+                    fromRoot + fromYears
                 }
-                fromRoot + fromYears
+                val updatedSelection = currentState.selectedSubjects.toMutableSet()
+                updatedSelection.addAll(toSelect)
+                currentState.copy(
+                    selectedSubjects = updatedSelection,
+                    conflictStatus = calculateConflictStatus(updatedSelection, currentState.existingSubjects)
+                )
+            } else {
+                currentState
             }
-            val updatedSelection = currentState.selectedSubjects.toMutableSet()
-            updatedSelection.addAll(toSelect)
-            _uiState.value = currentState.copy(
-                selectedSubjects = updatedSelection,
-                conflictStatus = calculateConflictStatus(updatedSelection, currentState.existingSubjects)
-            )
         }
     }
 
@@ -394,7 +406,7 @@ class ImportViewModel @Inject constructor(
         if (selected.isEmpty()) return ConflictStatus.None
 
         var slotIdCounter = 1L
-        val subjectsWithSlots = selected.map { selectedSubject ->
+        val subjectsWithSlots = selected.mapIndexed { index, selectedSubject ->
             val jsonSubject = selectedSubject.subject
             val semester = jsonSubject.semester ?: 1
             val subjectId = (jsonSubject.code + semester).hashCode().toLong()
@@ -402,7 +414,7 @@ class ImportViewModel @Inject constructor(
                 id = subjectId,
                 code = jsonSubject.code,
                 name = jsonSubject.name,
-                color = jsonSubject.color ?: Subject.PRESET_COLORS.indices.random(), // Random preset if null
+                color = jsonSubject.color ?: Subject.PRESET_COLORS[index % Subject.PRESET_COLORS.size],
                 isActive = true,
                 semester = semester
             )
@@ -501,16 +513,20 @@ class ImportViewModel @Inject constructor(
                     val maxImportedSemester = (listOfNotNull(currentState.schema.semester) +
                         importedSubjects.mapNotNull { it.subject.semester }).maxOrNull() ?: 1
                     val currentPeriodConfig = settingsRepository.periodConfigFlow.first()
+                    var effectivePeriodConfig = currentPeriodConfig
                     if (currentState.selectedFile.sourceType == ImportSourceType.REMOTE &&
                         currentState.selectedFile.facultyPeriodConfig != null
                     ) {
                         val targetConfig = currentState.selectedFile.facultyPeriodConfig
                             .expandToInclude(maxImportedSemester)
+                        effectivePeriodConfig = targetConfig
                         if (targetConfig != currentPeriodConfig) {
                             settingsRepository.setPeriodConfig(targetConfig)
                         }
                     } else if (maxImportedSemester > currentPeriodConfig.count) {
-                        settingsRepository.setPeriodConfig(currentPeriodConfig.expandToInclude(maxImportedSemester))
+                        val targetConfig = currentPeriodConfig.expandToInclude(maxImportedSemester)
+                        effectivePeriodConfig = targetConfig
+                        settingsRepository.setPeriodConfig(targetConfig)
                     }
 
                     val currentSemester = settingsRepository.currentSemesterFlow.first()
@@ -595,7 +611,8 @@ class ImportViewModel @Inject constructor(
                                         context = context,
                                         semester = sem,
                                         universityId = selectedFile.universityId,
-                                        facultyId = selectedFile.facultyId
+                                        facultyId = selectedFile.facultyId,
+                                        periodType = effectivePeriodConfig.type
                                     )
                                 }
                                 if (cachedSlots.isNotEmpty()) {
@@ -622,11 +639,12 @@ class ImportViewModel @Inject constructor(
     }
 
     fun updateSearchQuery(query: String) {
-        val currentState = _uiState.value
-        if (currentState is ImportUiState.Selection) {
-            _uiState.value = currentState.copy(searchQuery = query)
-        } else if (currentState is ImportUiState.Library) {
-            _uiState.value = currentState.copy(searchQuery = query)
+        _uiState.update { currentState ->
+            when (currentState) {
+                is ImportUiState.Selection -> currentState.copy(searchQuery = query)
+                is ImportUiState.Library -> currentState.copy(searchQuery = query)
+                else -> currentState
+            }
         }
     }
 

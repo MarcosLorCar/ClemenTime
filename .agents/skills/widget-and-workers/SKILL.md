@@ -12,12 +12,12 @@ description: >-
 - The Glance widget does **not** observe Room or Flow directly.
 - Anything mutating schedule data MUST call `ScheduleWidgetUtils.updateWidget(context)`.
 - ViewModels that write to the DAO already do this; any new mutation paths must follow this pattern.
-- Note: `ScheduleWidgetUtils.updateWidget` currently has a legacy 500 ms `delay` workaround; do not copy `delay(...)` workarounds into new code (Room `suspend` transactions are already committed when they return).
+- `ScheduleWidgetUtils.updateWidget` runs immediately (no `delay(...)` settlement workarounds — Room `suspend` transactions are already committed when they return) and handles exceptions inside its coroutine while rethrowing `CancellationException`.
 
 ## Background Schedule Sync, FCM & WorkManager
 
-Schedule update delivery is **event-driven via FCM push**, with periodic WorkManager only as a de-Googled fallback:
-- `worker/FcmTopicManager` manages topic subscriptions (`sched_{university}_{faculty}`, or `sched_{fcm_topic_prefix}`) whenever `SyncMode.ONLINE` and a faculty is linked. On devices without Google Play Services (GMS), it falls back to periodic `ScheduleUpdateWorker` (every 6h). In `SyncMode.OFFLINE` or unlinked state, it unsubscribes and cancels periodic work.
+Schedule update delivery is **event-driven via FCM push**, with periodic WorkManager as a fallback:
+- `worker/FcmTopicManager` manages topic subscriptions (`sched_{university}_{faculty}`, or `sched_{fcm_topic_prefix}`) whenever `SyncMode.ONLINE` and a faculty is linked. On devices without Google Play Services (GMS), or when `subscribeToTopic` fails/cancels, it falls back to periodic `ScheduleUpdateWorker` (every 6h); periodic work is only canceled after `subscribeToTopic` succeeds. In `SyncMode.OFFLINE` or unlinked state, it unsubscribes and cancels periodic work.
 - `worker/ClemenTimeFirebaseMessagingService` receives high-priority data-only pushes containing per-term hashes (`hash_{term}`), compares against `last_known_schedule_hash_$semester` for active semesters, and enqueues an expedited one-time `ScheduleUpdateWorker`.
 - `worker/ScheduleUpdateWorker` (a `@HiltWorker`) runs `performSync`:
   - Resolves the linked `(universityId, facultyId)` in `schedules_catalog.json` (falling back to `schedules_index.json` only for legacy `uclm`/`esi`).

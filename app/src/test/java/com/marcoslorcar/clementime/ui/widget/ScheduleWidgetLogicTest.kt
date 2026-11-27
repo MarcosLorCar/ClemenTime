@@ -232,4 +232,20 @@ class ScheduleWidgetLogicTest {
         )
         assertEquals("Tomorrow →", btnText)
     }
+
+    @Test
+    fun testRunSafely_catchesRegularExceptionWithoutCrashing() = kotlinx.coroutines.test.runTest {
+        var caught: Exception? = null
+        ScheduleWidgetUtils.runSafely(onFailure = { caught = it }) {
+            throw IllegalStateException("Glance failure")
+        }
+        assertTrue(caught is IllegalStateException)
+    }
+
+    @Test(expected = kotlinx.coroutines.CancellationException::class)
+    fun testRunSafely_rethrowsCancellationException() = kotlinx.coroutines.test.runTest {
+        ScheduleWidgetUtils.runSafely(onFailure = { throw AssertionError("Should not swallow cancellation") }) {
+            throw kotlinx.coroutines.CancellationException("cancelled")
+        }
+    }
 }

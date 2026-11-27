@@ -32,12 +32,19 @@ def _b64url(data: bytes) -> str:
     return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
 
 
+_INVALID_TOPIC_CHAR_RE = re.compile(r"[^a-z0-9_-]")
+
+
 def build_topic_name(university_id: str, faculty_id: str, fcm_topic_prefix: str | None = None) -> str:
     if fcm_topic_prefix and fcm_topic_prefix.strip():
-        clean_prefix = re.sub(r"[^a-zA-Z0-9_.-]", "_", fcm_topic_prefix.strip().lower())
-        return f"sched_{clean_prefix}"
-    uni = re.sub(r"[^a-z0-9_.-]", "_", university_id.strip().lower())
-    fac = re.sub(r"[^a-z0-9_.-]", "_", faculty_id.strip().lower())
+        clean_prefix = fcm_topic_prefix.strip().lower().removeprefix("sched_")
+        clean_prefix = _INVALID_TOPIC_CHAR_RE.sub("_", clean_prefix)
+        if clean_prefix:
+            return f"sched_{clean_prefix}"
+    uni = _INVALID_TOPIC_CHAR_RE.sub("_", university_id.strip().lower())
+    fac = _INVALID_TOPIC_CHAR_RE.sub("_", faculty_id.strip().lower())
+    if not uni or not fac:
+        raise ValueError("university_id and faculty_id must be non-empty when fcm_topic_prefix is blank")
     return f"sched_{uni}_{fac}"
 
 

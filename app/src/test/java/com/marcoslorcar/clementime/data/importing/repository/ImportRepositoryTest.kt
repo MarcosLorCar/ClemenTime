@@ -293,6 +293,136 @@ class ImportRepositoryTest {
         )
         assertTrue(slots.isEmpty())
     }
+
+    @Test
+    fun applySlotDiffs_doesNotDownloadWrongSemesterWhenTargetSummaryMissing() = runTest {
+        val subject = Subject(
+            id = 10L,
+            code = "OPT3",
+            name = "Optativa III",
+            color = 0xFF4CAF50.toInt(),
+            isActive = true,
+            semester = 3
+        )
+        val fakeDao = FakeScheduleDaoForRepositoryTest(
+            initialSubjects = listOf(SubjectWithSlots(subject, emptyList()))
+        )
+        var rawFetchCount = 0
+        val fakeApi = object : com.marcoslorcar.clementime.data.api.GitHubScheduleApiService {
+            override suspend fun getScheduleCatalog(url: String) = retrofit2.Response.success(
+                com.marcoslorcar.clementime.data.importing.model.ScheduleCatalog(
+                    universities = listOf(
+                        com.marcoslorcar.clementime.data.importing.model.UniversityCatalogEntry(
+                            id = "uclm",
+                            name = "UCLM",
+                            faculties = listOf(
+                                com.marcoslorcar.clementime.data.importing.model.FacultyCatalogEntry(
+                                    id = "esi",
+                                    name = "ESI",
+                                    terms = listOf(
+                                        com.marcoslorcar.clementime.data.importing.model.TermCatalogEntry(
+                                            id = "1C",
+                                            name = "1C",
+                                            path = "1C.json",
+                                            hash = "h1"
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+
+            override suspend fun getScheduleIndex(url: String) =
+                retrofit2.Response.success(emptyList<com.marcoslorcar.clementime.data.importing.model.RemoteScheduleSummary>())
+
+            override suspend fun getScheduleSchema(url: String) =
+                retrofit2.Response.success(com.marcoslorcar.clementime.data.importing.model.ScheduleJsonSchema())
+
+            override suspend fun getRawScheduleSchema(url: String): retrofit2.Response<okhttp3.ResponseBody> {
+                rawFetchCount++
+                return retrofit2.Response.success(
+                    with(okhttp3.ResponseBody.Companion) { "[]".toResponseBody(null) }
+                )
+            }
+        }
+        val repository = ImportRepository(dao = fakeDao, apiService = fakeApi)
+        val diffs = listOf(
+            com.marcoslorcar.clementime.utils.SlotDiff(
+                subjectCode = "OPT3",
+                subjectName = "Optativa III",
+                changeType = com.marcoslorcar.clementime.utils.DiffType.MODIFIED
+            )
+        )
+
+        val applied = repository.applySlotDiffs(
+            diffs = diffs,
+            remoteSlots = emptyList(),
+            semester = 3,
+            facultyId = "esi",
+            universityId = "uclm"
+        )
+
+        assertEquals(0, applied)
+        assertEquals(0, rawFetchCount)
+    }
+
+    @Test
+    fun cacheRemoteSlotsInDir_retainsAll8AcademicPeriodsAndEvictsBeyondCap() {
+        val tempDir = java.nio.file.Files.createTempDirectory("clementime_cache_test").toFile()
+        try {
+            val repository = ImportRepository(dao = FakeScheduleDaoForRepositoryTest())
+            val totalEntries = ImportRepository.MAX_CACHED_REMOTE_SCHEDULES + 2
+            for (i in 1..totalEntries) {
+                val termCode = "${i}P"
+                val rawJson = """[{"cuatrimestre":"$termCode","dia":"Lunes","hora_inicio":"09:00","hora_fin":"10:00","asignatura":"Sub $i","codigo":"S$i","tipo":"teoría","grupo":"1A"}]"""
+                repository.cacheRemoteSlotsInDir(
+                    cacheDir = tempDir,
+                    fileId = "uni_fac_$termCode",
+                    title = "Period $i",
+                    description = null,
+                    remotePath = "https://example.com/$termCode.json",
+                    rawJson = rawJson,
+                    universityId = "uni",
+                    facultyId = "fac",
+                    termId = termCode,
+                    nowMillis = 1000L * i
+                )
+            }
+
+            val metadata = repository.readCacheMetadataInDir(tempDir)
+            assertEquals(ImportRepository.MAX_CACHED_REMOTE_SCHEDULES, metadata.size)
+            // Periods 3..14 remain, while oldest two (1, 2) were evicted
+            assertTrue(metadata.none { it.id == "uni_fac_1P" || it.id == "uni_fac_2P" })
+            assertTrue(metadata.any { it.id == "uni_fac_8P" })
+            assertTrue(ImportRepository.MAX_CACHED_REMOTE_SCHEDULES > com.marcoslorcar.clementime.data.PeriodConfig.MAX_PERIOD_COUNT)
+        } finally {
+            tempDir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun getCachedRemoteSlotsForSemesterInDir_resolvesTrimesterAndCustomTermCodesWithoutMetadata() {
+        val tempDir = java.nio.file.Files.createTempDirectory("clementime_term_cache_test").toFile()
+        try {
+            val repository = ImportRepository(dao = FakeScheduleDaoForRepositoryTest())
+            val trimesterJson = """[{"cuatrimestre":"3T","dia":"Miércoles","hora_inicio":"10:00","hora_fin":"11:30","asignatura":"Optativa III","codigo":"OPT3","tipo":"teoría","grupo":"1A"}]"""
+            java.io.File(tempDir, "cache_uni_fac_3T.json").writeText(trimesterJson)
+
+            val slots = repository.getCachedRemoteSlotsForSemesterInDir(
+                cacheDir = tempDir,
+                semester = 3,
+                universityId = "uni",
+                facultyId = "fac",
+                periodType = com.marcoslorcar.clementime.data.PeriodType.TRIMESTERS
+            )
+            assertEquals(1, slots.size)
+            assertEquals("OPT3", slots.single().codigo)
+        } finally {
+            tempDir.deleteRecursively()
+        }
+    }
 }
 
 class FakeScheduleDaoForRepositoryTest(
