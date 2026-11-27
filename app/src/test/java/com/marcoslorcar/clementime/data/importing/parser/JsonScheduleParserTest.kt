@@ -27,7 +27,7 @@ class JsonScheduleParserTest {
                 "hora_inicio": "8:30",
                 "hora_fin": "10:00",
                 "asignatura": "FunProg1",
-                "tipo": "teoría",
+                "tipo": "colaboración",
                 "aula": "John von Neumann - A1.1",
                 "profesor": "Jesus Serrano",
                 "es_laboratorio": false,
@@ -40,10 +40,10 @@ class JsonScheduleParserTest {
                 "hora_inicio": "11:30",
                 "hora_fin": "13:00",
                 "asignatura": "Cálculo",
-                "tipo": "laboratorio",
+                "tipo": "Lab-A",
                 "aula": "John von Neumann - A1.1",
                 "profesor": "Maria Luz Lopez",
-                "es_laboratorio": true,
+                "es_laboratorio": false,
                 "grupo_practicas": "Lab-A1/A2"
               }
             ]
@@ -102,23 +102,23 @@ class JsonScheduleParserTest {
 
     @Test
     fun parseDayOfWeek_handlesSpanishAndEnglish() {
-        assertEquals(DayOfWeek.MONDAY, parser.parseDayOfWeek("Lunes"))
-        assertEquals(DayOfWeek.TUESDAY, parser.parseDayOfWeek("Martes"))
-        assertEquals(DayOfWeek.WEDNESDAY, parser.parseDayOfWeek("Miércoles"))
-        assertEquals(DayOfWeek.WEDNESDAY, parser.parseDayOfWeek("Miercoles"))
-        assertEquals(DayOfWeek.THURSDAY, parser.parseDayOfWeek("Jueves"))
-        assertEquals(DayOfWeek.FRIDAY, parser.parseDayOfWeek("Viernes"))
-        assertEquals(DayOfWeek.SATURDAY, parser.parseDayOfWeek("Sábado"))
-        assertEquals(DayOfWeek.SUNDAY, parser.parseDayOfWeek("Domingo"))
-        assertEquals(DayOfWeek.MONDAY, parser.parseDayOfWeek("MONDAY"))
+        assertEquals(DayOfWeek.MONDAY, parseDayOfWeek("Lunes"))
+        assertEquals(DayOfWeek.TUESDAY, parseDayOfWeek("Martes"))
+        assertEquals(DayOfWeek.WEDNESDAY, parseDayOfWeek("Miércoles"))
+        assertEquals(DayOfWeek.WEDNESDAY, parseDayOfWeek("Miercoles"))
+        assertEquals(DayOfWeek.THURSDAY, parseDayOfWeek("Jueves"))
+        assertEquals(DayOfWeek.FRIDAY, parseDayOfWeek("Viernes"))
+        assertEquals(DayOfWeek.SATURDAY, parseDayOfWeek("Sábado"))
+        assertEquals(DayOfWeek.SUNDAY, parseDayOfWeek("Domingo"))
+        assertEquals(DayOfWeek.MONDAY, parseDayOfWeek("MONDAY"))
     }
 
     @Test
-    fun exportToJson_exportsFlatArrayJsonFormat() {
+    fun exportToJson_roundTripPreservesSubjectNameAndEndTime() {
         val subject = Subject(
             id = 1L,
             code = "FP1",
-            name = "Fundamentos de Programación I",
+            name = "Universidad de Mayores",
             color = 0xFF4CAF50.toInt(),
             courseGroup = "1º A",
             isActive = true,
@@ -129,7 +129,7 @@ class JsonScheduleParserTest {
             subjectId = 1L,
             dayOfWeek = DayOfWeek.MONDAY,
             startTime = LocalTime.of(8, 30),
-            endTime = LocalTime.of(10, 0),
+            endTime = LocalTime.of(9, 50),
             classroom = "A1.1",
             professor = "Jesus Serrano",
             entryType = EntryType.THEORY
@@ -140,8 +140,14 @@ class JsonScheduleParserTest {
         // Matches what the Python pipeline emits in schedules/dist/*.json:
         // "codigo" is the short code, "asignatura" the full display name.
         assertTrue(exported.contains("\"codigo\": \"FP1\""))
-        assertTrue(exported.contains("\"asignatura\": \"Fundamentos de Programación I\""))
+        assertTrue(exported.contains("\"asignatura\": \"Universidad de Mayores\""))
         assertTrue(exported.contains("\"dia\": \"Lunes\""))
+
+        val schema = parser.parseJson(exported).getOrThrow()
+        val imported = schema.years.single().groups.single().subjects.single()
+        assertEquals(subject.name, imported.name)
+        val importedSlot = with(parser) { imported.theorySlots.single().toClassSlot(subject.id) }
+        assertEquals(slot.copy(id = 0), importedSlot)
     }
 
     @Test

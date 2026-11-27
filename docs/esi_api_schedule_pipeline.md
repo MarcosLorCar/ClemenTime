@@ -86,6 +86,7 @@ https://esi.uclm.es/TV/hall/horarios.json
 
 ### 2.6. Senior University Program (`Universidad de Mayores`)
 - Rows matching `univmayores` or `universidad de mayores` are ignored.
+- The Python pipeline owns this filtering and the end-time rounding above. Android preserves subject names and end times from published schedules and JSON backups.
 
 ### 2.7. HTTP `HEAD` Change Detection & Metadata
 - `check_esi_update.py` checks `ETag` and `Last-Modified` headers against `schedules/input/esi_meta.json`. It only downloads and triggers processing if the headers changed on the server (or if `--force` is supplied).

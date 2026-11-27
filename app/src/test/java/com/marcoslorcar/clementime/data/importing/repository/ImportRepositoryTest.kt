@@ -2,10 +2,13 @@ package com.marcoslorcar.clementime.data.importing.repository
 
 import com.marcoslorcar.clementime.data.AttachedFileItem
 import com.marcoslorcar.clementime.data.ClassSlot
+import com.marcoslorcar.clementime.data.EntryType
 import com.marcoslorcar.clementime.data.Subject
 import com.marcoslorcar.clementime.data.SubjectWithSlots
+import com.marcoslorcar.clementime.data.importing.model.JsonFlatSlot
 import com.marcoslorcar.clementime.data.importing.model.JsonSubject
 import com.marcoslorcar.clementime.data.importing.model.SelectedSubject
+import com.marcoslorcar.clementime.utils.ScheduleDiffChecker
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -85,6 +88,7 @@ class ImportRepositoryTest {
             code = "FunProg1",
             name = "Fundamentos de Programación 1",
             color = 0xFF4CAF50.toInt(),
+            courseGroup = "1º A",
             isActive = true,
             semester = 1
         )
@@ -93,28 +97,21 @@ class ImportRepositoryTest {
         )
         val repository = ImportRepository(dao = fakeDao)
 
-        val diffs = listOf(
-            com.marcoslorcar.clementime.utils.SlotDiff(
-                subjectCode = "FunProg1",
-                subjectName = "Fundamentos de Programación 1",
-                changeType = com.marcoslorcar.clementime.utils.DiffType.MODIFIED,
-                oldDetail = "Lunes 08:30 - 10:00",
-                newDetail = "Martes 10:00 - 11:30"
-            )
+        val remoteSlot = JsonFlatSlot(
+            grupo = "Grado 1.-A Bilingüe",
+            cuatrimestre = "1C",
+            dia = "Miercoles",
+            horaInicio = "9:00",
+            horaFin = "11:50",
+            asignatura = "FunProg1",
+            tipo = "Clase de laboratorio",
+            aula = "A1.1",
+            profesor = "Prof. Serrano",
+            grupoPracticas = "A1"
         )
-
-        val remoteSlots = listOf(
-            com.marcoslorcar.clementime.data.importing.model.JsonFlatSlot(
-                grupo = "1A",
-                cuatrimestre = "1C",
-                dia = "Martes",
-                horaInicio = "10:00",
-                horaFin = "11:30",
-                asignatura = "FunProg1",
-                tipo = "teoría",
-                aula = "A1.1",
-                profesor = "Prof. Serrano"
-            )
+        val remoteSlots = listOf(remoteSlot, remoteSlot.copy(grupo = "Grado 1.-B Bilingüe"))
+        val diffs = ScheduleDiffChecker.findDiffs(
+            listOf(SubjectWithSlots(existingSubject, emptyList())), remoteSlots, currentSemester = 1
         )
 
         repository.applySlotDiffs(diffs = diffs, remoteSlots = remoteSlots, semester = 1)
@@ -125,11 +122,19 @@ class ImportRepositoryTest {
         assertEquals("FunProg1", upsertedSubject.code)
         assertEquals(1, newSlots.size)
         val slot = newSlots[0]
-        assertEquals(java.time.DayOfWeek.TUESDAY, slot.dayOfWeek)
-        assertEquals(java.time.LocalTime.of(10, 0), slot.startTime)
-        assertEquals(java.time.LocalTime.of(11, 30), slot.endTime)
+        assertEquals(java.time.DayOfWeek.WEDNESDAY, slot.dayOfWeek)
+        assertEquals(java.time.LocalTime.of(9, 0), slot.startTime)
+        assertEquals(java.time.LocalTime.of(11, 50), slot.endTime)
         assertEquals("A1.1", slot.classroom)
         assertEquals("Prof. Serrano", slot.professor)
+        assertEquals(EntryType.LAB, slot.entryType)
+        assertEquals("A1", slot.labGroupName)
+
+        val preview = requireNotNull(diffs.single().newSlot)
+        assertEquals(preview.dayOfWeek, slot.dayOfWeek)
+        assertEquals(preview.startTime, slot.startTime)
+        assertEquals(preview.endTime, slot.endTime)
+        assertEquals(preview.entryType, slot.entryType)
     }
 
     @Test

@@ -12,8 +12,7 @@ import com.marcoslorcar.clementime.data.importing.model.JsonTimeSlot
 import com.marcoslorcar.clementime.data.importing.model.JsonYear
 import com.marcoslorcar.clementime.data.importing.model.ScheduleJsonSchema
 import kotlinx.serialization.json.Json
-import java.time.DayOfWeek
-import java.time.LocalTime
+import java.time.DateTimeException
 import javax.inject.Inject
 
 class JsonScheduleParser @Inject constructor() {
@@ -121,16 +120,12 @@ class JsonScheduleParser @Inject constructor() {
             val asig = slot.asignatura.trim()
             if (asig.isEmpty()) continue
 
-            if (asig.contains("universidad de mayores", ignoreCase = true) || asig.contains("univmayores", ignoreCase = true)) {
-                continue
-            }
-
             val slotSemester = TermCodeParser.parseTermIndex(slot.cuatrimestre) ?: 1
             val (yearName, groupName) = parseYearAndGroup(slot.grupo)
             val dayOfWeek = parseDayOfWeek(slot.dia).name
-            val startTime = formatTime(slot.horaInicio, isEndTime = false)
-            val endTime = formatTime(slot.horaFin, isEndTime = true)
-            val isLab = slot.esLaboratorio || slot.tipo.equals("laboratorio", ignoreCase = true) || slot.tipo.equals("LAB", ignoreCase = true)
+            val startTime = formatTime(slot.horaInicio)
+            val endTime = formatTime(slot.horaFin)
+            val isLab = slot.isLab()
             val isEvento = slot.tipo.equals("evento", ignoreCase = true)
             val entryType = if (isLab) "LAB" else "THEORY"
             val classroom = slot.aula.trim().takeIf { it.isNotEmpty() }
@@ -243,45 +238,10 @@ class JsonScheduleParser @Inject constructor() {
         return Pair(yearName, null)
     }
 
-    private fun formatTime(timeStr: String, isEndTime: Boolean = false): String {
-        if (timeStr.isBlank()) return timeStr
-        val parts = timeStr.trim().split(":")
-        if (parts.size == 2) {
-            var hours = parts[0].toIntOrNull() ?: return timeStr
-            var minutes = parts[1].toIntOrNull() ?: return timeStr
-
-            if (isEndTime && minutes == 50) {
-                hours = (hours + 1) % 24
-                minutes = 0
-            }
-            return "%02d:%02d".format(hours, minutes)
-        }
-        return timeStr
-    }
-
-    fun parseDayOfWeek(dayStr: String): DayOfWeek {
-        return when (val clean = dayStr.trim().uppercase()) {
-            "LUNES", "MONDAY" -> DayOfWeek.MONDAY
-            "MARTES", "TUESDAY" -> DayOfWeek.TUESDAY
-            "MIÉRCOLES", "MIERCOLES", "WEDNESDAY" -> DayOfWeek.WEDNESDAY
-            "JUEVES", "THURSDAY" -> DayOfWeek.THURSDAY
-            "VIERNES", "FRIDAY" -> DayOfWeek.FRIDAY
-            "SÁBADO", "SABADO", "SATURDAY" -> DayOfWeek.SATURDAY
-            "DOMINGO", "SUNDAY" -> DayOfWeek.SUNDAY
-            else -> runCatching { DayOfWeek.valueOf(clean) }.getOrDefault(DayOfWeek.MONDAY)
-        }
-    }
-
-    private fun dayOfWeekToSpanish(day: DayOfWeek): String {
-        return when (day) {
-            DayOfWeek.MONDAY -> "Lunes"
-            DayOfWeek.TUESDAY -> "Martes"
-            DayOfWeek.WEDNESDAY -> "Miércoles"
-            DayOfWeek.THURSDAY -> "Jueves"
-            DayOfWeek.FRIDAY -> "Viernes"
-            DayOfWeek.SATURDAY -> "Sábado"
-            DayOfWeek.SUNDAY -> "Domingo"
-        }
+    private fun formatTime(time: String): String = try {
+        parseLocalTime(time).toString()
+    } catch (_: DateTimeException) {
+        time
     }
 
     private fun generateCode(name: String): String {
@@ -296,8 +256,8 @@ class JsonScheduleParser @Inject constructor() {
         return ClassSlot(
             subjectId = subjectId,
             dayOfWeek = parseDayOfWeek(this.dayOfWeek),
-            startTime = LocalTime.parse(this.startTime),
-            endTime = LocalTime.parse(this.endTime),
+            startTime = parseLocalTime(this.startTime),
+            endTime = parseLocalTime(this.endTime),
             classroom = this.classroom,
             labGroupName = this.groupName,
             entryType = runCatching { EntryType.valueOf(this.entryType.uppercase()) }.getOrDefault(EntryType.THEORY),
