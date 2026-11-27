@@ -1,0 +1,44 @@
+[
+  {
+    "grupo": "1A",
+    "cuatrimestre": "2C",
+    "dia": "Lunes",
+    "hora_inicio": "08:30",
+    "hora_fin": "09:30",
+    "codigo": "Álgebra",
+    "asignatura": "Álgebra Lineal",
+    "tipo": "teoría",
+    "aula": "A1.2",
+    "profesor": "",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "1A",
+    "cuatrimestre": "2C",
+    "dia": "Jueves",
+    "hora_inicio": "08:30",
+    "hora_fin": "09:20",
+    "codigo": "FunProg1",
+    "asignatura": "Fundamentos de Programación I",
+    "tipo": "laboratorio",
+    "aula": "Sala sin mapping",
+    "profesor": "Ana Soto",
+    "es_laboratorio": true,
+    "grupo_practicas": ""
+  },
+  {
+    "grupo": "GENERAL",
+    "cuatrimestre": "2C",
+    "dia": "Miércoles",
+    "hora_inicio": "08:30",
+    "hora_fin": "09:30",
+    "codigo": "Conferencias",
+    "asignatura": "Conferencias",
+    "tipo": "evento",
+    "aula": "Alan Turing - Salón de Actos",
+    "profesor": "",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  }
+]

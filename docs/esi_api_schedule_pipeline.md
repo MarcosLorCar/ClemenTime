@@ -89,14 +89,20 @@ https://esi.uclm.es/TV/hall/horarios.json
 - The Python pipeline owns this filtering and the end-time rounding above. Android preserves subject names and end times from published schedules and JSON backups.
 
 ### 2.7. HTTP `HEAD` Change Detection & Metadata
-- `check_esi_update.py` checks `ETag` and `Last-Modified` headers against `schedules/input/esi_meta.json`. It only downloads and triggers processing if the headers changed on the server (or if `--force` is supplied).
+- `check_esi_update.py` compares `ETag` and `Last-Modified` with `schedules/input/esi_meta.json`. It downloads on a header or URL change, if the local input is missing, or in force or mock mode. The SHA-256 of the downloaded bytes distinguishes new content from a metadata-only update. A download with unchanged bytes refreshes local state and emits `has_update=false` unless force or mock mode is active or the input was missing.
+- The scheduled workflow uses `has_update` to decide whether to process. The standalone `process_schedules.py --check-esi` checks the endpoint and then processes the local file even when the checker reports unchanged content.
+
+### 2.8. Strict Parsing & Publication
+- In strict mode the parser reports unresolved subject and professor mappings before writing either period. The wrapper stops before regenerating the indexes. Classroom names pass through after cleanup. A prior HTTP check may already have written the source input and HTTP metadata.
+- `generate_index.py` hashes each output file's bytes. The prior legacy index provides `updatedTime` when the hash still matches. The catalog carries the same date and hash.
+- The [modular pipeline contract](modular_schedule_pipeline.md) inventories the consumers and records current compatibility limits.
 
 ---
 
 ## 3. Pipeline Commands
 
 ```bash
-# Run full sync check and process if updated
+# Check the source and process the local input
 python3 process_schedules.py --check-esi
 
 # Force a redownload and regenerate distributions
@@ -110,4 +116,7 @@ python3 schedules/script/generate_index.py
 
 # Preview FCM push payloads without sending
 python3 schedules/script/notify_fcm.py --dry-run
+
+# Run offline characterization tests from the repository root
+python3 -m unittest discover -s schedules/script -p "test_*.py"
 ```

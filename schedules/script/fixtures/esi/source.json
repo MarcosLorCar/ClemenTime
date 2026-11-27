@@ -1,0 +1,52 @@
+[
+  {
+    "grupo": "1 B", "cuatrimestre": "1c", "dia": "MIERCOLES", "hora_inicio": "8:50", "hora_fin": "9:50",
+    "asignatura": "FunProg1-L", "aula": "A1.2", "profesor": "A.Soto", "grupo_practicas": "P1",
+    "celda_dividida": true, "posicion_en_celda": 0
+  },
+  {
+    "grupo": "1B", "cuatrimestre": "1C", "dia": "Wednesday", "hora_inicio": "08:50", "hora_fin": "10:00",
+    "asignatura": "FunProg1-Lab", "aula": "A1.2", "profesor": "Ana Soto", "grupo_practicas": "P1",
+    "celda_dividida": true, "posicion_en_celda": 1
+  },
+  {
+    "grupo": "1C", "cuatrimestre": "1C", "dia": "Miércoles", "hora_inicio": "8:50", "hora_fin": "9:50",
+    "asignatura": "FunProg1(L)", "aula": "A1.2", "profesor": "A.Soto", "grupo_practicas": "P1"
+  },
+  {
+    "grupo": "1B", "cuatrimestre": "1C", "dia": "Miércoles", "hora_inicio": "8:50", "hora_fin": "9:50",
+    "asignatura": "FunProg1.L", "aula": "A1.2", "profesor": "A.Soto", "grupo_practicas": "P2"
+  },
+  {
+    "grupo": "1A", "cuatrimestre": "1C", "dia": "Viernes", "hora_inicio": "8:30", "hora_fin": "9:30",
+    "asignatura": "Pruebas ESI", "profesor": "A.Soto", "es_laboratorio": true, "grupo_practicas": "P1"
+  },
+  {
+    "grupo": "2B", "cuatrimestre": "1C", "dia": "Viernes", "hora_inicio": "08:30", "hora_fin": "09:30",
+    "asignatura": "Pruebas de Progreso"
+  },
+  {
+    "grupo": "1A", "cuatrimestre": "2C", "dia": "Jueves", "hora_inicio": "8:30", "hora_fin": "9:20",
+    "asignatura": "Fundamentos de Programación I.Lab", "aula": "Sala sin mapping", "profesor": "A.Soto"
+  },
+  {
+    "grupo": "1A", "cuatrimestre": "2C", "dia": "Lunes", "hora_inicio": "8:30", "hora_fin": "9:30",
+    "asignatura": "Álgebra", "aula": "A1.2"
+  },
+  {
+    "grupo": "1A", "cuatrimestre": "2C", "dia": "Miércoles", "hora_inicio": "8:30", "hora_fin": "9:30",
+    "asignatura": "Conferencias"
+  },
+  {
+    "grupo": "1B", "cuatrimestre": "2C", "dia": "Miércoles", "hora_inicio": "08:30", "hora_fin": "09:30",
+    "asignatura": "Conferencias"
+  },
+  {
+    "grupo": "1A", "cuatrimestre": "1C", "dia": "Lunes", "hora_inicio": "8:30", "hora_fin": "9:30",
+    "asignatura": "Universidad de Mayores - Historia", "profesor": "XYZ123"
+  },
+  {
+    "grupo": "1A", "cuatrimestre": "2C", "dia": "Lunes", "hora_inicio": "8:30", "hora_fin": "9:30",
+    "asignatura": "UnivMayores / Música", "profesor": "XYZ123"
+  }
+]

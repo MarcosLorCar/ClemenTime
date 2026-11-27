@@ -10,9 +10,12 @@ import shutil
 import tempfile
 import unittest
 import urllib.error
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import schedules.script.check_esi_update as check_esi
+
+TEST_URL = "https://example.invalid/schedules.json"
 
 
 class TestCheckEsiUpdate(unittest.TestCase):
@@ -27,6 +30,7 @@ class TestCheckEsiUpdate(unittest.TestCase):
 
         # Patch globals in check_esi module
         self.patchers = [
+            patch.object(check_esi, "DEFAULT_ESI_URL", TEST_URL),
             patch.object(check_esi, "INPUT_DIR", self.input_dir),
             patch.object(check_esi, "META_FILE", self.meta_file),
             patch.object(check_esi, "INPUT_JSON", self.input_json),
@@ -41,7 +45,7 @@ class TestCheckEsiUpdate(unittest.TestCase):
             json.dump(self.sample_schedules, f)
 
         self.initial_meta = {
-            "url": "https://esi.uclm.es/TV/hall/horarios.json",
+            "url": TEST_URL,
             "last_modified": "Mon, 19 Oct 2026 07:06:11 GMT",
             "etag": '"etag-initial"',
             "sha256": check_esi.compute_sha256(json.dumps(self.sample_schedules).encode("utf-8")),
@@ -59,6 +63,69 @@ class TestCheckEsiUpdate(unittest.TestCase):
             return ""
         with open(self.gh_output_file, encoding="utf-8") as f:
             return f.read()
+
+    def check_mock_response(self, headers, body=None, args=()):
+        head = MagicMock()
+        head.__enter__.return_value.headers = headers
+        responses = [head]
+        if body is not None:
+            get = MagicMock()
+            get.__enter__.return_value.read.return_value = body
+            responses.append(get)
+        with (
+            patch.object(check_esi.urllib.request, "urlopen", side_effect=responses) as request,
+            patch.object(check_esi.time, "sleep"),
+            patch("sys.argv", ["check_esi_update.py", *args]),
+            self.assertRaises(SystemExit) as exit_result,
+        ):
+            check_esi.main()
+        self.assertEqual(exit_result.exception.code, 0)
+        self.assertEqual(
+            [call.args[0].get_method() for call in request.call_args_list],
+            ["HEAD"] if body is None else ["HEAD", "GET"],
+        )
+
+    def saved_headers(self):
+        return {"ETag": self.initial_meta["etag"], "Last-Modified": self.initial_meta["last_modified"]}
+
+    def test_unchanged_headers_skip_get_and_leave_files_intact(self):
+        source = Path(self.input_json)
+        metadata = Path(self.meta_file)
+        before = source.read_bytes(), metadata.read_bytes()
+
+        self.check_mock_response(self.saved_headers())
+
+        self.assertEqual(self.read_github_output(), "has_update=false\n")
+        self.assertEqual((source.read_bytes(), metadata.read_bytes()), before)
+
+    def test_changed_header_with_same_body_refreshes_metadata_without_signaling_update(self):
+        source = Path(self.input_json)
+        previous = source.read_bytes()
+        headers = {**self.saved_headers(), "Last-Modified": "Wed, 28 Oct 2026 12:00:00 GMT"}
+
+        self.check_mock_response(headers, previous)
+
+        self.assertEqual(self.read_github_output(), "has_update=false\n")
+        self.assertEqual(source.read_bytes(), previous)
+        self.assertEqual(
+            json.loads(Path(self.meta_file).read_text(encoding="utf-8")),
+            {**self.initial_meta, "last_modified": headers["Last-Modified"]},
+        )
+
+    def test_force_reports_update_even_with_same_headers_and_body(self):
+        body = Path(self.input_json).read_bytes()
+        self.check_mock_response(self.saved_headers(), body, args=("--force",))
+        self.assertEqual(self.read_github_output(), "has_update=true\n")
+
+    def test_missing_input_triggers_download_even_with_unchanged_headers(self):
+        source = Path(self.input_json)
+        body = source.read_bytes()
+        source.unlink()
+
+        self.check_mock_response(self.saved_headers(), body)
+
+        self.assertEqual(self.read_github_output(), "has_update=true\n")
+        self.assertEqual(source.read_bytes(), body)
 
     @patch("schedules.script.check_esi_update.time.sleep")
     @patch("schedules.script.check_esi_update.urllib.request.urlopen")

@@ -1,136 +1,192 @@
-# Pipeline modular de horarios
+# Modular Schedule Pipeline
 
-Estado: **diseño propuesto; todavía no implementado**.
+The contract is documented and offline tests characterize ESI
+output. The production pipeline still runs the existing ESI scripts. The
+adapter registry, publication core, and ESII integration are proposed.
 
-Este documento define los límites de la migración. El comportamiento operativo
-actual se describe en [la guía ESI](esi_api_schedule_pipeline.md). Las tareas,
-dependencias, criterios de aceptación y progreso se mantienen exclusivamente en
-los issues [#47](https://github.com/MarcosLorCar/ClemenTime/issues/47),
+The [ESI guide](esi_api_schedule_pipeline.md) describes current operations.
+Tasks, dependencies, acceptance criteria, and progress are tracked in issues
+[#47](https://github.com/MarcosLorCar/ClemenTime/issues/47),
 [#48](https://github.com/MarcosLorCar/ClemenTime/issues/48),
-[#49](https://github.com/MarcosLorCar/ClemenTime/issues/49) y
+[#49](https://github.com/MarcosLorCar/ClemenTime/issues/49), and
 [#50](https://github.com/MarcosLorCar/ClemenTime/issues/50).
 
-## Objetivo y alcance
+## Goal and Scope
 
-Añadir facultades mediante adaptadores independientes que entregan un contrato
-común. ESI (Ciudad Real) conserva su API; ESII (Albacete), también de UCLM,
-tendrá un adaptador HTML. La facultad es la unidad de configuración y publicación;
-su adaptador puede consultar varias páginas o fuentes.
+Add faculties through independent adapters that implement a common contract.
+ESI (Ciudad Real) keeps its API. ESII (Albacete), also part of UCLM, will have
+an HTML adapter. Configuration and publication are scoped to a faculty, and
+each adapter may consult multiple pages or sources.
 
-No se implementará un scraper universal basado únicamente en cambiar URLs.
-Tampoco se introduce un servidor, plugins externos, un nuevo formato público ni
-una migración Android como parte de esta propuesta. Si la fuente ESII requiere
-capacidades adicionales del cliente, se abrirá una decisión de alcance separada.
+A universal scraper, server, external plugins, public format changes, and an
+Android migration are outside the proposal's scope. If the ESII source requires
+additional client capabilities, track that decision separately.
 
-## Punto de partida
+## Current Consumers
 
-- `process_schedules.py` coordina directamente los scripts ESI.
-- `parse_schedule.py` mezcla interpretación de la fuente, mappings, reglas ESI y
-  escritura de los archivos `1C.json` y `2C.json`.
-- `generate_index.py` genera un catálogo v2 con UCLM/ESI fijados en el código.
-- Los workflows de sincronización y edición manual comparten la exclusión mutua
-  de escritores, pero ambos deben adaptarse al catálogo de varias facultades.
-- `notify_fcm.py` recorre todas las facultades del catálogo recibido; la selección
-  de facultades realmente modificadas debe incorporarse a la publicación.
+| Consumer | Current input and behavior |
+| --- | --- |
+| `process_schedules.py` CLI | Accepts an optional local JSON file, `--strict`, and `--check-esi`. When the HTTP check is enabled, it passes through `--force`. It runs the parser and then generates the indexes. After a successful HTTP check, the CLI processes the local file even if the headers stayed the same. |
+| `sync-esi-schedules.yml` | Consumes `has_update` from the HTTP checker. Runs the CLI in strict mode on an update, a push, or a manual run. Commits and pushes changes under `schedules/`. It uses `success()` to gate FCM after the push or in manual FCM test mode. |
+| `update-schedules-index.yml` | Runs `generate_index.py` directly when a change under `dist/` reaches `master`, excluding the two indexes. Publishes the indexes if they differ and sends FCM after the push. Both workflows share the `schedules-master-write` concurrency group. |
+| Catalog v2 | `RemoteScheduleFetcher` reads `schedules_catalog.json`. The hierarchy is `universities → faculties → terms`. Each term contains `id`, `name`, `description`, `path`, `hash`, and `updatedTime`. Android resolves `path` from the catalog base URL. ESI publishes the relative paths `1C.json` and `2C.json`. |
+| Legacy index | `schedules_index.json` is a flat ESI array with the same term data, using `title` in place of `name`. Android can wrap it in a synthetic UCLM/ESI catalog as a fallback. The generator reads each term's previous update date from this index. |
+| Android parser | `JsonScheduleParser` reads arrays of `JsonFlatSlot` and groups slots by year, group, and subject. It treats `evento` sessions as common events and also accepts nested JSON for imports. |
+| FCM payload | `notify_fcm.py` reads the catalog and builds one message per faculty with string values for `university`, `faculty`, `updated_at`, and `hash_{termId}`. ESI uses topic `sched_uclm_esi` and keys `hash_1C` and `hash_2C`. Android uses `TermCodeParser` to resolve the key suffix to a period. |
 
-Estas observaciones justifican la migración; no describen capacidades ya añadidas.
+## Current ESI Behavior Covered by Tests
 
-## Separación de responsabilidades
+The [fixtures](../schedules/script/fixtures/esi) and
+[pipeline tests](../schedules/script/test_schedule_pipeline.py) pin the flat
+JSON published for ESI. Coverage includes `codigo` (short identifier),
+`asignatura` (display name), `GENERAL` events, shared sessions, deduplication,
+lab suffixes, rounding end times at `:50`, and filtering Universidad de Mayores.
+Both indexes record the SHA-256 of each file's bytes and retain the period's
+`updatedTime` while the hash matches its previous legacy index entry. The
+[HTTP tests](../schedules/script/test_check_esi_update.py) mock HEAD and GET.
 
-### Registro y adaptadores
+- Strict mode aborts on unresolved subject or professor mappings. The parser
+  publishes cleaned classroom names without consulting `mappings.classrooms`.
+  Aborting preserves both schedules, both indexes, and the mappings. An earlier
+  HTTP check may already have updated the source JSON and HTTP state.
+- A response with new headers and identical bytes refreshes HTTP state,
+  rewrites the source file, and emits `has_update=false`. The checker accepts
+  a nonempty JSON object, while the parser requires an array. In the default
+  tolerant mode, HTTP failures and unchanged sources both yield
+  `has_update=false`.
+- The parser writes periods with sessions and keeps the prior file if a period
+  is missing from the source. It writes directly to the destination after
+  checking unresolved mappings.
+- ESI's ordering is stable for the same input. Slots tied on group, day, start,
+  and code retain their source order. Text-mode output uses native line endings,
+  so the same schedule can have different hashes on Windows (CRLF) and on the
+  Linux publishing runner (LF).
+- Any commit under `schedules/` can trigger the sync notification. That includes
+  HTTP-state-only changes if the run reaches the publishing step. The sender
+  iterates over every faculty in the supplied catalog.
 
-Un registro explícito asocia `(university_id, faculty_id)` con el adaptador y sus
-metadatos: nombres, periodos, rutas de salida y configuración de la fuente.
-`uclm/esi` y `uclm/esii` son registros diferentes. No hay una facultad por defecto
-en el núcleo. ESI conserva sus identificadores y topic existentes.
+## Proposed Responsibilities
 
-Cada adaptador controla adquisición, detección de cambios e interpretación de su
-fuente. Sus mappings, fixtures y estado HTTP quedan aislados. Las reglas ESI
-(:50, sufijos de laboratorio, eventos GENERAL, filtros y nombres) permanecen en
-ESI. Las funciones verdaderamente compartidas se extraen con pruebas, sin copiar
-reglas a cada adaptador ni convertir peculiaridades ESI en reglas globales.
+### Registry and Adapters
 
-No se exige HEAD/ETag a todas las fuentes. El adaptador HTML podrá usar descargas
-condicionales o hashes según lo que soporte la fuente. Los cambios de código,
-configuración y mappings también deben permitir regenerar resultados aunque la
-fuente remota no haya cambiado. Debe existir reprocesado offline de fixtures.
+An explicit registry maps each `(university_id, faculty_id)` pair to an adapter
+and its metadata, including names, periods, output paths, and source configuration.
+`uclm/esi` and `uclm/esii` have separate entries. The core has no default faculty.
+ESI retains its identifiers and topic.
 
-### Contrato y núcleo
+Each adapter handles acquisition, change detection, and interpretation for its
+source. It owns its mappings, fixtures, and HTTP state. The ESI adapter owns
+the `:50` rounding, lab suffixes, `GENERAL` events, filters, and names. Extract
+shared functions where sources genuinely use the same behavior, with test
+coverage.
 
-La frontera lógica es: fuente -> adaptador -> sesiones normalizadas por periodo
--> validación -> serialización -> catálogo y publicación.
+Sources choose the change detection their endpoints support. The HTML adapter
+can use conditional downloads or hashes. Changes to code, configuration, or
+mappings must allow regeneration even when the remote source has stayed the
+same. The pipeline must support offline reprocessing from fixtures.
 
-El resultado identifica universidad, facultad y periodos, con sesiones que
-conservan código y nombre de asignatura, grupo, día, horas, aula, profesor y
-semántica de laboratorio/subgrupo/evento del formato actual. Las firmas y tipos
-concretos se fijan en #47. No se añade un envoltorio nuevo al JSON público.
+### Contract and Core
 
-El núcleo valida identidad, referencias, campos, horas, periodos y rutas; produce
-salida determinista y hashes de los bytes finales. No impone dos cuatrimestres,
-pero solo se publicarán periodos compatibles con el cliente: actualmente su
-modelo admite índices 1..8. No se asume soporte para IDs arbitrarios.
+The adapter acquires source data and normalizes sessions. The core receives
+sessions keyed by period, checks their periods against configuration, and
+serializes valid results. These signatures define the internal data for the
+adapter extraction.
 
-La adquisición distingue datos sin cambios, datos candidatos y error. El resultado
-por facultad distingue actualización válida, ausencia de cambios y fallo. Un fallo
-de parsing nunca equivale a un horario vacío válido. Las políticas de integridad
-de cada fuente deben detectar extracción parcial y desaparición de periodos.
+```text
+FacultyKey(university_id: str, faculty_id: str)
+FacultySpec(key: FacultyKey, university_name: str, faculty_name: str,
+            periods: tuple[PeriodSpec, ...], fcm_topic_prefix: str | None,
+            subgroups_label: str | None, period_type: str | None, period_count: int | None)
+PeriodSpec(id: str, index: int, name: str, description: str | None, path: str)
+Session(subject_code: str, subject_name: str, group: str, day: int,
+        start: time, end: time, kind: str, room: str, professor: str,
+        is_lab: bool, subgroup: str)
+FacultySchedule(key: FacultyKey, sessions_by_period: Mapping[str, tuple[Session, ...]])
 
-### Publicación y notificaciones
+acquire() -> Unchanged | Candidate[source_payload] | SourceFailure
+normalize(source_payload) -> FacultySchedule | ParseFailure
+```
 
-Cada facultad prepara y valida su resultado en staging. Un único publicador
-ensambla los resultados válidos y conserva íntegra la última publicación de las
-facultades fallidas. Una facultad nueva que falla no aparece vacía en el catálogo.
-Las eliminaciones de periodos deben ser explícitas, no inferidas de un fallo.
+- Each university and faculty pair has a stable, nonempty registry key. Period
+  IDs and indices are unique within a faculty. The core checks that
+  `sessions_by_period` uses declared period IDs and that every published path
+  is unique and stays within `dist/`.
+- The index is an integer from 1 through 8. `TermCodeParser` must resolve the
+  published ID to the same index from the catalog, `cuatrimestre`, and
+  `hash_{termId}`. ESI retains `1C` and `2C`. Support is limited to IDs verified
+  in Android. If the faculty declares `period_type` or `period_count`, the
+  configuration from Android's `PeriodConfig.inferFromCatalog` must cover all
+  published indices. The current ESI catalog omits both fields.
+- `Session` stores the subject code and name separately and keeps one record per
+  attending group. `day` runs from Monday (1) to Sunday (7). `start` and `end`
+  are local times at minute precision. `kind`, `is_lab`, and `subgroup` retain
+  the source semantics separately. A common ESI event uses `group = "GENERAL"`
+  and `kind = "evento"`.
+- The serializer converts each session to the current flat object. It uses the
+  period key for `cuatrimestre` and writes `grupo`, `dia` (Spanish day name),
+  `hora_inicio` and `hora_fin` (HH:mm), `codigo`, `asignatura`, `tipo`, `aula`,
+  `profesor`, `es_laboratorio`, and `grupo_practicas`. The existing indexes
+  carry university, faculty, and period metadata. The hash covers the final bytes.
+- `Candidate` carries data to validate and can come from local reprocessing.
+  `SourceFailure` and `ParseFailure` preserve the diagnostic and prevent
+  publication of that result. `Unchanged` retains the last publication. An empty
+  period is valid only when the source configuration and integrity checks
+  explicitly allow it.
 
-El catálogo y los horarios se publican como un lote coherente en Git. Esto no
-garantiza lecturas atómicas entre URLs HTTPS: #49 debe verificar la comprobación
-de hashes y la recuperación del cliente ante versiones temporalmente desalineadas.
-Si requiere cambios Android, deberán concretarse antes de activar otra facultad.
+### Publication and Notifications
 
-Solo después del push confirmado se envía FCM a las facultades cuyos horarios
-publicados cambiaron. Cambios únicamente en metadatos de descarga no notifican.
-Un fallo FCM no revierte una publicación: debe quedar visible y ser reintentable.
-El modo manual de notificación de prueba permanece explícito.
+Each faculty prepares and validates its results in staging. A single publisher
+assembles valid results and keeps the last successful publication for any failed
+faculty. A new faculty first appears in the catalog after a successful run.
+Period removals require explicit intent.
 
-Los dos workflows usarán el mismo catálogo y reglas de publicación, conservarán
-la exclusión mutua de escritores y aplicarán `success()` donde corresponda.
-El estado de una ejecución parcial debe mostrar qué facultad falló aunque se
-hayan publicado otras correctamente.
+The catalog and schedules are published together in Git. Clients can still
+read different revisions across HTTPS URLs. Issue #49 covers hash verification
+and client recovery when versions temporarily differ. Determine any Android
+changes required before enabling another faculty.
 
-## Compatibilidad que se debe preservar
+Send FCM after a confirmed push and only to faculties whose published schedules
+changed. Metadata-only downloads do not trigger notifications. A failed FCM
+send remains visible and can be retried after publication. Manual test
+notifications remain an explicit mode.
 
-- ESI sigue publicando `schedules/dist/1C.json` y `2C.json`. Las nuevas facultades
-  usan rutas propias, por ejemplo `schedules/dist/uclm/esii/1C.json` si ese periodo
-  existe. No se cambian rutas ESI para conseguir simetría de carpetas.
-- El catálogo sigue siendo v2 con `universities -> faculties -> terms`, usando
-  los campos reales del contrato, incluidos `path`, `hash` y `updatedTime`.
-- `schedules_index.json` sigue siendo la vista legacy exclusiva de ESI.
-- Los archivos de sesiones siguen siendo arrays planos; `codigo` y `asignatura`
-  conservan sus significados. Los hashes y fechas permanecen estables si no hay
-  cambios de contenido. La comparación inicial debe detectar también diferencias
-  de serialización que generarían avisos innecesarios.
-- Se conservan `sched_uclm_esi` y los campos FCM `hash_{termId}`. No se introducen
-  defaults ESI/UCLM para nuevas instalaciones Android.
-- Los consumidores del CLI y scripts se actualizan con su sustitución. Se elimina
-  el código supersedido en la misma PR, sin mantener dos implementaciones.
+Both workflows will share the catalog and publication rules, retain writer
+mutual exclusion, and use `success()` where appropriate. A partial run's status
+must identify each failed faculty alongside successful publications.
 
-## Pendientes de la fuente ESII
+## Compatibility Requirements
 
-El usuario indica que la fuente es HTML y que tiene permiso de extracción. Falta
-identificar la URL concreta e inspeccionar muestras: número de páginas, estructura
-de tablas, periodos, grupos y posible separación de titulaciones. No se presupone
-JavaScript, autenticación, una biblioteca de scraping ni reglas de horarios.
-Estos puntos se resuelven en #50 antes de activar ESII en producción.
+- ESI keeps publishing `schedules/dist/1C.json` and `schedules/dist/2C.json`.
+  New faculties use separate paths, such as `schedules/dist/uclm/esii/1C.json`
+  if that period exists.
+- The catalog remains v2 with `universities → faculties → terms` and its
+  existing fields, including `path`, `hash`, and `updatedTime`.
+- `schedules_index.json` remains the legacy view for ESI.
+- Session files remain flat arrays and `codigo` and `asignatura` retain their
+  meanings. Hashes and dates stay stable when content stays the same. The
+  initial comparison must catch serialization differences that could cause
+  unnecessary notifications.
+- ESI retains `sched_uclm_esi` and the FCM keys `hash_{termId}`. New Android
+  installations start without a selected university or faculty.
+- Update CLI and script consumers when replacing their entry points. Remove
+  superseded implementations in the same PR.
 
-## Mantenimiento de este documento
+## Open Questions About the ESII Source
 
-Cada PR de implementación actualiza las secciones afectadas y la documentación
-operativa/skill correspondiente. Mientras la migración sea parcial, debe indicar
-qué partes están implementadas; no basta con cambiar el estado global.
+The source is reported to be HTML, and the maintainer has permission to extract
+it. Issue #50 covers identifying the URL and inspecting samples for page count,
+table structure, periods, groups, and possible degree-specific pages. It also
+covers checking for JavaScript or authentication, selecting parsing tools, and
+identifying schedule rules before ESII goes live.
 
-Al cerrar #50, este archivo debe describir únicamente la arquitectura entregada,
-con enlaces a los módulos y comandos reales. Se retiran el punto de partida,
-los pendientes resueltos y los textos de propuesta. Las decisiones históricas y
-tareas pendientes quedan en issues y en Git. Si ESII se pospone o cancela, se hace
-igualmente este cierre documental para el núcleo entregado. No se deja su limpieza
-para una auditoría futura.
+## Maintaining This Document
+
+Each implementation PR updates the affected sections and relevant operational
+documentation or skill. During the migration, identify the parts that have
+shipped in their respective sections.
+
+When #50 closes, this document should describe the delivered architecture and
+link to the actual modules and commands. Remove the original baseline, resolved
+questions, and proposal language. Issues and Git retain the history and pending
+work. If ESII is postponed or canceled, complete this documentation cleanup when
+the core migration ends.

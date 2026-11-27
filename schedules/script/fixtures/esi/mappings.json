@@ -1,0 +1,14 @@
+{
+  "matters": {
+    "FunProg1": "Fundamentos de Programación I",
+    "Álgebra": "Álgebra Lineal",
+    "Pruebas de Progreso": "Pruebas de Progreso",
+    "Conferencias": "Conferencias"
+  },
+  "professors": {
+    "A.Soto": "Ana Soto"
+  },
+  "classrooms": {
+    "A1.2": "Laboratorio A1.2"
+  }
+}
