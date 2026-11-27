@@ -136,7 +136,7 @@ jobs:
 
       - name: Validate Schedule Pipeline & Run Unit Tests
         run: |
-          python3 process_schedules.py --strict
+          python3 process_schedules.py --all --strict --dist-dir "$RUNNER_TEMP/dist-check"
           python3 -m unittest discover -s schedules/script -p "test_*.py"
           ./gradlew test
 

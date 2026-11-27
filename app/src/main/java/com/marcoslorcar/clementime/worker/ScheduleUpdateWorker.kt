@@ -27,13 +27,13 @@ import com.marcoslorcar.clementime.data.api.GitHubScheduleApiService
 import com.marcoslorcar.clementime.data.importing.model.JsonFlatSlot
 import com.marcoslorcar.clementime.data.importing.model.RemoteScheduleSummary
 import com.marcoslorcar.clementime.data.importing.repository.ImportRepository
+import com.marcoslorcar.clementime.data.importing.repository.ScheduleHashMismatchException
 import com.marcoslorcar.clementime.utils.ScheduleDiffChecker
 import com.marcoslorcar.clementime.utils.SlotDiff
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
-import kotlinx.serialization.json.Json
 import java.util.concurrent.TimeUnit
 import androidx.core.graphics.toColorInt
 
@@ -41,7 +41,8 @@ data class SyncResult(
     val diffs: List<SlotDiff> = emptyList(),
     val remoteSlots: List<JsonFlatSlot> = emptyList(),
     val remoteHash: String = "",
-    val semester: Int? = null
+    val semester: Int? = null,
+    val hasTransientMismatch: Boolean = false
 )
 
 @HiltWorker
@@ -86,6 +87,8 @@ class ScheduleUpdateWorker @AssistedInject constructor(
                         settingsRepository.setLastNotifiedScheduleHash(semester, syncResult.remoteHash)
                     }
                 }
+            } else if (syncResult.hasTransientMismatch) {
+                return Result.retry()
             }
 
             Result.success()
@@ -158,7 +161,7 @@ class ScheduleUpdateWorker @AssistedInject constructor(
         }
 
         suspend fun performSync(
-            context: Context,
+            context: Context?,
             settingsRepository: SettingsRepository,
             importRepository: ImportRepository,
             apiService: GitHubScheduleApiService?
@@ -191,6 +194,7 @@ class ScheduleUpdateWorker @AssistedInject constructor(
                     summaries.mapNotNull { TermCodeParser.parseTermIndex(it.id) }
                 ).distinct()
 
+            var hadTransientMismatch = false
             for (semester in semestersToCheck) {
                 val result = performSyncForSemester(
                     context = context,
@@ -204,10 +208,17 @@ class ScheduleUpdateWorker @AssistedInject constructor(
                     facultyId = facultyId,
                     periodType = periodConfig.type
                 )
+                if (result?.hasTransientMismatch == true) {
+                    hadTransientMismatch = true
+                }
                 if (result != null && result.diffs.isNotEmpty()) {
                     settingsRepository.setLastScheduleSyncTimestamp(System.currentTimeMillis())
                     return result
                 }
+            }
+
+            if (hadTransientMismatch) {
+                return SyncResult(semester = currentSemester, hasTransientMismatch = true)
             }
 
             settingsRepository.setLastScheduleSyncTimestamp(System.currentTimeMillis())
@@ -215,7 +226,7 @@ class ScheduleUpdateWorker @AssistedInject constructor(
         }
 
         private suspend fun performSyncForSemester(
-            context: Context,
+            context: Context?,
             settingsRepository: SettingsRepository,
             importRepository: ImportRepository,
             apiService: GitHubScheduleApiService?,
@@ -248,28 +259,20 @@ class ScheduleUpdateWorker @AssistedInject constructor(
 
             if (apiService == null) return null
 
-            val fullUrl = importRepository.normalizeGitHubUrl(
-                if (effectiveBaseUrl.endsWith("/")) "${effectiveBaseUrl}${summary.path}" else "${effectiveBaseUrl}/${summary.path}"
+            val downloadResult = importRepository.downloadFlatScheduleVerified(
+                baseUrl = effectiveBaseUrl,
+                summary = summary,
+                apiServiceOverride = apiService
             )
-            val cacheBustedUrl = if (remoteHash.isNotBlank()) {
-                if (fullUrl.contains("?")) "$fullUrl&v=$remoteHash" else "$fullUrl?v=$remoteHash"
-            } else {
-                fullUrl
+            val download = downloadResult.getOrElse { error ->
+                if (error is ScheduleHashMismatchException) {
+                    return SyncResult(semester = semester, hasTransientMismatch = true)
+                }
+                return null
             }
-
-            val rawResponse = apiService.getRawScheduleSchema(cacheBustedUrl)
-            if (!rawResponse.isSuccessful) return null
-
-            val jsonString = rawResponse.body()?.string() ?: return null
-
-            val jsonParser = Json { ignoreUnknownKeys = true; coerceInputValues = true }
-            val remoteSlots = try {
-                jsonParser.decodeFromString<List<JsonFlatSlot>>(jsonString)
-            } catch (_: Exception) {
-                emptyList()
-            }
-
-            if (remoteSlots.isEmpty()) return null
+            val fullUrl = download.url
+            val jsonString = download.rawJson
+            val remoteSlots = download.slots
 
             var previousSubjectHashes = settingsRepository.getLastRemoteSubjectHashesFlow(semester).first()
             if (previousSubjectHashes.isEmpty()) {
@@ -313,18 +316,20 @@ class ScheduleUpdateWorker @AssistedInject constructor(
                 } else {
                     resolvedTermId
                 }
-                importRepository.cacheRemoteSlots(
-                    context = context,
-                    fileId = scopedId,
-                    title = summary.title,
-                    description = summary.description,
-                    remotePath = fullUrl,
-                    rawJson = jsonString,
-                    updatedTime = summary.updatedTime,
-                    universityId = universityId.ifBlank { null },
-                    facultyId = facultyId.ifBlank { null },
-                    termId = resolvedTermId
-                )
+                if (context != null) {
+                    importRepository.cacheRemoteSlots(
+                        context = context,
+                        fileId = scopedId,
+                        title = summary.title,
+                        description = summary.description,
+                        remotePath = fullUrl,
+                        rawJson = jsonString,
+                        updatedTime = summary.updatedTime,
+                        universityId = universityId.ifBlank { null },
+                        facultyId = facultyId.ifBlank { null },
+                        termId = resolvedTermId
+                    )
+                }
             }
 
             return SyncResult(

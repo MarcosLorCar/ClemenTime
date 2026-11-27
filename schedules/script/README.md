@@ -1,29 +1,32 @@
 # Schedule Processing Scripts
 
-The schedule pipeline acquires and normalizes data through a registered faculty
-adapter, then validates and publishes flat Android schedule JSON and indexes.
-The production registry contains ESI in Ciudad Real (`uclm/esi`).
+The schedule pipeline acquires and normalizes data through registered faculty
+adapters, stages results per faculty, and publishes flat Android schedule JSON,
+a combined v2 catalog (`schedules_catalog.json`), and ESI's legacy index
+(`schedules_index.json`). The production registry currently contains ESI in
+Ciudad Real (`uclm/esi`).
 
 Run these commands from the repository root with Python 3.11 or newer. Use
 `uv sync` to install optional environment-file support.
 
 ```bash
-# Check the ESI endpoint and process fresh or cached input in strict mode
-python process_schedules.py --faculty uclm/esi --sync --strict
+# Sync all registered faculties in strict mode and write a JSON report + Markdown summary
+python process_schedules.py --all --sync --strict --report report.json --summary-file summary.md
 
-# Force a re-download
+# Sync a single faculty and force a re-download
 python process_schedules.py --faculty uclm/esi --sync --strict --force
 
 # Reprocess a local fixture offline and write results to a separate directory
 python process_schedules.py --faculty uclm/esi --strict --fixture schedules/input/schedules.json --dist-dir scratch-dist
 
-# Rebuild catalog and legacy index from existing published term files
-python process_schedules.py --faculty uclm/esi --index-only
+# Rebuild combined catalog and ESI legacy index from existing published term files
+python process_schedules.py --all --index-only --report index-report.json
 
-# Preview FCM topic payloads without sending
-python schedules/script/notify_fcm.py --dry-run
+# Preview selective FCM topic payloads without sending
+python schedules/script/notify_fcm.py --report report.json --dry-run
+python schedules/script/notify_fcm.py --faculty uclm/esi --dry-run
 
-# Run offline characterization and adapter tests
+# Run offline characterization, multi-faculty, and FCM tests
 python -m unittest discover -s schedules/script -p "test_*.py"
 ```
 

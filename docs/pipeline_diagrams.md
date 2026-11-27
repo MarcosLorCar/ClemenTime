@@ -4,26 +4,28 @@
 
 ```mermaid
 flowchart TD
-    Start(["Every 6 hours · relevant push to master · manual run"]) --> Check["Check the ESI TV API<br/>Download updated source JSON"]
-    Check --> Run{"Source changed, or push/manual run?"}
-    Run -->|No| End([End run])
-    Run -->|Yes| Build["Normalize and deduplicate in strict mode<br/>Generate 1C.json, 2C.json, catalog and legacy index"]
-    Build -->|Success| Publish{"Files changed under schedules/?"}
-    Build -->|Failure| Stop([Stop before publishing])
-    ManualEdit["Schedule JSON changed directly on master"] --> Index["Regenerate catalog and legacy index"]
-    Index -->|"If indexes changed"| Push
-    Publish -->|Yes| Push["Commit and push to master"]
-    Publish -->|No| Skip(["End run unless testing FCM"])
-    Push -->|Successful push| FCM["Send faculty topic notification via Firebase"]
-    Skip -.->|Manual FCM test| FCM
-    FCM --> Sync["Android checks for a schedule update"]
+    Start(["Every 6 hours · relevant push to master · manual run"]) --> Stage["Stage each registered faculty independently<br/>Acquire, normalize in strict mode, and validate paths/periods"]
+    Stage --> Valid{"At least one faculty valid?"}
+    Valid -->|No| Stop([Exit nonzero without touching dist])
+    Valid -->|Yes| Publish["Publish valid batch to dist, v2 catalog, and ESI legacy index<br/>Keep failed faculties intact · write report and CI summary"]
+    ManualEdit["Schedule JSON edited directly on master"] --> Index["Rebuild indexes for all registered faculties (--all --index-only)<br/>Preserve foreign catalog entries"]
+    Index --> Commit
+    Publish --> Commit{"Changes to commit under schedules/?"}
+    Commit -->|Yes| Push["Commit and push to master<br/>(schedules-master-write lock)"]
+    Commit -->|No| Skip(["Skip push unless test_fcm / retry_fcm"])
+    Push -->|Confirmed push + changed schedule hashes| FCM["Selective FCM push only for changed faculties"]
+    Skip -.->|Manual test_fcm or retry_fcm| FCM
+    FCM --> Partial{"Any faculty failed?"}
+    Partial -->|Yes| FailRun([Fail workflow to surface partial error])
+    Partial -->|No| Done([End run])
+    FCM --> Sync["Android checks for schedule update"]
     Periodic["Periodic fallback when enabled"] --> Sync
-    Sync -->|If an update is needed| Download["Download published schedule JSON from GitHub"]
+    Sync --> Download["Download term JSON and verify SHA-256 against catalog<br/>Retry with cache-bust on split-revision mismatch"]
 ```
 
 [Schedule sync workflow](../.github/workflows/sync-esi-schedules.yml) ·
 [Index repair workflow](../.github/workflows/update-schedules-index.yml) ·
-[Modular schedule pipeline proposal](modular_schedule_pipeline.md)
+[Modular schedule pipeline](modular_schedule_pipeline.md)
 
 ## Continuous deployment
 

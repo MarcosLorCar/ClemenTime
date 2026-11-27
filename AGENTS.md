@@ -40,9 +40,11 @@ Python schedule pipeline (`uv`, requires Python >= 3.11):
 
 ```bash
 uv sync
-ruff check .                                         # Python lint (CI)
-python process_schedules.py --check-esi              # check live ESI endpoint, process if updated
-python process_schedules.py                          # regenerate dist/{1C,2C}.json and index
+ruff check .                                                  # Python lint (CI)
+python -m unittest discover -s schedules/script -p "test_*.py" # pipeline & FCM tests (CI)
+python process_schedules.py --all --sync --strict             # sync all registered faculties
+python process_schedules.py --check-esi                       # legacy alias: sync ESI endpoint
+python process_schedules.py                                   # regenerate ESI dist/{1C,2C}.json and indexes
 ```
 
 ---

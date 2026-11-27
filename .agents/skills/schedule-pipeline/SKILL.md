@@ -2,21 +2,23 @@
 name: schedule-pipeline
 description: >-
   Guide for the ClemenTime faculty schedule pipeline, including the ESI TV API
-  adapter, mapping and normalization rules, publication, and the flat wire
-  format. Use when changing schedules/, process_schedules.py, or import JSONs.
+  adapter, mapping and normalization rules, multi-faculty publication, selective
+  FCM, and the flat wire format. Use when changing schedules/,
+  process_schedules.py, or import JSONs.
 ---
 
 # Schedule Data Pipeline
 
 ```
-process_schedules.py → registry.py → adapters/esi/ (HTTP, cache, mappings, normalization)
-                                   → pipeline.py (validation, flat serialization)
-                                   → publication.py (terms, catalog, legacy index)
-                                   → notify_fcm.py (CI after a publication or manual test)
+process_schedules.py → registry.py → adapters/<faculty>/ (HTTP, cache, mappings, normalization)
+                                   → pipeline.py (registry validation, staging, flat serialization)
+                                   → publication.py (staged batch publish, v2 catalog, ESI legacy index)
+                                   → notify_fcm.py (selective post-push FCM or manual test/retry)
 ```
 
 The [modular pipeline contract](../../../docs/modular_schedule_pipeline.md)
-describes the adapter boundary and consumers. The production registry contains
+describes the adapter boundary, multi-faculty batch publication, CI workflows,
+and client verification rules. The production registry currently contains
 `uclm/esi` only. Keep faculty identifiers, source format, data quirks, HTTP
 state, and mapping rules in adapter code or registration.
 
@@ -26,36 +28,49 @@ Run from the root with Python 3.11 or newer. Use `uv sync` for optional
 environment-file support.
 
 ```bash
+python process_schedules.py --all --sync --strict --report report.json --summary-file summary.md
 python process_schedules.py --faculty uclm/esi --sync --strict
 python process_schedules.py --faculty uclm/esi --sync --strict --force
 python process_schedules.py --faculty uclm/esi --strict --fixture path/to/local.json --dist-dir scratch-dist
-python process_schedules.py --faculty uclm/esi --index-only
-python schedules/script/notify_fcm.py --dry-run
+python process_schedules.py --all --index-only --report index-report.json
+python process_schedules.py --faculty uclm/esi --index-only --remove-period 2C
+python schedules/script/notify_fcm.py --report report.json --dry-run
+python schedules/script/notify_fcm.py --faculty uclm/esi --dry-run
 python -m unittest discover -s schedules/script -p "test_*.py"
 ```
 
-A successful HTTP check with unchanged content reprocesses the cached input so
-code, configuration, and mapping edits take effect. ESI keeps its input
-`schedules/input/schedules.json` and metadata `schedules/input/esi_meta.json`
-(`url`, `etag`, `last_modified`, `sha256`). Strict mode reports unresolved
-subject and professor mappings before changing public files. Source and parse
-errors exit nonzero. A successful download can update the cache before parsing.
-Classroom names pass through after ESI-specific cleanup.
+- A successful HTTP check with unchanged content reprocesses the cached input so
+  code, configuration, and mapping edits take effect.
+- Multi-faculty runs stage each faculty independently. Valid faculties publish
+  even if another faculty fails; failed faculties keep their last valid files,
+  and initial failures never add empty catalog entries.
+- Exit codes: `0` (all succeeded), `2` (partial success: valid faculties
+  published, at least one failed), `1` (fatal/config error or all failed).
+- ESI keeps `schedules/input/schedules.json`, `schedules/input/esi_meta.json`,
+  and root paths `1C.json`/`2C.json` (`legacy_index=True`). New faculties use
+  nested paths via `default_period_path` (`<uni>/<fac>/<period>.json`).
+- Strict mode reports unresolved subject and professor mappings before changing
+  public files.
 
-## Wire Format
+## Wire Format & Publication Rules
 
-- `schedules/dist/{1C,2C}.json` contain flat `List<JsonFlatSlot>` arrays with
-  keys such as `hora_inicio`, `es_laboratorio`, and `grupo_practicas`.
+- `schedules/dist/{1C,2C}.json` (and `<uni>/<fac>/<period>.json` for new
+  faculties) contain flat `List<JsonFlatSlot>` arrays with keys such as
+  `hora_inicio`, `es_laboratorio`, and `grupo_practicas`.
 - `codigo` is the short identifier (for example `FunProg1`) and `asignatura`
   is the display name. Keep both through normalization and serialization.
 - `JsonScheduleParser` accepts flat arrays and legacy nested custom imports
   (`years[] → groups[] → matters[]`). The pipeline publishes flat arrays.
 - A published period ID must resolve to its declared index (1–8) in Android's
-  `TermCodeParser`. A missing period retains its existing file. An empty
-  period requires explicit configuration.
-- Hash the final bytes. ESI's catalog and legacy index preserve
-  `updatedTime` for unchanged hashes. Offline fixtures under
-  `schedules/script/fixtures/esi/` pin output, including stable tie order.
+  `TermCodeParser`. Missing source data retains the existing file. Removing a
+  previously published period requires explicit `removed_periods` on
+  `FacultySpec` or `--remove-period`; an empty period requires `allow_empty=True`.
+- Hashes cover the exact published bytes; unchanged hashes preserve
+  `updatedTime`. `--index-only` preserves unregistered/foreign catalog entries.
+- FCM dispatches only after a confirmed `git push` and only for faculties in
+  `changed_schedule_faculties` (raw/meta changes do not trigger FCM). Failed
+  FCM delivery never reverts pushed data; retry via `retry_fcm=true` in workflow
+  dispatch or `notify_fcm.py --faculty <uni/fac>`.
 
 ## ESI Rules
 
