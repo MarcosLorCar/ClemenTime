@@ -31,6 +31,7 @@ import com.marcoslorcar.clementime.utils.ScheduleDiffChecker
 import com.marcoslorcar.clementime.utils.SlotDiff
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
 import java.util.concurrent.TimeUnit
@@ -64,8 +65,7 @@ class ScheduleUpdateWorker @AssistedInject constructor(
                 context = context,
                 settingsRepository = settingsRepository,
                 importRepository = importRepository,
-                apiService = apiService,
-                ignoreInterval = true
+                apiService = apiService
             )
 
             if (syncResult.diffs.isNotEmpty()) {
@@ -89,6 +89,8 @@ class ScheduleUpdateWorker @AssistedInject constructor(
             }
 
             Result.success()
+        } catch (e: CancellationException) {
+            throw e
         } catch (_: Exception) {
             Result.failure()
         }
@@ -122,46 +124,32 @@ class ScheduleUpdateWorker @AssistedInject constructor(
             )
         }
 
-        /** Applies a user-chosen interval in minutes or hours, restarting the period immediately. */
-        fun schedulePeriodicWork(context: Context, intervalValue: Int) {
-            enqueuePeriodic(context, intervalValue, ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE)
-        }
-
         /**
-         * Re-arms periodic work on app start. Uses KEEP rather than CANCEL_AND_REENQUEUE:
-         * restarting the period on every launch would mean a frequently-opened app never
-         * lets the interval elapse, so the worker would never run.
+         * Re-arms periodic fallback work on app start or when FCM is unavailable.
+         * Uses KEEP rather than CANCEL_AND_REENQUEUE so frequent launches do not reset the interval.
          */
-        fun ensurePeriodicWorkScheduled(context: Context, intervalValue: Int) {
-            enqueuePeriodic(context, intervalValue, ExistingPeriodicWorkPolicy.KEEP)
-        }
-
-        private fun enqueuePeriodic(
-            context: Context,
-            intervalValue: Int,
-            policy: ExistingPeriodicWorkPolicy
-        ) {
+        fun ensurePeriodicWorkScheduled(context: Context, intervalMinutes: Int) {
             val workManager = WorkManager.getInstance(context)
-            val minutes = when {
-                intervalValue <= 0 -> 0
-                intervalValue == 15 -> 15
-                intervalValue <= 24 -> intervalValue * 60
-                else -> intervalValue
-            }
-
-            if (minutes <= 0) {
+            if (intervalMinutes <= 0) {
                 workManager.cancelUniqueWork(UNIQUE_WORK_NAME)
             } else {
                 val constraints = Constraints.Builder()
                     .setRequiredNetworkType(NetworkType.CONNECTED)
                     .build()
 
-                val request = PeriodicWorkRequestBuilder<ScheduleUpdateWorker>(minutes.toLong(), TimeUnit.MINUTES)
+                val request = PeriodicWorkRequestBuilder<ScheduleUpdateWorker>(
+                    intervalMinutes.toLong(),
+                    TimeUnit.MINUTES
+                )
                     .setConstraints(constraints)
                     .addTag(WORK_TAG)
                     .build()
 
-                workManager.enqueueUniquePeriodicWork(UNIQUE_WORK_NAME, policy, request)
+                workManager.enqueueUniquePeriodicWork(
+                    UNIQUE_WORK_NAME,
+                    ExistingPeriodicWorkPolicy.KEEP,
+                    request
+                )
             }
         }
 
@@ -173,16 +161,10 @@ class ScheduleUpdateWorker @AssistedInject constructor(
             context: Context,
             settingsRepository: SettingsRepository,
             importRepository: ImportRepository,
-            apiService: GitHubScheduleApiService?,
-            ignoreInterval: Boolean = false
+            apiService: GitHubScheduleApiService?
         ): SyncResult {
             val syncMode = settingsRepository.syncModeFlow.first()
             if (syncMode == com.marcoslorcar.clementime.data.SyncMode.OFFLINE) return SyncResult()
-
-            if (!ignoreInterval) {
-                val intervalMinutes = settingsRepository.autoUpdateIntervalMinutesFlow.first()
-                if (intervalMinutes <= 0) return SyncResult()
-            }
 
             val currentSemester = settingsRepository.currentSemesterFlow.first()
             val universityId = settingsRepository.selectedUniversityIdFlow.first()
@@ -360,10 +342,10 @@ class ScheduleUpdateWorker @AssistedInject constructor(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val channel = NotificationChannel(
                     CHANNEL_ID,
-                    context.getString(R.string.auto_update_interval_title),
+                    context.getString(R.string.schedule_updates_channel_name),
                     NotificationManager.IMPORTANCE_DEFAULT
                 ).apply {
-                    description = "Notifications for automatic schedule updates"
+                    description = context.getString(R.string.schedule_updates_channel_desc)
                 }
                 notificationManager.createNotificationChannel(channel)
             }

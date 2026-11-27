@@ -96,10 +96,10 @@ class ScheduleDiffCheckerTest {
         val diff = diffs.first()
         assertEquals("FunProg1", diff.subjectCode)
         assertEquals(DiffType.MODIFIED, diff.changeType)
-        assertNotNull(diff.oldDetail)
-        assertNotNull(diff.newDetail)
-        assertTrue(diff.oldDetail!!.contains("A1.1"))
-        assertTrue(diff.newDetail!!.contains("A1.2"))
+        assertNotNull(diff.oldSlot)
+        assertNotNull(diff.newSlot)
+        assertEquals("A1.1", diff.oldSlot?.classroom)
+        assertEquals("A1.2", diff.newSlot?.classroom)
     }
 
     @Test
@@ -138,8 +138,10 @@ class ScheduleDiffCheckerTest {
         val diff = diffs.first()
         assertEquals("FunProg1", diff.subjectCode)
         assertEquals(DiffType.MODIFIED, diff.changeType)
-        assertTrue(diff.oldDetail!!.contains("08:30 - 10:00"))
-        assertTrue(diff.newDetail!!.contains("09:00 - 10:30"))
+        assertEquals(LocalTime.of(8, 30), diff.oldSlot?.startTime)
+        assertEquals(LocalTime.of(10, 0), diff.oldSlot?.endTime)
+        assertEquals(LocalTime.of(9, 0), diff.newSlot?.startTime)
+        assertEquals(LocalTime.of(10, 30), diff.newSlot?.endTime)
     }
 
     @Test
@@ -185,9 +187,9 @@ class ScheduleDiffCheckerTest {
         assertEquals(1, diffs.size)
         val diff = diffs.first()
         assertEquals(DiffType.ADDED, diff.changeType)
-        assertNull(diff.oldDetail)
-        assertNotNull(diff.newDetail)
-        assertTrue(diff.newDetail!!.contains("Miércoles"))
+        assertNull(diff.oldSlot)
+        assertNotNull(diff.newSlot)
+        assertEquals(DayOfWeek.WEDNESDAY, diff.newSlot?.dayOfWeek)
     }
 
     @Test
@@ -232,9 +234,9 @@ class ScheduleDiffCheckerTest {
         assertEquals(1, diffs.size)
         val diff = diffs.first()
         assertEquals(DiffType.REMOVED, diff.changeType)
-        assertNotNull(diff.oldDetail)
-        assertNull(diff.newDetail)
-        assertTrue(diff.oldDetail!!.contains("Miércoles"))
+        assertNotNull(diff.oldSlot)
+        assertNull(diff.newSlot)
+        assertEquals(DayOfWeek.WEDNESDAY, diff.oldSlot?.dayOfWeek)
     }
 
     @Test
@@ -345,7 +347,7 @@ class ScheduleDiffCheckerTest {
 
         assertEquals(1, diffs.size)
         assertEquals("FunProg1", diffs.first().subjectCode)
-        assertTrue(diffs.first().newDetail!!.contains("A2.4"))
+        assertEquals("A2.4", diffs.first().newSlot?.classroom)
     }
 
     @Test
@@ -393,8 +395,8 @@ class ScheduleDiffCheckerTest {
 
         assertEquals(1, diffs.size)
         assertEquals(DiffType.MODIFIED, diffs.first().changeType)
-        assertTrue(diffs.first().oldDetail!!.contains("B1.1"))
-        assertTrue(diffs.first().newDetail!!.contains("B2.5"))
+        assertEquals("B1.1", diffs.first().oldSlot?.classroom)
+        assertEquals("B2.5", diffs.first().newSlot?.classroom)
     }
 
     @Test
@@ -468,5 +470,30 @@ class ScheduleDiffCheckerTest {
         val afterLab = afterSlots.first { it.second.dayOfWeek == DayOfWeek.THURSDAY }
         assertEquals(EntryType.THEORY, afterTheory.second.entryType)
         assertEquals(EntryType.LAB, afterLab.second.entryType)
+    }
+
+    @Test
+    fun `formatDiffSlotDetail formats weekday and metadata in English and Spanish`() {
+        val snapshot = DiffSlotSnapshot(
+            dayOfWeek = DayOfWeek.WEDNESDAY,
+            startTime = LocalTime.of(8, 30),
+            endTime = LocalTime.of(10, 0),
+            classroom = "A1.1",
+            professor = "Prof. Ada"
+        )
+        val en = com.marcoslorcar.clementime.ui.screens.scheduleimport.formatDiffSlotDetail(
+            snapshot = snapshot,
+            locale = java.util.Locale.ENGLISH,
+            roomFormatted = "Room: A1.1",
+            profFormatted = "Prof: Prof. Ada"
+        )
+        val es = com.marcoslorcar.clementime.ui.screens.scheduleimport.formatDiffSlotDetail(
+            snapshot = snapshot,
+            locale = java.util.Locale.forLanguageTag("es"),
+            roomFormatted = "Aula: A1.1",
+            profFormatted = "Prof: Prof. Ada"
+        )
+        assertEquals("Wednesday 08:30 - 10:00 (Room: A1.1, Prof: Prof. Ada)", en)
+        assertEquals("Miércoles 08:30 - 10:00 (Aula: A1.1, Prof: Prof. Ada)", es)
     }
 }

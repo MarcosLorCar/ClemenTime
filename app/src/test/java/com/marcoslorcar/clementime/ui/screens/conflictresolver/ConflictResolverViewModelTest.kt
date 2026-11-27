@@ -2,15 +2,12 @@ package com.marcoslorcar.clementime.ui.screens.conflictresolver
 
 import com.marcoslorcar.clementime.data.ClassSlot
 import com.marcoslorcar.clementime.data.EntryType
-import com.marcoslorcar.clementime.data.ScheduleDao
 import com.marcoslorcar.clementime.data.Subject
 import com.marcoslorcar.clementime.data.SubjectWithSlots
 import com.marcoslorcar.clementime.data.SettingsRepository
+import com.marcoslorcar.clementime.testing.FakeScheduleDao
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -24,45 +21,17 @@ import org.junit.Test
 import java.time.DayOfWeek
 import java.time.LocalTime
 
-class ConflictResolverViewModelTestFakeDao : ScheduleDao {
-    val subjectsFlow = MutableStateFlow<List<SubjectWithSlots>>(emptyList())
-    var updateSelectedLabGroupsCalledWith: Map<Long, String?>? = null
-
-    override fun getAllSubjectsWithSlots(): Flow<List<SubjectWithSlots>> = subjectsFlow
-    override fun getAllSubjectsWithSlotsBySemester(semester: Int): Flow<List<SubjectWithSlots>> = subjectsFlow
-    override fun getActiveSubjectsWithSlotsBySemester(semester: Int): Flow<List<SubjectWithSlots>> = flowOf(emptyList())
-    override fun getSubjectWithSlotsById(subjectId: Long): Flow<SubjectWithSlots?> = flowOf(null)
-    override suspend fun updateSubjectActiveStatus(subjectId: Long, isActive: Boolean) {}
-    override suspend fun updateSelectedLabGroup(subjectId: Long, labGroup: String?) {}
-    override suspend fun updateSelectedLabGroups(selections: Map<Long, String?>) {
-        updateSelectedLabGroupsCalledWith = selections
-    }
-    override suspend fun insertSubject(subject: Subject): Long = 1L
-    override suspend fun updateSubject(subject: Subject) {}
-    override suspend fun deleteSubjectById(subjectId: Long) {}
-    override suspend fun insertSlot(slot: ClassSlot): Long = 1L
-    override suspend fun insertSlots(slots: List<ClassSlot>) {}
-    override suspend fun updateSlot(slot: ClassSlot) {}
-    override suspend fun updateSlotIgnoredStatus(slotId: Long, isIgnored: Boolean) {}
-    override suspend fun deleteSlot(slot: ClassSlot) {}
-    override suspend fun deleteSlotById(slotId: Long) {}
-    override suspend fun deleteSlotsForSubject(subjectId: Long) {}
-    override suspend fun deleteAllSubjects() {}
-    override suspend fun deleteSubjectsByIds(subjectIds: List<Long>) {}
-    override suspend fun updateSubjectsActiveStatus(subjectIds: List<Long>, isActive: Boolean) {}
-}
-
 @OptIn(ExperimentalCoroutinesApi::class)
 class ConflictResolverViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
-    private lateinit var fakeDao: ConflictResolverViewModelTestFakeDao
+    private lateinit var fakeDao: FakeScheduleDao
     private lateinit var fakeSettingsRepository: SettingsRepository
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
-        fakeDao = ConflictResolverViewModelTestFakeDao()
+        fakeDao = FakeScheduleDao()
         fakeSettingsRepository = SettingsRepository(context = null)
     }
 

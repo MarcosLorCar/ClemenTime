@@ -2,6 +2,7 @@ package com.marcoslorcar.clementime.data
 
 import android.content.Context
 import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -11,7 +12,9 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.marcoslorcar.clementime.BuildConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
@@ -48,8 +51,9 @@ open class SettingsRepository @Inject constructor(
     private val dayStartMinuteKey = intPreferencesKey("day_start_minute")
     private val dayEndHourKey = intPreferencesKey("day_end_hour")
     private val dayEndMinuteKey = intPreferencesKey("day_end_minute")
-    private val autoUpdateIntervalHoursKey = intPreferencesKey("auto_update_interval_hours")
-    private val autoUpdateIntervalMinutesKey = intPreferencesKey("auto_update_interval_minutes")
+    // Legacy v1.3.3 keys retained read-only for one-time SyncMode migration in syncModeFlow.
+    private val legacyAutoUpdateIntervalHoursKey = intPreferencesKey("auto_update_interval_hours")
+    private val legacyAutoUpdateIntervalMinutesKey = intPreferencesKey("auto_update_interval_minutes")
     private val lastScheduleSyncTimestampKey = longPreferencesKey("last_schedule_sync_timestamp")
     private val selectedUniversityIdKey = stringPreferencesKey("selected_university_id")
     private val selectedFacultyIdKey = stringPreferencesKey("selected_faculty_id")
@@ -58,266 +62,122 @@ open class SettingsRepository @Inject constructor(
     private val selectedFcmTopicPrefixKey = stringPreferencesKey("selected_fcm_topic_prefix")
     private val syncModeKey = stringPreferencesKey("sync_mode")
     private val subscribedFcmTopicKey = stringPreferencesKey("subscribed_fcm_topic")
+
     private fun lastKnownScheduleHashKey(semester: Int) = stringPreferencesKey("last_known_schedule_hash_$semester")
     private fun lastNotifiedScheduleHashKey(semester: Int) = stringPreferencesKey("last_notified_schedule_hash_$semester")
     private fun lastRemoteSubjectHashesKey(semester: Int) = stringPreferencesKey("last_remote_subject_hashes_$semester")
 
+    @Suppress("TooGenericExceptionCaught")
+    private fun <T> readPreference(
+        defaultValue: T,
+        mapper: (Preferences) -> T
+    ): Flow<T> = try {
+        context?.dataStore?.data?.map(mapper) ?: flowOf(defaultValue)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        // Fallback to default in unit tests or headless environments without Android DataStore.
+        flowOf(defaultValue)
+    }
+
+    private fun <T> readPreference(key: Preferences.Key<T>, defaultValue: T): Flow<T> =
+        readPreference(defaultValue) { preferences -> preferences[key] ?: defaultValue }
+
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun editPreferences(block: (MutablePreferences) -> Unit) {
+        try {
+            context?.dataStore?.edit(block)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // Gracefully ignore DataStore write failures in headless/test environments.
+        }
+    }
+
+    private suspend fun <T> writePreference(key: Preferences.Key<T>, value: T) {
+        editPreferences { preferences -> preferences[key] = value }
+    }
 
     open val themeFlow: Flow<String>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                preferences[themeKey] ?: "system"
-            } ?: kotlinx.coroutines.flow.flowOf("system")
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf("system")
-        }
-
+        get() = readPreference(themeKey, "system")
 
     open val scrollableTabsFlow: Flow<Boolean>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                preferences[scrollableTabsKey] ?: false
-            } ?: kotlinx.coroutines.flow.flowOf(false)
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(false)
-        }
-
+        get() = readPreference(scrollableTabsKey, false)
 
     open val showNowLineFlow: Flow<Boolean>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                preferences[showNowLineKey] ?: true
-            } ?: kotlinx.coroutines.flow.flowOf(true)
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(true)
-        }
-
+        get() = readPreference(showNowLineKey, true)
 
     open val nowLineStyleFlow: Flow<String>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                preferences[nowLineStyleKey] ?: "discrete"
-            } ?: kotlinx.coroutines.flow.flowOf("discrete")
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf("discrete")
-        }
-
+        get() = readPreference(nowLineStyleKey, "discrete")
 
     open val highContrastFlow: Flow<Boolean>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                preferences[highContrastKey] ?: false
-            } ?: kotlinx.coroutines.flow.flowOf(false)
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(false)
-        }
-
+        get() = readPreference(highContrastKey, false)
 
     open val selectedThemeFlow: Flow<String>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                preferences[selectedThemeKey] ?: "clementine"
-            } ?: kotlinx.coroutines.flow.flowOf("clementine")
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf("clementine")
-        }
-
+        get() = readPreference(selectedThemeKey, "clementine")
 
     open val githubRepoBaseUrlFlow: Flow<String>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                preferences[githubRepoBaseUrlKey] ?: DEFAULT_GITHUB_REPO_BASE_URL
-            } ?: kotlinx.coroutines.flow.flowOf(DEFAULT_GITHUB_REPO_BASE_URL)
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(DEFAULT_GITHUB_REPO_BASE_URL)
-        }
-
+        get() = readPreference(githubRepoBaseUrlKey, DEFAULT_GITHUB_REPO_BASE_URL)
 
     open val isOnboardingCompletedFlow: Flow<Boolean>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                preferences[isOnboardingCompletedKey] ?: false
-            } ?: kotlinx.coroutines.flow.flowOf(false)
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(false)
-        }
-
+        get() = readPreference(isOnboardingCompletedKey, false)
 
     open val onboardingTooltipsEnabledFlow: Flow<Boolean>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                preferences[onboardingTooltipsEnabledKey] ?: true
-            } ?: kotlinx.coroutines.flow.flowOf(true)
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(true)
-        }
-
+        get() = readPreference(onboardingTooltipsEnabledKey, true)
 
     open val hasSeenImportConflictTooltipFlow: Flow<Boolean>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                preferences[hasSeenImportConflictTooltipKey] ?: false
-            } ?: kotlinx.coroutines.flow.flowOf(false)
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(false)
-        }
-
+        get() = readPreference(hasSeenImportConflictTooltipKey, false)
 
     open val hasSeenOptimizerTooltipFlow: Flow<Boolean>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                preferences[hasSeenOptimizerTooltipKey] ?: false
-            } ?: kotlinx.coroutines.flow.flowOf(false)
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(false)
-        }
-
+        get() = readPreference(hasSeenOptimizerTooltipKey, false)
 
     open val hasSeenResolverPrioritiesTooltipFlow: Flow<Boolean>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                preferences[hasSeenResolverPrioritiesTooltipKey] ?: false
-            } ?: kotlinx.coroutines.flow.flowOf(false)
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(false)
-        }
-
+        get() = readPreference(hasSeenResolverPrioritiesTooltipKey, false)
 
     open val hasSeenResolverApplyTooltipFlow: Flow<Boolean>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                preferences[hasSeenResolverApplyTooltipKey] ?: false
-            } ?: kotlinx.coroutines.flow.flowOf(false)
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(false)
-        }
-
+        get() = readPreference(hasSeenResolverApplyTooltipKey, false)
 
     open val hasSeenAddSlotTooltipFlow: Flow<Boolean>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                preferences[hasSeenAddSlotTooltipKey] ?: false
-            } ?: kotlinx.coroutines.flow.flowOf(false)
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(false)
-        }
+        get() = readPreference(hasSeenAddSlotTooltipKey, false)
 
     open val hasSeenImportPreviewTooltipFlow: Flow<Boolean>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                preferences[hasSeenImportPreviewTooltipKey] ?: false
-            } ?: kotlinx.coroutines.flow.flowOf(false)
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(false)
-        }
+        get() = readPreference(hasSeenImportPreviewTooltipKey, false)
 
     open val hasSeenLabSelectionTooltipFlow: Flow<Boolean>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                preferences[hasSeenLabSelectionTooltipKey] ?: false
-            } ?: kotlinx.coroutines.flow.flowOf(false)
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(false)
-        }
+        get() = readPreference(hasSeenLabSelectionTooltipKey, false)
 
     open val currentSemesterFlow: Flow<Int>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                preferences[currentSemesterKey] ?: 1
-            } ?: kotlinx.coroutines.flow.flowOf(1)
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(1)
-        }
+        get() = readPreference(currentSemesterKey, 1)
 
     open val periodConfigFlow: Flow<PeriodConfig>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                val type = preferences[periodTypeKey]?.let { raw ->
-                    runCatching { PeriodType.valueOf(raw) }.getOrNull()
-                } ?: PeriodType.SEMESTERS
-                val count = preferences[periodCountKey] ?: type.defaultCount
-                PeriodConfig.normalized(type, count)
-            } ?: kotlinx.coroutines.flow.flowOf(PeriodConfig.DEFAULT)
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(PeriodConfig.DEFAULT)
+        get() = readPreference(PeriodConfig.DEFAULT) { preferences ->
+            val type = preferences[periodTypeKey]?.let { raw ->
+                runCatching { PeriodType.valueOf(raw) }.getOrNull()
+            } ?: PeriodType.SEMESTERS
+            val count = preferences[periodCountKey] ?: type.defaultCount
+            PeriodConfig.normalized(type, count)
         }
 
     open val hasManuallyChangedSemesterFlow: Flow<Boolean>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                preferences[hasManuallyChangedSemesterKey] ?: false
-            } ?: kotlinx.coroutines.flow.flowOf(false)
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(false)
-        }
+        get() = readPreference(hasManuallyChangedSemesterKey, false)
 
     open val wasSemesterAutoChangedFlow: Flow<Boolean>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                preferences[wasSemesterAutoChangedKey] ?: false
-            } ?: kotlinx.coroutines.flow.flowOf(false)
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(false)
-        }
+        get() = readPreference(wasSemesterAutoChangedKey, false)
 
     open val dayStartHourFlow: Flow<Int>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                preferences[dayStartHourKey] ?: 8
-            } ?: kotlinx.coroutines.flow.flowOf(8)
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(8)
-        }
+        get() = readPreference(dayStartHourKey, 8)
 
     open val dayStartMinuteFlow: Flow<Int>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                preferences[dayStartMinuteKey] ?: 30
-            } ?: kotlinx.coroutines.flow.flowOf(30)
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(30)
-        }
+        get() = readPreference(dayStartMinuteKey, 30)
 
     open val dayEndHourFlow: Flow<Int>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                preferences[dayEndHourKey] ?: 21
-            } ?: kotlinx.coroutines.flow.flowOf(21)
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(21)
-        }
+        get() = readPreference(dayEndHourKey, 21)
 
     open val dayEndMinuteFlow: Flow<Int>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                preferences[dayEndMinuteKey] ?: 30
-            } ?: kotlinx.coroutines.flow.flowOf(30)
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(30)
-        }
+        get() = readPreference(dayEndMinuteKey, 30)
 
-    open val autoUpdateIntervalMinutesFlow: Flow<Int>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                preferences[autoUpdateIntervalMinutesKey]
-                    ?: ((preferences[autoUpdateIntervalHoursKey] ?: DEFAULT_AUTO_UPDATE_INTERVAL_HOURS) * 60)
-            } ?: kotlinx.coroutines.flow.flowOf(DEFAULT_AUTO_UPDATE_INTERVAL_HOURS * 60)
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(DEFAULT_AUTO_UPDATE_INTERVAL_HOURS * 60)
-        }
-
-    open val autoUpdateIntervalHoursFlow: Flow<Int>
-        get() = autoUpdateIntervalMinutesFlow.map { minutes ->
-            if (minutes in 1..59) minutes else minutes / 60
-        }
-
-    open fun getLastKnownScheduleHashFlow(semester: Int): Flow<String> = try {
-        context?.dataStore?.data?.map { preferences ->
-            preferences[lastKnownScheduleHashKey(semester)] ?: ""
-        } ?: kotlinx.coroutines.flow.flowOf("")
-    } catch (_: Throwable) {
-        kotlinx.coroutines.flow.flowOf("")
-    }
+    open fun getLastKnownScheduleHashFlow(semester: Int): Flow<String> =
+        readPreference(lastKnownScheduleHashKey(semester), "")
 
     /**
      * The remote hash we have already posted a notification for. Kept separate from
@@ -325,369 +185,173 @@ open class SettingsRepository @Inject constructor(
      * ignored: the diff sheet re-runs the sync to repopulate itself, so marking a version
      * "seen" on notify would leave the sheet empty when the user taps through.
      */
-    open fun getLastNotifiedScheduleHashFlow(semester: Int): Flow<String> = try {
-        context?.dataStore?.data?.map { preferences ->
-            preferences[lastNotifiedScheduleHashKey(semester)] ?: ""
-        } ?: kotlinx.coroutines.flow.flowOf("")
-    } catch (_: Throwable) {
-        kotlinx.coroutines.flow.flowOf("")
-    }
+    open fun getLastNotifiedScheduleHashFlow(semester: Int): Flow<String> =
+        readPreference(lastNotifiedScheduleHashKey(semester), "")
 
     open val lastScheduleSyncTimestampFlow: Flow<Long>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                preferences[lastScheduleSyncTimestampKey] ?: 0L
-            } ?: kotlinx.coroutines.flow.flowOf(0L)
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(0L)
-        }
+        get() = readPreference(lastScheduleSyncTimestampKey, 0L)
 
+    open suspend fun setThemeMode(theme: String) = writePreference(themeKey, theme)
 
-    open suspend fun setThemeMode(theme: String) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[themeKey] = theme
-            }
-        } catch (_: Throwable) {}
-    }
+    open suspend fun setGithubRepoBaseUrl(baseUrl: String) = writePreference(githubRepoBaseUrlKey, baseUrl)
 
+    open suspend fun setScrollableTabs(scrollable: Boolean) = writePreference(scrollableTabsKey, scrollable)
 
-    open suspend fun setGithubRepoBaseUrl(baseUrl: String) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[githubRepoBaseUrlKey] = baseUrl
-            }
-        } catch (_: Throwable) {}
-    }
+    open suspend fun setShowNowLine(show: Boolean) = writePreference(showNowLineKey, show)
 
+    open suspend fun setNowLineStyle(style: String) = writePreference(nowLineStyleKey, style)
 
-    open suspend fun setScrollableTabs(scrollable: Boolean) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[scrollableTabsKey] = scrollable
-            }
-        } catch (_: Throwable) {}
-    }
+    open suspend fun setHighContrast(enabled: Boolean) = writePreference(highContrastKey, enabled)
 
+    open suspend fun setSelectedTheme(theme: String) = writePreference(selectedThemeKey, theme)
 
-    open suspend fun setShowNowLine(show: Boolean) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[showNowLineKey] = show
-            }
-        } catch (_: Throwable) {}
-    }
+    open suspend fun setOnboardingCompleted(completed: Boolean) =
+        writePreference(isOnboardingCompletedKey, completed)
 
+    open suspend fun setOnboardingTooltipsEnabled(enabled: Boolean) =
+        writePreference(onboardingTooltipsEnabledKey, enabled)
 
-    open suspend fun setNowLineStyle(style: String) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[nowLineStyleKey] = style
-            }
-        } catch (_: Throwable) {}
-    }
+    open suspend fun setHasSeenImportConflictTooltip(seen: Boolean) =
+        writePreference(hasSeenImportConflictTooltipKey, seen)
 
+    open suspend fun setHasSeenOptimizerTooltip(seen: Boolean) =
+        writePreference(hasSeenOptimizerTooltipKey, seen)
 
-    open suspend fun setHighContrast(enabled: Boolean) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[highContrastKey] = enabled
-            }
-        } catch (_: Throwable) {}
-    }
+    open suspend fun setHasSeenResolverPrioritiesTooltip(seen: Boolean) =
+        writePreference(hasSeenResolverPrioritiesTooltipKey, seen)
 
+    open suspend fun setHasSeenResolverApplyTooltip(seen: Boolean) =
+        writePreference(hasSeenResolverApplyTooltipKey, seen)
 
-    open suspend fun setSelectedTheme(theme: String) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[selectedThemeKey] = theme
-            }
-        } catch (_: Throwable) {}
-    }
+    open suspend fun setHasSeenAddSlotTooltip(seen: Boolean) =
+        writePreference(hasSeenAddSlotTooltipKey, seen)
 
+    open suspend fun setHasSeenImportPreviewTooltip(seen: Boolean) =
+        writePreference(hasSeenImportPreviewTooltipKey, seen)
 
-    open suspend fun setOnboardingCompleted(completed: Boolean) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[isOnboardingCompletedKey] = completed
-            }
-        } catch (_: Throwable) {}
-    }
+    open suspend fun setHasSeenLabSelectionTooltip(seen: Boolean) =
+        writePreference(hasSeenLabSelectionTooltipKey, seen)
 
-
-    open suspend fun setOnboardingTooltipsEnabled(enabled: Boolean) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[onboardingTooltipsEnabledKey] = enabled
-            }
-        } catch (_: Throwable) {}
-    }
-
-
-    open suspend fun setHasSeenImportConflictTooltip(seen: Boolean) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[hasSeenImportConflictTooltipKey] = seen
-            }
-        } catch (_: Throwable) {}
-    }
-
-
-    open suspend fun setHasSeenOptimizerTooltip(seen: Boolean) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[hasSeenOptimizerTooltipKey] = seen
-            }
-        } catch (_: Throwable) {}
-    }
-
-
-    open suspend fun setHasSeenResolverPrioritiesTooltip(seen: Boolean) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[hasSeenResolverPrioritiesTooltipKey] = seen
-            }
-        } catch (_: Throwable) {}
-    }
-
-
-    open suspend fun setHasSeenResolverApplyTooltip(seen: Boolean) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[hasSeenResolverApplyTooltipKey] = seen
-            }
-        } catch (_: Throwable) {}
-    }
-
-
-    open suspend fun setHasSeenAddSlotTooltip(seen: Boolean) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[hasSeenAddSlotTooltipKey] = seen
-            }
-        } catch (_: Throwable) {}
-    }
-
-    open suspend fun setHasSeenImportPreviewTooltip(seen: Boolean) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[hasSeenImportPreviewTooltipKey] = seen
-            }
-        } catch (_: Throwable) {}
-    }
-
-    open suspend fun setHasSeenLabSelectionTooltip(seen: Boolean) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[hasSeenLabSelectionTooltipKey] = seen
-            }
-        } catch (_: Throwable) {}
-    }
-
-    open suspend fun setCurrentSemester(semester: Int) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[currentSemesterKey] = semester
-            }
-        } catch (_: Throwable) {}
-    }
+    open suspend fun setCurrentSemester(semester: Int) = writePreference(currentSemesterKey, semester)
 
     open suspend fun setPeriodConfig(config: PeriodConfig) {
         val normalized = PeriodConfig.normalized(config.type, config.count)
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[periodTypeKey] = normalized.type.name
-                preferences[periodCountKey] = normalized.count
-                val current = preferences[currentSemesterKey] ?: 1
-                if (current > normalized.count || current < PeriodConfig.MIN_PERIOD_COUNT) {
-                    preferences[currentSemesterKey] = current.coerceIn(PeriodConfig.MIN_PERIOD_COUNT, normalized.count)
-                }
+        editPreferences { preferences ->
+            preferences[periodTypeKey] = normalized.type.name
+            preferences[periodCountKey] = normalized.count
+            val current = preferences[currentSemesterKey] ?: 1
+            if (current > normalized.count || current < PeriodConfig.MIN_PERIOD_COUNT) {
+                preferences[currentSemesterKey] = current.coerceIn(PeriodConfig.MIN_PERIOD_COUNT, normalized.count)
             }
-        } catch (_: Throwable) {}
+        }
     }
 
-    open suspend fun setHasManuallyChangedSemester(hasChanged: Boolean) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[hasManuallyChangedSemesterKey] = hasChanged
-            }
-        } catch (_: Throwable) {}
+    open suspend fun setHasManuallyChangedSemester(hasChanged: Boolean) =
+        writePreference(hasManuallyChangedSemesterKey, hasChanged)
+
+    open suspend fun setWasSemesterAutoChanged(autoChanged: Boolean) =
+        writePreference(wasSemesterAutoChangedKey, autoChanged)
+
+    open suspend fun setDayStartTime(hour: Int, minute: Int) = editPreferences { preferences ->
+        preferences[dayStartHourKey] = hour
+        preferences[dayStartMinuteKey] = minute
     }
 
-    open suspend fun setWasSemesterAutoChanged(autoChanged: Boolean) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[wasSemesterAutoChangedKey] = autoChanged
-            }
-        } catch (_: Throwable) {}
+    open suspend fun setDayEndTime(hour: Int, minute: Int) = editPreferences { preferences ->
+        preferences[dayEndHourKey] = hour
+        preferences[dayEndMinuteKey] = minute
     }
 
-    open suspend fun setDayStartTime(hour: Int, minute: Int) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[dayStartHourKey] = hour
-                preferences[dayStartMinuteKey] = minute
-            }
-        } catch (_: Throwable) {}
+    open suspend fun resetScheduleHashes() = editPreferences { preferences ->
+        for (semester in PeriodConfig.MIN_PERIOD_COUNT..PeriodConfig.MAX_PERIOD_COUNT) {
+            preferences.remove(lastKnownScheduleHashKey(semester))
+            preferences.remove(lastNotifiedScheduleHashKey(semester))
+            preferences.remove(lastRemoteSubjectHashesKey(semester))
+        }
+        preferences.remove(lastScheduleSyncTimestampKey)
     }
 
-    open suspend fun setDayEndTime(hour: Int, minute: Int) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[dayEndHourKey] = hour
-                preferences[dayEndMinuteKey] = minute
-            }
-        } catch (_: Throwable) {}
+    open suspend fun resetOnboardingAndTooltips() = editPreferences { preferences ->
+        preferences.remove(isOnboardingCompletedKey)
+        preferences.remove(onboardingTooltipsEnabledKey)
+        preferences.remove(hasSeenImportConflictTooltipKey)
+        preferences.remove(hasSeenOptimizerTooltipKey)
+        preferences.remove(hasSeenResolverPrioritiesTooltipKey)
+        preferences.remove(hasSeenResolverApplyTooltipKey)
+        preferences.remove(hasSeenAddSlotTooltipKey)
+        preferences.remove(hasSeenImportPreviewTooltipKey)
+        preferences.remove(hasSeenLabSelectionTooltipKey)
     }
 
-    open suspend fun setAutoUpdateIntervalMinutes(minutes: Int) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[autoUpdateIntervalMinutesKey] = minutes
-                preferences[autoUpdateIntervalHoursKey] = if (minutes in 1..59) minutes else minutes / 60
-            }
-        } catch (_: Throwable) {}
-    }
+    open suspend fun setLastKnownScheduleHash(semester: Int, hash: String) =
+        writePreference(lastKnownScheduleHashKey(semester), hash)
 
-    open suspend fun setAutoUpdateIntervalHours(hours: Int) {
-        setAutoUpdateIntervalMinutes(hours * 60)
-    }
+    open suspend fun setLastNotifiedScheduleHash(semester: Int, hash: String) =
+        writePreference(lastNotifiedScheduleHashKey(semester), hash)
 
-    open suspend fun resetScheduleHashes() {
-        try {
-            context?.dataStore?.edit { preferences ->
-                for (semester in PeriodConfig.MIN_PERIOD_COUNT..PeriodConfig.MAX_PERIOD_COUNT) {
-                    preferences.remove(lastKnownScheduleHashKey(semester))
-                    preferences.remove(lastNotifiedScheduleHashKey(semester))
-                    preferences.remove(lastRemoteSubjectHashesKey(semester))
-                }
-                preferences.remove(lastScheduleSyncTimestampKey)
-            }
-        } catch (_: Throwable) {}
-    }
-
-    open suspend fun resetOnboardingAndTooltips() {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences.remove(isOnboardingCompletedKey)
-                preferences.remove(onboardingTooltipsEnabledKey)
-                preferences.remove(hasSeenImportConflictTooltipKey)
-                preferences.remove(hasSeenOptimizerTooltipKey)
-                preferences.remove(hasSeenResolverPrioritiesTooltipKey)
-                preferences.remove(hasSeenResolverApplyTooltipKey)
-                preferences.remove(hasSeenAddSlotTooltipKey)
-                preferences.remove(hasSeenImportPreviewTooltipKey)
-                preferences.remove(hasSeenLabSelectionTooltipKey)
-            }
-        } catch (_: Throwable) {}
-    }
-
-    open suspend fun setLastKnownScheduleHash(semester: Int, hash: String) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[lastKnownScheduleHashKey(semester)] = hash
-            }
-        } catch (_: Throwable) {}
-    }
-
-    open suspend fun setLastNotifiedScheduleHash(semester: Int, hash: String) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[lastNotifiedScheduleHashKey(semester)] = hash
-            }
-        } catch (_: Throwable) {}
-    }
-
-    open suspend fun setLastScheduleSyncTimestamp(timestamp: Long) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[lastScheduleSyncTimestampKey] = timestamp
-            }
-        } catch (_: Throwable) {}
-    }
+    open suspend fun setLastScheduleSyncTimestamp(timestamp: Long) =
+        writePreference(lastScheduleSyncTimestampKey, timestamp)
 
     open val selectedUniversityIdFlow: Flow<String>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                resolveSelectedUniversityId(
-                    storedUniversityId = preferences[selectedUniversityIdKey],
-                    legacyHash1 = preferences[lastKnownScheduleHashKey(1)],
-                    legacyHash2 = preferences[lastKnownScheduleHashKey(2)]
-                )
-            } ?: kotlinx.coroutines.flow.flowOf("")
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf("")
+        get() = readPreference("") { preferences ->
+            resolveSelectedUniversityId(
+                storedUniversityId = preferences[selectedUniversityIdKey],
+                legacyHash1 = preferences[lastKnownScheduleHashKey(1)],
+                legacyHash2 = preferences[lastKnownScheduleHashKey(2)]
+            )
         }
 
     open val selectedFacultyIdFlow: Flow<String>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                resolveSelectedFacultyId(
-                    storedFacultyId = preferences[selectedFacultyIdKey],
-                    legacyHash1 = preferences[lastKnownScheduleHashKey(1)],
-                    legacyHash2 = preferences[lastKnownScheduleHashKey(2)]
-                )
-            } ?: kotlinx.coroutines.flow.flowOf("")
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf("")
+        get() = readPreference("") { preferences ->
+            resolveSelectedFacultyId(
+                storedFacultyId = preferences[selectedFacultyIdKey],
+                legacyHash1 = preferences[lastKnownScheduleHashKey(1)],
+                legacyHash2 = preferences[lastKnownScheduleHashKey(2)]
+            )
         }
 
     open val selectedUniversityNameFlow: Flow<String>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                val storedName = preferences[selectedUniversityNameKey]
-                if (!storedName.isNullOrBlank()) {
-                    storedName
+        get() = readPreference("") { preferences ->
+            val storedName = preferences[selectedUniversityNameKey]
+            if (!storedName.isNullOrBlank()) {
+                storedName
+            } else {
+                val storedId = preferences[selectedUniversityIdKey]
+                val resolvedId = resolveSelectedUniversityId(
+                    storedUniversityId = storedId,
+                    legacyHash1 = preferences[lastKnownScheduleHashKey(1)],
+                    legacyHash2 = preferences[lastKnownScheduleHashKey(2)]
+                )
+                if (storedId.isNullOrBlank() && resolvedId == LEGACY_FALLBACK_UNIVERSITY_ID) {
+                    "UCLM"
                 } else {
-                    val storedId = preferences[selectedUniversityIdKey]
-                    val resolvedId = resolveSelectedUniversityId(
-                        storedUniversityId = storedId,
-                        legacyHash1 = preferences[lastKnownScheduleHashKey(1)],
-                        legacyHash2 = preferences[lastKnownScheduleHashKey(2)]
-                    )
-                    if (storedId.isNullOrBlank() && resolvedId == LEGACY_FALLBACK_UNIVERSITY_ID) {
-                        "UCLM"
-                    } else {
-                        storedName ?: ""
-                    }
+                    storedName ?: ""
                 }
-            } ?: kotlinx.coroutines.flow.flowOf("")
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf("")
+            }
         }
 
     open val selectedFacultyNameFlow: Flow<String>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                val storedName = preferences[selectedFacultyNameKey]
-                if (!storedName.isNullOrBlank()) {
-                    storedName
+        get() = readPreference("") { preferences ->
+            val storedName = preferences[selectedFacultyNameKey]
+            if (!storedName.isNullOrBlank()) {
+                storedName
+            } else {
+                val storedId = preferences[selectedFacultyIdKey]
+                val resolvedId = resolveSelectedFacultyId(
+                    storedFacultyId = storedId,
+                    legacyHash1 = preferences[lastKnownScheduleHashKey(1)],
+                    legacyHash2 = preferences[lastKnownScheduleHashKey(2)]
+                )
+                if (storedId.isNullOrBlank() && resolvedId == LEGACY_FALLBACK_FACULTY_ID) {
+                    "Escuela Superior de Informática (ESI)"
                 } else {
-                    val storedId = preferences[selectedFacultyIdKey]
-                    val resolvedId = resolveSelectedFacultyId(
-                        storedFacultyId = storedId,
-                        legacyHash1 = preferences[lastKnownScheduleHashKey(1)],
-                        legacyHash2 = preferences[lastKnownScheduleHashKey(2)]
-                    )
-                    if (storedId.isNullOrBlank() && resolvedId == LEGACY_FALLBACK_FACULTY_ID) {
-                        "Escuela Superior de Informática (ESI)"
-                    } else {
-                        storedName ?: ""
-                    }
+                    storedName ?: ""
                 }
-            } ?: kotlinx.coroutines.flow.flowOf("")
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf("")
+            }
         }
 
     open val selectedFcmTopicPrefixFlow: Flow<String>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                preferences[selectedFcmTopicPrefixKey] ?: ""
-            } ?: kotlinx.coroutines.flow.flowOf("")
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf("")
-        }
+        get() = readPreference(selectedFcmTopicPrefixKey, "")
 
     open suspend fun setSelectedFaculty(
         universityId: String,
@@ -695,97 +359,68 @@ open class SettingsRepository @Inject constructor(
         universityName: String? = null,
         facultyName: String? = null,
         fcmTopicPrefix: String? = null
-    ) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[selectedUniversityIdKey] = universityId.trim()
-                preferences[selectedFacultyIdKey] = facultyId.trim()
-                if (universityName.isNullOrBlank()) {
-                    preferences.remove(selectedUniversityNameKey)
-                } else {
-                    preferences[selectedUniversityNameKey] = universityName.trim()
-                }
-                if (facultyName.isNullOrBlank()) {
-                    preferences.remove(selectedFacultyNameKey)
-                } else {
-                    preferences[selectedFacultyNameKey] = facultyName.trim()
-                }
-                if (fcmTopicPrefix.isNullOrBlank()) {
-                    preferences.remove(selectedFcmTopicPrefixKey)
-                } else {
-                    preferences[selectedFcmTopicPrefixKey] = fcmTopicPrefix.trim()
-                }
-            }
-        } catch (_: Throwable) {}
+    ) = editPreferences { preferences ->
+        preferences[selectedUniversityIdKey] = universityId.trim()
+        preferences[selectedFacultyIdKey] = facultyId.trim()
+        if (universityName.isNullOrBlank()) {
+            preferences.remove(selectedUniversityNameKey)
+        } else {
+            preferences[selectedUniversityNameKey] = universityName.trim()
+        }
+        if (facultyName.isNullOrBlank()) {
+            preferences.remove(selectedFacultyNameKey)
+        } else {
+            preferences[selectedFacultyNameKey] = facultyName.trim()
+        }
+        if (fcmTopicPrefix.isNullOrBlank()) {
+            preferences.remove(selectedFcmTopicPrefixKey)
+        } else {
+            preferences[selectedFcmTopicPrefixKey] = fcmTopicPrefix.trim()
+        }
     }
 
     open val syncModeFlow: Flow<SyncMode>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                resolveLegacySyncMode(
-                    rawSyncMode = preferences[syncModeKey],
-                    explicitMinutes = preferences[autoUpdateIntervalMinutesKey],
-                    explicitHours = preferences[autoUpdateIntervalHoursKey]
-                )
-            } ?: kotlinx.coroutines.flow.flowOf(SyncMode.ONLINE)
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(SyncMode.ONLINE)
+        get() = readPreference(SyncMode.ONLINE) { preferences ->
+            resolveLegacySyncMode(
+                rawSyncMode = preferences[syncModeKey],
+                explicitMinutes = preferences[legacyAutoUpdateIntervalMinutesKey],
+                explicitHours = preferences[legacyAutoUpdateIntervalHoursKey]
+            )
         }
 
-    open suspend fun setSyncMode(mode: SyncMode) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                preferences[syncModeKey] = mode.name
-            }
-        } catch (_: Throwable) {}
-    }
+    open suspend fun setSyncMode(mode: SyncMode) = writePreference(syncModeKey, mode.name)
 
     open val subscribedFcmTopicFlow: Flow<String?>
-        get() = try {
-            context?.dataStore?.data?.map { preferences ->
-                preferences[subscribedFcmTopicKey]
-            } ?: kotlinx.coroutines.flow.flowOf(null)
-        } catch (_: Throwable) {
-            kotlinx.coroutines.flow.flowOf(null)
-        }
+        get() = readPreference<String?>(null) { preferences -> preferences[subscribedFcmTopicKey] }
 
-    open suspend fun setSubscribedFcmTopic(topic: String?) {
-        try {
-            context?.dataStore?.edit { preferences ->
-                if (topic.isNullOrBlank()) {
-                    preferences.remove(subscribedFcmTopicKey)
-                } else {
-                    preferences[subscribedFcmTopicKey] = topic
-                }
-            }
-        } catch (_: Throwable) {}
+    open suspend fun setSubscribedFcmTopic(topic: String?) = editPreferences { preferences ->
+        if (topic.isNullOrBlank()) {
+            preferences.remove(subscribedFcmTopicKey)
+        } else {
+            preferences[subscribedFcmTopicKey] = topic
+        }
     }
 
-    open fun getLastRemoteSubjectHashesFlow(semester: Int): Flow<Map<String, String>> = try {
-        context?.dataStore?.data?.map { preferences ->
+    open fun getLastRemoteSubjectHashesFlow(semester: Int): Flow<Map<String, String>> =
+        readPreference(emptyMap()) { preferences ->
             val raw = preferences[lastRemoteSubjectHashesKey(semester)]
             if (raw.isNullOrBlank()) {
                 emptyMap()
             } else {
                 runCatching { Json.decodeFromString<Map<String, String>>(raw) }.getOrDefault(emptyMap())
             }
-        } ?: kotlinx.coroutines.flow.flowOf(emptyMap())
-    } catch (_: Throwable) {
-        kotlinx.coroutines.flow.flowOf(emptyMap())
-    }
+        }
 
     open suspend fun setLastRemoteSubjectHashes(semester: Int, hashes: Map<String, String>) {
         if (hashes.isEmpty()) return
-        try {
-            context?.dataStore?.edit { preferences ->
-                val key = lastRemoteSubjectHashesKey(semester)
-                val existing = preferences[key]?.let { raw ->
-                    runCatching { Json.decodeFromString<Map<String, String>>(raw) }.getOrDefault(emptyMap())
-                } ?: emptyMap()
-                val merged = existing + hashes
-                preferences[key] = Json.encodeToString(merged)
-            }
-        } catch (_: Throwable) {}
+        editPreferences { preferences ->
+            val key = lastRemoteSubjectHashesKey(semester)
+            val existing = preferences[key]?.let { raw ->
+                runCatching { Json.decodeFromString<Map<String, String>>(raw) }.getOrDefault(emptyMap())
+            } ?: emptyMap()
+            val merged = existing + hashes
+            preferences[key] = Json.encodeToString(merged)
+        }
     }
 
     companion object {
@@ -815,20 +450,13 @@ open class SettingsRepository @Inject constructor(
             return if (hasLegacyHashes) LEGACY_FALLBACK_FACULTY_ID else ""
         }
 
-        /** Hours between background schedule checks. 0 disables them, which is the default. */
-        const val DEFAULT_AUTO_UPDATE_INTERVAL_HOURS = 0
-
         internal fun resolveLegacySyncMode(
             rawSyncMode: String?,
             explicitMinutes: Int?,
             explicitHours: Int?
         ): SyncMode {
             if (rawSyncMode != null) {
-                return try {
-                    SyncMode.valueOf(rawSyncMode)
-                } catch (_: Exception) {
-                    SyncMode.ONLINE
-                }
+                return runCatching { SyncMode.valueOf(rawSyncMode) }.getOrDefault(SyncMode.ONLINE)
             }
             val explicitlyDisabled = (explicitMinutes != null && explicitMinutes <= 0) ||
                 (explicitMinutes == null && explicitHours != null && explicitHours <= 0)
@@ -836,5 +464,3 @@ open class SettingsRepository @Inject constructor(
         }
     }
 }
-
-

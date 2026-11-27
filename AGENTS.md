@@ -32,13 +32,15 @@ Gradle (`./gradlew` on Linux/Bash, `.\gradlew` on PowerShell):
 ./gradlew testDebugUnitTest --tests "com.marcoslorcar.clementime.utils.ConflictSolverTest"  # single test
 ./gradlew test                                                                            # all unit tests (CI)
 ./gradlew assembleDebug                                                                   # debug APK
-./gradlew lint                                                                            # Android Lint
+./gradlew lint                                                                            # Android Lint (incl. UnusedResources)
+./gradlew detekt                                                                          # Kotlin static analysis (CI)
 ```
 
 Python schedule pipeline (`uv`, requires Python >= 3.11):
 
 ```bash
 uv sync
+ruff check .                                         # Python lint (CI)
 python process_schedules.py --check-esi              # check live ESI endpoint, process if updated
 python process_schedules.py                          # regenerate dist/{1C,2C}.json and index
 ```
@@ -68,10 +70,10 @@ python process_schedules.py                          # regenerate dist/{1C,2C}.j
 
 ### Testability Conventions (Do Not "Clean These Up")
 
-Unit tests use JUnit 4 + `kotlinx-coroutines-test` with **hand-written fake DAOs** (e.g. `FakeScheduleDaoForRepositoryTest`). There is no Robolectric and no mocking framework.
+Unit tests use JUnit 4 + `kotlinx-coroutines-test` with a **shared hand-written fake DAO** (`app/src/test/java/com/marcoslorcar/clementime/testing/FakeScheduleDao.kt`). There is no Robolectric and no mocking framework.
 - `SettingsRepository` is `open`, takes `@ApplicationContext Context?` (nullable), and wraps DataStore reads in try/catch returning default flows.
 - ViewModels take `@ApplicationContext private val context: Context? = null` and null-check before touching Android APIs.
-- Making these non-nullable or final breaks the test suite. Adding a `ScheduleDao` method requires updating every fake in `app/src/test`.
+- Making these non-nullable or final breaks the test suite. Adding a `ScheduleDao` method requires updating `FakeScheduleDao`.
 
 ### CI & Workflows
 

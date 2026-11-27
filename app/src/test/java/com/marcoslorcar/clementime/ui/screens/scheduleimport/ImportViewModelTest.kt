@@ -11,6 +11,7 @@ import com.marcoslorcar.clementime.data.importing.model.ScheduleJsonSchema
 import com.marcoslorcar.clementime.data.importing.model.SelectedSubject
 import com.marcoslorcar.clementime.data.importing.parser.JsonScheduleParser
 import com.marcoslorcar.clementime.data.importing.repository.ImportRepository
+import com.marcoslorcar.clementime.testing.FakeScheduleDao
 import com.marcoslorcar.clementime.ui.screens.scheduleimport.model.ConflictStatus
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -68,7 +69,7 @@ class ImportViewModelTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
-        mockRepository = ImportRepository(dao = FakeScheduleDaoForImport())
+        mockRepository = ImportRepository(dao = FakeScheduleDao())
     }
 
     @After
@@ -77,7 +78,7 @@ class ImportViewModelTest {
     }
 
     @Test
-    fun selectAllSubjects_selectsAllLevels() {
+    fun toggleAllSubjects_selectsAllLevelsWhenUnselected() {
         val viewModel = ImportViewModel(mockRepository, JsonScheduleParser(), null, fakeSettingsRepository)
 
         val stateField = ImportViewModel::class.java.getDeclaredField("_uiState")
@@ -90,9 +91,10 @@ class ImportViewModelTest {
             selectedFile = ImportFile("test_file", "Test Schedule")
         )
 
-        viewModel.selectAllSubjects()
+        val allLevels = listOf(selectedRoot, selectedYearCommon, selected1, selected2, selected3)
+        viewModel.toggleAllSubjects(allLevels)
         val currentSelection = (viewModel.uiState.value as ImportUiState.Selection).selectedSubjects
-        
+
         assertEquals(5, currentSelection.size)
         assertTrue(currentSelection.contains(selectedRoot))
         assertTrue(currentSelection.contains(selectedYearCommon))
@@ -474,27 +476,4 @@ private class RecordingSettingsRepositoryForImport(
     override suspend fun setLastKnownScheduleHash(semester: Int, hash: String) {
         events.add("setHash:$semester:$hash")
     }
-}
-
-class FakeScheduleDaoForImport : com.marcoslorcar.clementime.data.ScheduleDao {
-    override fun getAllSubjectsWithSlots() = kotlinx.coroutines.flow.flowOf(emptyList<com.marcoslorcar.clementime.data.SubjectWithSlots>())
-    override fun getAllSubjectsWithSlotsBySemester(semester: Int) = kotlinx.coroutines.flow.flowOf(emptyList<com.marcoslorcar.clementime.data.SubjectWithSlots>())
-    override fun getActiveSubjectsWithSlotsBySemester(semester: Int) = kotlinx.coroutines.flow.flowOf(emptyList<com.marcoslorcar.clementime.data.SubjectWithSlots>())
-    override fun getSubjectWithSlotsById(subjectId: Long) = kotlinx.coroutines.flow.flowOf(null)
-    override suspend fun updateSubjectActiveStatus(subjectId: Long, isActive: Boolean) {}
-    override suspend fun updateSelectedLabGroup(subjectId: Long, labGroup: String?) {}
-    override suspend fun updateSelectedLabGroups(selections: Map<Long, String?>) {}
-    override suspend fun insertSubject(subject: com.marcoslorcar.clementime.data.Subject): Long = 1L
-    override suspend fun updateSubject(subject: com.marcoslorcar.clementime.data.Subject) {}
-    override suspend fun deleteSubjectById(subjectId: Long) {}
-    override suspend fun insertSlot(slot: com.marcoslorcar.clementime.data.ClassSlot): Long = 1L
-    override suspend fun insertSlots(slots: List<com.marcoslorcar.clementime.data.ClassSlot>) {}
-    override suspend fun updateSlot(slot: com.marcoslorcar.clementime.data.ClassSlot) {}
-    override suspend fun updateSlotIgnoredStatus(slotId: Long, isIgnored: Boolean) {}
-    override suspend fun deleteSlot(slot: com.marcoslorcar.clementime.data.ClassSlot) {}
-    override suspend fun deleteSlotById(slotId: Long) {}
-    override suspend fun deleteSlotsForSubject(subjectId: Long) {}
-    override suspend fun deleteAllSubjects() {}
-    override suspend fun deleteSubjectsByIds(subjectIds: List<Long>) {}
-    override suspend fun updateSubjectsActiveStatus(subjectIds: List<Long>, isActive: Boolean) {}
 }

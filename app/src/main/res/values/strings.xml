@@ -1,4 +1,4 @@
-<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="UnusedResources">
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">ClemenTime</string>
     <string name="schedule_screen_title">Schedule</string>
     <string name="settings_screen_title">Settings</string>
@@ -6,8 +6,6 @@
     <string name="import_schedule_title">Import Schedule</string>
     <string name="subjects_screen_title">Subjects</string>
     <string name="search_subjects_placeholder">Search by name or code…</string>
-    <string name="delete_subject_dialog_title">Delete Subject</string>
-    <string name="delete_subject_dialog_message">Are you sure you want to delete \"%1$s\"? This will also remove all associated schedule slots.</string>
     <string name="delete_subject_confirm">Delete</string>
     <string name="cancel">Cancel</string>
     <string name="no_subjects_title">No subjects added yet</string>
@@ -47,7 +45,6 @@
 
     <!-- Settings Screen strings -->
     <string name="data_storage_header">Data &amp; Storage</string>
-    <string name="interface_header">Interface</string>
     <string name="about_header">About</string>
     <string name="language_setting_title">Language</string>
     <string name="theme_setting_title">Theme</string>
@@ -100,7 +97,6 @@
 
     <!-- Toast & Dialog strings -->
     <string name="file_not_found_message">File not found</string>
-    <string name="attachment_failed_message">Failed to attach file: %1$s</string>
     <string name="no_apps_for_file_message">No app available to open this file type</string>
     <string name="rename_file_title">Rename Attachment</string>
     <string name="rename_button">Rename</string>
@@ -111,8 +107,6 @@
     <string name="keep_original_button">Keep Original</string>
     <string name="original_file_deleted_message">Original file deleted</string>
     <string name="original_file_delete_failed_message">Could not delete original file</string>
-    <string name="language_selector_label">Select Language</string>
-    <string name="theme_selector_label">Select Theme</string>
 
     <string name="export_success_local">Backup saved successfully</string>
     <string name="setup_widget_title">Set up Home Screen Widget</string>
@@ -146,13 +140,7 @@
     <string name="conflict_resolver_title">Lab Optimizer</string>
     <string name="conflict_resolver_choices_header">Lab choices</string>
     <string name="conflict_resolver_solutions_tab">Lab Combinations</string>
-    <string name="conflict_resolver_details_tab">Details &amp; Ignore</string>
     <string name="conflict_resolver_no_variants">No subjects with multiple lab variants found.</string>
-    <string name="conflict_resolver_optimal_header">Optimal Selections</string>
-    <string name="conflict_resolver_optimal_label">Optimal Selection</string>
-    <string name="conflict_resolver_possible_header">Possible Selections</string>
-    <string name="conflict_resolver_possible_label">Possible Selection</string>
-    <string name="conflict_resolver_other_header">Other Options</string>
     <plurals name="conflict_resolver_overlaps">
         <item quantity="one">%1$d Overlap</item>
         <item quantity="other">%1$d Overlaps</item>
@@ -161,14 +149,9 @@
         <item quantity="one">%1$d Free Day</item>
         <item quantity="other">%1$d Free Days</item>
     </plurals>
-    <string name="conflict_resolver_score">Score: %1$d</string>
     <string name="conflict_resolver_apply">Apply</string>
     <string name="conflict_resolver_applied">Applied</string>
     <string name="conflict_resolver_current_badge">Current</string>
-    <string name="conflict_resolver_current_header">Current Selection</string>
-    <string name="conflict_resolver_manual_config_header">Manual Preferences (Optional)</string>
-    <string name="conflict_resolver_radio_desc">• Pin Lab Selections: Use the radio buttons if you have specific lab groups you absolutely want to keep. The lab optimizer will work around them. Leaving them unpinned lets it try every lab group.</string>
-    <string name="conflict_resolver_checkbox_desc">• Ignore Slots: Check classes you want to exclude from overlap checks entirely (e.g. optional or non-mandatory classes).</string>
     <string name="conflict_resolver_continue">View Lab Combinations</string>
     <string name="resolve_conflicts_tooltip">Optimize Lab Groups</string>
     <string name="conflict_resolver_help_title">Lab Optimizer Help</string>
@@ -186,23 +169,17 @@
     <string name="conflict_resolver_confirm_message">This will set the following lab groups as your active classes:\n\n%1$s</string>
     <string name="conflict_resolver_confirm_save">Confirm &amp; Save</string>
     <string name="conflict_resolver_applied_snackbar">Schedule updated successfully.</string>
-    <string name="conflict_resolver_undo">UNDO</string>
     <string name="conflict_resolver_subjects_header">Subjects &amp; Lab Groups</string>
     <string name="conflict_resolver_filter_header">Secondary Priority (After Overlaps)</string>
     <string name="conflict_resolver_ignore_section_label">Ignore class slot</string>
     <string name="conflict_resolver_ignored_badge">Ignored</string>
 
-    <string name="new_subject_title">New Subject</string>
     <string name="view_subject_title">Subject Details</string>
-    <string name="schedule_preview_header">Weekly Schedule Preview</string>
     <string name="slot_editor_title_add">Add Class Slot</string>
     <string name="slot_editor_title_edit">Edit Class Slot</string>
     <string name="slot_editor_title_view">Class Slot Details</string>
     <string name="edit_slot_button">Edit</string>
     <string name="close">Close</string>
-    <string name="total_weekly_hours">%1$.1f hrs/week</string>
-    <string name="total_slots_metric" tools:ignore="PluralsCandidate">%1$d Slots</string>
-    <string name="edit_subject_button">Edit Subject</string>
     <string name="view_subject_button">Details</string>
 
     <!-- Class Slot / Subject Editor strings -->
@@ -210,11 +187,9 @@
     <string name="lab_label">Lab</string>
     <string name="class_slots_header">Class Slots (%1$d)</string>
     <string name="add_slot_button">Add Class Slot</string>
-    <string name="no_slots_message">No class slots added yet.\nTap \'+ Add Class Slot\' to create one.</string>
     <string name="code_label">Code</string>
     <string name="name_label">Name</string>
     <string name="color_badge_label">Color Badge</string>
-    <string name="swipe_colors_hint">Swipe for more colors →</string>
     <string name="custom_color_picker_title">Pick Custom Color</string>
     <string name="hex_code_label">Hex Code (#RRGGBB)</string>
     <string name="select_color_button">Select Color</string>
@@ -246,8 +221,6 @@
     <!-- Widget strings -->
     <string name="widget_name">Schedule Timeline</string>
     <string name="widget_description">Displays today\'s or tomorrow\'s schedule timeline with dynamic centering.</string>
-    <string name="widget_today_title">TODAY (%1$s)</string>
-    <string name="widget_tomorrow_title">TOMORROW (%1$s)</string>
 
     <!-- Onboarding & Guidance -->
     <string name="onboarding_got_it">Got it</string>
@@ -264,8 +237,6 @@
     <string name="tooltip_resolver_priorities_desc">Choose if you prefer more free days or a more compact schedule. Overlaps are always minimized first.</string>
     <string name="tooltip_resolver_apply_title">Apply Combination</string>
     <string name="tooltip_resolver_apply_desc">Once you find a lab combination you like, tap Apply to update your active schedule automatically.</string>
-    <string name="tooltip_add_slot_title">Add Your First Class</string>
-    <string name="tooltip_add_slot_desc">Tap here to add a class slot to this subject. You can set the time, room, and professor.</string>
     <string name="tooltip_auto_semester_title">Period Changed</string>
     <string name="tooltip_auto_semester_desc">We\'ve automatically switched the academic period to match your imported subjects. Tap here to change it manually.</string>
 
@@ -288,11 +259,15 @@
     <string name="empty_schedule_today">Nothing scheduled for today</string>
     <string name="import_library_no_results">No schedules match your search.</string>
     <string name="import_library_online_unreachable">Online library unreachable. Check your connection or try again later.</string>
+    <string name="import_offline_cached_schedules">Offline: showing cached schedules</string>
+    <string name="import_error_load_library">Failed to load library: %1$s</string>
+    <string name="import_error_invalid_format">Invalid schedule format: %1$s</string>
+    <string name="import_error_load_schedule">Failed to load schedule: %1$s</string>
+    <string name="import_error_save_file">Failed to save and parse file: %1$s</string>
+    <string name="import_error_failed">Import failed: %1$s</string>
     <string name="search_schedules_placeholder">Search schedules…</string>
-    <string name="import_schedule_instructions">Choose a template from the library or import a custom schedule JSON file to get started.</string>
     <string name="day_of_week_label">Day of the week</string>
     <string name="no_slots_assigned">No slots added yet.</string>
-    <string name="no_slots_preview_placeholder">Add a class slot first to see the preview</string>
     <string name="online_repository_title">Online Repository</string>
     <string name="online_repository_url_setting_title">Online Repository URL</string>
     <string name="github_repository_url_description">Enter the GitHub raw content base URL for online schedules:</string>
@@ -307,11 +282,9 @@
     <string name="widget_error">Error loading schedule</string>
     <string name="widget_today_pill">Today • %1$s</string>
     <string name="widget_tomorrow_pill">Tomorrow • %1$s</string>
-    <string name="widget_toggle_today">← Today</string>
     <string name="widget_toggle_tomorrow">Tomorrow →</string>
     <string name="semester_1_label">1st Semester</string>
     <string name="semester_2_label">2nd Semester</string>
-    <string name="semester_label">Semester</string>
 
     <string name="period_annual_title">Annual</string>
     <string name="period_annual_label">Full Year</string>
@@ -346,11 +319,7 @@
 
     <string name="export_ics_setting_title">Export to Calendar (.ics)</string>
     <string name="export_ics_desc">Add schedule to Google Calendar, Outlook, or Apple Calendar</string>
-    <string name="export_ics_range_picker_title">Select Semester Duration</string>
-    <string name="export_ics_s1_picker_title">Select 1st Semester Duration</string>
-    <string name="export_ics_s2_picker_title">Select 2nd Semester Duration</string>
     <string name="export_ics_step_course_start">Course Start Date</string>
-    <string name="export_ics_step_s2_start">2nd Semester Start Date</string>
     <string name="export_ics_step_period_start">%1$s Start Date</string>
     <string name="export_ics_step_course_end">Course End Date</string>
     <string name="export_ics_step_indicator">Step %1$d of %2$d</string>
@@ -393,13 +362,9 @@
     <string name="content_description_undo">Undo</string>
     <string name="content_description_ignored">Ignored</string>
 
-    <!-- Schedule Auto-Update strings -->
-    <string name="auto_update_interval_title">Auto-Update Interval</string>
-    <string name="auto_update_interval_off">Off</string>
-    <string name="auto_update_interval_15m">15 minutes (Debug)</string>
-    <string name="auto_update_interval_6h">6 hours</string>
-    <string name="auto_update_interval_12h">12 hours</string>
-    <string name="auto_update_interval_24h">24 hours</string>
+    <!-- Schedule Update Notification strings -->
+    <string name="schedule_updates_channel_name">Schedule Updates</string>
+    <string name="schedule_updates_channel_desc">Notifications for automatic schedule updates</string>
     <string name="check_updates_now_title">Check for Schedule Updates Now</string>
     <string name="checking_updates">Checking for schedule updates…</string>
     <string name="no_schedule_updates_found">No schedule updates found.</string>
@@ -430,12 +395,8 @@
     <string name="diff_previous_label">Before</string>
     <string name="diff_new_label">After</string>
     <string name="diff_list_title">Summary of Changes</string>
-    <string name="onboarding_autoupdate_title">Automatic Updates</string>
-    <string name="onboarding_autoupdate_desc">Get notified whenever your school updates classrooms, professors, or time slots.</string>
-    <string name="onboarding_autoupdate_frequency">Check frequency</string>
     <string name="onboarding_notifications_permission_btn">Enable Notifications</string>
     <string name="onboarding_notifications_permission_granted">Notifications Enabled ✓</string>
-    <string name="auto_update_interval_off_short">Off</string>
     <string name="schedule_updated_success">Schedule updated successfully.</string>
 
     <!-- Sync Mode Strings -->

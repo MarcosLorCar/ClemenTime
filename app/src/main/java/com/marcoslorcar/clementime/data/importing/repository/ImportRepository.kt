@@ -25,6 +25,7 @@ import com.marcoslorcar.clementime.data.importing.parser.normalizeGroup
 import com.marcoslorcar.clementime.data.importing.parser.parseDayOfWeek
 import com.marcoslorcar.clementime.data.importing.parser.parseRemoteTime
 import com.marcoslorcar.clementime.utils.SlotDiff
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -117,6 +118,8 @@ class ImportRepository @Inject constructor(
             destFile.writeText(jsonString)
 
             Result.success(ImportFile(id = filename, title = title, fileUri = destFile.absolutePath))
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -432,8 +435,9 @@ class ImportRepository @Inject constructor(
                     }
                 )
                 val response = apiService.getScheduleIndex(indexUrl)
-                if (response.isSuccessful && response.body() != null) {
-                    return@withContext Result.success(Pair(baseUrl, response.body()!!))
+                val indexBody = response.body()
+                if (response.isSuccessful && indexBody != null) {
+                    return@withContext Result.success(Pair(baseUrl, indexBody))
                 }
             }
 
@@ -445,6 +449,8 @@ class ImportRepository @Inject constructor(
                 val msg = catalogResponse?.message() ?: "Unknown error"
                 Result.failure(Exception("Failed to fetch remote schedules: $code $msg"))
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             val fallbackUrl = SettingsRepository.FALLBACK_GITHUB_REPO_BASE_URL
             if (normalizeGitHubUrl(rawBaseUrl) != normalizeGitHubUrl(fallbackUrl)) {
@@ -476,8 +482,9 @@ class ImportRepository @Inject constructor(
                 }
             )
             val response = runCatching { apiService.getScheduleCatalog(catalogUrl) }.getOrNull()
-            if (response != null && response.isSuccessful && response.body() != null) {
-                return@withContext Result.success(Pair(baseUrl, response.body()!!))
+            val catalogBody = response?.body()
+            if (response != null && response.isSuccessful && catalogBody != null) {
+                return@withContext Result.success(Pair(baseUrl, catalogBody))
             }
 
             // Fall back to legacy schedules_index.json wrapped into a synthetic ScheduleCatalog
@@ -489,8 +496,9 @@ class ImportRepository @Inject constructor(
                 }
             )
             val indexResponse = runCatching { apiService.getScheduleIndex(indexUrl) }.getOrNull()
-            if (indexResponse != null && indexResponse.isSuccessful && indexResponse.body() != null) {
-                val terms = indexResponse.body()!!.map { summary ->
+            val indexBody = indexResponse?.body()
+            if (indexResponse != null && indexResponse.isSuccessful && indexBody != null) {
+                val terms = indexBody.map { summary ->
                     TermCatalogEntry(
                         id = summary.id,
                         name = summary.title,
@@ -527,6 +535,8 @@ class ImportRepository @Inject constructor(
                 val msg = response?.message() ?: indexResponse?.message() ?: "Unknown error"
                 Result.failure(Exception("Failed to fetch catalog: $code $msg"))
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             val fallbackUrl = SettingsRepository.FALLBACK_GITHUB_REPO_BASE_URL
             if (normalizeGitHubUrl(rawBaseUrl) != normalizeGitHubUrl(fallbackUrl)) {
@@ -810,6 +820,8 @@ class ImportRepository @Inject constructor(
             } else {
                 throw Exception("Failed to fetch remote schema: ${response.code()} ${response.message()}")
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             if (existingEntry != null && cacheFile.exists()) {
                 try {

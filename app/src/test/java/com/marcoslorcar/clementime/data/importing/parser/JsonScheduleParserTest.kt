@@ -135,7 +135,7 @@ class JsonScheduleParserTest {
             entryType = EntryType.THEORY
         )
 
-        val exported = parser.exportToJson("Primer Cuatrimestre", listOf(SubjectWithSlots(subject, listOf(slot))))
+        val exported = parser.exportToJson(listOf(SubjectWithSlots(subject, listOf(slot))))
         assertTrue(exported.trim().startsWith("["))
         // Matches what the Python pipeline emits in schedules/dist/*.json:
         // "codigo" is the short code, "asignatura" the full display name.
@@ -291,7 +291,6 @@ class JsonScheduleParserTest {
         val slot3 = ClassSlot(2L, 2L, DayOfWeek.FRIDAY, LocalTime.of(11, 0), LocalTime.of(12, 30), entryType = EntryType.THEORY)
 
         val exported = parser.exportToJson(
-            title = "Export",
             subjectsWithSlots = listOf(SubjectWithSlots(s1, listOf(slot1)), SubjectWithSlots(s3, listOf(slot3))),
             periodType = PeriodType.TRIMESTERS
         )
@@ -319,7 +318,6 @@ class JsonScheduleParserTest {
         val slot5 = ClassSlot(5L, 5L, DayOfWeek.TUESDAY, LocalTime.of(10, 0), LocalTime.of(11, 30), entryType = EntryType.THEORY)
 
         val exported = parser.exportToJson(
-            title = "Export",
             subjectsWithSlots = listOf(SubjectWithSlots(s5, listOf(slot5))),
             periodType = PeriodType.CUSTOM
         )

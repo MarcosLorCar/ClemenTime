@@ -9,7 +9,6 @@ the FCM_SERVICE_ACCOUNT_KEY JSON secret.
 
 import argparse
 import base64
-from datetime import datetime, timezone
 import json
 import os
 import re
@@ -20,6 +19,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from datetime import UTC, datetime
 
 FCM_SCOPE = "https://www.googleapis.com/auth/firebase.messaging"
 DEFAULT_TOKEN_URI = "https://oauth2.googleapis.com/token"
@@ -49,7 +49,7 @@ def build_topic_name(university_id: str, faculty_id: str, fcm_topic_prefix: str 
 
 
 def build_fcm_messages(catalog: dict, updated_at: str | None = None) -> list[dict]:
-    timestamp = updated_at or datetime.now(timezone.utc).isoformat()
+    timestamp = updated_at or datetime.now(UTC).isoformat()
     messages = []
     for uni in catalog.get("universities", []):
         uni_id = uni.get("id", "")
@@ -154,7 +154,7 @@ def main() -> int:
         print(f"[Error] Catalog file not found: {args.catalog}", file=sys.stderr)
         return 1
 
-    with open(args.catalog, "r", encoding="utf-8") as f:
+    with open(args.catalog, encoding="utf-8") as f:
         catalog = json.load(f)
 
     messages = build_fcm_messages(catalog)

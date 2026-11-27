@@ -33,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -44,10 +45,13 @@ import com.marcoslorcar.clementime.data.EntryType
 import com.marcoslorcar.clementime.data.Subject
 import com.marcoslorcar.clementime.ui.components.ScheduleMiniPreview
 import com.marcoslorcar.clementime.ui.theme.ClemenTimeTheme
+import com.marcoslorcar.clementime.utils.DiffSlotSnapshot
 import com.marcoslorcar.clementime.utils.DiffType
 import com.marcoslorcar.clementime.utils.SlotDiff
 import java.time.DayOfWeek
 import java.time.LocalTime
+import java.time.format.TextStyle
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Suppress("DEPRECATION")
@@ -313,18 +317,18 @@ private fun SubjectDiffGroupCard(
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(2.dp)
                     ) {
-                        diff.oldDetail?.let { old ->
+                        diff.oldSlot?.let { old ->
                             Text(
-                                text = stringResource(R.string.diff_previous_detail, old),
+                                text = stringResource(R.string.diff_previous_detail, formatDiffSlotDetail(old)),
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     textDecoration = TextDecoration.LineThrough
                                 ),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        diff.newDetail?.let { new ->
+                        diff.newSlot?.let { new ->
                             Text(
-                                text = stringResource(R.string.diff_new_detail, new),
+                                text = stringResource(R.string.diff_new_detail, formatDiffSlotDetail(new)),
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Medium,
                                 color = if (isSelected) {
@@ -382,9 +386,9 @@ private fun SlotDiffFooterRow(
             }
 
             // Old Detail Text
-            diff.oldDetail?.let { old ->
+            diff.oldSlot?.let { old ->
                 Text(
-                    text = stringResource(R.string.diff_previous_detail, old),
+                    text = stringResource(R.string.diff_previous_detail, formatDiffSlotDetail(old)),
                     style = MaterialTheme.typography.bodySmall.copy(
                         textDecoration = TextDecoration.LineThrough
                     ),
@@ -393,9 +397,9 @@ private fun SlotDiffFooterRow(
             }
 
             // New Detail Text
-            diff.newDetail?.let { new ->
+            diff.newSlot?.let { new ->
                 Text(
-                    text = stringResource(R.string.diff_new_detail, new),
+                    text = stringResource(R.string.diff_new_detail, formatDiffSlotDetail(new)),
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface
@@ -440,6 +444,41 @@ private fun DiffTypeBadge(
             color = contentColor
         )
     }
+}
+
+@Composable
+private fun formatDiffSlotDetail(snapshot: DiffSlotSnapshot): String {
+    val locale = LocalLocale.current.platformLocale
+    val roomFormatted = snapshot.classroom?.trim()?.takeIf { it.isNotEmpty() }
+        ?.let { stringResource(R.string.room_prefix, it) }
+    val profFormatted = snapshot.professor?.trim()?.takeIf { it.isNotEmpty() }
+        ?.let { stringResource(R.string.prof_prefix, it) }
+    return formatDiffSlotDetail(
+        snapshot = snapshot,
+        locale = locale,
+        roomFormatted = roomFormatted,
+        profFormatted = profFormatted
+    )
+}
+
+internal fun formatDiffSlotDetail(
+    snapshot: DiffSlotSnapshot,
+    locale: Locale,
+    roomFormatted: String?,
+    profFormatted: String?
+): String {
+    val dayStr = snapshot.dayOfWeek.getDisplayName(TextStyle.FULL, locale)
+        .replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
+    val timeStr = String.format(
+        Locale.US,
+        "%02d:%02d - %02d:%02d",
+        snapshot.startTime.hour,
+        snapshot.startTime.minute,
+        snapshot.endTime.hour,
+        snapshot.endTime.minute
+    )
+    val extra = listOfNotNull(roomFormatted, profFormatted).joinToString(", ")
+    return if (extra.isNotBlank()) "$dayStr $timeStr ($extra)" else "$dayStr $timeStr"
 }
 
 /**
@@ -524,16 +563,14 @@ private val sampleDiffs = listOf(
         subjectCode = "PROG",
         subjectName = "Programación I",
         changeType = DiffType.MODIFIED,
-        oldDetail = "Lunes 09:00 - 11:00 (Aula: 1.1)",
-        newDetail = "Martes 11:00 - 13:00 (Aula: 1.2)",
-        oldSlot = com.marcoslorcar.clementime.utils.DiffSlotSnapshot(
+        oldSlot = DiffSlotSnapshot(
             dayOfWeek = DayOfWeek.MONDAY,
             startTime = LocalTime.of(9, 0),
             endTime = LocalTime.of(11, 0),
             entryType = EntryType.THEORY,
             classroom = "1.1"
         ),
-        newSlot = com.marcoslorcar.clementime.utils.DiffSlotSnapshot(
+        newSlot = DiffSlotSnapshot(
             dayOfWeek = DayOfWeek.TUESDAY,
             startTime = LocalTime.of(11, 0),
             endTime = LocalTime.of(13, 0),
@@ -545,9 +582,7 @@ private val sampleDiffs = listOf(
         subjectCode = "ED",
         subjectName = "Estructuras de Datos",
         changeType = DiffType.ADDED,
-        oldDetail = null,
-        newDetail = "Jueves 15:30 - 17:30 (Aula: Lab 3)",
-        newSlot = com.marcoslorcar.clementime.utils.DiffSlotSnapshot(
+        newSlot = DiffSlotSnapshot(
             dayOfWeek = DayOfWeek.THURSDAY,
             startTime = LocalTime.of(15, 30),
             endTime = LocalTime.of(17, 30),
@@ -559,9 +594,7 @@ private val sampleDiffs = listOf(
         subjectCode = "FDD",
         subjectName = "Fundamentos del Diseño",
         changeType = DiffType.REMOVED,
-        oldDetail = "Viernes 09:00 - 11:00 (Aula: 2.1)",
-        newDetail = null,
-        oldSlot = com.marcoslorcar.clementime.utils.DiffSlotSnapshot(
+        oldSlot = DiffSlotSnapshot(
             dayOfWeek = DayOfWeek.FRIDAY,
             startTime = LocalTime.of(9, 0),
             endTime = LocalTime.of(11, 0),

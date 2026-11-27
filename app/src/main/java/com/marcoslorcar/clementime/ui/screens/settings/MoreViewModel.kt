@@ -22,6 +22,8 @@ import com.marcoslorcar.clementime.worker.FcmTopicManager
 import com.marcoslorcar.clementime.worker.ScheduleUpdateWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -30,6 +32,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.LocalTime
 import java.util.Locale
@@ -50,7 +53,6 @@ data class MoreUiState(
     val onboardingTooltipsEnabled: Boolean = true,
     val dayStartTime: LocalTime = LocalTime.of(8, 30),
     val dayEndTime: LocalTime = LocalTime.of(21, 30),
-    val autoUpdateIntervalHours: Int = SettingsRepository.DEFAULT_AUTO_UPDATE_INTERVAL_HOURS,
     val lastScheduleSyncTimestamp: Long = 0L,
     val syncMode: com.marcoslorcar.clementime.data.SyncMode = com.marcoslorcar.clementime.data.SyncMode.ONLINE,
     val isCheckingUpdates: Boolean = false,
@@ -132,7 +134,6 @@ class MoreViewModel @Inject constructor(
         settingsRepository.dayStartMinuteFlow,
         settingsRepository.dayEndHourFlow,
         settingsRepository.dayEndMinuteFlow,
-        settingsRepository.autoUpdateIntervalMinutesFlow,
         settingsRepository.lastScheduleSyncTimestampFlow,
         settingsRepository.syncModeFlow,
         _isCheckingUpdates,
@@ -145,9 +146,9 @@ class MoreViewModel @Inject constructor(
         subjectCountsBySemesterFlow
     ) { args: Array<Any?> ->
         @Suppress("UNCHECKED_CAST")
-        val linkedFaculty = args[20] as LinkedFacultyInfo
+        val linkedFaculty = args[19] as LinkedFacultyInfo
         @Suppress("UNCHECKED_CAST")
-        val subjectCounts = args[22] as Map<Int, Int>
+        val subjectCounts = args[21] as Map<Int, Int>
         MoreUiState(
             themeMode = args[0] as String,
             scrollableTabs = args[1] as Boolean,
@@ -159,18 +160,17 @@ class MoreViewModel @Inject constructor(
             onboardingTooltipsEnabled = args[7] as Boolean,
             dayStartTime = LocalTime.of(args[8] as Int, args[9] as Int),
             dayEndTime = LocalTime.of(args[10] as Int, args[11] as Int),
-            autoUpdateIntervalHours = args[12] as Int,
-            lastScheduleSyncTimestamp = args[13] as Long,
-            syncMode = args[14] as com.marcoslorcar.clementime.data.SyncMode,
-            isCheckingUpdates = args[15] as Boolean,
-            appLanguage = args[16] as String,
-            pendingDiffs = args[17] as List<SlotDiff>,
-            pendingRemoteSlots = args[18] as List<JsonFlatSlot>,
-            showDiffBottomSheet = args[19] as Boolean,
+            lastScheduleSyncTimestamp = args[12] as Long,
+            syncMode = args[13] as com.marcoslorcar.clementime.data.SyncMode,
+            isCheckingUpdates = args[14] as Boolean,
+            appLanguage = args[15] as String,
+            pendingDiffs = args[16] as List<SlotDiff>,
+            pendingRemoteSlots = args[17] as List<JsonFlatSlot>,
+            showDiffBottomSheet = args[18] as Boolean,
             selectedUniversityId = linkedFaculty.universityId,
             selectedFacultyId = linkedFaculty.facultyId,
             linkedFacultyLabel = linkedFaculty.label,
-            periodConfig = args[21] as PeriodConfig,
+            periodConfig = args[20] as PeriodConfig,
             subjectCountsBySemester = subjectCounts
         )
     }.stateIn(
@@ -272,19 +272,6 @@ class MoreViewModel @Inject constructor(
         }
     }
 
-    fun setAutoUpdateIntervalHours(hours: Int) {
-        setAutoUpdateIntervalMinutes(if (hours == 15) 15 else hours * 60)
-    }
-
-    fun setAutoUpdateIntervalMinutes(minutes: Int) {
-        viewModelScope.launch {
-            settingsRepository.setAutoUpdateIntervalMinutes(minutes)
-            if (context != null) {
-                ScheduleUpdateWorker.schedulePeriodicWork(context, minutes)
-            }
-        }
-    }
-
     fun debugShowFcmStatus(onResult: (String) -> Unit) {
         viewModelScope.launch {
             val syncMode = settingsRepository.syncModeFlow.first()
@@ -333,8 +320,6 @@ class MoreViewModel @Inject constructor(
                 subjectCode = "DEBUG101",
                 subjectName = "Debug Systems & Testing",
                 changeType = com.marcoslorcar.clementime.utils.DiffType.MODIFIED,
-                oldDetail = "Lunes 09:00 - 11:00 (Aula: 1.1)",
-                newDetail = "Lunes 10:00 - 12:00 (Aula: 2.3)",
                 oldSlot = com.marcoslorcar.clementime.utils.DiffSlotSnapshot(
                     dayOfWeek = java.time.DayOfWeek.MONDAY,
                     startTime = LocalTime.of(9, 0),
@@ -386,8 +371,7 @@ class MoreViewModel @Inject constructor(
                     context = context,
                     settingsRepository = settingsRepository,
                     importRepository = importRepository,
-                    apiService = apiService,
-                    ignoreInterval = true
+                    apiService = apiService
                 )
                 _isCheckingUpdates.value = false
                 if (syncResult.diffs.isNotEmpty()) {
@@ -399,6 +383,8 @@ class MoreViewModel @Inject constructor(
                 } else {
                     onNoUpdatesFound()
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (_: Exception) {
                 _isCheckingUpdates.value = false
                 onNoUpdatesFound()
@@ -429,7 +415,11 @@ class MoreViewModel @Inject constructor(
                     settingsRepository.setLastKnownScheduleHash(semester, _pendingRemoteHash.value)
                 }
                 saveCurrentRemoteSubjectHashes(semester, _pendingRemoteSlots.value)
-            } catch (_: Exception) {}
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // Dismiss sheet even if saving hashes fails
+            }
             _showDiffBottomSheet.value = false
             _pendingDiffs.value = emptyList()
             _pendingRemoteSlots.value = emptyList()
@@ -471,6 +461,8 @@ class MoreViewModel @Inject constructor(
                 _pendingRemoteSlots.value = emptyList()
                 _pendingRemoteHash.value = ""
                 onSuccess(applied)
+            } catch (e: CancellationException) {
+                throw e
             } catch (_: Exception) {
                 _showDiffBottomSheet.value = false
             }
@@ -497,44 +489,16 @@ class MoreViewModel @Inject constructor(
             try {
                 val subjects = scheduleDao.getAllSubjectsWithSlots().first()
                 val periodConfig = settingsRepository.periodConfigFlow.first()
-                val jsonString = jsonScheduleParser.exportToJson("ClemenTime Export", subjects, periodConfig.type)
+                val jsonString = jsonScheduleParser.exportToJson(subjects, periodConfig.type)
 
-                context.contentResolver.openOutputStream(customUri)?.use { out ->
-                    out.write(jsonString.toByteArray())
+                withContext(Dispatchers.IO) {
+                    context.contentResolver.openOutputStream(customUri)?.use { out ->
+                        out.write(jsonString.toByteArray())
+                    }
                 }
                 onResult(ExportStatus.Success(context.getString(R.string.export_success_local)))
-            } catch (e: Exception) {
-                onResult(ExportStatus.Error(context.getString(R.string.export_error_prefix, e.localizedMessage)))
-            }
-        }
-    }
-
-    fun exportFullYearToIcs(
-        context: Context,
-        customUri: Uri,
-        s1Start: LocalDate,
-        s1End: LocalDate,
-        s2Start: LocalDate,
-        s2End: LocalDate,
-        onResult: (ExportStatus) -> Unit
-    ) {
-        viewModelScope.launch {
-            onResult(ExportStatus.Exporting)
-            try {
-                val s1Subjects = scheduleDao.getActiveSubjectsWithSlotsBySemester(1).first()
-                val s2Subjects = scheduleDao.getActiveSubjectsWithSlotsBySemester(2).first()
-
-                val semesters = listOf(
-                    IcsExporter.SemesterExportData(filterIcsSlots(s1Subjects), s1Start, s1End),
-                    IcsExporter.SemesterExportData(filterIcsSlots(s2Subjects), s2Start, s2End)
-                )
-
-                val icsString = IcsExporter.generateIcsContent(semesters)
-
-                context.contentResolver.openOutputStream(customUri)?.use { out ->
-                    out.write(icsString.toByteArray())
-                }
-                onResult(ExportStatus.Success(context.getString(R.string.export_success_local)))
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 onResult(ExportStatus.Error(context.getString(R.string.export_error_prefix, e.localizedMessage)))
             }
@@ -569,10 +533,14 @@ class MoreViewModel @Inject constructor(
                 val semesters = buildIcsExportData(boundaries)
                 val icsString = IcsExporter.generateIcsContent(semesters)
 
-                context.contentResolver.openOutputStream(customUri)?.use { out ->
-                    out.write(icsString.toByteArray())
+                withContext(Dispatchers.IO) {
+                    context.contentResolver.openOutputStream(customUri)?.use { out ->
+                        out.write(icsString.toByteArray())
+                    }
                 }
                 onResult(ExportStatus.Success(context.getString(R.string.export_success_local)))
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 onResult(ExportStatus.Error(context.getString(R.string.export_error_prefix, e.localizedMessage)))
             }

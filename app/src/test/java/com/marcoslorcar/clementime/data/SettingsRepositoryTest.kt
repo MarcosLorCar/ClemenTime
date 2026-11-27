@@ -11,13 +11,6 @@ import org.junit.Test
 class SettingsRepositoryTest {
 
     @Test
-    fun defaultAutoUpdateIntervalMinutes_isDisabled() = runTest {
-        val repository = SettingsRepository(null)
-        val minutes = repository.autoUpdateIntervalMinutesFlow.first()
-        assertEquals(0, minutes)
-    }
-
-    @Test
     fun defaultUniversityAndFaculty_emitsEmptyOnFreshInstall() = runTest {
         val repository = SettingsRepository(null)
         val uni = repository.selectedUniversityIdFlow.first()

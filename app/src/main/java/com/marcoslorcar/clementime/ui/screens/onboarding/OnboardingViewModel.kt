@@ -21,7 +21,6 @@ data class OnboardingUiState(
     val themeMode: String = "system",
     val selectedTheme: String = "clementine",
     val appLanguage: String = "en",
-    val autoUpdateIntervalHours: Int = 0,
     val syncMode: SyncMode? = null
 )
 
@@ -84,13 +83,6 @@ class OnboardingViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.setSyncMode(mode)
             com.marcoslorcar.clementime.worker.FcmTopicManager.syncRegistration(context, settingsRepository)
-        }
-    }
-
-    fun setAutoUpdateIntervalHours(hours: Int, context: android.content.Context) {
-        viewModelScope.launch {
-            settingsRepository.setAutoUpdateIntervalHours(hours)
-            com.marcoslorcar.clementime.worker.ScheduleUpdateWorker.schedulePeriodicWork(context, hours)
         }
     }
 

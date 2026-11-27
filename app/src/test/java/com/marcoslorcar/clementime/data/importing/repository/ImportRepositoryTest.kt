@@ -8,8 +8,8 @@ import com.marcoslorcar.clementime.data.SubjectWithSlots
 import com.marcoslorcar.clementime.data.importing.model.JsonFlatSlot
 import com.marcoslorcar.clementime.data.importing.model.JsonSubject
 import com.marcoslorcar.clementime.data.importing.model.SelectedSubject
+import com.marcoslorcar.clementime.testing.FakeScheduleDao
 import com.marcoslorcar.clementime.utils.ScheduleDiffChecker
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
@@ -28,7 +28,7 @@ class ImportRepositoryTest {
             color = 0xFF123456.toInt(),
             isActive = true
         )
-        val fakeDao = FakeScheduleDaoForRepositoryTest(
+        val fakeDao = FakeScheduleDao(
             initialSubjects = listOf(SubjectWithSlots(existingSubject, emptyList()))
         )
         val repository = ImportRepository(dao = fakeDao)
@@ -64,7 +64,7 @@ class ImportRepositoryTest {
                 AttachedFileItem(name = "apuntes.pdf", uriString = "content://doc/1")
             )
         )
-        val fakeDao = FakeScheduleDaoForRepositoryTest(
+        val fakeDao = FakeScheduleDao(
             initialSubjects = listOf(SubjectWithSlots(existingSubject, emptyList()))
         )
         val repository = ImportRepository(dao = fakeDao)
@@ -92,7 +92,7 @@ class ImportRepositoryTest {
             isActive = true,
             semester = 1
         )
-        val fakeDao = FakeScheduleDaoForRepositoryTest(
+        val fakeDao = FakeScheduleDao(
             initialSubjects = listOf(SubjectWithSlots(existingSubject, emptyList()))
         )
         val repository = ImportRepository(dao = fakeDao)
@@ -164,7 +164,7 @@ class ImportRepositoryTest {
             isActive = true,
             semester = 1
         )
-        val fakeDao = FakeScheduleDaoForRepositoryTest(
+        val fakeDao = FakeScheduleDao(
             initialSubjects = listOf(
                 SubjectWithSlots(subj1, listOf(ignoredSlot)),
                 SubjectWithSlots(subj2, emptyList())
@@ -177,16 +177,12 @@ class ImportRepositoryTest {
                 subjectCode = "FunProg1",
                 subjectName = "Fundamentos de Programación 1",
                 changeType = com.marcoslorcar.clementime.utils.DiffType.MODIFIED,
-                oldDetail = "Lunes 08:30",
-                newDetail = "Martes 10:00",
                 subjectKey = "FUNPROG1__"
             ),
             com.marcoslorcar.clementime.utils.SlotDiff(
                 subjectCode = "Cálculo",
                 subjectName = "Cálculo",
                 changeType = com.marcoslorcar.clementime.utils.DiffType.MODIFIED,
-                oldDetail = "Jueves 08:30",
-                newDetail = "Viernes 10:00",
                 subjectKey = "CALCULO__"
             )
         )
@@ -289,7 +285,7 @@ class ImportRepositoryTest {
 
     @Test
     fun getCachedRemoteSlotsForSemester_returnsEmptyWhenContextIsNull() {
-        val repository = ImportRepository(dao = FakeScheduleDaoForRepositoryTest())
+        val repository = ImportRepository(dao = FakeScheduleDao())
         val slots = repository.getCachedRemoteSlotsForSemester(
             context = null,
             semester = 1,
@@ -309,7 +305,7 @@ class ImportRepositoryTest {
             isActive = true,
             semester = 3
         )
-        val fakeDao = FakeScheduleDaoForRepositoryTest(
+        val fakeDao = FakeScheduleDao(
             initialSubjects = listOf(SubjectWithSlots(subject, emptyList()))
         )
         var rawFetchCount = 0
@@ -377,7 +373,7 @@ class ImportRepositoryTest {
     fun cacheRemoteSlotsInDir_retainsAll8AcademicPeriodsAndEvictsBeyondCap() {
         val tempDir = java.nio.file.Files.createTempDirectory("clementime_cache_test").toFile()
         try {
-            val repository = ImportRepository(dao = FakeScheduleDaoForRepositoryTest())
+            val repository = ImportRepository(dao = FakeScheduleDao())
             val totalEntries = ImportRepository.MAX_CACHED_REMOTE_SCHEDULES + 2
             for (i in 1..totalEntries) {
                 val termCode = "${i}P"
@@ -411,7 +407,7 @@ class ImportRepositoryTest {
     fun getCachedRemoteSlotsForSemesterInDir_resolvesTrimesterAndCustomTermCodesWithoutMetadata() {
         val tempDir = java.nio.file.Files.createTempDirectory("clementime_term_cache_test").toFile()
         try {
-            val repository = ImportRepository(dao = FakeScheduleDaoForRepositoryTest())
+            val repository = ImportRepository(dao = FakeScheduleDao())
             val trimesterJson = """[{"cuatrimestre":"3T","dia":"Miércoles","hora_inicio":"10:00","hora_fin":"11:30","asignatura":"Optativa III","codigo":"OPT3","tipo":"teoría","grupo":"1A"}]"""
             java.io.File(tempDir, "cache_uni_fac_3T.json").writeText(trimesterJson)
 
@@ -427,37 +423,5 @@ class ImportRepositoryTest {
         } finally {
             tempDir.deleteRecursively()
         }
-    }
-}
-
-class FakeScheduleDaoForRepositoryTest(
-    initialSubjects: List<SubjectWithSlots> = emptyList()
-) : com.marcoslorcar.clementime.data.ScheduleDao {
-    val subjectsFlow = MutableStateFlow(initialSubjects)
-    val upsertedSubjects = mutableListOf<Pair<Subject, List<ClassSlot>>>()
-
-    override fun getAllSubjectsWithSlots() = subjectsFlow
-    override fun getAllSubjectsWithSlotsBySemester(semester: Int) = subjectsFlow
-    override fun getActiveSubjectsWithSlotsBySemester(semester: Int) = subjectsFlow
-    override fun getSubjectWithSlotsById(subjectId: Long) = MutableStateFlow(null)
-    override suspend fun updateSubjectActiveStatus(subjectId: Long, isActive: Boolean) {}
-    override suspend fun updateSelectedLabGroup(subjectId: Long, labGroup: String?) {}
-    override suspend fun updateSelectedLabGroups(selections: Map<Long, String?>) {}
-    override suspend fun insertSubject(subject: Subject): Long = 1L
-    override suspend fun updateSubject(subject: Subject) {}
-    override suspend fun deleteSubjectById(subjectId: Long) {}
-    override suspend fun insertSlot(slot: ClassSlot): Long = 1L
-    override suspend fun insertSlots(slots: List<ClassSlot>) {}
-    override suspend fun updateSlot(slot: ClassSlot) {}
-    override suspend fun updateSlotIgnoredStatus(slotId: Long, isIgnored: Boolean) {}
-    override suspend fun deleteSlot(slot: ClassSlot) {}
-    override suspend fun deleteSlotById(slotId: Long) {}
-    override suspend fun deleteSlotsForSubject(subjectId: Long) {}
-    override suspend fun deleteAllSubjects() {}
-    override suspend fun deleteSubjectsByIds(subjectIds: List<Long>) {}
-    override suspend fun updateSubjectsActiveStatus(subjectIds: List<Long>, isActive: Boolean) {}
-
-    override suspend fun upsertSubjectWithSlots(subject: Subject, slots: List<ClassSlot>) {
-        upsertedSubjects.add(Pair(subject, slots))
     }
 }
