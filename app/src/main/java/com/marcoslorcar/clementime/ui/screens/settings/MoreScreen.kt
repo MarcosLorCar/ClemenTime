@@ -180,10 +180,8 @@ fun MoreScreen(
         onGithubRepoUrlChanged = viewModel::setGithubRepoBaseUrl,
         onToggleOnboardingTooltips = viewModel::setOnboardingTooltipsEnabled,
         onExportData = viewModel::exportData,
-        onExportIcs = viewModel::exportFullYearToIcs,
         onPeriodConfigChanged = viewModel::setPeriodConfig,
         onExportIcsBoundaries = viewModel::exportFullYearToIcs,
-        onAutoUpdateIntervalChanged = viewModel::setAutoUpdateIntervalHours,
         onSyncModeChanged = viewModel::setSyncMode,
         onCheckUpdatesNow = {
             viewModel.checkScheduleUpdatesNow(
@@ -220,10 +218,8 @@ fun MoreContent(
     onGithubRepoUrlChanged: (String) -> Unit,
     onToggleOnboardingTooltips: (Boolean) -> Unit,
     onExportData: (android.content.Context, Uri, (ExportStatus) -> Unit) -> Unit,
-    onExportIcs: (android.content.Context, Uri, LocalDate, LocalDate, LocalDate, LocalDate, (ExportStatus) -> Unit) -> Unit,
     onPeriodConfigChanged: (PeriodConfig) -> Unit = {},
     onExportIcsBoundaries: (android.content.Context, Uri, List<LocalDate>, (ExportStatus) -> Unit) -> Unit = { _, _, _, _ -> },
-    onAutoUpdateIntervalChanged: (Int) -> Unit = {},
     onSyncModeChanged: (com.marcoslorcar.clementime.data.SyncMode) -> Unit = {},
     onCheckUpdatesNow: () -> Unit = {},
     onDebugShowFcmStatus: ((String) -> Unit) -> Unit = {},
@@ -1114,7 +1110,6 @@ fun MoreScreenPreview() {
             onGithubRepoUrlChanged = {},
             onToggleOnboardingTooltips = {},
             onExportData = { _, _, _ -> },
-            onExportIcs = { _, _, _, _, _, _, _ -> },
             onDayStartTimeChanged = {},
             onDayEndTimeChanged = {},
             onImportClick = {}

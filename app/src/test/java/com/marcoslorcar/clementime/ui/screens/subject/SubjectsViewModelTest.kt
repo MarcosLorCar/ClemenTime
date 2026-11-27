@@ -1,14 +1,12 @@
 package com.marcoslorcar.clementime.ui.screens.subject
 
-import com.marcoslorcar.clementime.data.ClassSlot
-import com.marcoslorcar.clementime.data.ScheduleDao
 import com.marcoslorcar.clementime.data.Subject
 import com.marcoslorcar.clementime.data.SubjectWithSlots
+import com.marcoslorcar.clementime.testing.FakeScheduleDao
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -17,69 +15,6 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-
-class SubjectsViewModelTestFakeDao : ScheduleDao {
-    val subjectsFlow = MutableStateFlow<List<SubjectWithSlots>>(emptyList())
-    val deletedSubjectIds = mutableListOf<Long>()
-    val updatedActiveStatus = mutableMapOf<Long, Boolean>()
-    val updatedIgnoredStatus = mutableMapOf<Long, Boolean>()
-    var deleteAllSubjectsCalled = false
-    var deleteSubjectsByIdsCalledWith: List<Long>? = null
-
-    override fun getAllSubjectsWithSlots(): Flow<List<SubjectWithSlots>> = subjectsFlow
-
-    override fun getAllSubjectsWithSlotsBySemester(semester: Int): Flow<List<SubjectWithSlots>> = subjectsFlow
-
-    override fun getActiveSubjectsWithSlotsBySemester(semester: Int): Flow<List<SubjectWithSlots>> = flowOf(emptyList())
-
-    override fun getSubjectWithSlotsById(subjectId: Long): Flow<SubjectWithSlots?> = flowOf(null)
-
-    override suspend fun updateSubjectActiveStatus(subjectId: Long, isActive: Boolean) {
-        updatedActiveStatus[subjectId] = isActive
-    }
-
-    override suspend fun updateSelectedLabGroup(subjectId: Long, labGroup: String?) {}
-
-    override suspend fun updateSelectedLabGroups(selections: Map<Long, String?>) {}
-
-    override suspend fun insertSubject(subject: Subject): Long = 1L
-
-    override suspend fun updateSubject(subject: Subject) {}
-
-    override suspend fun deleteSubjectById(subjectId: Long) {
-        deletedSubjectIds.add(subjectId)
-    }
-
-    override suspend fun insertSlot(slot: ClassSlot): Long = 1L
-
-    override suspend fun insertSlots(slots: List<ClassSlot>) {}
-
-    override suspend fun updateSlot(slot: ClassSlot) {}
-
-    override suspend fun updateSlotIgnoredStatus(slotId: Long, isIgnored: Boolean) {
-        updatedIgnoredStatus[slotId] = isIgnored
-    }
-
-    override suspend fun deleteSlot(slot: ClassSlot) {}
-
-    override suspend fun deleteSlotById(slotId: Long) {}
-
-    override suspend fun deleteSlotsForSubject(subjectId: Long) {}
-
-    override suspend fun deleteAllSubjects() {
-        deleteAllSubjectsCalled = true
-    }
-
-    override suspend fun deleteSubjectsByIds(subjectIds: List<Long>) {
-        deleteSubjectsByIdsCalledWith = subjectIds
-    }
-
-    val bulkUpdatedActiveStatus = mutableMapOf<List<Long>, Boolean>()
-
-    override suspend fun updateSubjectsActiveStatus(subjectIds: List<Long>, isActive: Boolean) {
-        bulkUpdatedActiveStatus[subjectIds] = isActive
-    }
-}
 
 class FakeSettingsRepository : com.marcoslorcar.clementime.data.SettingsRepository(context = null) {
     val highContrastSubject = MutableStateFlow(false)
@@ -98,13 +33,13 @@ class FakeSettingsRepository : com.marcoslorcar.clementime.data.SettingsReposito
 class SubjectsViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
-    private lateinit var fakeDao: SubjectsViewModelTestFakeDao
+    private lateinit var fakeDao: FakeScheduleDao
     private lateinit var fakeSettingsRepository: FakeSettingsRepository
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
-        fakeDao = SubjectsViewModelTestFakeDao()
+        fakeDao = FakeScheduleDao()
         fakeSettingsRepository = FakeSettingsRepository()
     }
 

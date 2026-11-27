@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.marcoslorcar.clementime.R
 import com.marcoslorcar.clementime.data.EntryType
 import com.marcoslorcar.clementime.data.PeriodConfig
 import com.marcoslorcar.clementime.data.SettingsRepository
@@ -26,6 +27,7 @@ import com.marcoslorcar.clementime.utils.ScheduleDiffChecker
 import com.marcoslorcar.clementime.worker.FcmTopicManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -215,16 +217,21 @@ class ImportViewModel @Inject constructor(
 
                 val combined = remoteFiles + localFiles
                 val errorMsg = if (catalogResult.isFailure && remoteFiles.isNotEmpty()) {
-                    "Offline: showing cached schedules"
+                    context.getString(R.string.import_offline_cached_schedules)
                 } else if (catalogResult.isFailure) {
-                    "Online library unreachable. Check your connection."
+                    context.getString(R.string.import_library_online_unreachable)
                 } else {
                     null
                 }
 
                 _uiState.value = ImportUiState.Library(combined, errorMsg)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                _uiState.value = ImportUiState.Library(emptyList(), "Failed to load library: ${e.localizedMessage}")
+                _uiState.value = ImportUiState.Library(
+                    emptyList(),
+                    context.getString(R.string.import_error_load_library, e.localizedMessage.orEmpty())
+                )
             }
         }
     }
@@ -238,10 +245,15 @@ class ImportViewModel @Inject constructor(
                         repository.fetchRemoteScheduleSchema(context, file)
                     }
                     ImportSourceType.CUSTOM -> {
-                        val jsonString = withContext(Dispatchers.IO) {
-                            File(file.fileUri!!).readText()
+                        val filePath = file.fileUri
+                        if (filePath.isNullOrBlank()) {
+                            Result.failure(IllegalArgumentException(context.getString(R.string.file_not_found_message)))
+                        } else {
+                            val jsonString = withContext(Dispatchers.IO) {
+                                File(filePath).readText()
+                            }
+                            repository.parseJsonString(jsonString)
                         }
-                        repository.parseJsonString(jsonString)
                     }
                 }
 
@@ -278,11 +290,17 @@ class ImportViewModel @Inject constructor(
                         )
                     },
                     onFailure = { error ->
-                        _uiState.value = ImportUiState.Error("Invalid schedule format: ${error.localizedMessage}")
+                        _uiState.value = ImportUiState.Error(
+                            context.getString(R.string.import_error_invalid_format, error.localizedMessage.orEmpty())
+                        )
                     }
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                _uiState.value = ImportUiState.Error("Failed to load schedule: ${e.localizedMessage}")
+                _uiState.value = ImportUiState.Error(
+                    context.getString(R.string.import_error_load_schedule, e.localizedMessage.orEmpty())
+                )
             }
         }
     }
@@ -296,7 +314,9 @@ class ImportViewModel @Inject constructor(
                     loadFile(context, importFile)
                 },
                 onFailure = { error ->
-                    _uiState.value = ImportUiState.Error("Failed to save and parse file: ${error.localizedMessage}")
+                    _uiState.value = ImportUiState.Error(
+                        context.getString(R.string.import_error_save_file, error.localizedMessage.orEmpty())
+                    )
                 }
             )
         }
@@ -365,33 +385,6 @@ class ImportViewModel @Inject constructor(
                 currentState.copy(
                     selectedSubjects = emptySet(),
                     conflictStatus = ConflictStatus.None
-                )
-            } else {
-                currentState
-            }
-        }
-    }
-
-    @Suppress("unused")
-    fun selectAllSubjects(subjects: Collection<SelectedSubject>? = null) {
-        _uiState.update { currentState ->
-            if (currentState is ImportUiState.Selection) {
-                val toSelect = subjects ?: run {
-                    val fromRoot = currentState.schema.subjects.map { SelectedSubject(it, "General") }
-                    val fromYears = currentState.schema.years.flatMap { year ->
-                        val yearCommon = year.subjects.map { SelectedSubject(it, "${year.name} Common") }
-                        val fromGroups = year.groups.flatMap { group ->
-                            group.subjects.map { SelectedSubject(it, "${year.name} ${group.name}") }
-                        }
-                        yearCommon + fromGroups
-                    }
-                    fromRoot + fromYears
-                }
-                val updatedSelection = currentState.selectedSubjects.toMutableSet()
-                updatedSelection.addAll(toSelect)
-                currentState.copy(
-                    selectedSubjects = updatedSelection,
-                    conflictStatus = calculateConflictStatus(updatedSelection, currentState.existingSubjects)
                 )
             } else {
                 currentState
@@ -482,9 +475,9 @@ class ImportViewModel @Inject constructor(
         } else {
             val theoryOverlappingSlots = theoryOverlaps.flatMap { overlap ->
                 overlap.slots.flatMap { pair ->
-                    val s1 = allSubjectsWithSlots.find { it.subject.code == overlap.subject1Code }!!.subject
-                    val s2 = allSubjectsWithSlots.find { it.subject.code == overlap.subject2Code }!!.subject
-                    listOf(s1 to pair.first, s2 to pair.second)
+                    val s1 = allSubjectsWithSlots.find { it.subject.code == overlap.subject1Code }?.subject
+                    val s2 = allSubjectsWithSlots.find { it.subject.code == overlap.subject2Code }?.subject
+                    listOfNotNull(s1?.let { it to pair.first }, s2?.let { it to pair.second })
                 }
             }.distinctBy { it.second.id }
 
@@ -631,8 +624,13 @@ class ImportViewModel @Inject constructor(
                     settingsRepository.setHasSeenAddSlotTooltip(true)
                     ScheduleWidgetUtils.updateWidget(context)
                     _uiState.value = ImportUiState.Success
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
-                    _uiState.value = ImportUiState.Error("Import failed: ${e.localizedMessage}")
+                    val detail = e.localizedMessage.orEmpty()
+                    _uiState.value = ImportUiState.Error(
+                        context?.getString(R.string.import_error_failed, detail) ?: detail
+                    )
                 }
             }
         }

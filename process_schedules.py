@@ -14,10 +14,10 @@ Usage:
   python3 process_schedules.py custom.json   # Process a specific JSON file
 """
 
-import sys
+import argparse
 import os
 import subprocess
-import argparse
+import sys
 
 
 def main():
@@ -35,7 +35,7 @@ def main():
         pass
 
     parser = argparse.ArgumentParser(description="Process schedule files into flat semester JSONs.")
-    parser.add_argument("file", nargs="?", help="Specific JSON or PDF file to process (defaults to schedules/input/schedules.json).")
+    parser.add_argument("file", nargs="?", help="Specific JSON file to process (defaults to schedules/input/schedules.json).")
     parser.add_argument("--strict", action="store_true", help="Non-interactive mode (halts on unresolved mappings)")
     parser.add_argument("--check-esi", action="store_true", help="Check live ESI API for updates before processing.")
     parser.add_argument("--force", action="store_true", help="Force redownload from ESI API during check.")

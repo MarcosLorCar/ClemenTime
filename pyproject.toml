@@ -6,10 +6,10 @@ dependencies = [
     "python-dotenv>=1.2.2",
 ]
 
-[project.optional-dependencies]
-pdf = [
-    "google-genai>=2.14.0",
-    "pdf2image>=1.17.0",
-    "pillow>=12.3.0",
-    "pydantic>=2.13.4",
-]
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["E501"]

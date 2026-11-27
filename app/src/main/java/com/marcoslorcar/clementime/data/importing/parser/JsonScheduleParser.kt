@@ -35,7 +35,6 @@ class JsonScheduleParser @Inject constructor() {
     }
 
     fun exportToJson(
-        @Suppress("UNUSED_PARAMETER") title: String,
         subjectsWithSlots: List<SubjectWithSlots>,
         periodType: PeriodType = PeriodType.SEMESTERS
     ): String {

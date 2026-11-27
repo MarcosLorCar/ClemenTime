@@ -6,7 +6,6 @@ import com.marcoslorcar.clementime.data.Subject
 import com.marcoslorcar.clementime.data.SubjectWithSlots
 import com.marcoslorcar.clementime.data.TermCodeParser
 import com.marcoslorcar.clementime.data.importing.model.JsonFlatSlot
-import com.marcoslorcar.clementime.data.importing.parser.dayOfWeekToSpanish
 import com.marcoslorcar.clementime.data.importing.parser.isLab
 import com.marcoslorcar.clementime.data.importing.parser.normalizeGroup
 import com.marcoslorcar.clementime.data.importing.parser.parseDayOfWeek
@@ -31,8 +30,6 @@ data class SlotDiff(
     val subjectCode: String,
     val subjectName: String,
     val changeType: DiffType,
-    val oldDetail: String? = null,
-    val newDetail: String? = null,
     val subjectKey: String = "",
     val oldSlot: DiffSlotSnapshot? = null,
     val newSlot: DiffSlotSnapshot? = null,
@@ -159,22 +156,11 @@ object ScheduleDiffChecker {
                     modifiedLocalMatches.add(local)
                     modifiedRemoteMatches.add(remoteMatch)
 
-                    val oldDetail = formatSlotDetail(
-                        local.dayOfWeek, local.startTime, local.endTime,
-                        local.classroom, local.professor
-                    )
-                    val newDetail = formatSlotDetail(
-                        remoteMatch.dayOfWeek, remoteMatch.startTime, remoteMatch.endTime,
-                        remoteMatch.classroom, remoteMatch.professor
-                    )
-
                     diffs.add(
                         SlotDiff(
                             subjectCode = subject.code.ifBlank { subject.name },
                             subjectName = subject.name,
                             changeType = DiffType.MODIFIED,
-                            oldDetail = oldDetail,
-                            newDetail = newDetail,
                             subjectKey = key,
                             oldSlot = local.toDiffSnapshot(),
                             newSlot = remoteMatch.toDiffSnapshot(),
@@ -189,17 +175,11 @@ object ScheduleDiffChecker {
 
             // 3. Removed slots
             for (local in remainingLocal) {
-                val oldDetail = formatSlotDetail(
-                    local.dayOfWeek, local.startTime, local.endTime,
-                    local.classroom, local.professor
-                )
                 diffs.add(
                     SlotDiff(
                         subjectCode = subject.code.ifBlank { subject.name },
                         subjectName = subject.name,
                         changeType = DiffType.REMOVED,
-                        oldDetail = oldDetail,
-                        newDetail = null,
                         subjectKey = key,
                         oldSlot = local.toDiffSnapshot(),
                         newSlot = null,
@@ -210,17 +190,11 @@ object ScheduleDiffChecker {
 
             // 4. Added slots
             for (remote in remainingRemote) {
-                val newDetail = formatSlotDetail(
-                    remote.dayOfWeek, remote.startTime, remote.endTime,
-                    remote.classroom, remote.professor
-                )
                 diffs.add(
                     SlotDiff(
                         subjectCode = subject.code.ifBlank { subject.name },
                         subjectName = subject.name,
                         changeType = DiffType.ADDED,
-                        oldDetail = null,
-                        newDetail = newDetail,
                         subjectKey = key,
                         oldSlot = null,
                         newSlot = remote.toDiffSnapshot(),
@@ -331,23 +305,5 @@ object ScheduleDiffChecker {
         if (text.isNullOrBlank()) return ""
         val nfkd = java.text.Normalizer.normalize(text.trim(), java.text.Normalizer.Form.NFD)
         return nfkd.replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "").uppercase()
-    }
-
-    private fun formatSlotDetail(
-        dayOfWeek: DayOfWeek,
-        startTime: LocalTime,
-        endTime: LocalTime,
-        classroom: String?,
-        professor: String?
-    ): String {
-        val dayStr = dayOfWeekToSpanish(dayOfWeek)
-        val timeStr = "%02d:%02d - %02d:%02d".format(
-            startTime.hour, startTime.minute,
-            endTime.hour, endTime.minute
-        )
-        val roomStr = if (!classroom.isNullOrBlank()) "Aula: ${classroom.trim()}" else null
-        val profStr = if (!professor.isNullOrBlank()) "Prof: ${professor.trim()}" else null
-        val extra = listOfNotNull(roomStr, profStr).joinToString(", ")
-        return if (extra.isNotBlank()) "$dayStr $timeStr ($extra)" else "$dayStr $timeStr"
     }
 }

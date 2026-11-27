@@ -1,0 +1,64 @@
+config:
+  validation: true
+  warningsAsErrors: false
+
+empty-blocks:
+  active: true
+  EmptyCatchBlock:
+    active: true
+    allowedExceptionNameRegex: "^(ignore|expected).*"
+
+exceptions:
+  active: true
+  SwallowedException:
+    active: true
+    ignoredExceptionTypes:
+      - InterruptedException
+      - NumberFormatException
+      - MalformedURLException
+      - DateTimeParseException
+      - DateTimeException
+    allowedExceptionNameRegex: "^(ignore|expected).*"
+  TooGenericExceptionCaught:
+    active: true
+    exceptionNames:
+      - ArrayIndexOutOfBoundsException
+      - Error
+      - Exception
+      - IllegalMonitorStateException
+      - IndexOutOfBoundsException
+      - NullPointerException
+      - RuntimeException
+      - Throwable
+    allowedExceptionNameRegex: "^(ignore|expected).*"
+
+potential-bugs:
+  active: true
+  UnsafeCallOnNullableType:
+    active: true
+
+complexity:
+  active: true
+  CyclomaticComplexMethod:
+    active: true
+    allowedComplexity: 25
+    ignoreSimpleWhenEntries: true
+    ignoreAnnotated:
+      - Composable
+  LongMethod:
+    active: true
+    allowedLines: 150
+    ignoreAnnotated:
+      - Composable
+  LargeClass:
+    active: true
+    allowedLines: 750
+  TooManyFunctions:
+    active: true
+    allowedFunctionsPerFile: 30
+    allowedFunctionsPerClass: 30
+    allowedFunctionsPerInterface: 25
+    allowedFunctionsPerObject: 20
+    ignoreAnnotatedFunctions:
+      - Composable
+      - Preview

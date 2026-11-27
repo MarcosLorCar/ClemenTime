@@ -22,16 +22,15 @@ import time
 import urllib.error
 import urllib.request
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
 PLAY_STORE_MAX_CHARS = 500
 GITHUB_REPO_URL = "https://github.com/MarcosLorCar/ClemenTime"
 COMMIT_BODY_MAX_CHARS = 300
 
 
-def load_env(env_path: Optional[Path] = None) -> Dict[str, str]:
+def load_env(env_path: Path | None = None) -> dict[str, str]:
     """Parse key=value pairs from .env without external dependencies."""
-    env_vars: Dict[str, str] = {}
+    env_vars: dict[str, str] = {}
     if env_path is not None:
         candidates = [env_path]
     else:
@@ -56,12 +55,11 @@ def load_env(env_path: Optional[Path] = None) -> Dict[str, str]:
     return env_vars
 
 
-def run_git(args: List[str]) -> str:
+def run_git(args: list[str]) -> str:
     """Run a git command and return stripped stdout."""
     res = subprocess.run(
         ["git"] + args,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
         text=True,
         check=False,
     )
@@ -70,7 +68,7 @@ def run_git(args: List[str]) -> str:
     return res.stdout.strip()
 
 
-def resolve_tags(from_tag: Optional[str], to_ref: str) -> Tuple[Optional[str], str]:
+def resolve_tags(from_tag: str | None, to_ref: str) -> tuple[str | None, str]:
     """Resolve the base tag and target ref."""
     # Verify if to_ref exists
     rev = run_git(["rev-parse", "--verify", to_ref])
@@ -95,7 +93,7 @@ def resolve_tags(from_tag: Optional[str], to_ref: str) -> Tuple[Optional[str], s
     return from_tag, to_ref
 
 
-def get_git_commits(from_tag: Optional[str], to_ref: str) -> List[Dict[str, str]]:
+def get_git_commits(from_tag: str | None, to_ref: str) -> list[dict[str, str]]:
     """Retrieve commits between from_tag and to_ref."""
     if from_tag:
         range_spec = f"{from_tag}..{to_ref}"
@@ -105,7 +103,7 @@ def get_git_commits(from_tag: Optional[str], to_ref: str) -> List[Dict[str, str]
 
     format_str = "%h%x1f%s%x1f%an%x1f%b%x1e"
     raw = run_git(["log", f"--format={format_str}", range_spec])
-    commits: List[Dict[str, str]] = []
+    commits: list[dict[str, str]] = []
     if not raw:
         return commits
 
@@ -130,8 +128,8 @@ def enforce_char_limit(text: str, max_chars: int = PLAY_STORE_MAX_CHARS) -> str:
     if len(text) <= max_chars:
         return text
 
-    lines = [l.strip() for l in text.split("\n") if l.strip()]
-    fitted_lines: List[str] = []
+    lines = [line.strip() for line in text.split("\n") if line.strip()]
+    fitted_lines: list[str] = []
     current_len = 0
 
     for line in lines:
@@ -174,7 +172,7 @@ EXCLUDED_MODEL_TOKENS = (
 )
 
 
-def _model_rank(name: str) -> Tuple[int, Tuple[int, ...], int, int]:
+def _model_rank(name: str) -> tuple[int, tuple[int, ...], int, int]:
     """Rank discovered Gemini models: prefer stable flash models with highest version."""
     lower = name.lower()
     is_flash = 1 if "flash" in lower else 0
@@ -184,7 +182,7 @@ def _model_rank(name: str) -> Tuple[int, Tuple[int, ...], int, int]:
     return (is_flash, version_nums, is_stable, is_lite)
 
 
-def discover_gemini_models(api_key: str, limit: int = 5) -> List[str]:
+def discover_gemini_models(api_key: str, limit: int = 5) -> list[str]:
     """Query Gemini ListModels API to dynamically discover working text-generation models."""
     url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
     req = urllib.request.Request(url, method="GET")
@@ -195,7 +193,7 @@ def discover_gemini_models(api_key: str, limit: int = 5) -> List[str]:
         print(f"Warning: Could not list Gemini models dynamically: {e}", file=sys.stderr)
         return []
 
-    discovered: List[str] = []
+    discovered: list[str] = []
     for entry in data.get("models", []):
         methods = entry.get("supportedGenerationMethods", [])
         if "generateContent" not in methods:
@@ -217,7 +215,7 @@ def call_gemini(
     prompt: str,
     api_key: str,
     model: str = "gemini-flash-latest",
-) -> Optional[dict]:
+) -> dict | None:
     """Call Gemini REST API requesting JSON response."""
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
     payload = {
@@ -265,7 +263,7 @@ def call_gemini(
     return None
 
 
-def generate_fallback_notes(commits: List[Dict[str, str]], tag_name: str) -> dict:
+def generate_fallback_notes(commits: list[dict[str, str]], tag_name: str) -> dict:
     """Fallback generator when offline or no API key is available."""
     features = []
     fixes = []
@@ -316,7 +314,7 @@ def generate_fallback_notes(commits: List[Dict[str, str]], tag_name: str) -> dic
     }
 
 
-def append_compare_link(gh_markdown: str, from_tag: Optional[str], to_ref: str) -> str:
+def append_compare_link(gh_markdown: str, from_tag: str | None, to_ref: str) -> str:
     """Append a GitHub compare link footer when a base tag is known."""
     if not from_tag or to_ref == "HEAD" or "/compare/" in gh_markdown:
         return gh_markdown
@@ -324,7 +322,7 @@ def append_compare_link(gh_markdown: str, from_tag: Optional[str], to_ref: str) 
     return f"{gh_markdown.rstrip()}\n\n**Full Changelog**: {compare_url}"
 
 
-def format_commit_for_prompt(commit: Dict[str, str]) -> str:
+def format_commit_for_prompt(commit: dict[str, str]) -> str:
     """Format commit subject and a compact body excerpt for LLM context."""
     line = f"- {commit['hash']}: {commit['subject']}"
     body = commit.get("body", "").strip()
@@ -337,11 +335,11 @@ def format_commit_for_prompt(commit: Dict[str, str]) -> str:
 
 
 def synthesize_changelog(
-    commits: List[Dict[str, str]],
-    from_tag: Optional[str],
+    commits: list[dict[str, str]],
+    from_tag: str | None,
     to_ref: str,
-    api_key: Optional[str],
-    api_key_alt: Optional[str],
+    api_key: str | None,
+    api_key_alt: str | None,
     model: str,
 ) -> dict:
     """Synthesize changelogs using Gemini, or fallback if unavailable."""
@@ -476,7 +474,7 @@ def main():
     es_chars = len(result["google_play_es"])
     en_chars = len(result["google_play_en"])
 
-    print(f"Successfully generated release notes:", file=sys.stderr)
+    print("Successfully generated release notes:", file=sys.stderr)
     print(f"  - GitHub Release: {gh_path} ({len(result['github_markdown'])} chars)", file=sys.stderr)
     print(f"  - Google Play es-ES: {es_path} ({es_chars}/{PLAY_STORE_MAX_CHARS} chars)", file=sys.stderr)
     print(f"  - Google Play en-US: {en_path} ({en_chars}/{PLAY_STORE_MAX_CHARS} chars)", file=sys.stderr)

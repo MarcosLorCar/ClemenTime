@@ -4,7 +4,6 @@ Unit tests for check_esi_update.py verifying resilience against network failures
 upstream HTTP 403/5xx errors, corrupted payloads, and retry/fail-on-error behaviors.
 """
 
-import io
 import json
 import os
 import shutil
@@ -58,7 +57,7 @@ class TestCheckEsiUpdate(unittest.TestCase):
     def read_github_output(self):
         if not os.path.exists(self.gh_output_file):
             return ""
-        with open(self.gh_output_file, "r", encoding="utf-8") as f:
+        with open(self.gh_output_file, encoding="utf-8") as f:
             return f.read()
 
     @patch("schedules.script.check_esi_update.time.sleep")
@@ -82,7 +81,7 @@ class TestCheckEsiUpdate(unittest.TestCase):
         self.assertIn("has_update=false", output)
 
         # Existing files must remain intact
-        with open(self.meta_file, "r", encoding="utf-8") as f:
+        with open(self.meta_file, encoding="utf-8") as f:
             meta = json.load(f)
         self.assertEqual(meta["etag"], '"etag-initial"')
 
@@ -149,7 +148,7 @@ class TestCheckEsiUpdate(unittest.TestCase):
         self.assertIn("has_update=false", output)
 
         # Content must not be overwritten
-        with open(self.input_json, "r", encoding="utf-8") as f:
+        with open(self.input_json, encoding="utf-8") as f:
             content = json.load(f)
         self.assertEqual(content, self.sample_schedules)
 
@@ -179,7 +178,7 @@ class TestCheckEsiUpdate(unittest.TestCase):
         self.assertIn("has_update=false", output)
 
         # Existing schedules.json was preserved
-        with open(self.input_json, "r", encoding="utf-8") as f:
+        with open(self.input_json, encoding="utf-8") as f:
             content = json.load(f)
         self.assertEqual(content, self.sample_schedules)
 
@@ -212,11 +211,11 @@ class TestCheckEsiUpdate(unittest.TestCase):
         self.assertIn("has_update=true", output)
 
         # Schedules and metadata updated
-        with open(self.input_json, "r", encoding="utf-8") as f:
+        with open(self.input_json, encoding="utf-8") as f:
             content = json.load(f)
         self.assertEqual(content, new_payload)
 
-        with open(self.meta_file, "r", encoding="utf-8") as f:
+        with open(self.meta_file, encoding="utf-8") as f:
             meta = json.load(f)
         self.assertEqual(meta["etag"], '"etag-updated"')
         self.assertEqual(meta["sha256"], check_esi.compute_sha256(new_bytes))

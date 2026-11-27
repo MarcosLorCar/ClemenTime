@@ -1,0 +1,37 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:AcademicPeriod.kt:PeriodConfig.Companion$fun inferFromCatalog: PeriodConfig?</ID>
+    <ID>CyclomaticComplexMethod:ImportRepository.kt:ImportRepository$suspend fun applySlotDiffs: Int</ID>
+    <ID>CyclomaticComplexMethod:ImportViewModel.kt:ImportViewModel$fun confirmImport</ID>
+    <ID>CyclomaticComplexMethod:ImportViewModel.kt:ImportViewModel$fun loadLibrary</ID>
+    <ID>CyclomaticComplexMethod:JsonScheduleParser.kt:JsonScheduleParser$private fun flatSlotsToSchema: ScheduleJsonSchema</ID>
+    <ID>SwallowedException:ConflictResolverViewModel.kt:ConflictResolverViewModel$_: Exception</ID>
+    <ID>SwallowedException:FileUtils.kt:_: Exception</ID>
+    <ID>SwallowedException:ImportRepository.kt:ImportRepository$_: Exception</ID>
+    <ID>SwallowedException:ImportViewModel.kt:ImportViewModel$_: Exception</ID>
+    <ID>SwallowedException:MoreViewModel.kt:MoreViewModel$_: Exception</ID>
+    <ID>SwallowedException:ScheduleUpdateWorker.kt:ScheduleUpdateWorker$_: Exception</ID>
+    <ID>SwallowedException:ScheduleUpdateWorker.kt:ScheduleUpdateWorker.Companion$_: Exception</ID>
+    <ID>SwallowedException:ScheduleUpdateWorker.kt:ScheduleUpdateWorker.Companion$_: SecurityException</ID>
+    <ID>SwallowedException:ScheduleWidget.kt:ScheduleWidget$_: Throwable</ID>
+    <ID>SwallowedException:ScheduleWidgetUI.kt:_: Exception</ID>
+    <ID>SwallowedException:SettingsRepository.kt:SettingsRepository$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:ConflictResolverViewModel.kt:ConflictResolverViewModel$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:FcmTopicManager.kt:FcmTopicManager$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:FileUtils.kt:_: Exception</ID>
+    <ID>TooGenericExceptionCaught:ImportRepository.kt:ImportRepository$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:ImportRepository.kt:ImportRepository$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ImportViewModel.kt:ImportViewModel$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:ImportViewModel.kt:ImportViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:MoreViewModel.kt:MoreViewModel$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:MoreViewModel.kt:MoreViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ScheduleUpdateWorker.kt:ScheduleUpdateWorker$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:ScheduleUpdateWorker.kt:ScheduleUpdateWorker.Companion$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:ScheduleWidget.kt:ScheduleWidget$_: Throwable</ID>
+    <ID>TooGenericExceptionCaught:ScheduleWidgetUI.kt:_: Exception</ID>
+    <ID>TooGenericExceptionCaught:ScheduleWidgetUtils.kt:ScheduleWidgetUtils$e: Exception</ID>
+    <ID>TooManyFunctions:SettingsRepository.kt:SettingsRepository</ID>
+  </CurrentIssues>
+</SmellBaseline>

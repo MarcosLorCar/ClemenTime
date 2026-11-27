@@ -2,7 +2,7 @@ package com.marcoslorcar.clementime.data.api
 
 import com.marcoslorcar.clementime.data.importing.model.RemoteScheduleSummary
 import com.marcoslorcar.clementime.data.importing.model.ScheduleJsonSchema
-import com.marcoslorcar.clementime.data.importing.repository.FakeScheduleDaoForRepositoryTest
+import com.marcoslorcar.clementime.testing.FakeScheduleDao
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -88,7 +88,7 @@ class GitHubScheduleApiTest {
     @Test
     fun testNormalizeGitHubUrl() {
         val repo = com.marcoslorcar.clementime.data.importing.repository.ImportRepository(
-            dao = FakeScheduleDaoForRepositoryTest()
+            dao = FakeScheduleDao()
         )
 
         val webUrl = "https://github.com/MarcosLorCar/ClemenTime/tree/master/schedules/dist"

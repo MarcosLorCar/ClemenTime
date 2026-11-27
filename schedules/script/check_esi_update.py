@@ -143,7 +143,7 @@ def main():
     saved_meta = {}
     if os.path.exists(META_FILE):
         try:
-            with open(META_FILE, "r", encoding="utf-8") as f:
+            with open(META_FILE, encoding="utf-8") as f:
                 saved_meta = json.load(f)
         except Exception as e:
             print(f"[Warning] Failed to read existing {META_FILE}: {e}", file=sys.stderr)

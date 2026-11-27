@@ -7,10 +7,9 @@ Computes per-semester SHA256 hashes and deterministic academic year metadata
 without relying on PDF filename regex scraping.
 """
 
+import hashlib
 import json
 import os
-import sys
-import hashlib
 from datetime import datetime
 
 
@@ -66,7 +65,7 @@ def generate_index(dist_dir: str = None) -> str:
     existing_entries = {}
     if os.path.exists(output_path):
         try:
-            with open(output_path, "r", encoding="utf-8") as f:
+            with open(output_path, encoding="utf-8") as f:
                 loaded = json.load(f)
                 if isinstance(loaded, list):
                     for item in loaded:

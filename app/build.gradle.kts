@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.google.services)
+    alias(libs.plugins.detekt)
 }
 
 android {
@@ -117,7 +118,8 @@ android {
         }
     }
     lint {
-        disable.addAll(listOf("WebpUnsupported", "UnusedResources", "VectorRaster"))
+        disable.addAll(listOf("WebpUnsupported", "VectorRaster"))
+        error.add("UnusedResources")
     }
 
     testOptions {
@@ -133,11 +135,19 @@ android {
     }
 }
 
+detekt {
+    buildUponDefaultConfig = false
+    allRules = false
+    config.setFrom(rootProject.file("config/detekt/detekt.yml"))
+    baseline.set(rootProject.file("config/detekt/baseline.xml"))
+    parallel = true
+    source.setFrom(files("src/main/java"))
+}
+
 dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.compose.foundation.layout)
     implementation(libs.androidx.compose.runtime)
-    implementation(libs.androidx.ui)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)

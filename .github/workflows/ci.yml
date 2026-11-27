@@ -42,6 +42,11 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Lint Python Scripts (ruff)
+        run: |
+          python3 -m pip install --quiet ruff
+          ruff check .
+
       - name: Validate Schedule Pipeline
         run: |
           python3 process_schedules.py --strict
@@ -71,6 +76,9 @@ jobs:
 
       - name: Run Android Lint
         run: ./gradlew lint
+
+      - name: Run Detekt Static Analysis
+        run: ./gradlew detekt
 
       - name: Build Debug APK
         run: ./gradlew assembleDebug
