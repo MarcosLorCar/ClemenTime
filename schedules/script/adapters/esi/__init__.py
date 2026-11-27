@@ -4,41 +4,25 @@ from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 
+from ...config import load_faculty_config
 from ...contract import (
     Candidate,
     FacultyKey,
     FacultySchedule,
     FacultySpec,
     ParseFailure,
-    PeriodSpec,
     SourceFailure,
     Unchanged,
 )
 from . import source
 from .normalize import normalize
 
+CONFIG_PATH = Path(__file__).with_name("config.json")
 ESI_KEY = FacultyKey("uclm", "esi")
 
 
 def specification(today: date) -> FacultySpec:
-    year = today.year if today.month >= 7 else today.year - 1
-    academic_year = f"{year}-{year + 1}"
-    return FacultySpec(
-        key=ESI_KEY,
-        university_name="Universidad de Castilla-La Mancha",
-        faculty_name="Escuela Superior de Informática (Ciudad Real)",
-        periods=tuple(
-            PeriodSpec(
-                f"{index}C", index, f"{ordinal} Cuatrimestre",
-                f"Horario oficial ESI UCLM - {index}º Cuatrimestre ({academic_year})",
-                f"{index}C.json",
-            )
-            for index, ordinal in ((1, "Primer"), (2, "Segundo"))
-        ),
-        fcm_topic_prefix="uclm_esi",
-        subgroups_label="Laboratorios",
-        legacy_index=True,
-    )
+    return load_faculty_config(CONFIG_PATH, today).spec
 
 
 @dataclass(frozen=True)

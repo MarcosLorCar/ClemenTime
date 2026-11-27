@@ -3,8 +3,9 @@
 The schedule pipeline acquires and normalizes data through registered faculty
 adapters, stages results per faculty, and publishes flat Android schedule JSON,
 a combined v2 catalog (`schedules_catalog.json`), and ESI's legacy index
-(`schedules_index.json`). The production registry currently contains ESI in
-Ciudad Real (`uclm/esi`).
+(`schedules_index.json`). Each adapter defines its metadata, periods, and public
+source URL declaratively in `adapters/<faculty>/config.json`. The production
+registry currently contains ESI in Ciudad Real (`uclm/esi`).
 
 Run these commands from the repository root with Python 3.11 or newer. Use
 `uv sync` to install optional environment-file support.
@@ -19,6 +20,9 @@ python process_schedules.py --faculty uclm/esi --sync --strict --force
 # Reprocess a local fixture offline and write results to a separate directory
 python process_schedules.py --faculty uclm/esi --strict --fixture schedules/input/schedules.json --dist-dir scratch-dist
 
+# Validate all registered faculties offline using committed caches (same check as CI)
+python process_schedules.py --all --strict --dist-dir scratch-dist
+
 # Rebuild combined catalog and ESI legacy index from existing published term files
 python process_schedules.py --all --index-only --report index-report.json
 
@@ -30,10 +34,12 @@ python schedules/script/notify_fcm.py --faculty uclm/esi --dry-run
 python -m unittest discover -s schedules/script -p "test_*.py"
 ```
 
-Fixtures use the selected adapter's mappings. The ESI adapter keeps its
-production `mappings.json` in `adapters/esi/`. The legacy CLI still supports
-running `process_schedules.py` for the cached ESI input, passing a positional
-local JSON file, and using `--check-esi` for remote sync.
+Fixtures use the selected adapter's configuration and mappings. The ESI adapter
+keeps its declarative `config.json` and `mappings.json` in `adapters/esi/` and
+its cache in `schedules/input/`. The legacy CLI still supports running
+`process_schedules.py` for the cached ESI input, passing a positional local JSON
+file, and using `--check-esi` for remote sync.
 
-See the [ESI operating guide](../../docs/esi_api_schedule_pipeline.md) and the
-[modular pipeline contract](../../docs/modular_schedule_pipeline.md).
+See the [modular pipeline contract](../../docs/modular_schedule_pipeline.md),
+[pipeline diagrams](../../docs/pipeline_diagrams.md), and the
+[ESI operating guide](../../docs/esi_api_schedule_pipeline.md).

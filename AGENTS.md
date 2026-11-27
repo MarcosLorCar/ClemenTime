@@ -3,7 +3,7 @@
 ClemenTime is an offline-first Android timetable app for university students (Jetpack Compose, Material 3), supporting a multi-faculty searchable catalog, dynamic FCM push topic binding, and lab/subgroup conflict optimization.
 The repo contains:
 - `app/` — Android application (Kotlin, single Gradle module `:app`).
-- `schedules/` + `process_schedules.py` — Python pipeline generating normalized flat JSON schedules (`dist/1C.json`, `dist/2C.json`, and dynamic catalog indexes).
+- `schedules/` + `process_schedules.py` — Python pipeline generating normalized flat JSON schedules (`dist/1C.json`, `dist/2C.json`, nested per-faculty `dist/<uni>/<fac>/<period>.json`, and dynamic catalog indexes) from modular adapters with per-adapter declarative `config.json`.
 
 Specialized subsystem documentation is available via Antigravity workspace skills in `.agents/skills/`:
 - `schedule-pipeline`: Python pipeline, ESI TV hall API, mappings, flat wire format, strict mode.

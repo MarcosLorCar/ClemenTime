@@ -16,6 +16,7 @@ from unittest.mock import patch
 import process_schedules
 from schedules.script.adapters.esi import ESI_KEY, EsiAdapter
 from schedules.script.adapters.esi import specification as esi_specification
+from schedules.script.config import load_faculty_config
 from schedules.script.contract import (
     Candidate,
     FacultyKey,
@@ -446,3 +447,47 @@ class TestModularPipeline(unittest.TestCase):
         summary = summary_path.read_text(encoding="utf-8")
         self.assertIn("Overall status: **partial**", summary)
         self.assertIn("Simulated ESI timeout", summary)
+
+    def test_declarative_faculty_config_loads_defaults_and_rejects_missing_fields(self):
+        cfg_path = self.root / "config.json"
+        cfg_path.write_text(
+            json.dumps({
+                "university_id": "uclm",
+                "university_name": "Universidad de Castilla-La Mancha",
+                "faculty_id": "sample",
+                "faculty_name": "Sample Faculty",
+                "fcm_topic_prefix": "uclm_sample",
+                "source_url": "https://example.invalid/sample/horarios",
+                "period_type": "SEMESTERS",
+                "period_count": 2,
+                "periods": [
+                    {
+                        "id": "1C",
+                        "index": 1,
+                        "name": "Primer Cuatrimestre",
+                        "description_template": "Sample 1C ({academic_year})",
+                    },
+                ],
+            }),
+            encoding="utf-8",
+        )
+        loaded = load_faculty_config(cfg_path, TODAY)
+        self.assertEqual(loaded.source_url, "https://example.invalid/sample/horarios")
+        self.assertEqual(loaded.spec.key, FacultyKey("uclm", "sample"))
+        self.assertEqual(loaded.spec.periods[0].path, "uclm/sample/1C.json")
+        self.assertEqual(loaded.spec.periods[0].description, "Sample 1C (2026-2027)")
+        self.assertFalse(loaded.spec.legacy_index)
+
+        # Missing source_url is rejected visibly.
+        cfg_path.write_text(
+            json.dumps({
+                "university_id": "uclm",
+                "university_name": "UCLM",
+                "faculty_id": "sample",
+                "faculty_name": "Sample",
+                "periods": [{"id": "1C", "index": 1, "name": "1C"}],
+            }),
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(ValueError, "source_url"):
+            load_faculty_config(cfg_path, TODAY)
