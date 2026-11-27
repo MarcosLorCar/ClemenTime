@@ -295,7 +295,7 @@ class MoreViewModel @Inject constructor(
             val targetTopic = if (faculty.isBlank()) {
                 "None (no faculty linked)"
             } else {
-                FcmTopicManager.topicFor(uni, faculty, fcmTopicPrefix.ifBlank { null })
+                FcmTopicManager.topicFor(uni, faculty, fcmTopicPrefix.ifBlank { null }) ?: "None (invalid topic)"
             }
             val subscribedTopic = settingsRepository.subscribedFcmTopicFlow.first()
             val periodConfig = settingsRepository.periodConfigFlow.first()
@@ -333,8 +333,22 @@ class MoreViewModel @Inject constructor(
                 subjectCode = "DEBUG101",
                 subjectName = "Debug Systems & Testing",
                 changeType = com.marcoslorcar.clementime.utils.DiffType.MODIFIED,
-                oldDetail = "Mon 09:00-11:00 (Aula 1.1)",
-                newDetail = "Mon 10:00-12:00 (Aula 2.3)"
+                oldDetail = "Lunes 09:00 - 11:00 (Aula: 1.1)",
+                newDetail = "Lunes 10:00 - 12:00 (Aula: 2.3)",
+                oldSlot = com.marcoslorcar.clementime.utils.DiffSlotSnapshot(
+                    dayOfWeek = java.time.DayOfWeek.MONDAY,
+                    startTime = LocalTime.of(9, 0),
+                    endTime = LocalTime.of(11, 0),
+                    entryType = EntryType.THEORY,
+                    classroom = "1.1"
+                ),
+                newSlot = com.marcoslorcar.clementime.utils.DiffSlotSnapshot(
+                    dayOfWeek = java.time.DayOfWeek.MONDAY,
+                    startTime = LocalTime.of(10, 0),
+                    endTime = LocalTime.of(12, 0),
+                    entryType = EntryType.THEORY,
+                    classroom = "2.3"
+                )
             )
         )
         _pendingDiffs.value = mockDiffs
@@ -432,13 +446,18 @@ class MoreViewModel @Inject constructor(
                 val semester = _pendingSemester.value
                 val universityId = settingsRepository.selectedUniversityIdFlow.first()
                 val facultyId = settingsRepository.selectedFacultyIdFlow.first()
+                val rawBaseUrl = settingsRepository.githubRepoBaseUrlFlow.first()
+                val periodConfig = settingsRepository.periodConfigFlow.first()
                 val applied = importRepository.applySlotDiffs(
                     diffs = _pendingDiffs.value,
                     remoteSlots = _pendingRemoteSlots.value,
                     semester = semester,
                     selectedSubjectKeys = selectedSubjectKeys,
                     facultyId = facultyId,
-                    universityId = universityId
+                    universityId = universityId,
+                    context = context,
+                    rawBaseUrl = rawBaseUrl,
+                    periodType = periodConfig.type
                 )
                 // Only mark the version accepted if something was actually written; otherwise
                 // the diff would never resurface even though nothing changed.

@@ -8,7 +8,7 @@ The repo contains:
 Specialized subsystem documentation is available via Antigravity workspace skills in `.agents/skills/`:
 - `schedule-pipeline`: Python pipeline, ESI TV hall API, mappings, flat wire format, strict mode.
 - `room-and-data`: Room migrations (`MIGRATION_1_2`), `ScheduleDao.upsertSubjectWithSlots` caveats, DataStore hashes, and multi-faculty legacy migration fallbacks (`LEGACY_FALLBACK_UNIVERSITY_ID`, `LEGACY_FALLBACK_FACULTY_ID`).
-- `widget-and-workers`: Glance widget push updates (500 ms settlement delay), `HiltWorkerFactory` constraints.
+- `widget-and-workers`: Glance widget push updates, FCM push/WorkManager fallback, `HiltWorkerFactory` constraints.
 
 ---
 

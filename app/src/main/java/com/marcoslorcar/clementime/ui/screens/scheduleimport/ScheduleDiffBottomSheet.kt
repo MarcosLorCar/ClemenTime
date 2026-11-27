@@ -443,77 +443,65 @@ private fun DiffTypeBadge(
 }
 
 /**
- * Utility to construct synthetic Subject/ClassSlot pairs from SlotDiff items if no
- * explicit full-schedule slots were provided by the caller.
+ * Builds preview Subject/ClassSlot pairs directly from structured snapshots on [SlotDiff]
+ * when no explicit full-schedule before/after lists were provided by the caller.
  */
-private fun buildSlotsFromDiffs(
+internal fun buildSlotsFromDiffs(
     diffs: List<SlotDiff>
 ): Triple<List<Pair<Subject, ClassSlot>>, List<Pair<Subject, ClassSlot>>, Set<Pair<Subject, ClassSlot>>> {
     val beforeSlots = mutableListOf<Pair<Subject, ClassSlot>>()
     val afterSlots = mutableListOf<Pair<Subject, ClassSlot>>()
     val changedSlots = mutableSetOf<Pair<Subject, ClassSlot>>()
+    val subjectsByKey = linkedMapOf<String, Subject>()
+    var nextSlotId = 1L
 
-    diffs.forEachIndexed { index, diff ->
-        val subject = Subject(
-            id = (index + 1).toLong(),
-            code = diff.subjectCode.ifBlank { "SUBJ" },
-            name = diff.subjectName.ifBlank { "Subject" },
-            color = getSubjectColor(index),
-            isActive = true
-        )
-
-        diff.oldDetail?.let { detail ->
-            parseDetailToSlot(detail, subject.id)?.let { slot ->
-                beforeSlots.add(Pair(subject, slot))
-            }
+    diffs.forEach { diff ->
+        val key = diff.groupKey()
+        val subject = subjectsByKey.getOrPut(key) {
+            val subjectIndex = subjectsByKey.size
+            Subject(
+                id = (subjectIndex + 1).toLong(),
+                code = diff.subjectCode.ifBlank { "SUBJ" },
+                name = diff.subjectName.ifBlank { "Subject" },
+                color = diff.subjectColor ?: getSubjectColor(subjectIndex),
+                isActive = true
+            )
         }
 
-        diff.newDetail?.let { detail ->
-            parseDetailToSlot(detail, subject.id)?.let { slot ->
-                val pair = Pair(subject, slot)
-                afterSlots.add(pair)
-                changedSlots.add(pair)
-            }
+        diff.oldSlot?.let { snapshot ->
+            val slot = ClassSlot(
+                id = nextSlotId++,
+                subjectId = subject.id,
+                dayOfWeek = snapshot.dayOfWeek,
+                startTime = snapshot.startTime,
+                endTime = snapshot.endTime,
+                classroom = snapshot.classroom,
+                labGroupName = snapshot.labGroupName,
+                entryType = snapshot.entryType,
+                professor = snapshot.professor
+            )
+            beforeSlots.add(Pair(subject, slot))
+        }
+
+        diff.newSlot?.let { snapshot ->
+            val slot = ClassSlot(
+                id = nextSlotId++,
+                subjectId = subject.id,
+                dayOfWeek = snapshot.dayOfWeek,
+                startTime = snapshot.startTime,
+                endTime = snapshot.endTime,
+                classroom = snapshot.classroom,
+                labGroupName = snapshot.labGroupName,
+                entryType = snapshot.entryType,
+                professor = snapshot.professor
+            )
+            val pair = Pair(subject, slot)
+            afterSlots.add(pair)
+            changedSlots.add(pair)
         }
     }
 
     return Triple(beforeSlots, afterSlots, changedSlots)
-}
-
-private fun parseDetailToSlot(detail: String, subjectId: Long): ClassSlot? {
-    val clean = detail.trim()
-    if (clean.isBlank()) return null
-
-    val day = when {
-        clean.contains("Lunes", ignoreCase = true) -> DayOfWeek.MONDAY
-        clean.contains("Martes", ignoreCase = true) -> DayOfWeek.TUESDAY
-        clean.contains("Miércoles", ignoreCase = true) || clean.contains("Miercoles", ignoreCase = true) -> DayOfWeek.WEDNESDAY
-        clean.contains("Jueves", ignoreCase = true) -> DayOfWeek.THURSDAY
-        clean.contains("Viernes", ignoreCase = true) -> DayOfWeek.FRIDAY
-        else -> DayOfWeek.MONDAY
-    }
-
-    val timeRegex = Regex("(\\d{1,2}:\\d{2})\\s*-\\s*(\\d{1,2}:\\d{2})")
-    val timeMatch = timeRegex.find(clean)
-
-    val (start, end) = if (timeMatch != null) {
-        val s = runCatching { LocalTime.parse(timeMatch.groupValues[1].padStart(5, '0')) }.getOrDefault(LocalTime.of(9, 0))
-        val e = runCatching { LocalTime.parse(timeMatch.groupValues[2].padStart(5, '0')) }.getOrDefault(LocalTime.of(10, 30))
-        Pair(s, e)
-    } else {
-        Pair(LocalTime.of(9, 0), LocalTime.of(10, 30))
-    }
-
-    val isLab = clean.contains("Lab", ignoreCase = true) || clean.contains("Aula", ignoreCase = true) && clean.contains("L", ignoreCase = true)
-
-    return ClassSlot(
-        id = (subjectId * 100 + day.value),
-        subjectId = subjectId,
-        dayOfWeek = day,
-        startTime = start,
-        endTime = end,
-        entryType = if (isLab) EntryType.LAB else EntryType.THEORY
-    )
 }
 
 private fun getSubjectColor(index: Int): Int {
@@ -537,21 +525,49 @@ private val sampleDiffs = listOf(
         subjectName = "Programación I",
         changeType = DiffType.MODIFIED,
         oldDetail = "Lunes 09:00 - 11:00 (Aula: 1.1)",
-        newDetail = "Martes 11:00 - 13:00 (Aula: 1.2)"
+        newDetail = "Martes 11:00 - 13:00 (Aula: 1.2)",
+        oldSlot = com.marcoslorcar.clementime.utils.DiffSlotSnapshot(
+            dayOfWeek = DayOfWeek.MONDAY,
+            startTime = LocalTime.of(9, 0),
+            endTime = LocalTime.of(11, 0),
+            entryType = EntryType.THEORY,
+            classroom = "1.1"
+        ),
+        newSlot = com.marcoslorcar.clementime.utils.DiffSlotSnapshot(
+            dayOfWeek = DayOfWeek.TUESDAY,
+            startTime = LocalTime.of(11, 0),
+            endTime = LocalTime.of(13, 0),
+            entryType = EntryType.THEORY,
+            classroom = "1.2"
+        )
     ),
     SlotDiff(
         subjectCode = "ED",
         subjectName = "Estructuras de Datos",
         changeType = DiffType.ADDED,
         oldDetail = null,
-        newDetail = "Jueves 15:30 - 17:30 (Aula: Lab 3)"
+        newDetail = "Jueves 15:30 - 17:30 (Aula: Lab 3)",
+        newSlot = com.marcoslorcar.clementime.utils.DiffSlotSnapshot(
+            dayOfWeek = DayOfWeek.THURSDAY,
+            startTime = LocalTime.of(15, 30),
+            endTime = LocalTime.of(17, 30),
+            entryType = EntryType.LAB,
+            classroom = "Lab 3"
+        )
     ),
     SlotDiff(
         subjectCode = "FDD",
         subjectName = "Fundamentos del Diseño",
         changeType = DiffType.REMOVED,
         oldDetail = "Viernes 09:00 - 11:00 (Aula: 2.1)",
-        newDetail = null
+        newDetail = null,
+        oldSlot = com.marcoslorcar.clementime.utils.DiffSlotSnapshot(
+            dayOfWeek = DayOfWeek.FRIDAY,
+            startTime = LocalTime.of(9, 0),
+            endTime = LocalTime.of(11, 0),
+            entryType = EntryType.THEORY,
+            classroom = "2.1"
+        )
     )
 )
 

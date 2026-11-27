@@ -219,7 +219,8 @@ class ScheduleUpdateWorker @AssistedInject constructor(
                     summaries = summaries,
                     semester = semester,
                     universityId = universityId,
-                    facultyId = facultyId
+                    facultyId = facultyId,
+                    periodType = periodConfig.type
                 )
                 if (result != null && result.diffs.isNotEmpty()) {
                     settingsRepository.setLastScheduleSyncTimestamp(System.currentTimeMillis())
@@ -240,7 +241,8 @@ class ScheduleUpdateWorker @AssistedInject constructor(
             summaries: List<RemoteScheduleSummary>,
             semester: Int,
             universityId: String,
-            facultyId: String
+            facultyId: String,
+            periodType: com.marcoslorcar.clementime.data.PeriodType
         ): SyncResult? {
             // No fallback to summaries.first(): diffing against another semester's schedule
             // would mark every subject as changed.
@@ -293,7 +295,8 @@ class ScheduleUpdateWorker @AssistedInject constructor(
                     context = context,
                     semester = semester,
                     universityId = universityId,
-                    facultyId = facultyId
+                    facultyId = facultyId,
+                    periodType = periodType
                 )
                 if (cachedSlots.isNotEmpty()) {
                     previousSubjectHashes = ScheduleDiffChecker.computeRemoteSubjectHashes(
@@ -322,10 +325,11 @@ class ScheduleUpdateWorker @AssistedInject constructor(
             if (diffs.isEmpty() && remoteHash.isNotBlank()) {
                 settingsRepository.setLastKnownScheduleHash(semester, remoteHash)
                 settingsRepository.setLastRemoteSubjectHashes(semester, currentSubjectHashes)
+                val resolvedTermId = summary.id.ifBlank { TermCodeParser.formatTermCode(semester, periodType) }
                 val scopedId = if (universityId.isNotBlank() && facultyId.isNotBlank()) {
-                    "${universityId}_${facultyId}_${semester}C"
+                    "${universityId}_${facultyId}_$resolvedTermId"
                 } else {
-                    "${semester}C"
+                    resolvedTermId
                 }
                 importRepository.cacheRemoteSlots(
                     context = context,
@@ -337,7 +341,7 @@ class ScheduleUpdateWorker @AssistedInject constructor(
                     updatedTime = summary.updatedTime,
                     universityId = universityId.ifBlank { null },
                     facultyId = facultyId.ifBlank { null },
-                    termId = "${semester}C"
+                    termId = resolvedTermId
                 )
             }
 

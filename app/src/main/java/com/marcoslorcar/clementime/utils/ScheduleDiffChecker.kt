@@ -12,13 +12,26 @@ import java.time.LocalTime
 
 enum class DiffType { MODIFIED, ADDED, REMOVED }
 
+data class DiffSlotSnapshot(
+    val dayOfWeek: DayOfWeek,
+    val startTime: LocalTime,
+    val endTime: LocalTime,
+    val entryType: EntryType = EntryType.THEORY,
+    val classroom: String? = null,
+    val professor: String? = null,
+    val labGroupName: String? = null
+)
+
 data class SlotDiff(
     val subjectCode: String,
     val subjectName: String,
     val changeType: DiffType,
     val oldDetail: String? = null,
     val newDetail: String? = null,
-    val subjectKey: String = ""
+    val subjectKey: String = "",
+    val oldSlot: DiffSlotSnapshot? = null,
+    val newSlot: DiffSlotSnapshot? = null,
+    val subjectColor: Int? = null
 )
 
 object ScheduleDiffChecker {
@@ -157,7 +170,10 @@ object ScheduleDiffChecker {
                             changeType = DiffType.MODIFIED,
                             oldDetail = oldDetail,
                             newDetail = newDetail,
-                            subjectKey = key
+                            subjectKey = key,
+                            oldSlot = local.toDiffSnapshot(),
+                            newSlot = remoteMatch.toDiffSnapshot(),
+                            subjectColor = subject.color
                         )
                     )
                 }
@@ -179,7 +195,10 @@ object ScheduleDiffChecker {
                         changeType = DiffType.REMOVED,
                         oldDetail = oldDetail,
                         newDetail = null,
-                        subjectKey = key
+                        subjectKey = key,
+                        oldSlot = local.toDiffSnapshot(),
+                        newSlot = null,
+                        subjectColor = subject.color
                     )
                 )
             }
@@ -197,7 +216,10 @@ object ScheduleDiffChecker {
                         changeType = DiffType.ADDED,
                         oldDetail = null,
                         newDetail = newDetail,
-                        subjectKey = key
+                        subjectKey = key,
+                        oldSlot = null,
+                        newSlot = remote.toDiffSnapshot(),
+                        subjectColor = subject.color
                     )
                 )
             }
@@ -205,6 +227,26 @@ object ScheduleDiffChecker {
 
         return diffs
     }
+
+    private fun ClassSlot.toDiffSnapshot(): DiffSlotSnapshot = DiffSlotSnapshot(
+        dayOfWeek = dayOfWeek,
+        startTime = startTime,
+        endTime = endTime,
+        entryType = entryType,
+        classroom = classroom?.trim()?.ifEmpty { null },
+        professor = professor?.trim()?.ifEmpty { null },
+        labGroupName = labGroupName?.trim()?.ifEmpty { null }
+    )
+
+    private fun ParsedRemoteSlot.toDiffSnapshot(): DiffSlotSnapshot = DiffSlotSnapshot(
+        dayOfWeek = dayOfWeek,
+        startTime = startTime,
+        endTime = endTime,
+        entryType = if (isLab) EntryType.LAB else EntryType.THEORY,
+        classroom = classroom.ifBlank { null },
+        professor = professor.ifBlank { null },
+        labGroupName = labGroupName.ifBlank { null }
+    )
 
     private fun filterSemesterSlots(
         remoteSlots: List<JsonFlatSlot>,

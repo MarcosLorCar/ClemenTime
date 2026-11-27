@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import com.marcoslorcar.clementime.data.ClassSlot
 import com.marcoslorcar.clementime.data.EntryType
+import com.marcoslorcar.clementime.data.PeriodType
 import com.marcoslorcar.clementime.data.ScheduleDao
 import com.marcoslorcar.clementime.data.SettingsRepository
 import com.marcoslorcar.clementime.data.Subject
@@ -58,6 +59,11 @@ class ImportRepository @Inject constructor(
     private val apiService: GitHubScheduleApiService? = null,
     private val json: Json = Json { ignoreUnknownKeys = true; coerceInputValues = true; encodeDefaults = true }
 ) {
+    companion object {
+        // Must exceed PeriodConfig.MAX_PERIOD_COUNT (8) so all periods in an N-period academic year
+        // stay cached without evicting earlier periods.
+        const val MAX_CACHED_REMOTE_SCHEDULES = 12
+    }
 
     private fun String.sha256(): String {
         val md = MessageDigest.getInstance("SHA-256")
@@ -200,7 +206,8 @@ class ImportRepository @Inject constructor(
         facultyId: String? = null,
         universityId: String = SettingsRepository.LEGACY_FALLBACK_UNIVERSITY_ID,
         context: Context? = null,
-        rawBaseUrl: String = SettingsRepository.DEFAULT_GITHUB_REPO_BASE_URL
+        rawBaseUrl: String = SettingsRepository.DEFAULT_GITHUB_REPO_BASE_URL,
+        periodType: PeriodType = PeriodType.SEMESTERS
     ): Int = withContext(Dispatchers.IO) {
         val diffsToApply = if (selectedSubjectKeys != null) {
             diffs.filter { diff ->
@@ -226,7 +233,6 @@ class ImportRepository @Inject constructor(
                 universityId = universityId
             ).getOrNull() ?: Pair(rawBaseUrl, emptyList())
             val summary = summaries.find { TermCodeParser.matchesSummary(it, semester) }
-                ?: summaries.firstOrNull()
 
             if (summary != null && apiService != null) {
                 val fullUrl = normalizeGitHubUrl(
@@ -255,7 +261,8 @@ class ImportRepository @Inject constructor(
                     context = context,
                     semester = semester,
                     universityId = universityId,
-                    facultyId = effectiveFacultyId
+                    facultyId = effectiveFacultyId,
+                    periodType = periodType
                 )
             }
         }
@@ -327,7 +334,7 @@ class ImportRepository @Inject constructor(
         }
 
         if (appliedCount > 0 && context != null && downloadedJson != null && downloadedSummary != null && downloadedUrl != null) {
-            val resolvedTermId = downloadedSummary.id.ifBlank { "${semester}C" }
+            val resolvedTermId = downloadedSummary.id.ifBlank { TermCodeParser.formatTermCode(semester, periodType) }
             val scopedId = if (universityId.isNotBlank() && effectiveFacultyId.isNotBlank()) {
                 "${universityId}_${effectiveFacultyId}_$resolvedTermId"
             } else {
@@ -554,16 +561,16 @@ class ImportRepository @Inject constructor(
         return dir
     }
 
-    private fun getMetadataFile(context: Context): File {
-        return File(getCacheDir(context), "metadata.json")
-    }
-
     fun getCachedRemoteSchedules(context: Context): List<CacheMetadata> {
         return readCacheMetadata(context)
     }
 
     fun getCachedRemoteSlotsById(context: Context, fileId: String): List<JsonFlatSlot> {
-        val cacheFile = File(getCacheDir(context), "cache_${fileId}.json")
+        return getCachedRemoteSlotsByIdInDir(getCacheDir(context), fileId)
+    }
+
+    internal fun getCachedRemoteSlotsByIdInDir(cacheDir: File, fileId: String): List<JsonFlatSlot> {
+        val cacheFile = File(cacheDir, "cache_${fileId}.json")
         if (!cacheFile.exists()) return emptyList()
         return runCatching {
             json.decodeFromString<List<JsonFlatSlot>>(cacheFile.readText())
@@ -574,11 +581,27 @@ class ImportRepository @Inject constructor(
         context: Context?,
         semester: Int,
         universityId: String? = null,
-        facultyId: String? = null
+        facultyId: String? = null,
+        periodType: PeriodType = PeriodType.SEMESTERS
     ): List<JsonFlatSlot> {
         if (context == null) return emptyList()
+        return getCachedRemoteSlotsForSemesterInDir(
+            cacheDir = getCacheDir(context),
+            semester = semester,
+            universityId = universityId,
+            facultyId = facultyId,
+            periodType = periodType
+        )
+    }
 
-        val metadataEntries = readCacheMetadata(context)
+    internal fun getCachedRemoteSlotsForSemesterInDir(
+        cacheDir: File,
+        semester: Int,
+        universityId: String? = null,
+        facultyId: String? = null,
+        periodType: PeriodType = PeriodType.SEMESTERS
+    ): List<JsonFlatSlot> {
+        val metadataEntries = readCacheMetadataInDir(cacheDir)
         val metadataMatch = metadataEntries.firstOrNull { entry ->
             val termMatches = TermCodeParser.parseTermIndex(entry.termId ?: entry.id) == semester
             if (!termMatches) return@firstOrNull false
@@ -589,32 +612,38 @@ class ImportRepository @Inject constructor(
             uniMatches && facMatches
         }
         if (metadataMatch != null) {
-            val cached = getCachedRemoteSlotsById(context, metadataMatch.id)
+            val cached = getCachedRemoteSlotsByIdInDir(cacheDir, metadataMatch.id)
             if (cached.isNotEmpty()) return cached
         }
 
-        val termId = "${semester}C"
+        val candidateTermIds = buildList {
+            add(TermCodeParser.formatTermCode(semester, periodType))
+            for (type in PeriodType.entries) {
+                add(TermCodeParser.formatTermCode(semester, type))
+            }
+        }.distinct()
 
-        if (!universityId.isNullOrBlank() && !facultyId.isNullOrBlank()) {
-            val scopedSlots = getCachedRemoteSlotsById(context, "${universityId}_${facultyId}_${termId}")
-            if (scopedSlots.isNotEmpty()) return scopedSlots
+        for (termId in candidateTermIds) {
+            if (!universityId.isNullOrBlank() && !facultyId.isNullOrBlank()) {
+                val scopedSlots = getCachedRemoteSlotsByIdInDir(cacheDir, "${universityId}_${facultyId}_${termId}")
+                if (scopedSlots.isNotEmpty()) return scopedSlots
+            }
+
+            if (!facultyId.isNullOrBlank()) {
+                val facultyScopedSlots = getCachedRemoteSlotsByIdInDir(cacheDir, "${facultyId}_${termId}")
+                if (facultyScopedSlots.isNotEmpty()) return facultyScopedSlots
+            }
+
+            val legacySlots = getCachedRemoteSlotsByIdInDir(cacheDir, termId)
+            if (legacySlots.isNotEmpty()) return legacySlots
         }
-
-        if (!facultyId.isNullOrBlank()) {
-            val facultyScopedSlots = getCachedRemoteSlotsById(context, "${facultyId}_${termId}")
-            if (facultyScopedSlots.isNotEmpty()) return facultyScopedSlots
-        }
-
-        val legacySlots = getCachedRemoteSlotsById(context, termId)
-        if (legacySlots.isNotEmpty()) return legacySlots
 
         if (universityId.isNullOrBlank() && facultyId.isNullOrBlank()) {
             val matchingEntry = metadataEntries.firstOrNull { entry ->
-                entry.termId.equals(termId, ignoreCase = true) ||
-                    entry.id.endsWith("_$termId", ignoreCase = true)
+                TermCodeParser.parseTermIndex(entry.termId ?: entry.id) == semester
             }
             if (matchingEntry != null) {
-                return getCachedRemoteSlotsById(context, matchingEntry.id)
+                return getCachedRemoteSlotsByIdInDir(cacheDir, matchingEntry.id)
             }
         }
 
@@ -627,7 +656,11 @@ class ImportRepository @Inject constructor(
     }
 
     private fun readCacheMetadata(context: Context): List<CacheMetadata> {
-        val file = getMetadataFile(context)
+        return readCacheMetadataInDir(getCacheDir(context))
+    }
+
+    internal fun readCacheMetadataInDir(cacheDir: File): List<CacheMetadata> {
+        val file = File(cacheDir, "metadata.json")
         if (!file.exists()) return emptyList()
         return try {
             val jsonString = file.readText()
@@ -638,7 +671,11 @@ class ImportRepository @Inject constructor(
     }
 
     private fun writeCacheMetadata(context: Context, entries: List<CacheMetadata>) {
-        val file = getMetadataFile(context)
+        writeCacheMetadataInDir(getCacheDir(context), entries)
+    }
+
+    private fun writeCacheMetadataInDir(cacheDir: File, entries: List<CacheMetadata>) {
+        val file = File(cacheDir, "metadata.json")
         try {
             val jsonString = json.encodeToString(RemoteCacheList(entries))
             file.writeText(jsonString)
@@ -662,9 +699,44 @@ class ImportRepository @Inject constructor(
         fcmTopicPrefix: String? = null,
         termId: String? = null
     ) {
-        val cacheDir = getCacheDir(context)
+        cacheRemoteSlotsInDir(
+            cacheDir = getCacheDir(context),
+            fileId = fileId,
+            title = title,
+            description = description,
+            remotePath = remotePath,
+            rawJson = rawJson,
+            updatedTime = updatedTime,
+            universityId = universityId,
+            universityName = universityName,
+            facultyId = facultyId,
+            facultyName = facultyName,
+            fcmTopicPrefix = fcmTopicPrefix,
+            termId = termId
+        )
+    }
+
+    internal fun cacheRemoteSlotsInDir(
+        cacheDir: File,
+        fileId: String,
+        title: String,
+        description: String?,
+        remotePath: String,
+        rawJson: String,
+        updatedTime: String? = null,
+        universityId: String? = null,
+        universityName: String? = null,
+        facultyId: String? = null,
+        facultyName: String? = null,
+        fcmTopicPrefix: String? = null,
+        termId: String? = null,
+        nowMillis: Long = System.currentTimeMillis()
+    ) {
+        if (!cacheDir.exists()) {
+            cacheDir.mkdirs()
+        }
         val cacheFile = File(cacheDir, "cache_${fileId}.json")
-        val metadataList = readCacheMetadata(context).toMutableList()
+        val metadataList = readCacheMetadataInDir(cacheDir).toMutableList()
         val existingEntry = metadataList.find { it.id == fileId }
         val newHash = rawJson.sha256()
 
@@ -673,7 +745,7 @@ class ImportRepository @Inject constructor(
             title = title,
             description = description ?: existingEntry?.description,
             remotePath = remotePath,
-            lastUsed = System.currentTimeMillis(),
+            lastUsed = nowMillis,
             hash = newHash,
             updatedTime = updatedTime ?: existingEntry?.updatedTime,
             universityId = universityId ?: existingEntry?.universityId,
@@ -689,9 +761,9 @@ class ImportRepository @Inject constructor(
             metadataList.removeAll { it.id == fileId }
             metadataList.add(updatedEntry)
 
-            if (metadataList.size > 5) {
+            if (metadataList.size > MAX_CACHED_REMOTE_SCHEDULES) {
                 metadataList.sortBy { it.lastUsed }
-                while (metadataList.size > 5) {
+                while (metadataList.size > MAX_CACHED_REMOTE_SCHEDULES) {
                     val oldest = metadataList.removeAt(0)
                     val oldestFile = File(cacheDir, "cache_${oldest.id}.json")
                     if (oldestFile.exists()) {
@@ -704,7 +776,7 @@ class ImportRepository @Inject constructor(
             metadataList.add(updatedEntry)
         }
 
-        writeCacheMetadata(context, metadataList)
+        writeCacheMetadataInDir(cacheDir, metadataList)
     }
 
     suspend fun fetchRemoteScheduleSchema(

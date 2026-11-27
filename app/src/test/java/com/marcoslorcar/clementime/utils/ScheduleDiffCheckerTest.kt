@@ -396,4 +396,77 @@ class ScheduleDiffCheckerTest {
         assertTrue(diffs.first().oldDetail!!.contains("B1.1"))
         assertTrue(diffs.first().newDetail!!.contains("B2.5"))
     }
+
+    @Test
+    fun `findDiffs populates structured snapshots and diff preview preserves theory and weekend slots`() {
+        val existingTheory = ClassSlot(
+            id = 40L,
+            subjectId = 1L,
+            dayOfWeek = DayOfWeek.MONDAY,
+            startTime = LocalTime.of(9, 0),
+            endTime = LocalTime.of(11, 0),
+            classroom = "A1.1",
+            professor = "Prof. Ada",
+            entryType = EntryType.THEORY
+        )
+        val remoteSlots = listOf(
+            JsonFlatSlot(
+                grupo = "1A",
+                cuatrimestre = "1C",
+                dia = "Sábado",
+                horaInicio = "10:00",
+                horaFin = "12:00",
+                codigo = "FunProg1",
+                asignatura = "Fundamentos de Programación 1",
+                tipo = "teoría",
+                aula = "A2.3",
+                profesor = "Prof. Ada"
+            ),
+            JsonFlatSlot(
+                grupo = "1A",
+                cuatrimestre = "1C",
+                dia = "Jueves",
+                horaInicio = "15:30",
+                horaFin = "17:30",
+                codigo = "FunProg1",
+                asignatura = "Fundamentos de Programación 1",
+                tipo = "laboratorio",
+                esLaboratorio = true,
+                aula = "Lab 3",
+                grupoPracticas = "L1"
+            )
+        )
+
+        val diffs = ScheduleDiffChecker.findDiffs(
+            existingSubjects = listOf(SubjectWithSlots(sampleSubject, listOf(existingTheory))),
+            remoteSlots = remoteSlots,
+            currentSemester = 1
+        )
+
+        assertEquals(2, diffs.size)
+        val modified = diffs.first { it.changeType == DiffType.MODIFIED }
+        val addedLab = diffs.first { it.changeType == DiffType.ADDED }
+
+        assertEquals(EntryType.THEORY, modified.oldSlot?.entryType)
+        assertEquals(DayOfWeek.MONDAY, modified.oldSlot?.dayOfWeek)
+        assertEquals(EntryType.THEORY, modified.newSlot?.entryType)
+        assertEquals(DayOfWeek.SATURDAY, modified.newSlot?.dayOfWeek)
+        assertEquals(EntryType.LAB, addedLab.newSlot?.entryType)
+        assertEquals(DayOfWeek.THURSDAY, addedLab.newSlot?.dayOfWeek)
+
+        val (beforeSlots, afterSlots, highlighted) =
+            com.marcoslorcar.clementime.ui.screens.scheduleimport.buildSlotsFromDiffs(diffs)
+
+        assertEquals(1, beforeSlots.size)
+        assertEquals(EntryType.THEORY, beforeSlots.single().second.entryType)
+        assertEquals(DayOfWeek.MONDAY, beforeSlots.single().second.dayOfWeek)
+        assertEquals(sampleSubject.color, beforeSlots.single().first.color)
+
+        assertEquals(2, afterSlots.size)
+        assertEquals(2, highlighted.size)
+        val afterTheory = afterSlots.first { it.second.dayOfWeek == DayOfWeek.SATURDAY }
+        val afterLab = afterSlots.first { it.second.dayOfWeek == DayOfWeek.THURSDAY }
+        assertEquals(EntryType.THEORY, afterTheory.second.entryType)
+        assertEquals(EntryType.LAB, afterLab.second.entryType)
+    }
 }

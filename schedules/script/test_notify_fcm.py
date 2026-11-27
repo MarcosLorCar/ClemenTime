@@ -48,6 +48,13 @@ class TestNotifyFcm(unittest.TestCase):
     def test_build_topic_name(self):
         self.assertEqual(notify_fcm.build_topic_name("uclm", "esi", "uclm_esi"), "sched_uclm_esi")
         self.assertEqual(notify_fcm.build_topic_name("UPM", "ETSII", None), "sched_upm_etsii")
+        self.assertEqual(notify_fcm.build_topic_name("upm", "etsiinf", "sched_UPM ETSiInf"), "sched_upm_etsiinf")
+        self.assertEqual(notify_fcm.build_topic_name("upm", "etsiinf", "SCHED_upm.etsiinf"), "sched_upm_etsiinf")
+        self.assertEqual(notify_fcm.build_topic_name("u.c.l.m", "e.s.i", None), "sched_u_c_l_m_e_s_i")
+        with self.assertRaises(ValueError):
+            notify_fcm.build_topic_name("", "esi", None)
+        with self.assertRaises(ValueError):
+            notify_fcm.build_topic_name("uclm", "   ", None)
 
     def test_build_fcm_messages_data_only_payload(self):
         messages = notify_fcm.build_fcm_messages(self.sample_catalog, updated_at="2026-11-17T12:00:00+00:00")

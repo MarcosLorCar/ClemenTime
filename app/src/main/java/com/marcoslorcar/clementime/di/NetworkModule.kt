@@ -1,5 +1,6 @@
 package com.marcoslorcar.clementime.di
 
+import com.marcoslorcar.clementime.BuildConfig
 import com.marcoslorcar.clementime.data.api.GitHubScheduleApiService
 import dagger.Module
 import dagger.Provides
@@ -32,9 +33,13 @@ object NetworkModule {
         return OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
-            .addInterceptor(HttpLoggingInterceptor().apply {
-                level = HttpLoggingInterceptor.Level.BODY
-            })
+            .apply {
+                if (BuildConfig.DEBUG) {
+                    addInterceptor(HttpLoggingInterceptor().apply {
+                        level = HttpLoggingInterceptor.Level.BODY
+                    })
+                }
+            }
             .build()
     }
 

@@ -213,6 +213,13 @@ class ImportViewModelTest {
         assertTrue(state.conflictStatus is ConflictStatus.Conflict)
         val conflict = state.conflictStatus as ConflictStatus.Conflict
         assertTrue(conflict.detail.theoryOverlaps.isNotEmpty())
+        assertTrue(conflict.detail.theoryOverlappingSlots.isNotEmpty())
+        conflict.detail.theoryOverlappingSlots.forEach { (subject, _) ->
+            assertTrue(
+                "Expected valid ARGB preset color, got ${subject.color}",
+                subject.color in com.marcoslorcar.clementime.data.Subject.PRESET_COLORS
+            )
+        }
     }
 
     @Test
