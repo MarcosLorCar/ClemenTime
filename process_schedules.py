@@ -1,95 +1,79 @@
 #!/usr/bin/env python3
-"""
-process_schedules.py
-
-Project-root wrapper script to fetch ESI schedule data from the TV hall endpoint,
-process it into flat semester JSON files (dist/1C.json and dist/2C.json),
-and regenerate schedules_index.json with per-semester SHA256 hashes.
-
-Usage:
-  python3 process_schedules.py               # Process schedules/input/schedules.json
-  python3 process_schedules.py --check-esi   # Check live ESI API for updates first
-  python3 process_schedules.py --force       # Force redownload from ESI API
-  python3 process_schedules.py --strict      # Non-interactive mode (fails on unknown mappings)
-  python3 process_schedules.py custom.json   # Process a specific JSON file
-"""
+"""Run a registered schedule adapter or rebuild its indexes."""
 
 import argparse
-import os
-import subprocess
 import sys
+from datetime import date
+from pathlib import Path
+
+from schedules.script.adapters.esi import ESI_KEY, EsiAdapter
+from schedules.script.contract import ParseFailure, SourceFailure
+from schedules.script.pipeline import run_pipeline, validate_specs
+from schedules.script.publication import publish
+from schedules.script.registry import registered_faculties
 
 
-def main():
-    try:
-        sys.stdout.reconfigure(line_buffering=True)
-        sys.stderr.reconfigure(line_buffering=True)
-    except Exception:
-        pass
-
+def main() -> int:
+    root = Path(__file__).resolve().parent
     try:
         from dotenv import load_dotenv
-        root_dir = os.path.dirname(os.path.abspath(__file__))
-        load_dotenv(os.path.join(root_dir, ".env"))
     except ImportError:
         pass
+    else:
+        load_dotenv(root / ".env")
 
-    parser = argparse.ArgumentParser(description="Process schedule files into flat semester JSONs.")
-    parser.add_argument("file", nargs="?", help="Specific JSON file to process (defaults to schedules/input/schedules.json).")
-    parser.add_argument("--strict", action="store_true", help="Non-interactive mode (halts on unresolved mappings)")
-    parser.add_argument("--check-esi", action="store_true", help="Check live ESI API for updates before processing.")
-    parser.add_argument("--force", action="store_true", help="Force redownload from ESI API during check.")
+    today = date.today()
+    faculties = {str(key): entry for key, entry in registered_faculties(root / "schedules", today).items()}
+    parser = argparse.ArgumentParser(description="Process schedules for a registered faculty.")
+    parser.add_argument("--faculty", choices=faculties, default=str(ESI_KEY), help="Faculty key (legacy default: %(default)s).")
+    parser.add_argument("file", nargs="?", type=Path, help="Local source file (positional alias for --fixture).")
+    parser.add_argument("--fixture", type=Path, help="Reprocess a local source file offline.")
+    parser.add_argument("--dist-dir", type=Path, default=root / "schedules" / "dist", help="Directory for public output.")
+    parser.add_argument("--strict", action="store_true", help="Fail on unresolved mappings without prompting.")
+    parser.add_argument("--sync", action="store_true", help="Check the remote source before processing.")
+    parser.add_argument("--check-esi", action="store_true", help="Legacy alias for --faculty uclm/esi --sync.")
+    parser.add_argument("--force", action="store_true", help="Download and process the source even when headers match.")
+    parser.add_argument("--index-only", action="store_true", help="Refresh indexes from existing distribution files.")
+    args = parser.parse_args()
 
-    args, unknown = parser.parse_known_args()
+    if args.file and args.fixture:
+        parser.error("Choose either a positional file or --fixture.")
+    if args.check_esi and args.faculty != str(ESI_KEY):
+        parser.error("--check-esi is only available for uclm/esi.")
+    fixture = args.fixture or args.file
+    remote = args.sync or args.check_esi or args.force
+    if args.index_only and (fixture or remote):
+        parser.error("--index-only uses the existing distribution files.")
+    if fixture and remote:
+        parser.error("Local fixtures are processed offline. Omit --sync, --check-esi, and --force.")
 
-    root_dir = os.path.dirname(os.path.abspath(__file__))
-    script_dir = os.path.join(root_dir, "schedules", "script")
-    input_dir = os.path.join(root_dir, "schedules", "input")
-    default_json = os.path.join(input_dir, "schedules.json")
+    spec, adapter = faculties[args.faculty]
+    dist = args.dist_dir.resolve()
+    try:
+        validate_specs((entry[0] for entry in faculties.values()), dist)
+        if args.index_only:
+            result = publish(spec, dist, today, {})
+        else:
+            # Preserve the original command's first-run behavior when its cache is missing.
+            if fixture is None and isinstance(adapter, EsiAdapter) and not adapter.cached_input.is_file():
+                remote = True
+            result = run_pipeline(
+                spec, adapter, dist, today, fixture=fixture, remote=remote, force=args.force, strict=args.strict
+            )
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        print(f"[Publication error] {spec.key}: {error}", file=sys.stderr)
+        return 1
 
-    check_esi_script = os.path.join(script_dir, "check_esi_update.py")
-    parse_script = os.path.join(script_dir, "parse_schedule.py")
-    index_script = os.path.join(script_dir, "generate_index.py")
-
-    # 1. Check live ESI API if requested or if default input is missing
-    if (args.check_esi or (not args.file and not os.path.exists(default_json))) and os.path.exists(check_esi_script):
-        print("\n[Run] Checking live ESI API endpoint for updates...", flush=True)
-        check_cmd = [sys.executable, "-u", check_esi_script]
-        if args.force:
-            check_cmd.append("--force")
-        res_esi = subprocess.run(check_cmd)
-        if res_esi.returncode != 0:
-            print(f"[Error] Live ESI check failed with exit code {res_esi.returncode}.", file=sys.stderr)
-            if args.strict or not os.path.exists(default_json):
-                sys.exit(res_esi.returncode)
-
-    # 2. Determine file to process
-    target_file = args.file if args.file else default_json
-    if not os.path.exists(target_file):
-        print(f"[Error] Schedule input file '{target_file}' not found.", file=sys.stderr)
-        sys.exit(1)
-
-    # 3. Run parse_schedule.py
-    print(f"\n[Run] Processing {os.path.basename(target_file)}...", flush=True)
-    parse_cmd = [sys.executable, "-u", parse_script, target_file]
-    if args.strict:
-        parse_cmd.append("--non-interactive")
-
-    res_parse = subprocess.run(parse_cmd)
-    if res_parse.returncode != 0:
-        print(f"[Error] Schedule parsing failed with exit code {res_parse.returncode}", file=sys.stderr)
-        sys.exit(res_parse.returncode)
-
-    # 4. Regenerate schedule index
-    if os.path.exists(index_script):
-        print("\n[Run] Regenerating schedule index...", flush=True)
-        res_index = subprocess.run([sys.executable, "-u", index_script])
-        if res_index.returncode != 0:
-            print("[Error] Schedule index generation failed.", file=sys.stderr)
-            sys.exit(res_index.returncode)
-
-    print("\n[Done] Pipeline finished successfully!", flush=True)
+    if isinstance(result, (SourceFailure, ParseFailure)):
+        stage = "Source" if isinstance(result, SourceFailure) else "Parse"
+        print(f"[{stage} error] {spec.key}: {result.diagnostic}", file=sys.stderr)
+        return 1
+    if result:
+        print(f"[Published] {spec.key}: {', '.join(sorted(result))}")
+    else:
+        print(f"[Unchanged] {spec.key}: public files are current.")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

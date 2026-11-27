@@ -44,8 +44,7 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Check ESI API Endpoint for Schedule Updates
-        id: check
+      - name: Sync and Process ESI Schedules
         env:
           SCHEDULE_SOURCE_URL: ${{ secrets.SCHEDULE_SOURCE_URL }}
         run: |
@@ -53,40 +52,30 @@ jobs:
           if [ "${{ inputs.force }}" = "true" ]; then
             ARGS="--force"
           fi
-          python3 -u schedules/script/check_esi_update.py $ARGS
-
-      - name: Process Schedules
-        id: process
-        if: >
-          steps.check.outputs.has_update == 'true' ||
-          github.event_name == 'workflow_dispatch' ||
-          github.event_name == 'push'
-        run: |
-          python3 -u process_schedules.py --strict
+          python3 -u process_schedules.py --faculty uclm/esi --sync --strict $ARGS
 
       - name: Commit and Push
         id: commit
-        if: >
-          success() && (
-          steps.check.outputs.has_update == 'true' ||
-          github.event_name == 'workflow_dispatch' ||
-          github.event_name == 'push' )
+        if: success()
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add schedules/
+          published=false
+          if ! git diff --cached --quiet -- schedules/dist/; then
+            published=true
+          fi
           if git diff --cached --quiet; then
             echo "No changes to commit"
-            echo "committed=false" >> $GITHUB_OUTPUT
           else
             git commit -m "chore: auto-sync ESI schedules from TV hall API [skip ci]"
             git pull --rebase origin master
             git push
-            echo "committed=true" >> $GITHUB_OUTPUT
           fi
+          echo "published=$published" >> "$GITHUB_OUTPUT"
 
       - name: Notify FCM Topic Subscribers
-        if: success() && (steps.commit.outputs.committed == 'true' || inputs.test_fcm == true)
+        if: success() && (steps.commit.outputs.published == 'true' || inputs.test_fcm == true)
         env:
           FCM_SERVICE_ACCOUNT_KEY: ${{ secrets.FCM_SERVICE_ACCOUNT_KEY }}
         run: |

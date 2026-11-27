@@ -1,58 +1,36 @@
-# ESI Schedule Processing Scripts (`schedules/script/`)
+# Schedule Processing Scripts
 
-Automated tools to fetch timetable data from the official ESI TV hall endpoint (`https://esi.uclm.es/TV/hall/horarios.json`), apply name normalization via `mappings.json`, handle deduplication and faculty event collapse, publish semester distribution files (`dist/1C.json`, `dist/2C.json`, `dist/schedules_catalog.json`, and legacy `dist/schedules_index.json`), and dispatch FCM push notifications (`notify_fcm.py`).
+The schedule pipeline acquires and normalizes data through a registered faculty
+adapter, then validates and publishes flat Android schedule JSON and indexes.
+The production registry contains ESI in Ciudad Real (`uclm/esi`).
 
----
-
-## Pipeline Overview
-
-```
-https://esi.uclm.es/TV/hall/horarios.json
-             │
-   check_esi_update.py  (HTTP HEAD ETag / Last-Modified)
-             │
-schedules/input/schedules.json
-             │
-   parse_schedule.py    (mappings.json + deduplication + normalization)
-             │
-   schedules/dist/1C.json & 2C.json
-             │
-   generate_index.py    (deterministic metadata + SHA256 hashes)
-             │
-   schedules/dist/schedules_catalog.json (+ schedules_index.json)
-             │ [CI on committed changes]
-   notify_fcm.py        (FCM HTTP v1 data push to /topics/sched_uclm_esi)
-```
-
----
-
-## Dependencies & Setup
-
-Uses `uv` for dependency management:
+Run these commands from the repository root with Python 3.11 or newer. Use
+`uv sync` to install optional environment-file support.
 
 ```bash
-uv sync
-```
+# Check the ESI endpoint and process fresh or cached input in strict mode
+python process_schedules.py --faculty uclm/esi --sync --strict
 
----
+# Force a re-download
+python process_schedules.py --faculty uclm/esi --sync --strict --force
 
-## Usage Commands
+# Reprocess a local fixture offline and write results to a separate directory
+python process_schedules.py --faculty uclm/esi --strict --fixture schedules/input/schedules.json --dist-dir scratch-dist
 
-```bash
-# Check live ESI TV endpoint and process if updated
-python process_schedules.py --check-esi
+# Rebuild catalog and legacy index from existing published term files
+python process_schedules.py --faculty uclm/esi --index-only
 
-# Force a redownload and regenerate distributions
-python process_schedules.py --check-esi --force
-
-# Strict mode for CI (fails if unknown mappings exist)
-python process_schedules.py --strict
-
-# Regenerate schedules_catalog.json and schedules_index.json only
-python schedules/script/generate_index.py
-
-# Preview FCM topic payloads
+# Preview FCM topic payloads without sending
 python schedules/script/notify_fcm.py --dry-run
+
+# Run offline characterization and adapter tests
+python -m unittest discover -s schedules/script -p "test_*.py"
 ```
 
-See [`docs/esi_api_schedule_pipeline.md`](../../docs/esi_api_schedule_pipeline.md) for full architectural documentation.
+Fixtures use the selected adapter's mappings. The ESI adapter keeps its
+production `mappings.json` in `adapters/esi/`. The legacy CLI still supports
+running `process_schedules.py` for the cached ESI input, passing a positional
+local JSON file, and using `--check-esi` for remote sync.
+
+See the [ESI operating guide](../../docs/esi_api_schedule_pipeline.md) and the
+[modular pipeline contract](../../docs/modular_schedule_pipeline.md).

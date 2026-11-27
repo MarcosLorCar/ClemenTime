@@ -1,59 +1,67 @@
 ---
 name: schedule-pipeline
 description: >-
-  Detailed guide for the Python schedule processing pipeline in ClemenTime,
-  including ESI TV API synchronization, parsing, deduplication, mappings, and wire format.
-  Use when modifying or debugging scripts in schedules/, process_schedules.py, or schedule import JSONs.
+  Guide for the ClemenTime faculty schedule pipeline, including the ESI TV API
+  adapter, mapping and normalization rules, publication, and the flat wire
+  format. Use when changing schedules/, process_schedules.py, or import JSONs.
 ---
 
 # Schedule Data Pipeline
 
-ClemenTime uses a Python schedule pipeline to pull and process official ESI timetables into flat JSON files consumed by the Android app.
-
 ```
-ESI TV hall API -> check_esi_update.py (HTTP HEAD ETag/Last-Modified) -> schedules/input/schedules.json
-                -> parse_schedule.py (mappings.json + deduplication)  -> schedules/dist/{1C,2C}.json
-                -> generate_index.py                                  -> schedules/dist/schedules_catalog.json (+ legacy schedules_index.json)
-                -> notify_fcm.py (CI only, on committed changes)      -> FCM data push to /topics/sched_{uni}_{faculty}
-                -> app downloads over HTTPS
+process_schedules.py → registry.py → adapters/esi/ (HTTP, cache, mappings, normalization)
+                                   → pipeline.py (validation, flat serialization)
+                                   → publication.py (terms, catalog, legacy index)
+                                   → notify_fcm.py (CI after a publication or manual test)
 ```
 
-## Commands (requires Python >= 3.11, uv)
+The [modular pipeline contract](../../../docs/modular_schedule_pipeline.md)
+describes the adapter boundary and consumers. The production registry contains
+`uclm/esi` only. Keep faculty identifiers, source format, data quirks, HTTP
+state, and mapping rules in adapter code or registration.
+
+## Commands
+
+Run from the root with Python 3.11 or newer. Use `uv sync` for optional
+environment-file support.
 
 ```bash
-uv sync
-python schedules/script/check_esi_update.py          # check ESI TV endpoint via HTTP HEAD, download if changed
-python process_schedules.py                          # process schedules/input/schedules.json -> dist/{1C,2C}.json + catalog/index
-python process_schedules.py --check-esi              # check live ESI endpoint first, then process the local input
-python process_schedules.py --check-esi --force      # force redownload from ESI API and regenerate dist
-python schedules/script/generate_index.py            # regenerate schedules_catalog.json + schedules_index.json only
-python schedules/script/notify_fcm.py --dry-run      # preview FCM topic push payloads without sending
-python -m unittest discover -s schedules/script -p "test_*.py"  # offline fixtures and mocked HTTP
+python process_schedules.py --faculty uclm/esi --sync --strict
+python process_schedules.py --faculty uclm/esi --sync --strict --force
+python process_schedules.py --faculty uclm/esi --strict --fixture path/to/local.json --dist-dir scratch-dist
+python process_schedules.py --faculty uclm/esi --index-only
+python schedules/script/notify_fcm.py --dry-run
+python -m unittest discover -s schedules/script -p "test_*.py"
 ```
 
-`process_schedules.py` orchestrates everything: it runs `check_esi_update.py` (when `--check-esi`), then `parse_schedule.py`, then `generate_index.py`.
-
-`--strict` passes `--non-interactive` down to `parse_schedule.py`. The script reports unresolved subject and professor mappings, then exits non-zero before writing either period. The wrapper stops before refreshing the indexes. Classroom names pass through after source-specific cleanup. If the wrapper checked ESI first, the input JSON and HTTP metadata may already have been updated.
-
-The [modular pipeline contract](../../../docs/modular_schedule_pipeline.md) records the current consumers and the typed boundary for future adapters. The offline fixtures in `schedules/script/fixtures/esi/` pin the current flat slot serialization, and the tests check catalogue and legacy index hashes, `updatedTime`, FCM data and strict failure behavior. Current period IDs are `1C` and `2C`; a new published ID must resolve to its declared index (1 through 8) in Android's `TermCodeParser`.
+A successful HTTP check with unchanged content reprocesses the cached input so
+code, configuration, and mapping edits take effect. ESI keeps its input
+`schedules/input/schedules.json` and metadata `schedules/input/esi_meta.json`
+(`url`, `etag`, `last_modified`, `sha256`). Strict mode reports unresolved
+subject and professor mappings before changing public files. Source and parse
+errors exit nonzero. A successful download can update the cache before parsing.
+Classroom names pass through after ESI-specific cleanup.
 
 ## Wire Format
 
-- `dist/1C.json` and `dist/2C.json` are `List<JsonFlatSlot>`.
-- One JSON object per class session, snake_case keys (`hora_inicio`, `es_laboratorio`, `grupo_practicas`).
-- `codigo` holds the short code (e.g., `FunProg1`) and `asignatura` the full display name (`Fundamentos de Programacion I`). **Never swap those two.**
-- `JsonScheduleParser.parseJson` accepts **both** shapes and normalises to internal `ScheduleJsonSchema`:
-  - Leading `[` is parsed as flat array.
-  - Anything else as legacy nested schema (`years[]` -> `groups[]` -> `matters[]`).
-  - Flat is canonical for pipeline; nested branch exists for user-supplied custom files.
+- `schedules/dist/{1C,2C}.json` contain flat `List<JsonFlatSlot>` arrays with
+  keys such as `hora_inicio`, `es_laboratorio`, and `grupo_practicas`.
+- `codigo` is the short identifier (for example `FunProg1`) and `asignatura`
+  is the display name. Keep both through normalization and serialization.
+- `JsonScheduleParser` accepts flat arrays and legacy nested custom imports
+  (`years[] → groups[] → matters[]`). The pipeline publishes flat arrays.
+- A published period ID must resolve to its declared index (1–8) in Android's
+  `TermCodeParser`. A missing period retains its existing file. An empty
+  period requires explicit configuration.
+- Hash the final bytes. ESI's catalog and legacy index preserve
+  `updatedTime` for unchanged hashes. Offline fixtures under
+  `schedules/script/fixtures/esi/` pin output, including stable tie order.
 
-## Domain Quirks & Metadata
+## ESI Rules
 
-- State files: `schedules/input/esi_meta.json` (`url`, `etag`, `last_modified`, `sha256`).
-- Mapping file: `schedules/script/mappings.json` maps abbreviated codes and raw names to canonical display names in three categories: `matters`, `professors`, `classrooms`.
-- See `docs/esi_api_schedule_pipeline.md` for full breakdown of domain quirks:
-  - 87 faculty events collapse into `GENERAL`
-  - 53 shared group slots retention
-  - `:50` rounding rule
-  - TV screen grid layout strip
-  - `-L` stripping
+`schedules/script/adapters/esi/mappings.json` stores mappings in
+`matters`, `professors`, and `classrooms`. The adapter applies subject and
+professor mappings, collapses common `GENERAL` events, preserves sessions for
+each attending group, rounds end times at `:50`, and handles lab suffixes
+and TV layout fields. See the
+[ESI operating guide](../../../docs/esi_api_schedule_pipeline.md) for details.
