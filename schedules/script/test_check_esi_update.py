@@ -64,6 +64,15 @@ class TestEsiAcquisition(unittest.TestCase):
         self.assertEqual(self.meta.read_bytes(), before)
         self.assertEqual(self.cache.read_bytes(), self.body)
 
+    def test_missing_etag_and_last_modified_validators_always_downloads(self):
+        empty_meta = {**self.initial_meta, "etag": "", "last_modified": ""}
+        self.meta.write_text(json.dumps(empty_meta), encoding="utf-8")
+        updated_body = b'[{"asignatura": "Updated Subject", "codigo": "UPD"}]'
+        self.urlopen.side_effect = self.responses({}, updated_body)
+        self.assertEqual(self.acquire(), Candidate(updated_body))
+        self.assert_methods("HEAD", "GET")
+        self.assert_cached(updated_body, {**empty_meta, "sha256": hashlib.sha256(updated_body).hexdigest()})
+
     def test_changed_header_with_same_body_refreshes_metadata_without_new_candidate(self):
         changed = "Wed, 28 Oct 2026 12:00:00 GMT"
         self.urlopen.side_effect = self.responses({**self.headers, "Last-Modified": changed}, self.body)

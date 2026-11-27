@@ -49,7 +49,7 @@ jobs:
 
       - name: Validate Schedule Pipeline
         run: |
-          python3 process_schedules.py --all --strict
+          python3 process_schedules.py --all --strict --dist-dir "$RUNNER_TEMP/dist-check"
           python3 -m unittest discover -s schedules/script -p "test_*.py"
 
       - name: Configure google-services.json

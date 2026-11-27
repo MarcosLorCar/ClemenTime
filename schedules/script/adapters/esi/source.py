@@ -69,7 +69,8 @@ def acquire(
 
     headers = {"url": url, "last_modified": last_modified, "etag": etag}
     input_exists = input_path.is_file()
-    if not force and input_exists and all(saved.get(key) == value for key, value in headers.items()):
+    has_validator = bool(etag or last_modified)
+    if not force and input_exists and has_validator and all(saved.get(key) == value for key, value in headers.items()):
         return Unchanged()
 
     try:
