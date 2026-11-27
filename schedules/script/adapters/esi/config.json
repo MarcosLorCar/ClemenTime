@@ -1,0 +1,26 @@
+{
+  "university_id": "uclm",
+  "university_name": "Universidad de Castilla-La Mancha",
+  "faculty_id": "esi",
+  "faculty_name": "Escuela Superior de Informática (Ciudad Real)",
+  "fcm_topic_prefix": "uclm_esi",
+  "subgroups_label": "Laboratorios",
+  "legacy_index": true,
+  "source_url": "https://esi.uclm.es/TV/hall/horarios.json",
+  "periods": [
+    {
+      "id": "1C",
+      "index": 1,
+      "name": "Primer Cuatrimestre",
+      "description_template": "Horario oficial ESI UCLM - 1º Cuatrimestre ({academic_year})",
+      "path": "1C.json"
+    },
+    {
+      "id": "2C",
+      "index": 2,
+      "name": "Segundo Cuatrimestre",
+      "description_template": "Horario oficial ESI UCLM - 2º Cuatrimestre ({academic_year})",
+      "path": "2C.json"
+    }
+  ]
+}

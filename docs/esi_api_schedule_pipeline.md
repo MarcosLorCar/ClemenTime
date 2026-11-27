@@ -122,5 +122,6 @@ python3 -m unittest discover -s schedules/script -p "test_*.py"
 
 `--check-esi` remains available for remote sync. The no-argument command
 processes ESI's cached input, and a positional JSON file selects a local input.
-See the [modular pipeline contract](modular_schedule_pipeline.md) for the
-adapter boundary and public format.
+See the [modular pipeline contract](modular_schedule_pipeline.md) and
+[pipeline diagrams](pipeline_diagrams.md) for the adapter boundary, declarative
+per-adapter `config.json`, multi-faculty architecture, and public format.

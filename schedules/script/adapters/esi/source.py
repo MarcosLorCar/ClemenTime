@@ -6,10 +6,13 @@ import json
 import os
 import time
 import urllib.request
+from datetime import date
 from pathlib import Path
 
+from ...config import load_faculty_config
 from ...contract import Candidate, SourceFailure, Unchanged
 
+CONFIG_PATH = Path(__file__).with_name("config.json")
 REQUEST_HEADERS = {
     "User-Agent": "Mozilla/5.0 (compatible; ClemenTime-UpdateChecker/1.0; +https://github.com/MarcosLorCar/ClemenTime)",
     "Accept": "application/json, text/plain, */*",
@@ -21,7 +24,7 @@ def source_url() -> str:
     url = os.getenv("SCHEDULE_API_URL") or os.getenv("SCHEDULE_SOURCE_URL")
     if url and url.endswith(".json"):
         return url
-    return "https://esi.uclm.es/TV/hall/horarios.json"
+    return load_faculty_config(CONFIG_PATH, date.today()).source_url
 
 
 def fetch(url: str, method: str, timeout: int):
