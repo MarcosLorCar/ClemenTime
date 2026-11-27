@@ -13,7 +13,8 @@ ClemenTime uses a Python schedule pipeline to pull and process official ESI time
 ```
 ESI TV hall API -> check_esi_update.py (HTTP HEAD ETag/Last-Modified) -> schedules/input/schedules.json
                 -> parse_schedule.py (mappings.json + deduplication)  -> schedules/dist/{1C,2C}.json
-                -> generate_index.py                                  -> schedules/dist/schedules_index.json
+                -> generate_index.py                                  -> schedules/dist/schedules_catalog.json (+ legacy schedules_index.json)
+                -> notify_fcm.py (CI only, on committed changes)      -> FCM data push to /topics/sched_{uni}_{faculty}
                 -> app downloads over HTTPS
 ```
 
@@ -22,10 +23,11 @@ ESI TV hall API -> check_esi_update.py (HTTP HEAD ETag/Last-Modified) -> schedul
 ```bash
 uv sync
 python schedules/script/check_esi_update.py          # check ESI TV endpoint via HTTP HEAD, download if changed
-python process_schedules.py                          # process schedules/input/schedules.json -> dist/{1C,2C}.json + index
+python process_schedules.py                          # process schedules/input/schedules.json -> dist/{1C,2C}.json + catalog/index
 python process_schedules.py --check-esi              # check live ESI endpoint first, then process if updated
 python process_schedules.py --check-esi --force      # force redownload from ESI API and regenerate dist
-python schedules/script/generate_index.py            # regenerate schedules_index.json only
+python schedules/script/generate_index.py            # regenerate schedules_catalog.json + schedules_index.json only
+python schedules/script/notify_fcm.py --dry-run      # preview FCM topic push payloads without sending
 ```
 
 `process_schedules.py` orchestrates everything: it runs `check_esi_update.py` (when `--check-esi`), then `parse_schedule.py`, then `generate_index.py`.

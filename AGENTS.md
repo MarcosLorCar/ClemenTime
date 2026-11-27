@@ -57,6 +57,15 @@ python process_schedules.py                          # regenerate dist/{1C,2C}.j
   - **Do NOT re-introduce hardcoded `"esi"` or `"uclm"` defaults for new installs or general features.**
   - **Deprecation Roadmap**: Once legacy adoption of pre-v1.5 builds approaches zero in future major releases (e.g., v2.0), `resolveSelectedUniversityId`/`resolveSelectedFacultyId` fallback branches and `LEGACY_FALLBACK_*` constants can be safely removed. See `docs/multi_faculty_and_fcm_architecture.md`.
 
+### Code Hygiene & Anti-Slop Guardrails
+
+- **No silent bandaids**: Do not add `delay(...)` to wait for DB/UI settlement, empty `catch (_: Throwable)` / `catch (_: Exception)` blocks, or `!!` assertions. Inside `suspend` functions, always rethrow `CancellationException`.
+- **Delete superseded code in the same PR**: When generalizing or replacing a feature (e.g., polling → FCM, 2 semesters → N periods), remove the old overloads, unused ViewModel/UI callbacks, dead `strings.xml` entries, and `@Suppress("unused")` annotations instead of leaving parallel wrappers behind.
+- **Single source of truth for domain helpers**: Do not duplicate day/time parsing, group normalization, or lab detection across parsers, repositories, and diff engines, and never regex-parse formatted UI strings back into domain objects.
+- **No faculty-specific rules in Android code**: School-specific ingestion quirks (e.g., ESI `:50` rounding or `Universidad de Mayores` filtering) belong in the Python pipeline, not in app parsers.
+- **Release & localization hygiene**: Gate debug interceptors/tools (`HttpLoggingInterceptor`, debug menu actions) behind `BuildConfig.DEBUG`. All user-facing strings (including ViewModel errors and diff labels) must go through `strings.xml` (EN & ES).
+- **Keep skills and docs in sync**: Any change to sync/FCM, Room/DataStore keys, or pipeline outputs must update the relevant `.agents/skills/*/SKILL.md` and `docs/` files in the same PR.
+
 ### Testability Conventions (Do Not "Clean These Up")
 
 Unit tests use JUnit 4 + `kotlinx-coroutines-test` with **hand-written fake DAOs** (e.g. `FakeScheduleDaoForRepositoryTest`). There is no Robolectric and no mocking framework.

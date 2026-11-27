@@ -41,7 +41,11 @@ https://esi.uclm.es/TV/hall/horarios.json
             (Per-Semester SHA256 Hash Calculation)
                              │
                              ▼
-              schedules/dist/schedules_index.json
+      schedules/dist/schedules_catalog.json (+ legacy schedules_index.json)
+                             │ [CI on committed change]
+                             ▼
+                       notify_fcm.py
+             (FCM data push to /topics/sched_uclm_esi)
 ```
 
 ---
@@ -100,6 +104,9 @@ python3 process_schedules.py --check-esi --force
 # Run strictly (fails non-zero if unknown mappings exist)
 python3 process_schedules.py --strict
 
-# Regenerate schedules_index.json only
+# Regenerate schedules_catalog.json + schedules_index.json only
 python3 schedules/script/generate_index.py
+
+# Preview FCM push payloads without sending
+python3 schedules/script/notify_fcm.py --dry-run
 ```
