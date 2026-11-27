@@ -3,19 +3,26 @@ package com.marcoslorcar.clementime.data.importing.repository
 import com.marcoslorcar.clementime.data.AttachedFileItem
 import com.marcoslorcar.clementime.data.ClassSlot
 import com.marcoslorcar.clementime.data.EntryType
+import com.marcoslorcar.clementime.data.SettingsRepository
 import com.marcoslorcar.clementime.data.Subject
 import com.marcoslorcar.clementime.data.SubjectWithSlots
+import com.marcoslorcar.clementime.data.api.GitHubScheduleApiService
 import com.marcoslorcar.clementime.data.importing.model.JsonFlatSlot
 import com.marcoslorcar.clementime.data.importing.model.JsonSubject
+import com.marcoslorcar.clementime.data.importing.model.RemoteScheduleSummary
+import com.marcoslorcar.clementime.data.importing.model.ScheduleCatalog
+import com.marcoslorcar.clementime.data.importing.model.ScheduleJsonSchema
 import com.marcoslorcar.clementime.data.importing.model.SelectedSubject
 import com.marcoslorcar.clementime.testing.FakeScheduleDao
 import com.marcoslorcar.clementime.utils.ScheduleDiffChecker
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import retrofit2.Response
 
 class ImportRepositoryTest {
 
@@ -296,6 +303,54 @@ class ImportRepositoryTest {
     }
 
     @Test
+    fun fetchRemoteCatalog_retriesFallbackBaseAndWrapsLegacyIndex() = runTest {
+        val customBase = "https://example.test/schedules"
+        val fallbackBase = SettingsRepository.FALLBACK_GITHUB_REPO_BASE_URL.trimEnd('/')
+        val term = RemoteScheduleSummary(id = "2C", title = "Second period", path = "2C.json", hash = "hash")
+        val requestedUrls = mutableListOf<String>()
+        val api = object : GitHubScheduleApiService {
+            override suspend fun getScheduleCatalog(url: String): Response<ScheduleCatalog> {
+                requestedUrls.add(url)
+                return Response.error(404, "".toResponseBody())
+            }
+
+            override suspend fun getScheduleIndex(url: String): Response<List<RemoteScheduleSummary>> {
+                requestedUrls.add(url)
+                return if (url == "$fallbackBase/schedules_index.json") {
+                    Response.success(listOf(term))
+                } else {
+                    Response.error(404, "".toResponseBody())
+                }
+            }
+
+            override suspend fun getScheduleSchema(url: String): Response<ScheduleJsonSchema> =
+                error("The catalog should not download a schedule")
+
+            override suspend fun getRawScheduleSchema(url: String): Response<okhttp3.ResponseBody> =
+                error("The catalog should not download a schedule")
+        }
+        val repository = ImportRepository(dao = FakeScheduleDao(), apiService = api)
+
+        val (effectiveBaseUrl, catalog) = repository.fetchRemoteCatalog(customBase).getOrThrow()
+
+        assertEquals(SettingsRepository.FALLBACK_GITHUB_REPO_BASE_URL, effectiveBaseUrl)
+        val university = catalog.universities.single()
+        assertEquals(SettingsRepository.LEGACY_FALLBACK_UNIVERSITY_ID, university.id)
+        val faculty = university.faculties.single()
+        assertEquals(SettingsRepository.LEGACY_FALLBACK_FACULTY_ID, faculty.id)
+        assertEquals(term, faculty.terms.single().toRemoteSummary())
+        assertEquals(
+            listOf(
+                "$customBase/schedules_catalog.json",
+                "$customBase/schedules_index.json",
+                "$fallbackBase/schedules_catalog.json",
+                "$fallbackBase/schedules_index.json"
+            ),
+            requestedUrls
+        )
+    }
+
+    @Test
     fun applySlotDiffs_doesNotDownloadWrongSemesterWhenTargetSummaryMissing() = runTest {
         val subject = Subject(
             id = 10L,
@@ -373,12 +428,12 @@ class ImportRepositoryTest {
     fun cacheRemoteSlotsInDir_retainsAll8AcademicPeriodsAndEvictsBeyondCap() {
         val tempDir = java.nio.file.Files.createTempDirectory("clementime_cache_test").toFile()
         try {
-            val repository = ImportRepository(dao = FakeScheduleDao())
-            val totalEntries = ImportRepository.MAX_CACHED_REMOTE_SCHEDULES + 2
+            val cache = RemoteScheduleCache(Json)
+            val totalEntries = RemoteScheduleCache.MAX_CACHED_REMOTE_SCHEDULES + 2
             for (i in 1..totalEntries) {
                 val termCode = "${i}P"
                 val rawJson = """[{"cuatrimestre":"$termCode","dia":"Lunes","hora_inicio":"09:00","hora_fin":"10:00","asignatura":"Sub $i","codigo":"S$i","tipo":"teoría","grupo":"1A"}]"""
-                repository.cacheRemoteSlotsInDir(
+                cache.cacheRemoteSlotsInDir(
                     cacheDir = tempDir,
                     fileId = "uni_fac_$termCode",
                     title = "Period $i",
@@ -392,12 +447,12 @@ class ImportRepositoryTest {
                 )
             }
 
-            val metadata = repository.readCacheMetadataInDir(tempDir)
-            assertEquals(ImportRepository.MAX_CACHED_REMOTE_SCHEDULES, metadata.size)
+            val metadata = cache.readCacheMetadataInDir(tempDir)
+            assertEquals(RemoteScheduleCache.MAX_CACHED_REMOTE_SCHEDULES, metadata.size)
             // Periods 3..14 remain, while oldest two (1, 2) were evicted
             assertTrue(metadata.none { it.id == "uni_fac_1P" || it.id == "uni_fac_2P" })
             assertTrue(metadata.any { it.id == "uni_fac_8P" })
-            assertTrue(ImportRepository.MAX_CACHED_REMOTE_SCHEDULES > com.marcoslorcar.clementime.data.PeriodConfig.MAX_PERIOD_COUNT)
+            assertTrue(RemoteScheduleCache.MAX_CACHED_REMOTE_SCHEDULES > com.marcoslorcar.clementime.data.PeriodConfig.MAX_PERIOD_COUNT)
         } finally {
             tempDir.deleteRecursively()
         }
@@ -407,11 +462,11 @@ class ImportRepositoryTest {
     fun getCachedRemoteSlotsForSemesterInDir_resolvesTrimesterAndCustomTermCodesWithoutMetadata() {
         val tempDir = java.nio.file.Files.createTempDirectory("clementime_term_cache_test").toFile()
         try {
-            val repository = ImportRepository(dao = FakeScheduleDao())
+            val cache = RemoteScheduleCache(Json)
             val trimesterJson = """[{"cuatrimestre":"3T","dia":"Miércoles","hora_inicio":"10:00","hora_fin":"11:30","asignatura":"Optativa III","codigo":"OPT3","tipo":"teoría","grupo":"1A"}]"""
             java.io.File(tempDir, "cache_uni_fac_3T.json").writeText(trimesterJson)
 
-            val slots = repository.getCachedRemoteSlotsForSemesterInDir(
+            val slots = cache.getCachedRemoteSlotsForSemesterInDir(
                 cacheDir = tempDir,
                 semester = 3,
                 universityId = "uni",

@@ -251,7 +251,7 @@ Once pre-v1.5 adoption approaches zero (e.g., in a major release like v2.0), the
    - Simplify `resolveSelectedUniversityId` and `resolveSelectedFacultyId` to return `storedUniversityId ?: ""` / `storedFacultyId ?: ""`.
    - Remove `LEGACY_FALLBACK_UNIVERSITY_ID` and `LEGACY_FALLBACK_FACULTY_ID` constants.
 
-2. **Step 2 — Remove Synthetic Index Fallback in `ImportRepository.kt`**:
+2. **Step 2 — Remove Synthetic Index Fallback in `RemoteScheduleFetcher.kt`**:
    - Remove `canFallbackToLegacyIndex` and `syntheticCatalog` generation that wraps legacy `schedules_index.json` as UCLM · ESI.
    - Require all remote schedule lookups to resolve strictly through `schedules_catalog.json`.
 

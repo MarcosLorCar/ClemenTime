@@ -9,11 +9,12 @@ import com.marcoslorcar.clementime.data.ScheduleDao
 import com.marcoslorcar.clementime.data.SettingsRepository
 import com.marcoslorcar.clementime.data.SubjectWithSlots
 import com.marcoslorcar.clementime.ui.model.ClassSlotUiModel
+import com.marcoslorcar.clementime.ui.model.scheduleDisplaySettings
+import com.marcoslorcar.clementime.ui.model.scheduleHours
 import com.marcoslorcar.clementime.ui.model.toEntity
 import com.marcoslorcar.clementime.ui.widget.ScheduleWidgetUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -44,27 +45,25 @@ data class ScheduleUiState(
     val dayEndTime: LocalTime = LocalTime.of(21, 30)
 )
 
-private data class ScheduleSettings(
-    val scrollable: Boolean,
-    val showNowLine: Boolean,
-    val nowLineStyle: String,
-    val highContrast: Boolean,
-    val onboardingTooltipsEnabled: Boolean,
-    val hasSeenOptimizerTooltip: Boolean,
+private data class SchedulePeriodState(
     val selectedSemester: Int,
-    val periodConfig: PeriodConfig,
-    val wasSemesterAutoChanged: Boolean,
-    val hasManuallyChangedSemester: Boolean,
-    val dayStartTime: LocalTime,
-    val dayEndTime: LocalTime
+    val config: PeriodConfig,
+    val wasAutoChanged: Boolean,
+    val hasManuallyChanged: Boolean
 )
 
-@OptIn(ExperimentalCoroutinesApi::class)
+private data class ScheduleControls(
+    val selectedTab: ScheduleTab,
+    val isSwitcherVisible: Boolean,
+    val onboardingTooltipsEnabled: Boolean,
+    val hasSeenOptimizerTooltip: Boolean
+)
+
 @HiltViewModel
 class ScheduleViewModel @Inject constructor(
     private val scheduleDao: ScheduleDao,
     private val settingsRepository: SettingsRepository,
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context? = null
 ) : ViewModel() {
 
     // Opens on today. A "view in schedule" request no longer arrives here at all - it travels as
@@ -78,43 +77,30 @@ class ScheduleViewModel @Inject constructor(
     private val _selectedTab = MutableStateFlow(initialTab)
     private val _isSemesterSwitcherVisible = MutableStateFlow(false)
 
-    val uiState: StateFlow<ScheduleUiState> = combine(
-        scheduleDao.getAllSubjectsWithSlots(),
+    private val controls = combine(
         _selectedTab,
         _isSemesterSwitcherVisible,
-        combine<Any?, ScheduleSettings>(
-            settingsRepository.scrollableTabsFlow,
-            settingsRepository.showNowLineFlow,
-            settingsRepository.nowLineStyleFlow,
-            settingsRepository.highContrastFlow,
-            settingsRepository.onboardingTooltipsEnabledFlow,
-            settingsRepository.hasSeenOptimizerTooltipFlow,
-            settingsRepository.currentSemesterFlow,
-            settingsRepository.periodConfigFlow,
-            settingsRepository.wasSemesterAutoChangedFlow,
-            settingsRepository.hasManuallyChangedSemesterFlow,
-            settingsRepository.dayStartHourFlow,
-            settingsRepository.dayStartMinuteFlow,
-            settingsRepository.dayEndHourFlow,
-            settingsRepository.dayEndMinuteFlow
-        ) { args ->
-            ScheduleSettings(
-                scrollable = args[0] as Boolean,
-                showNowLine = args[1] as Boolean,
-                nowLineStyle = args[2] as String,
-                highContrast = args[3] as Boolean,
-                onboardingTooltipsEnabled = args[4] as Boolean,
-                hasSeenOptimizerTooltip = args[5] as Boolean,
-                selectedSemester = args[6] as Int,
-                periodConfig = args[7] as PeriodConfig,
-                wasSemesterAutoChanged = args[8] as Boolean,
-                hasManuallyChangedSemester = args[9] as Boolean,
-                dayStartTime = LocalTime.of(args[10] as Int, args[11] as Int),
-                dayEndTime = LocalTime.of(args[12] as Int, args[13] as Int)
-            )
-        }
-    ) { allSubjects, selectedTab, isSwitcherVisible, settings ->
-        val effectiveSemester = settings.selectedSemester.coerceIn(1, settings.periodConfig.count)
+        settingsRepository.onboardingTooltipsEnabledFlow,
+        settingsRepository.hasSeenOptimizerTooltipFlow,
+        ::ScheduleControls
+    )
+
+    private val period = combine(
+        settingsRepository.currentSemesterFlow,
+        settingsRepository.periodConfigFlow,
+        settingsRepository.wasSemesterAutoChangedFlow,
+        settingsRepository.hasManuallyChangedSemesterFlow,
+        ::SchedulePeriodState
+    )
+
+    val uiState: StateFlow<ScheduleUiState> = combine(
+        scheduleDao.getAllSubjectsWithSlots(),
+        controls,
+        period,
+        settingsRepository.scheduleDisplaySettings(),
+        settingsRepository.scheduleHours()
+    ) { allSubjects, controls, period, display, hours ->
+        val effectiveSemester = period.selectedSemester.coerceIn(1, period.config.count)
         val semesterSubjects = allSubjects.filter { it.subject.semester == effectiveSemester && it.subject.isActive }
         val filteredSubjects = semesterSubjects.map { sWithSlots ->
             val filteredSlots = sWithSlots.slots.filter { slot ->
@@ -127,31 +113,31 @@ class ScheduleViewModel @Inject constructor(
 
         val hasOverlaps = detectAnyOverlap(filteredSubjects)
         
-        val hasSubjectsInOtherSemesters = settings.periodConfig.count > 1 && allSubjects.any {
-            it.subject.semester in 1..settings.periodConfig.count && it.subject.semester != effectiveSemester
+        val hasSubjectsInOtherSemesters = period.config.count > 1 && allSubjects.any {
+            it.subject.semester in 1..period.config.count && it.subject.semester != effectiveSemester
         }
-        val showAutoChangeTooltip = settings.periodConfig.count > 1 && (
-            settings.wasSemesterAutoChanged || (hasSubjectsInOtherSemesters && !settings.hasManuallyChangedSemester)
+        val showAutoChangeTooltip = period.config.count > 1 && (
+            period.wasAutoChanged || (hasSubjectsInOtherSemesters && !period.hasManuallyChanged)
         )
 
         ScheduleUiState(
             isLoading = false,
-            selectedTab = selectedTab,
+            selectedTab = controls.selectedTab,
             selectedSemester = effectiveSemester,
-            periodConfig = settings.periodConfig,
+            periodConfig = period.config,
             subjectsWithSlots = filteredSubjects,
-            scrollableTabs = settings.scrollable,
-            showNowLine = settings.showNowLine,
-            nowLineStyle = settings.nowLineStyle,
-            highContrast = settings.highContrast,
+            scrollableTabs = display.scrollableTabs,
+            showNowLine = display.showNowLine,
+            nowLineStyle = display.nowLineStyle,
+            highContrast = display.highContrast,
             hasOverlaps = hasOverlaps,
-            isSemesterSwitcherVisible = isSwitcherVisible && settings.periodConfig.count > 1,
+            isSemesterSwitcherVisible = controls.isSwitcherVisible && period.config.count > 1,
             hasAnySubjects = allSubjects.isNotEmpty(),
-            onboardingTooltipsEnabled = settings.onboardingTooltipsEnabled,
-            hasSeenOptimizerTooltip = settings.hasSeenOptimizerTooltip,
+            onboardingTooltipsEnabled = controls.onboardingTooltipsEnabled,
+            hasSeenOptimizerTooltip = controls.hasSeenOptimizerTooltip,
             showAutoChangeTooltip = showAutoChangeTooltip,
-            dayStartTime = settings.dayStartTime,
-            dayEndTime = settings.dayEndTime
+            dayStartTime = hours.start,
+            dayEndTime = hours.end
         )
     }.stateIn(
         scope = viewModelScope,

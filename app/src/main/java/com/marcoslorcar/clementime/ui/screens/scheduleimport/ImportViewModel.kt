@@ -114,7 +114,6 @@ class ImportViewModel @Inject constructor(
                 val baseUrl = repository.normalizeGitHubUrl(rawBaseUrl)
 
                 val cacheMetadata = repository.getCachedRemoteSchedules(context)
-                val cacheDir = repository.getCacheDir(context)
 
                 val activeUniId = runCatching { settingsRepository.selectedUniversityIdFlow.first() }.getOrDefault("")
                 val activeFacId = runCatching { settingsRepository.selectedFacultyIdFlow.first() }.getOrDefault("")
@@ -151,7 +150,7 @@ class ImportViewModel @Inject constructor(
                                                 (it.facultyId.isNullOrBlank() || it.facultyId.equals(faculty.id, ignoreCase = true))
                                         }
                                     val cacheId = cachedEntry?.id ?: scopedId
-                                    val cacheExists = File(cacheDir, "cache_${cacheId}.json").exists()
+                                    val cacheExists = repository.hasCachedRemoteSchedule(context, cacheId)
                                     val isCached = cachedEntry != null &&
                                         cachedEntry.hash == term.hash &&
                                         cacheExists
@@ -186,8 +185,8 @@ class ImportViewModel @Inject constructor(
                     },
                     onFailure = { _ ->
                         cacheMetadata.filter { entry ->
-                            File(cacheDir, "cache_${entry.id}.json").exists() ||
-                                (!entry.termId.isNullOrBlank() && File(cacheDir, "cache_${entry.termId}.json").exists())
+                            repository.hasCachedRemoteSchedule(context, entry.id) ||
+                                (!entry.termId.isNullOrBlank() && repository.hasCachedRemoteSchedule(context, entry.termId))
                         }.map { entry ->
                             val isLinked = activeFacId.isNotBlank() &&
                                 entry.facultyId.equals(activeFacId, ignoreCase = true) &&

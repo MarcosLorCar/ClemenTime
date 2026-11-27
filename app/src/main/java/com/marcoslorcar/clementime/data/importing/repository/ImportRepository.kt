@@ -10,15 +10,12 @@ import com.marcoslorcar.clementime.data.SettingsRepository
 import com.marcoslorcar.clementime.data.Subject
 import com.marcoslorcar.clementime.data.TermCodeParser
 import com.marcoslorcar.clementime.data.api.GitHubScheduleApiService
-import com.marcoslorcar.clementime.data.importing.model.FacultyCatalogEntry
 import com.marcoslorcar.clementime.data.importing.model.ImportFile
 import com.marcoslorcar.clementime.data.importing.model.JsonFlatSlot
 import com.marcoslorcar.clementime.data.importing.model.RemoteScheduleSummary
 import com.marcoslorcar.clementime.data.importing.model.ScheduleCatalog
 import com.marcoslorcar.clementime.data.importing.model.ScheduleJsonSchema
 import com.marcoslorcar.clementime.data.importing.model.SelectedSubject
-import com.marcoslorcar.clementime.data.importing.model.TermCatalogEntry
-import com.marcoslorcar.clementime.data.importing.model.UniversityCatalogEntry
 import com.marcoslorcar.clementime.data.importing.parser.JsonScheduleParser
 import com.marcoslorcar.clementime.data.importing.parser.isLab
 import com.marcoslorcar.clementime.data.importing.parser.normalizeGroup
@@ -29,51 +26,19 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.security.MessageDigest
 import javax.inject.Inject
 
-@Serializable
-data class CacheMetadata(
-    val id: String,
-    val title: String,
-    val description: String?,
-    val remotePath: String,
-    val lastUsed: Long,
-    val hash: String,
-    val updatedTime: String? = null,
-    val universityId: String? = null,
-    val universityName: String? = null,
-    val facultyId: String? = null,
-    val facultyName: String? = null,
-    val fcmTopicPrefix: String? = null,
-    val termId: String? = null
-)
-
-@Serializable
-data class RemoteCacheList(
-    val entries: List<CacheMetadata> = emptyList()
-)
-
 class ImportRepository @Inject constructor(
     private val dao: ScheduleDao,
     private val parser: JsonScheduleParser = JsonScheduleParser(),
-    private val apiService: GitHubScheduleApiService? = null,
-    private val json: Json = Json { ignoreUnknownKeys = true; coerceInputValues = true; encodeDefaults = true }
+    apiService: GitHubScheduleApiService? = null,
+    json: Json = Json { ignoreUnknownKeys = true; coerceInputValues = true; encodeDefaults = true }
 ) {
-    companion object {
-        // Must exceed PeriodConfig.MAX_PERIOD_COUNT (8) so all periods in an N-period academic year
-        // stay cached without evicting earlier periods.
-        const val MAX_CACHED_REMOTE_SCHEDULES = 12
-    }
-
-    private fun String.sha256(): String {
-        val md = MessageDigest.getInstance("SHA-256")
-        val digest = md.digest(this.toByteArray(Charsets.UTF_8))
-        return digest.joinToString("") { "%02x".format(it) }
-    }
+    private val remoteCache = RemoteScheduleCache(json)
+    private val remoteFetcher = RemoteScheduleFetcher(apiService, parser, json, remoteCache)
 
     fun parseJsonString(jsonContent: String): Result<ScheduleJsonSchema> {
         return parser.parseJson(jsonContent)
@@ -240,25 +205,13 @@ class ImportRepository @Inject constructor(
             ).getOrNull() ?: Pair(rawBaseUrl, emptyList())
             val summary = summaries.find { TermCodeParser.matchesSummary(it, semester) }
 
-            if (summary != null && apiService != null) {
-                val fullUrl = normalizeGitHubUrl(
-                    if (effectiveBaseUrl.endsWith("/")) "${effectiveBaseUrl}${summary.path}" else "${effectiveBaseUrl}/${summary.path}"
-                )
-                val cacheBustedUrl = if (!summary.hash.isNullOrBlank()) {
-                    if (fullUrl.contains("?")) "$fullUrl&v=${summary.hash}" else "$fullUrl?v=${summary.hash}"
-                } else {
-                    fullUrl
-                }
-                val resp = apiService.getRawScheduleSchema(cacheBustedUrl)
-                if (resp.isSuccessful) {
-                    val jsonString = resp.body()?.string().orEmpty()
-                    val parsed = runCatching { json.decodeFromString<List<JsonFlatSlot>>(jsonString) }.getOrDefault(emptyList())
-                    if (parsed.isNotEmpty()) {
-                        slotsToUse = parsed
-                        downloadedSummary = summary
-                        downloadedUrl = fullUrl
-                        downloadedJson = jsonString
-                    }
+            if (summary != null) {
+                val download = remoteFetcher.downloadFlatSchedule(effectiveBaseUrl, summary)
+                if (download != null) {
+                    slotsToUse = download.slots
+                    downloadedSummary = summary
+                    downloadedUrl = download.url
+                    downloadedJson = download.rawJson
                 }
             }
 
@@ -365,211 +318,32 @@ class ImportRepository @Inject constructor(
         dao.getAllSubjectsWithSlotsBySemester(semester).first().filter { it.subject.isActive }
     }
 
-    fun normalizeGitHubUrl(url: String): String {
-        var trimmed = url.trim()
-        if (trimmed.startsWith("https://github.com/")) {
-            trimmed = trimmed
-                .replace("https://github.com/", "https://raw.githubusercontent.com/")
-                .replace("/tree/", "/")
-                .replace("/blob/", "/")
-        }
-        return trimmed
-    }
+    fun normalizeGitHubUrl(url: String): String = remoteFetcher.normalizeGitHubUrl(url)
 
     suspend fun fetchRemoteSchedules(
         rawBaseUrl: String = SettingsRepository.DEFAULT_GITHUB_REPO_BASE_URL,
         facultyId: String? = null,
         cacheBust: Boolean = false,
         universityId: String? = null
-    ): Result<Pair<String, List<RemoteScheduleSummary>>> = withContext(Dispatchers.IO) {
-        try {
-            if (apiService == null) return@withContext Result.failure(Exception("Network service unavailable"))
-            val baseUrl = normalizeGitHubUrl(rawBaseUrl)
-            val cacheParam = if (cacheBust) "t=${System.currentTimeMillis() / 10_000L}" else null
-            fun withCacheParam(url: String): String {
-                if (cacheParam == null) return url
-                return if (url.contains("?")) "$url&$cacheParam" else "$url?$cacheParam"
-            }
-
-            // 1. Try fetching 3-level schedules_catalog.json first
-            val catalogUrl = withCacheParam(
-                when {
-                    baseUrl.endsWith("schedules_catalog.json") -> baseUrl
-                    baseUrl.endsWith("/") -> "${baseUrl}schedules_catalog.json"
-                    else -> "$baseUrl/schedules_catalog.json"
-                }
-            )
-            val catalogResponse = runCatching { apiService.getScheduleCatalog(catalogUrl) }.getOrNull()
-            if (catalogResponse != null && catalogResponse.isSuccessful && catalogResponse.body() != null) {
-                val catalog = catalogResponse.body()!!
-                val targetFaculty = if (!facultyId.isNullOrBlank()) {
-                    catalog.universities
-                        .filter { universityId.isNullOrBlank() || it.id.equals(universityId, ignoreCase = true) }
-                        .flatMap { it.faculties }
-                        .firstOrNull { it.id.equals(facultyId, ignoreCase = true) }
-                } else {
-                    null
-                }
-
-                if (targetFaculty == null) {
-                    return@withContext Result.failure(
-                        NoSuchElementException("Faculty $universityId/$facultyId not found in remote catalog")
-                    )
-                }
-
-                val summaries = targetFaculty.terms.map { it.toRemoteSummary() }
-                return@withContext Result.success(Pair(baseUrl, summaries))
-            }
-
-            // 2. Fall back to legacy flat schedules_index.json only when catalog failed and ESI is requested
-            val canFallbackToLegacyIndex =
-                facultyId.equals(SettingsRepository.LEGACY_FALLBACK_FACULTY_ID, ignoreCase = true) &&
-                    (universityId.isNullOrBlank() || universityId.equals(SettingsRepository.LEGACY_FALLBACK_UNIVERSITY_ID, ignoreCase = true))
-
-            if (canFallbackToLegacyIndex) {
-                val indexUrl = withCacheParam(
-                    when {
-                        baseUrl.endsWith("schedules_index.json") -> baseUrl
-                        baseUrl.endsWith("/") -> "${baseUrl}schedules_index.json"
-                        else -> "$baseUrl/schedules_index.json"
-                    }
-                )
-                val response = apiService.getScheduleIndex(indexUrl)
-                val indexBody = response.body()
-                if (response.isSuccessful && indexBody != null) {
-                    return@withContext Result.success(Pair(baseUrl, indexBody))
-                }
-            }
-
-            val fallbackUrl = SettingsRepository.FALLBACK_GITHUB_REPO_BASE_URL
-            if (normalizeGitHubUrl(rawBaseUrl) != normalizeGitHubUrl(fallbackUrl)) {
-                fetchRemoteSchedules(fallbackUrl, facultyId, cacheBust, universityId)
-            } else {
-                val code = catalogResponse?.code() ?: 0
-                val msg = catalogResponse?.message() ?: "Unknown error"
-                Result.failure(Exception("Failed to fetch remote schedules: $code $msg"))
-            }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            val fallbackUrl = SettingsRepository.FALLBACK_GITHUB_REPO_BASE_URL
-            if (normalizeGitHubUrl(rawBaseUrl) != normalizeGitHubUrl(fallbackUrl)) {
-                fetchRemoteSchedules(fallbackUrl, facultyId, cacheBust, universityId)
-            } else {
-                Result.failure(e)
-            }
-        }
-    }
+    ): Result<Pair<String, List<RemoteScheduleSummary>>> =
+        remoteFetcher.fetchRemoteSchedules(rawBaseUrl, facultyId, cacheBust, universityId)
 
     suspend fun fetchRemoteCatalog(
         rawBaseUrl: String = SettingsRepository.DEFAULT_GITHUB_REPO_BASE_URL,
         cacheBust: Boolean = false
-    ): Result<Pair<String, ScheduleCatalog>> = withContext(Dispatchers.IO) {
-        try {
-            if (apiService == null) return@withContext Result.failure(Exception("Network service unavailable"))
-            val baseUrl = normalizeGitHubUrl(rawBaseUrl)
-            val cacheParam = if (cacheBust) "t=${System.currentTimeMillis() / 10_000L}" else null
-            fun withCacheParam(url: String): String {
-                if (cacheParam == null) return url
-                return if (url.contains("?")) "$url&$cacheParam" else "$url?$cacheParam"
-            }
+    ): Result<Pair<String, ScheduleCatalog>> = remoteFetcher.fetchRemoteCatalog(rawBaseUrl, cacheBust)
 
-            val catalogUrl = withCacheParam(
-                when {
-                    baseUrl.endsWith("schedules_catalog.json") -> baseUrl
-                    baseUrl.endsWith("/") -> "${baseUrl}schedules_catalog.json"
-                    else -> "$baseUrl/schedules_catalog.json"
-                }
-            )
-            val response = runCatching { apiService.getScheduleCatalog(catalogUrl) }.getOrNull()
-            val catalogBody = response?.body()
-            if (response != null && response.isSuccessful && catalogBody != null) {
-                return@withContext Result.success(Pair(baseUrl, catalogBody))
-            }
+    suspend fun fetchRemoteScheduleSchema(context: Context, file: ImportFile): Result<ScheduleJsonSchema> =
+        remoteFetcher.fetchRemoteScheduleSchema(context, file)
 
-            // Fall back to legacy schedules_index.json wrapped into a synthetic ScheduleCatalog
-            val indexUrl = withCacheParam(
-                when {
-                    baseUrl.endsWith("schedules_index.json") -> baseUrl
-                    baseUrl.endsWith("/") -> "${baseUrl}schedules_index.json"
-                    else -> "$baseUrl/schedules_index.json"
-                }
-            )
-            val indexResponse = runCatching { apiService.getScheduleIndex(indexUrl) }.getOrNull()
-            val indexBody = indexResponse?.body()
-            if (indexResponse != null && indexResponse.isSuccessful && indexBody != null) {
-                val terms = indexBody.map { summary ->
-                    TermCatalogEntry(
-                        id = summary.id,
-                        name = summary.title,
-                        description = summary.description,
-                        path = summary.path,
-                        hash = summary.hash,
-                        updatedTime = summary.updatedTime
-                    )
-                }
-                val syntheticCatalog = ScheduleCatalog(
-                    universities = listOf(
-                        UniversityCatalogEntry(
-                            id = SettingsRepository.LEGACY_FALLBACK_UNIVERSITY_ID,
-                            name = "UCLM",
-                            faculties = listOf(
-                                FacultyCatalogEntry(
-                                    id = SettingsRepository.LEGACY_FALLBACK_FACULTY_ID,
-                                    name = "Escuela Superior de Informática (ESI)",
-                                    fcmTopicPrefix = "${SettingsRepository.LEGACY_FALLBACK_UNIVERSITY_ID}_${SettingsRepository.LEGACY_FALLBACK_FACULTY_ID}",
-                                    terms = terms
-                                )
-                            )
-                        )
-                    )
-                )
-                return@withContext Result.success(Pair(baseUrl, syntheticCatalog))
-            }
+    fun getCachedRemoteSchedules(context: Context): List<CacheMetadata> =
+        remoteCache.readCacheMetadata(context)
 
-            val fallbackUrl = SettingsRepository.FALLBACK_GITHUB_REPO_BASE_URL
-            if (normalizeGitHubUrl(rawBaseUrl) != normalizeGitHubUrl(fallbackUrl)) {
-                fetchRemoteCatalog(fallbackUrl, cacheBust)
-            } else {
-                val code = response?.code() ?: indexResponse?.code() ?: 0
-                val msg = response?.message() ?: indexResponse?.message() ?: "Unknown error"
-                Result.failure(Exception("Failed to fetch catalog: $code $msg"))
-            }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            val fallbackUrl = SettingsRepository.FALLBACK_GITHUB_REPO_BASE_URL
-            if (normalizeGitHubUrl(rawBaseUrl) != normalizeGitHubUrl(fallbackUrl)) {
-                fetchRemoteCatalog(fallbackUrl, cacheBust)
-            } else {
-                Result.failure(e)
-            }
-        }
-    }
+    fun hasCachedRemoteSchedule(context: Context, fileId: String): Boolean =
+        remoteCache.hasCachedSchedule(context, fileId)
 
-    fun getCacheDir(context: Context): File {
-        val dir = File(context.filesDir, "remote_cache")
-        if (!dir.exists()) {
-            dir.mkdirs()
-        }
-        return dir
-    }
-
-    fun getCachedRemoteSchedules(context: Context): List<CacheMetadata> {
-        return readCacheMetadata(context)
-    }
-
-    fun getCachedRemoteSlotsById(context: Context, fileId: String): List<JsonFlatSlot> {
-        return getCachedRemoteSlotsByIdInDir(getCacheDir(context), fileId)
-    }
-
-    internal fun getCachedRemoteSlotsByIdInDir(cacheDir: File, fileId: String): List<JsonFlatSlot> {
-        val cacheFile = File(cacheDir, "cache_${fileId}.json")
-        if (!cacheFile.exists()) return emptyList()
-        return runCatching {
-            json.decodeFromString<List<JsonFlatSlot>>(cacheFile.readText())
-        }.getOrDefault(emptyList())
-    }
+    fun getCachedRemoteSlotsById(context: Context, fileId: String): List<JsonFlatSlot> =
+        remoteCache.getCachedRemoteSlotsById(context, fileId)
 
     fun getCachedRemoteSlotsForSemester(
         context: Context?,
@@ -577,106 +351,11 @@ class ImportRepository @Inject constructor(
         universityId: String? = null,
         facultyId: String? = null,
         periodType: PeriodType = PeriodType.SEMESTERS
-    ): List<JsonFlatSlot> {
-        if (context == null) return emptyList()
-        return getCachedRemoteSlotsForSemesterInDir(
-            cacheDir = getCacheDir(context),
-            semester = semester,
-            universityId = universityId,
-            facultyId = facultyId,
-            periodType = periodType
-        )
-    }
+    ): List<JsonFlatSlot> = remoteCache.getCachedRemoteSlotsForSemester(
+        context, semester, universityId, facultyId, periodType
+    )
 
-    internal fun getCachedRemoteSlotsForSemesterInDir(
-        cacheDir: File,
-        semester: Int,
-        universityId: String? = null,
-        facultyId: String? = null,
-        periodType: PeriodType = PeriodType.SEMESTERS
-    ): List<JsonFlatSlot> {
-        val metadataEntries = readCacheMetadataInDir(cacheDir)
-        val metadataMatch = metadataEntries.firstOrNull { entry ->
-            val termMatches = TermCodeParser.parseTermIndex(entry.termId ?: entry.id) == semester
-            if (!termMatches) return@firstOrNull false
-            val uniMatches = universityId.isNullOrBlank() || entry.universityId.isNullOrBlank() ||
-                entry.universityId.equals(universityId, ignoreCase = true)
-            val facMatches = facultyId.isNullOrBlank() || entry.facultyId.isNullOrBlank() ||
-                entry.facultyId.equals(facultyId, ignoreCase = true)
-            uniMatches && facMatches
-        }
-        if (metadataMatch != null) {
-            val cached = getCachedRemoteSlotsByIdInDir(cacheDir, metadataMatch.id)
-            if (cached.isNotEmpty()) return cached
-        }
-
-        val candidateTermIds = buildList {
-            add(TermCodeParser.formatTermCode(semester, periodType))
-            for (type in PeriodType.entries) {
-                add(TermCodeParser.formatTermCode(semester, type))
-            }
-        }.distinct()
-
-        for (termId in candidateTermIds) {
-            if (!universityId.isNullOrBlank() && !facultyId.isNullOrBlank()) {
-                val scopedSlots = getCachedRemoteSlotsByIdInDir(cacheDir, "${universityId}_${facultyId}_${termId}")
-                if (scopedSlots.isNotEmpty()) return scopedSlots
-            }
-
-            if (!facultyId.isNullOrBlank()) {
-                val facultyScopedSlots = getCachedRemoteSlotsByIdInDir(cacheDir, "${facultyId}_${termId}")
-                if (facultyScopedSlots.isNotEmpty()) return facultyScopedSlots
-            }
-
-            val legacySlots = getCachedRemoteSlotsByIdInDir(cacheDir, termId)
-            if (legacySlots.isNotEmpty()) return legacySlots
-        }
-
-        if (universityId.isNullOrBlank() && facultyId.isNullOrBlank()) {
-            val matchingEntry = metadataEntries.firstOrNull { entry ->
-                TermCodeParser.parseTermIndex(entry.termId ?: entry.id) == semester
-            }
-            if (matchingEntry != null) {
-                return getCachedRemoteSlotsByIdInDir(cacheDir, matchingEntry.id)
-            }
-        }
-
-        return emptyList()
-    }
-
-    fun clearRemoteCache(context: Context) {
-        val dir = getCacheDir(context)
-        dir.listFiles()?.forEach { it.delete() }
-    }
-
-    private fun readCacheMetadata(context: Context): List<CacheMetadata> {
-        return readCacheMetadataInDir(getCacheDir(context))
-    }
-
-    internal fun readCacheMetadataInDir(cacheDir: File): List<CacheMetadata> {
-        val file = File(cacheDir, "metadata.json")
-        if (!file.exists()) return emptyList()
-        return try {
-            val jsonString = file.readText()
-            json.decodeFromString<RemoteCacheList>(jsonString).entries
-        } catch (_: Exception) {
-            emptyList()
-        }
-    }
-
-    private fun writeCacheMetadata(context: Context, entries: List<CacheMetadata>) {
-        writeCacheMetadataInDir(getCacheDir(context), entries)
-    }
-
-    private fun writeCacheMetadataInDir(cacheDir: File, entries: List<CacheMetadata>) {
-        val file = File(cacheDir, "metadata.json")
-        try {
-            val jsonString = json.encodeToString(RemoteCacheList(entries))
-            file.writeText(jsonString)
-        } catch (_: Exception) {
-            // Ignore
-        }
-    }
+    fun clearRemoteCache(context: Context) = remoteCache.clearRemoteCache(context)
 
     fun cacheRemoteSlots(
         context: Context,
@@ -692,152 +371,26 @@ class ImportRepository @Inject constructor(
         facultyName: String? = null,
         fcmTopicPrefix: String? = null,
         termId: String? = null
-    ) {
-        cacheRemoteSlotsInDir(
-            cacheDir = getCacheDir(context),
-            fileId = fileId,
-            title = title,
-            description = description,
-            remotePath = remotePath,
-            rawJson = rawJson,
-            updatedTime = updatedTime,
-            universityId = universityId,
-            universityName = universityName,
-            facultyId = facultyId,
-            facultyName = facultyName,
-            fcmTopicPrefix = fcmTopicPrefix,
-            termId = termId
-        )
-    }
+    ) = remoteCache.cacheRemoteSlots(
+        context = context,
+        fileId = fileId,
+        title = title,
+        description = description,
+        remotePath = remotePath,
+        rawJson = rawJson,
+        updatedTime = updatedTime,
+        universityId = universityId,
+        universityName = universityName,
+        facultyId = facultyId,
+        facultyName = facultyName,
+        fcmTopicPrefix = fcmTopicPrefix,
+        termId = termId
+    )
 
-    internal fun cacheRemoteSlotsInDir(
-        cacheDir: File,
-        fileId: String,
-        title: String,
-        description: String?,
-        remotePath: String,
-        rawJson: String,
-        updatedTime: String? = null,
-        universityId: String? = null,
-        universityName: String? = null,
-        facultyId: String? = null,
-        facultyName: String? = null,
-        fcmTopicPrefix: String? = null,
-        termId: String? = null,
-        nowMillis: Long = System.currentTimeMillis()
-    ) {
-        if (!cacheDir.exists()) {
-            cacheDir.mkdirs()
-        }
-        val cacheFile = File(cacheDir, "cache_${fileId}.json")
-        val metadataList = readCacheMetadataInDir(cacheDir).toMutableList()
-        val existingEntry = metadataList.find { it.id == fileId }
-        val newHash = rawJson.sha256()
+}
 
-        val updatedEntry = CacheMetadata(
-            id = fileId,
-            title = title,
-            description = description ?: existingEntry?.description,
-            remotePath = remotePath,
-            lastUsed = nowMillis,
-            hash = newHash,
-            updatedTime = updatedTime ?: existingEntry?.updatedTime,
-            universityId = universityId ?: existingEntry?.universityId,
-            universityName = universityName ?: existingEntry?.universityName,
-            facultyId = facultyId ?: existingEntry?.facultyId,
-            facultyName = facultyName ?: existingEntry?.facultyName,
-            fcmTopicPrefix = fcmTopicPrefix ?: existingEntry?.fcmTopicPrefix,
-            termId = termId ?: existingEntry?.termId
-        )
-
-        if (existingEntry == null || existingEntry.hash != newHash || !cacheFile.exists()) {
-            cacheFile.writeText(rawJson)
-            metadataList.removeAll { it.id == fileId }
-            metadataList.add(updatedEntry)
-
-            if (metadataList.size > MAX_CACHED_REMOTE_SCHEDULES) {
-                metadataList.sortBy { it.lastUsed }
-                while (metadataList.size > MAX_CACHED_REMOTE_SCHEDULES) {
-                    val oldest = metadataList.removeAt(0)
-                    val oldestFile = File(cacheDir, "cache_${oldest.id}.json")
-                    if (oldestFile.exists()) {
-                        oldestFile.delete()
-                    }
-                }
-            }
-        } else {
-            metadataList.removeAll { it.id == fileId }
-            metadataList.add(updatedEntry)
-        }
-
-        writeCacheMetadataInDir(cacheDir, metadataList)
-    }
-
-    suspend fun fetchRemoteScheduleSchema(
-        context: Context,
-        file: ImportFile
-    ): Result<ScheduleJsonSchema> = withContext(Dispatchers.IO) {
-        val cacheDir = getCacheDir(context)
-        val cacheFile = File(cacheDir, "cache_${file.id}.json")
-        val metadataList = readCacheMetadata(context).toMutableList()
-        val existingEntry = metadataList.find { it.id == file.id }
-
-        try {
-            if (apiService == null) throw Exception("Network service unavailable")
-            val fullUrl = normalizeGitHubUrl(file.remotePath ?: throw Exception("Remote path is null"))
-            var response = apiService.getRawScheduleSchema(fullUrl)
-            if (!response.isSuccessful) {
-                val fallbackUrl = normalizeGitHubUrl(SettingsRepository.FALLBACK_GITHUB_REPO_BASE_URL)
-                val defaultUrl = normalizeGitHubUrl(SettingsRepository.DEFAULT_GITHUB_REPO_BASE_URL)
-                if (defaultUrl != fallbackUrl && fullUrl.contains(defaultUrl)) {
-                    val retryUrl = fullUrl.replace(defaultUrl, fallbackUrl)
-                    val retryResponse = apiService.getRawScheduleSchema(retryUrl)
-                    if (retryResponse.isSuccessful) {
-                        response = retryResponse
-                    }
-                }
-            }
-            if (response.isSuccessful) {
-                val jsonBody = response.body()?.string() ?: throw Exception("Response body is empty")
-                val schema = parser.parseJson(jsonBody).getOrThrow()
-
-                cacheRemoteSlots(
-                    context = context,
-                    fileId = file.id,
-                    title = schema.title ?: file.title,
-                    description = file.description,
-                    remotePath = file.remotePath,
-                    rawJson = jsonBody,
-                    updatedTime = file.updatedTime,
-                    universityId = file.universityId,
-                    universityName = file.universityName,
-                    facultyId = file.facultyId,
-                    facultyName = file.facultyName,
-                    fcmTopicPrefix = file.fcmTopicPrefix,
-                    termId = file.termId
-                )
-                Result.success(schema)
-            } else {
-                throw Exception("Failed to fetch remote schema: ${response.code()} ${response.message()}")
-            }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            if (existingEntry != null && cacheFile.exists()) {
-                try {
-                    val jsonBody = cacheFile.readText()
-                    val schema = parser.parseJson(jsonBody).getOrThrow()
-                    metadataList.removeAll { it.id == file.id }
-                    metadataList.add(existingEntry.copy(lastUsed = System.currentTimeMillis()))
-                    writeCacheMetadata(context, metadataList)
-                    Result.success(schema)
-                } catch (_: Exception) {
-                    Result.failure(e)
-                }
-            } else {
-                Result.failure(e)
-            }
-        }
-    }
-
+internal fun String.sha256(): String {
+    val md = MessageDigest.getInstance("SHA-256")
+    val digest = md.digest(this.toByteArray(Charsets.UTF_8))
+    return digest.joinToString("") { "%02x".format(it) }
 }

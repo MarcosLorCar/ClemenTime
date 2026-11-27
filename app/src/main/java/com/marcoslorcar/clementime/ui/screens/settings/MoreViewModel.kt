@@ -11,10 +11,14 @@ import com.marcoslorcar.clementime.data.EntryType
 import com.marcoslorcar.clementime.data.PeriodConfig
 import com.marcoslorcar.clementime.data.ScheduleDao
 import com.marcoslorcar.clementime.data.SettingsRepository
+import com.marcoslorcar.clementime.data.SyncMode
 import com.marcoslorcar.clementime.data.TermCodeParser
 import com.marcoslorcar.clementime.data.api.GitHubScheduleApiService
 import com.marcoslorcar.clementime.data.importing.parser.JsonScheduleParser
 import com.marcoslorcar.clementime.data.importing.repository.ImportRepository
+import com.marcoslorcar.clementime.ui.model.ScheduleHours
+import com.marcoslorcar.clementime.ui.model.scheduleDisplaySettings
+import com.marcoslorcar.clementime.ui.model.scheduleHours
 import com.marcoslorcar.clementime.ui.widget.ScheduleWidgetUtils
 import com.marcoslorcar.clementime.utils.IcsExporter
 import com.marcoslorcar.clementime.utils.ScheduleDiffChecker
@@ -54,7 +58,7 @@ data class MoreUiState(
     val dayStartTime: LocalTime = LocalTime.of(8, 30),
     val dayEndTime: LocalTime = LocalTime.of(21, 30),
     val lastScheduleSyncTimestamp: Long = 0L,
-    val syncMode: com.marcoslorcar.clementime.data.SyncMode = com.marcoslorcar.clementime.data.SyncMode.ONLINE,
+    val syncMode: SyncMode = SyncMode.ONLINE,
     val isCheckingUpdates: Boolean = false,
     val pendingDiffs: List<SlotDiff> = emptyList(),
     val pendingRemoteSlots: List<JsonFlatSlot> = emptyList(),
@@ -86,6 +90,33 @@ class MoreViewModel @Inject constructor(
         val universityId: String = "",
         val facultyId: String = "",
         val label: String = ""
+    )
+
+    private data class AppearanceSettings(
+        val themeMode: String,
+        val selectedTheme: String,
+        val language: String,
+        val onboardingTooltipsEnabled: Boolean
+    )
+
+    private data class AcademicSettings(
+        val periodConfig: PeriodConfig,
+        val subjectCounts: Map<Int, Int>,
+        val hours: ScheduleHours
+    )
+
+    private data class SyncSettings(
+        val repositoryUrl: String,
+        val lastSyncTimestamp: Long,
+        val mode: SyncMode,
+        val faculty: LinkedFacultyInfo
+    )
+
+    private data class ScheduleUpdateState(
+        val isChecking: Boolean,
+        val diffs: List<SlotDiff>,
+        val remoteSlots: List<JsonFlatSlot>,
+        val showDiffBottomSheet: Boolean
     )
 
     private val _appLanguage = MutableStateFlow(getCurrentLanguage())
@@ -121,57 +152,67 @@ class MoreViewModel @Inject constructor(
         subjects.groupingBy { it.subject.semester }.eachCount()
     }
 
-    val uiState: StateFlow<MoreUiState> = combine(
+    private val appearanceSettings = combine(
         settingsRepository.themeFlow,
-        settingsRepository.scrollableTabsFlow,
-        settingsRepository.showNowLineFlow,
-        settingsRepository.nowLineStyleFlow,
-        settingsRepository.highContrastFlow,
         settingsRepository.selectedThemeFlow,
-        settingsRepository.githubRepoBaseUrlFlow,
+        _appLanguage,
         settingsRepository.onboardingTooltipsEnabledFlow,
-        settingsRepository.dayStartHourFlow,
-        settingsRepository.dayStartMinuteFlow,
-        settingsRepository.dayEndHourFlow,
-        settingsRepository.dayEndMinuteFlow,
+        ::AppearanceSettings
+    )
+
+    private val academicSettings = combine(
+        settingsRepository.periodConfigFlow,
+        subjectCountsBySemesterFlow,
+        settingsRepository.scheduleHours(),
+        ::AcademicSettings
+    )
+
+    private val syncSettings = combine(
+        settingsRepository.githubRepoBaseUrlFlow,
         settingsRepository.lastScheduleSyncTimestampFlow,
         settingsRepository.syncModeFlow,
+        linkedFacultyFlow,
+        ::SyncSettings
+    )
+
+    private val scheduleUpdateState = combine(
         _isCheckingUpdates,
-        _appLanguage,
         _pendingDiffs,
         _pendingRemoteSlots,
         _showDiffBottomSheet,
-        linkedFacultyFlow,
-        settingsRepository.periodConfigFlow,
-        subjectCountsBySemesterFlow
-    ) { args: Array<Any?> ->
-        @Suppress("UNCHECKED_CAST")
-        val linkedFaculty = args[19] as LinkedFacultyInfo
-        @Suppress("UNCHECKED_CAST")
-        val subjectCounts = args[21] as Map<Int, Int>
+        ::ScheduleUpdateState
+    )
+
+    val uiState: StateFlow<MoreUiState> = combine(
+        appearanceSettings,
+        settingsRepository.scheduleDisplaySettings(),
+        academicSettings,
+        syncSettings,
+        scheduleUpdateState
+    ) { appearance, display, academics, sync, update ->
         MoreUiState(
-            themeMode = args[0] as String,
-            scrollableTabs = args[1] as Boolean,
-            showNowLine = args[2] as Boolean,
-            nowLineStyle = args[3] as String,
-            highContrast = args[4] as Boolean,
-            selectedTheme = args[5] as String,
-            githubRepoBaseUrl = args[6] as String,
-            onboardingTooltipsEnabled = args[7] as Boolean,
-            dayStartTime = LocalTime.of(args[8] as Int, args[9] as Int),
-            dayEndTime = LocalTime.of(args[10] as Int, args[11] as Int),
-            lastScheduleSyncTimestamp = args[12] as Long,
-            syncMode = args[13] as com.marcoslorcar.clementime.data.SyncMode,
-            isCheckingUpdates = args[14] as Boolean,
-            appLanguage = args[15] as String,
-            pendingDiffs = args[16] as List<SlotDiff>,
-            pendingRemoteSlots = args[17] as List<JsonFlatSlot>,
-            showDiffBottomSheet = args[18] as Boolean,
-            selectedUniversityId = linkedFaculty.universityId,
-            selectedFacultyId = linkedFaculty.facultyId,
-            linkedFacultyLabel = linkedFaculty.label,
-            periodConfig = args[20] as PeriodConfig,
-            subjectCountsBySemester = subjectCounts
+            themeMode = appearance.themeMode,
+            appLanguage = appearance.language,
+            scrollableTabs = display.scrollableTabs,
+            showNowLine = display.showNowLine,
+            nowLineStyle = display.nowLineStyle,
+            highContrast = display.highContrast,
+            selectedTheme = appearance.selectedTheme,
+            githubRepoBaseUrl = sync.repositoryUrl,
+            onboardingTooltipsEnabled = appearance.onboardingTooltipsEnabled,
+            dayStartTime = academics.hours.start,
+            dayEndTime = academics.hours.end,
+            lastScheduleSyncTimestamp = sync.lastSyncTimestamp,
+            syncMode = sync.mode,
+            isCheckingUpdates = update.isChecking,
+            pendingDiffs = update.diffs,
+            pendingRemoteSlots = update.remoteSlots,
+            showDiffBottomSheet = update.showDiffBottomSheet,
+            selectedUniversityId = sync.faculty.universityId,
+            selectedFacultyId = sync.faculty.facultyId,
+            linkedFacultyLabel = sync.faculty.label,
+            periodConfig = academics.periodConfig,
+            subjectCountsBySemester = academics.subjectCounts
         )
     }.stateIn(
         scope = viewModelScope,
@@ -263,7 +304,7 @@ class MoreViewModel @Inject constructor(
         }
     }
 
-    fun setSyncMode(mode: com.marcoslorcar.clementime.data.SyncMode) {
+    fun setSyncMode(mode: SyncMode) {
         viewModelScope.launch {
             settingsRepository.setSyncMode(mode)
             if (context != null) {
