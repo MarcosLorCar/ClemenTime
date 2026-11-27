@@ -1,0 +1,58 @@
+[
+  {
+    "grupo": "1B",
+    "cuatrimestre": "1C",
+    "dia": "Miércoles",
+    "hora_inicio": "08:50",
+    "hora_fin": "10:00",
+    "codigo": "FunProg1",
+    "asignatura": "Fundamentos de Programación I",
+    "tipo": "laboratorio",
+    "aula": "A1.2",
+    "profesor": "Ana Soto",
+    "es_laboratorio": true,
+    "grupo_practicas": "P1"
+  },
+  {
+    "grupo": "1B",
+    "cuatrimestre": "1C",
+    "dia": "Miércoles",
+    "hora_inicio": "08:50",
+    "hora_fin": "10:00",
+    "codigo": "FunProg1",
+    "asignatura": "Fundamentos de Programación I",
+    "tipo": "laboratorio",
+    "aula": "A1.2",
+    "profesor": "Ana Soto",
+    "es_laboratorio": true,
+    "grupo_practicas": "P2"
+  },
+  {
+    "grupo": "1C",
+    "cuatrimestre": "1C",
+    "dia": "Miércoles",
+    "hora_inicio": "08:50",
+    "hora_fin": "10:00",
+    "codigo": "FunProg1",
+    "asignatura": "Fundamentos de Programación I",
+    "tipo": "laboratorio",
+    "aula": "A1.2",
+    "profesor": "Ana Soto",
+    "es_laboratorio": true,
+    "grupo_practicas": "P1"
+  },
+  {
+    "grupo": "GENERAL",
+    "cuatrimestre": "1C",
+    "dia": "Viernes",
+    "hora_inicio": "08:30",
+    "hora_fin": "09:30",
+    "codigo": "Pruebas de Progreso",
+    "asignatura": "Pruebas de Progreso",
+    "tipo": "evento",
+    "aula": "Charles Babbage - 0.02+3",
+    "profesor": "",
+    "es_laboratorio": false,
+    "grupo_practicas": ""
+  }
+]

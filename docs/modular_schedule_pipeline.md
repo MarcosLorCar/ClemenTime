@@ -1,6 +1,8 @@
 # Pipeline modular de horarios
 
-Estado: **diseño propuesto; todavía no implementado**.
+Estado: **contrato documentado y salida ESI caracterizada con pruebas offline**.
+El pipeline operativo sigue usando los scripts ESI. El registro de adaptadores,
+el núcleo de publicación y la integración ESII siguen siendo propuestas.
 
 Este documento define los límites de la migración. El comportamiento operativo
 actual se describe en [la guía ESI](esi_api_schedule_pipeline.md). Las tareas,
@@ -22,20 +24,54 @@ Tampoco se introduce un servidor, plugins externos, un nuevo formato público ni
 una migración Android como parte de esta propuesta. Si la fuente ESII requiere
 capacidades adicionales del cliente, se abrirá una decisión de alcance separada.
 
-## Punto de partida
+## Consumidores actuales
 
-- `process_schedules.py` coordina directamente los scripts ESI.
-- `parse_schedule.py` mezcla interpretación de la fuente, mappings, reglas ESI y
-  escritura de los archivos `1C.json` y `2C.json`.
-- `generate_index.py` genera un catálogo v2 con UCLM/ESI fijados en el código.
-- Los workflows de sincronización y edición manual comparten la exclusión mutua
-  de escritores, pero ambos deben adaptarse al catálogo de varias facultades.
-- `notify_fcm.py` recorre todas las facultades del catálogo recibido; la selección
-  de facultades realmente modificadas debe incorporarse a la publicación.
+| Consumidor | Entrada y comportamiento actual |
+| --- | --- |
+| CLI `process_schedules.py` | Acepta un JSON local opcional, `--strict` y `--check-esi`. `--force` se pasa al comprobador si se activa la comprobación. Ejecuta el parser y después el generador de índices. Cuando el comprobador termina correctamente, el CLI procesa el fichero local aunque las cabeceras no hayan cambiado. |
+| `sync-esi-schedules.yml` | Consume `has_update` del comprobador HTTP. Ejecuta el CLI estricto si hay actualización o si arranca por push o manualmente. Confirma y sube los cambios en `schedules/`; notifica tras el push o en modo de prueba manual, con `success()`. |
+| `update-schedules-index.yml` | Ante una edición de `dist/` en `master`, excluidos los dos índices, ejecuta directamente `generate_index.py`. Publica los índices si difieren y notifica tras el push. Ambos workflows comparten el grupo de concurrencia `schedules-master-write`. |
+| Catálogo v2 | `RemoteScheduleFetcher` lee `schedules_catalog.json`. La jerarquía es `universities → faculties → terms`; cada periodo contiene `id`, `name`, `description`, `path`, `hash` y `updatedTime`. Android resuelve `path` desde la base del catálogo. ESI publica las rutas relativas `1C.json` y `2C.json`. |
+| Índice legacy | `schedules_index.json` es un array plano ESI con los mismos datos de periodo y `title` en lugar de `name`. Android puede envolverlo en un catálogo sintético UCLM/ESI como fallback. El generador toma de este índice la fecha anterior de cada periodo. |
+| Parser Android | `JsonScheduleParser` lee los arrays de `JsonFlatSlot` y los agrupa por curso, grupo y asignatura; las sesiones `evento` se tratan como comunes. El parser también admite el JSON anidado para importaciones. |
+| Payload FCM | `notify_fcm.py` lee el catálogo y construye un mensaje por facultad con `university`, `faculty`, `updated_at` y `hash_{termId}` como valores de datos de tipo string. ESI conserva el topic `sched_uclm_esi` y las claves `hash_1C` y `hash_2C`. Android usa `TermCodeParser` con el sufijo de la clave para seleccionar el hash del periodo. |
 
-Estas observaciones justifican la migración; no describen capacidades ya añadidas.
+## Comportamiento ESI caracterizado
 
-## Separación de responsabilidades
+Las [muestras pequeñas](../schedules/script/fixtures/esi) y las [pruebas del
+pipeline](../schedules/script/test_schedule_pipeline.py) fijan el JSON plano
+publicado por ESI, incluidos `codigo` (identificador corto) y `asignatura`
+(nombre visible), eventos `GENERAL`, sesiones compartidas, deduplicación,
+sufijos de laboratorio, redondeo de fin a `:50` y filtrado de Universidad de
+Mayores. Los dos índices reflejan el SHA-256 de los bytes de cada fichero y
+mantienen `updatedTime` por periodo mientras su hash coincida con el índice legacy
+anterior. Las [pruebas HTTP](../schedules/script/test_check_esi_update.py) simulan
+HEAD y GET, sin consultar el servidor.
+
+La implementación actual tiene estos límites:
+
+- El modo estricto aborta si quedan asignaturas o profesores sin mapping. El
+  parser publica el aula saneada sin consultar `mappings.classrooms`. El aborto
+  preserva ambos horarios, ambos índices y los mappings. Si se pidió comprobar
+  ESI primero, el comprobador ya pudo actualizar el JSON de entrada y el estado
+  HTTP antes de que falle el parser.
+- Una respuesta con cabeceras nuevas y los mismos bytes actualiza el estado
+  HTTP, reescribe el fichero de entrada y emite `has_update=false`. El comprobador
+  admite un objeto JSON no vacío, aunque el parser requiere una lista. La
+  diferencia entre un fallo HTTP y una fuente sin cambios se pierde en
+  `has_update=false` si se usa el modo tolerante por defecto.
+- El parser solo escribe los periodos con sesiones y deja en disco el fichero
+  anterior si falta un periodo en la fuente. Escribe directamente en el destino;
+  la comprobación previa de mappings protege de ese fallo concreto.
+- El orden ESI es estable para la misma entrada. Los empates en grupo, día,
+  inicio y código conservan el orden de origen. La escritura en modo texto usa
+  los saltos de línea del sistema, por lo que un mismo horario puede tener hashes
+  distintos en Windows (CRLF) y en el entorno de publicación Linux (LF).
+- El aviso de sincronización responde a cualquier commit bajo `schedules/`,
+  incluso si solo cambió el estado HTTP en una ejecución que llegó al paso de
+  publicación. El emisor recorre todas las facultades del catálogo recibido.
+
+## Separación de responsabilidades propuesta
 
 ### Registro y adaptadores
 
@@ -57,23 +93,53 @@ fuente remota no haya cambiado. Debe existir reprocesado offline de fixtures.
 
 ### Contrato y núcleo
 
-La frontera lógica es: fuente -> adaptador -> sesiones normalizadas por periodo
--> validación -> serialización -> catálogo y publicación.
+El adaptador adquiere la fuente y normaliza sus sesiones. El núcleo recibe mapas
+por periodo, contrasta los periodos recibidos con la configuración y serializa
+los resultados válidos. Estas firmas definen los datos internos para
+la extracción posterior.
 
-El resultado identifica universidad, facultad y periodos, con sesiones que
-conservan código y nombre de asignatura, grupo, día, horas, aula, profesor y
-semántica de laboratorio/subgrupo/evento del formato actual. Las firmas y tipos
-concretos se fijan en #47. No se añade un envoltorio nuevo al JSON público.
+```text
+FacultyKey(university_id: str, faculty_id: str)
+FacultySpec(key: FacultyKey, university_name: str, faculty_name: str,
+            periods: tuple[PeriodSpec, ...], fcm_topic_prefix: str | None,
+            subgroups_label: str | None, period_type: str | None, period_count: int | None)
+PeriodSpec(id: str, index: int, name: str, description: str | None, path: str)
+Session(subject_code: str, subject_name: str, group: str, day: int,
+        start: time, end: time, kind: str, room: str, professor: str,
+        is_lab: bool, subgroup: str)
+FacultySchedule(key: FacultyKey, sessions_by_period: Mapping[str, tuple[Session, ...]])
 
-El núcleo valida identidad, referencias, campos, horas, periodos y rutas; produce
-salida determinista y hashes de los bytes finales. No impone dos cuatrimestres,
-pero solo se publicarán periodos compatibles con el cliente: actualmente su
-modelo admite índices 1..8. No se asume soporte para IDs arbitrarios.
+acquire() -> Unchanged | Candidate[source_payload] | SourceFailure
+normalize(source_payload) -> FacultySchedule | ParseFailure
+```
 
-La adquisición distingue datos sin cambios, datos candidatos y error. El resultado
-por facultad distingue actualización válida, ausencia de cambios y fallo. Un fallo
-de parsing nunca equivale a un horario vacío válido. Las políticas de integridad
-de cada fuente deben detectar extracción parcial y desaparición de periodos.
+- El registro usa una clave estable y no vacía por par universidad/facultad.
+  Cada facultad declara IDs e índices de periodo únicos. El núcleo valida que los
+  IDs de `sessions_by_period` correspondan a los periodos declarados, que las
+  rutas relativas permanezcan en `dist/` y que cada ruta publicada sea única.
+- El índice es un entero de 1 a 8. El ID publicado debe resolverse al mismo
+  índice en `TermCodeParser` tanto desde el catálogo como desde `cuatrimestre` y
+  `hash_{termId}`. Para ESI se mantienen `1C` y `2C`. La existencia de alias o
+  fallbacks en Android no acredita compatibilidad con IDs arbitrarios.
+  Si se declaran `period_type` o `period_count`, la configuración que Android
+  obtiene mediante `PeriodConfig.inferFromCatalog` debe abarcar todos los
+  índices publicados. El catálogo ESI actual omite ambos campos.
+- `Session` conserva por separado código y nombre, y un registro por grupo
+  asistente. `day` usa lunes = 1 a domingo = 7; `start` y `end` son horas
+  locales con precisión de minutos. Se conservan `kind`, `is_lab` y `subgroup`
+  por separado para representar la semántica de la fuente. Un evento común ESI
+  se representa con `group = "GENERAL"` y `kind = "evento"`.
+- El serializador convierte cada sesión en el objeto plano actual. Toma
+  `cuatrimestre` de la clave del periodo y escribe `grupo`, `dia` (nombre en
+  español), `hora_inicio` y `hora_fin` (HH:mm), `codigo`, `asignatura`,
+  `tipo`, `aula`, `profesor`, `es_laboratorio` y `grupo_practicas`.
+  Universidad, facultad y metadatos del periodo se publican en los índices
+  existentes. El hash se calcula sobre los bytes finales.
+- `Candidate` contiene datos por validar y puede proceder de un reprocesado
+  local. `SourceFailure` y `ParseFailure` conservan el diagnóstico e impiden que
+  se publique ese resultado. `Unchanged` conserva la última publicación. Un
+  periodo vacío solo es válido si la configuración y las comprobaciones de
+  integridad de esa fuente lo permiten de forma explícita.
 
 ### Publicación y notificaciones
 

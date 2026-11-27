@@ -24,15 +24,18 @@ ESI TV hall API -> check_esi_update.py (HTTP HEAD ETag/Last-Modified) -> schedul
 uv sync
 python schedules/script/check_esi_update.py          # check ESI TV endpoint via HTTP HEAD, download if changed
 python process_schedules.py                          # process schedules/input/schedules.json -> dist/{1C,2C}.json + catalog/index
-python process_schedules.py --check-esi              # check live ESI endpoint first, then process if updated
+python process_schedules.py --check-esi              # check live ESI endpoint first, then process the local input
 python process_schedules.py --check-esi --force      # force redownload from ESI API and regenerate dist
 python schedules/script/generate_index.py            # regenerate schedules_catalog.json + schedules_index.json only
 python schedules/script/notify_fcm.py --dry-run      # preview FCM topic push payloads without sending
+python -m unittest discover -s schedules/script -p "test_*.py"  # offline fixtures and mocked HTTP
 ```
 
 `process_schedules.py` orchestrates everything: it runs `check_esi_update.py` (when `--check-esi`), then `parse_schedule.py`, then `generate_index.py`.
 
-`--strict` passes `--non-interactive` down to `parse_schedule.py`. Unknown subject/professor/classroom names are **not** prompted for and **not** passed through: the script collects them, prints them, and exits non-zero *before writing anything*, so raw codes can never reach `dist/`. Fix by adding the name to `mappings.json`, or drop `--strict` to be prompted for each.
+`--strict` passes `--non-interactive` down to `parse_schedule.py`. The script reports unresolved subject and professor mappings, then exits non-zero before writing either period. The wrapper stops before refreshing the indexes. Classroom names pass through after source-specific cleanup. If the wrapper checked ESI first, the input JSON and HTTP metadata may already have been updated.
+
+The [modular pipeline contract](../../../docs/modular_schedule_pipeline.md) records the current consumers and the typed boundary for future adapters. The offline fixtures in `schedules/script/fixtures/esi/` pin the current flat slot serialization, and the tests check catalogue and legacy index hashes, `updatedTime`, FCM data and strict failure behavior. Current period IDs are `1C` and `2C`; a new published ID must resolve to its declared index (1 through 8) in Android's `TermCodeParser`.
 
 ## Wire Format
 
