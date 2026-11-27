@@ -204,7 +204,7 @@ class ImportRepository @Inject constructor(
             val summary = summaries.find { TermCodeParser.matchesSummary(it, semester) }
 
             if (summary != null) {
-                val download = remoteFetcher.downloadFlatSchedule(effectiveBaseUrl, summary)
+                val download = remoteFetcher.downloadFlatScheduleVerified(effectiveBaseUrl, summary).getOrNull()
                 if (download != null) {
                     slotsToUse = download.slots
                     downloadedSchedule = download
@@ -317,6 +317,16 @@ class ImportRepository @Inject constructor(
 
     fun normalizeGitHubUrl(url: String): String = remoteFetcher.normalizeGitHubUrl(url)
 
+    fun resolveScheduleUrl(baseUrl: String, relativePath: String): String =
+        remoteFetcher.resolveScheduleUrl(baseUrl, relativePath)
+
+    internal suspend fun downloadFlatScheduleVerified(
+        baseUrl: String,
+        summary: RemoteScheduleSummary,
+        apiServiceOverride: GitHubScheduleApiService? = null
+    ): Result<RemoteScheduleFetcher.FlatScheduleDownload> =
+        remoteFetcher.downloadFlatScheduleVerified(baseUrl, summary, apiServiceOverride)
+
     suspend fun fetchRemoteSchedules(
         rawBaseUrl: String = SettingsRepository.DEFAULT_GITHUB_REPO_BASE_URL,
         facultyId: String? = null,
@@ -386,8 +396,10 @@ class ImportRepository @Inject constructor(
 
 }
 
-internal fun String.sha256(): String {
+internal fun ByteArray.sha256(): String {
     val md = MessageDigest.getInstance("SHA-256")
-    val digest = md.digest(this.toByteArray(Charsets.UTF_8))
+    val digest = md.digest(this)
     return digest.joinToString("") { "%02x".format(it) }
 }
+
+internal fun String.sha256(): String = this.toByteArray(Charsets.UTF_8).sha256()

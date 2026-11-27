@@ -479,4 +479,164 @@ class ImportRepositoryTest {
             tempDir.deleteRecursively()
         }
     }
+
+    @Test
+    fun resolveScheduleUrl_supportsFlatAndNestedFacultyPaths() {
+        val repository = ImportRepository(dao = FakeScheduleDao())
+
+        assertEquals(
+            "https://raw.githubusercontent.com/MarcosLorCar/ClemenTime/master/schedules/dist/1C.json",
+            repository.resolveScheduleUrl(
+                "https://github.com/MarcosLorCar/ClemenTime/tree/master/schedules/dist",
+                "1C.json"
+            )
+        )
+        assertEquals(
+            "https://raw.githubusercontent.com/MarcosLorCar/ClemenTime/master/schedules/dist/uclm/esii/1C.json",
+            repository.resolveScheduleUrl(
+                "https://raw.githubusercontent.com/MarcosLorCar/ClemenTime/master/schedules/dist/schedules_catalog.json",
+                "uclm/esii/1C.json"
+            )
+        )
+        assertEquals(
+            "https://example.test/dist/uclm/esii/2C.json",
+            repository.resolveScheduleUrl(
+                "https://example.test/dist/",
+                "/uclm/esii/2C.json"
+            )
+        )
+    }
+
+    @Test
+    fun downloadFlatScheduleVerified_retriesOnHashMismatchForNestedPathAndSucceeds() = runTest {
+        val staleJson = """[{"cuatrimestre":"1C","dia":"Lunes","hora_inicio":"08:30","hora_fin":"10:00","asignatura":"Old","codigo":"SO","tipo":"teoría","grupo":"1A"}]"""
+        val freshJson = """[{"cuatrimestre":"1C","dia":"Martes","hora_inicio":"10:00","hora_fin":"11:30","asignatura":"Fresh","codigo":"SO","tipo":"teoría","grupo":"1A"}]"""
+        val expectedHash = freshJson.sha256()
+        val requestedUrls = mutableListOf<String>()
+
+        val fakeApi = object : GitHubScheduleApiService {
+            override suspend fun getScheduleCatalog(url: String): Response<ScheduleCatalog> =
+                error("Unused in direct download test")
+
+            override suspend fun getScheduleIndex(url: String): Response<List<RemoteScheduleSummary>> =
+                error("Unused in direct download test")
+
+            override suspend fun getScheduleSchema(url: String): Response<ScheduleJsonSchema> =
+                error("Unused in direct download test")
+
+            override suspend fun getRawScheduleSchema(url: String): Response<okhttp3.ResponseBody> {
+                requestedUrls.add(url)
+                val body = if (requestedUrls.size == 1) staleJson else freshJson
+                return Response.success(body.toResponseBody())
+            }
+        }
+
+        val repository = ImportRepository(dao = FakeScheduleDao(), apiService = fakeApi)
+        val summary = RemoteScheduleSummary(
+            id = "1C",
+            title = "Primer Cuatrimestre",
+            path = "uclm/esii/1C.json",
+            hash = expectedHash
+        )
+
+        val result = repository.downloadFlatScheduleVerified("https://example.test/dist", summary)
+        assertTrue(result.isSuccess)
+        val download = result.getOrThrow()
+        assertEquals("https://example.test/dist/uclm/esii/1C.json", download.url)
+        assertEquals("Fresh", download.slots.single().asignatura)
+        assertEquals(2, requestedUrls.size)
+        assertEquals("https://example.test/dist/uclm/esii/1C.json?v=$expectedHash", requestedUrls[0])
+        assertTrue(requestedUrls[1].startsWith("https://example.test/dist/uclm/esii/1C.json?v=$expectedHash&cb="))
+    }
+
+    @Test
+    fun performSync_doesNotAdvanceLastKnownHashOnPersistentHashMismatch() = runTest {
+        val staleJson = """[{"cuatrimestre":"1C","dia":"Lunes","hora_inicio":"08:30","hora_fin":"10:00","asignatura":"Sistemas Operativos","codigo":"SO","tipo":"teoría","grupo":"1A"}]"""
+        val expectedHash = "0000000000000000000000000000000000000000000000000000000000000000"
+
+        val existingSubject = Subject(
+            id = 1L,
+            code = "SO",
+            name = "Sistemas Operativos",
+            color = 0xFF4CAF50.toInt(),
+            courseGroup = "1A",
+            isActive = true,
+            semester = 1
+        )
+        val existingSlot = ClassSlot(
+            id = 10L,
+            subjectId = 1L,
+            dayOfWeek = java.time.DayOfWeek.MONDAY,
+            startTime = java.time.LocalTime.of(8, 30),
+            endTime = java.time.LocalTime.of(10, 0),
+            entryType = EntryType.THEORY
+        )
+        val fakeDao = FakeScheduleDao(listOf(SubjectWithSlots(existingSubject, listOf(existingSlot))))
+
+        val recordedHashes = mutableMapOf<Int, String>()
+        var syncTimestampSaved = false
+        val fakeSettings = object : SettingsRepository(null) {
+            override val selectedUniversityIdFlow = kotlinx.coroutines.flow.flowOf("uclm")
+            override val selectedFacultyIdFlow = kotlinx.coroutines.flow.flowOf("esii")
+            override val githubRepoBaseUrlFlow = kotlinx.coroutines.flow.flowOf("https://example.test/dist")
+            override val currentSemesterFlow = kotlinx.coroutines.flow.flowOf(1)
+            override fun getLastKnownScheduleHashFlow(semester: Int) =
+                kotlinx.coroutines.flow.flowOf(recordedHashes[semester] ?: "old-hash")
+            override suspend fun setLastKnownScheduleHash(semester: Int, hash: String) {
+                recordedHashes[semester] = hash
+            }
+            override suspend fun setLastScheduleSyncTimestamp(timestamp: Long) {
+                syncTimestampSaved = true
+            }
+        }
+
+        val fakeApi = object : GitHubScheduleApiService {
+            override suspend fun getScheduleCatalog(url: String) = Response.success(
+                ScheduleCatalog(
+                    universities = listOf(
+                        com.marcoslorcar.clementime.data.importing.model.UniversityCatalogEntry(
+                            id = "uclm",
+                            name = "UCLM",
+                            faculties = listOf(
+                                com.marcoslorcar.clementime.data.importing.model.FacultyCatalogEntry(
+                                    id = "esii",
+                                    name = "ESII",
+                                    terms = listOf(
+                                        com.marcoslorcar.clementime.data.importing.model.TermCatalogEntry(
+                                            id = "1C",
+                                            name = "1C",
+                                            path = "uclm/esii/1C.json",
+                                            hash = expectedHash
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+
+            override suspend fun getScheduleIndex(url: String) =
+                Response.error<List<RemoteScheduleSummary>>(404, "".toResponseBody())
+
+            override suspend fun getScheduleSchema(url: String) =
+                Response.error<ScheduleJsonSchema>(404, "".toResponseBody())
+
+            override suspend fun getRawScheduleSchema(url: String) =
+                Response.success(staleJson.toResponseBody())
+        }
+
+        val repository = ImportRepository(dao = fakeDao, apiService = fakeApi)
+        val syncResult = com.marcoslorcar.clementime.worker.ScheduleUpdateWorker.performSync(
+            context = null,
+            settingsRepository = fakeSettings,
+            importRepository = repository,
+            apiService = fakeApi
+        )
+
+        assertTrue(syncResult.hasTransientMismatch)
+        assertTrue(syncResult.diffs.isEmpty())
+        assertTrue("lastKnownScheduleHash must not advance on hash mismatch", recordedHashes.isEmpty())
+        assertEquals(false, syncTimestampSaved)
+    }
 }

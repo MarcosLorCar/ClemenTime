@@ -70,9 +70,13 @@ A metadata-only download refreshes the cache and HTTP state. The shared
 pipeline also reprocesses cached input after an unchanged check, so changes to
 mappings, configuration, or code can change the outputs on any sync run.
 
-The sync workflow commits changes under `schedules/` after a successful run.
-It sends FCM after a successful push that changed files in `schedules/dist/`,
-or during a successful manual run with `test_fcm` enabled.
+The sync workflow runs all registered faculties in strict mode, commits valid
+changes under `schedules/`, and pushes to `master`. It sends selective FCM only
+after a confirmed push for faculties whose published schedule hashes changed
+(raw/meta updates under `schedules/input/` alone do not trigger FCM), or during
+an explicit manual `workflow_dispatch` with `test_fcm=true` or `retry_fcm=true`.
+If FCM fails after push, published files on `master` stay live and notifications
+can be retried via `retry_fcm=true` without re-syncing.
 
 ### 2.8. Strict Parsing and Publication
 
@@ -81,16 +85,22 @@ public files. The adapter reads mappings from
 `schedules/script/adapters/esi/mappings.json` and passes cleaned classroom names
 through. Without `--strict` it prompts for unresolved names.
 
-A source or parse failure exits nonzero and preserves the prior periods and
-indexes. A successful download can update the raw input and HTTP metadata
-before normalization. ESI publishes periods with sessions and retains the
-previous file for an omitted period. Hashes cover the final file bytes, and
+A source or parse failure preserves the prior periods and indexes (exiting `1`
+when all selected faculties fail, or `2` on partial failure in multi-faculty
+runs so other valid faculties can still publish). A successful download can
+update the raw input and HTTP metadata before normalization. ESI publishes
+periods with sessions and retains the previous file for an omitted period;
+removing a previously published period requires explicit confirmation via
+`removed_periods` or `--remove-period`. Hashes cover the final file bytes, and
 an unchanged hash retains its previous `updatedTime`.
 
 ## 3. Pipeline Commands
 
 ```bash
-# Sync the remote source, reprocessing its cache if unchanged
+# Sync all registered faculties in strict mode and write a report
+python3 process_schedules.py --all --sync --strict --report sync-report.json
+
+# Sync ESI specifically, reprocessing its cache if unchanged
 python3 process_schedules.py --faculty uclm/esi --sync --strict
 
 # Force a redownload
@@ -99,13 +109,14 @@ python3 process_schedules.py --faculty uclm/esi --sync --strict --force
 # Reprocess a local ESI JSON file offline
 python3 process_schedules.py --faculty uclm/esi --strict --fixture path/to/local.json --dist-dir scratch-dist
 
-# Refresh the catalog and legacy index from existing term files
-python3 process_schedules.py --faculty uclm/esi --index-only
+# Refresh the combined catalog and ESI legacy index from existing term files
+python3 process_schedules.py --all --index-only
 
-# Preview FCM push payloads without sending
-python3 schedules/script/notify_fcm.py --dry-run
+# Preview selective FCM push payloads without sending
+python3 schedules/script/notify_fcm.py --report sync-report.json --dry-run
+python3 schedules/script/notify_fcm.py --faculty uclm/esi --dry-run
 
-# Run offline characterization tests from the repository root
+# Run offline characterization and multi-faculty tests from the repository root
 python3 -m unittest discover -s schedules/script -p "test_*.py"
 ```
 

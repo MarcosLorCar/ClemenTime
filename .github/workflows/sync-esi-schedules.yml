@@ -1,4 +1,4 @@
-name: Sync ESI Schedules
+name: Sync Faculty Schedules
 
 on:
   schedule:
@@ -12,13 +12,23 @@ on:
       - '.github/workflows/sync-esi-schedules.yml'
   workflow_dispatch:
     inputs:
+      faculty:
+        description: 'Specific faculty key (e.g. uclm/esi). Leave blank to sync all registered faculties.'
+        required: false
+        type: string
+        default: ''
       force:
-        description: 'Force re-download and re-process from ESI TV endpoint'
+        description: 'Force re-download and re-process from remote source'
         required: false
         type: boolean
         default: false
       test_fcm:
-        description: 'Send FCM topic push even if no schedule changes were committed'
+        description: 'Send explicit manual test FCM push even if no schedule changes were published'
+        required: false
+        type: boolean
+        default: false
+      retry_fcm:
+        description: 'Retry FCM dispatch from the already-published catalog without re-syncing or committing'
         required: false
         type: boolean
         default: false
@@ -44,39 +54,92 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Sync and Process ESI Schedules
+      - name: Sync and Process Schedules
+        id: sync
+        if: inputs.retry_fcm != true
         env:
           SCHEDULE_SOURCE_URL: ${{ secrets.SCHEDULE_SOURCE_URL }}
+          TARGET_FACULTY: ${{ inputs.faculty }}
+          FORCE_SYNC: ${{ inputs.force }}
         run: |
-          ARGS=""
-          if [ "${{ inputs.force }}" = "true" ]; then
-            ARGS="--force"
+          REPORT_PATH="$RUNNER_TEMP/sync-report.json"
+          ARGS=(--sync --strict --report "$REPORT_PATH" --summary-file "$GITHUB_STEP_SUMMARY")
+          if [ -n "$TARGET_FACULTY" ]; then
+            ARGS+=(--faculty "$TARGET_FACULTY")
+          else
+            ARGS+=(--all)
           fi
-          python3 -u process_schedules.py --faculty uclm/esi --sync --strict $ARGS
+          if [ "$FORCE_SYNC" = "true" ]; then
+            ARGS+=(--force)
+          fi
+
+          set +e
+          python3 -u process_schedules.py "${ARGS[@]}"
+          rc=$?
+          set -e
+
+          if [ "$rc" -eq 0 ]; then
+            echo "had_failures=false" >> "$GITHUB_OUTPUT"
+          elif [ "$rc" -eq 2 ]; then
+            echo "had_failures=true" >> "$GITHUB_OUTPUT"
+          else
+            exit "$rc"
+          fi
+
+          has_changes=$(python3 -c 'import json, sys; d = json.load(open(sys.argv[1], encoding="utf-8")); print("true" if d.get("changed_schedule_faculties") else "false")' "$REPORT_PATH")
+          echo "has_schedule_changes=$has_changes" >> "$GITHUB_OUTPUT"
 
       - name: Commit and Push
         id: commit
-        if: success()
+        if: success() && inputs.retry_fcm != true
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add schedules/
-          published=false
-          if ! git diff --cached --quiet -- schedules/dist/; then
-            published=true
-          fi
+          pushed=false
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "chore: auto-sync ESI schedules from TV hall API [skip ci]"
+            git commit -m "chore: auto-sync faculty schedules [skip ci]"
             git pull --rebase origin master
             git push
+            pushed=true
           fi
-          echo "published=$published" >> "$GITHUB_OUTPUT"
+          echo "pushed=$pushed" >> "$GITHUB_OUTPUT"
 
       - name: Notify FCM Topic Subscribers
-        if: success() && (steps.commit.outputs.published == 'true' || inputs.test_fcm == true)
+        id: fcm
+        if: >-
+          success() && (
+            inputs.retry_fcm == true ||
+            inputs.test_fcm == true ||
+            (steps.commit.outputs.pushed == 'true' && steps.sync.outputs.has_schedule_changes == 'true')
+          )
         env:
           FCM_SERVICE_ACCOUNT_KEY: ${{ secrets.FCM_SERVICE_ACCOUNT_KEY }}
+          TARGET_FACULTY: ${{ inputs.faculty }}
+          RETRY_FCM: ${{ inputs.retry_fcm }}
+          TEST_FCM: ${{ inputs.test_fcm }}
         run: |
-          python3 -u schedules/script/notify_fcm.py
+          FCM_ARGS=(--summary-file "$GITHUB_STEP_SUMMARY")
+          if [ "$RETRY_FCM" = "true" ] || [ "$TEST_FCM" = "true" ]; then
+            if [ -n "$TARGET_FACULTY" ]; then
+              FCM_ARGS+=(--faculty "$TARGET_FACULTY")
+            fi
+          else
+            FCM_ARGS+=(--report "$RUNNER_TEMP/sync-report.json")
+          fi
+          python3 -u schedules/script/notify_fcm.py "${FCM_ARGS[@]}"
+
+      - name: Report Partial Faculty Failures
+        if: success() && steps.sync.outputs.had_failures == 'true'
+        run: |
+          python3 -c '
+          import json, sys
+          report = json.load(open(sys.argv[1], encoding="utf-8"))
+          failed = [f for f in report.get("faculties", []) if f.get("status") == "failed"]
+          print("One or more faculties failed during sync while valid faculties were published:", file=sys.stderr)
+          for item in failed:
+              print(f"  - {item[\"faculty\"]} ({item.get(\"stage\")}): {item.get(\"diagnostic\")}", file=sys.stderr)
+          sys.exit(1)
+          ' "$RUNNER_TEMP/sync-report.json"

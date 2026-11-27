@@ -1,8 +1,7 @@
 name: Update Schedules Index
 
-# Safety net for hand-edited dist files. The schedule sync pipeline already regenerates the index
-# itself and commits with [skip ci], so this only fires for
-# schedule JSON committed by hand.
+# Safety net for hand-edited dist files. The schedule sync pipeline already regenerates indexes
+# itself and commits with [skip ci], so this only fires for schedule JSON committed by hand.
 on:
   push:
     branches: [ master ]
@@ -21,6 +20,8 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: write
+    env:
+      PYTHONUNBUFFERED: "1"
 
     steps:
       - name: Checkout Code
@@ -32,27 +33,59 @@ jobs:
           python-version: '3.12'
 
       - name: Generate Index
-        run: python3 process_schedules.py --faculty uclm/esi --index-only
+        id: index
+        run: |
+          REPORT_PATH="$RUNNER_TEMP/index-report.json"
+          set +e
+          python3 -u process_schedules.py --all --index-only --report "$REPORT_PATH" --summary-file "$GITHUB_STEP_SUMMARY"
+          rc=$?
+          set -e
+
+          if [ "$rc" -eq 0 ]; then
+            echo "had_failures=false" >> "$GITHUB_OUTPUT"
+          elif [ "$rc" -eq 2 ]; then
+            echo "had_failures=true" >> "$GITHUB_OUTPUT"
+          else
+            exit "$rc"
+          fi
+
+          has_changes=$(python3 -c 'import json, sys; d = json.load(open(sys.argv[1], encoding="utf-8")); print("true" if d.get("changed_schedule_faculties") else "false")' "$REPORT_PATH")
+          echo "has_schedule_changes=$has_changes" >> "$GITHUB_OUTPUT"
 
       - name: Commit and Push Changes
         id: commit
+        if: success()
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add schedules/dist/schedules_index.json schedules/dist/schedules_catalog.json
+          pushed=false
           if git diff --cached --quiet; then
             echo "No changes to commit"
-            echo "committed=false" >> $GITHUB_OUTPUT
           else
             git commit -m "chore: update schedules index [skip ci]"
             git pull --rebase origin master
             git push
-            echo "committed=true" >> $GITHUB_OUTPUT
+            pushed=true
           fi
+          echo "pushed=$pushed" >> "$GITHUB_OUTPUT"
 
       - name: Notify FCM Topic Subscribers
-        if: success() && steps.commit.outputs.committed == 'true'
+        if: success() && steps.commit.outputs.pushed == 'true' && steps.index.outputs.has_schedule_changes == 'true'
         env:
           FCM_SERVICE_ACCOUNT_KEY: ${{ secrets.FCM_SERVICE_ACCOUNT_KEY }}
         run: |
-          python3 -u schedules/script/notify_fcm.py
+          python3 -u schedules/script/notify_fcm.py --report "$RUNNER_TEMP/index-report.json" --summary-file "$GITHUB_STEP_SUMMARY"
+
+      - name: Report Partial Index Failures
+        if: success() && steps.index.outputs.had_failures == 'true'
+        run: |
+          python3 -c '
+          import json, sys
+          report = json.load(open(sys.argv[1], encoding="utf-8"))
+          failed = [f for f in report.get("faculties", []) if f.get("status") == "failed"]
+          print("One or more faculties failed index validation while valid faculties were indexed:", file=sys.stderr)
+          for item in failed:
+              print(f"  - {item[\"faculty\"]} ({item.get(\"stage\")}): {item.get(\"diagnostic\")}", file=sys.stderr)
+          sys.exit(1)
+          ' "$RUNNER_TEMP/index-report.json"

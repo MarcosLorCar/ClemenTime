@@ -121,12 +121,6 @@ class ImportViewModel @Inject constructor(
                 val catalogResult = repository.fetchRemoteCatalog(baseUrl)
                 val remoteFiles = catalogResult.fold(
                     onSuccess = { (effectiveBaseUrl, catalog) ->
-                        val effectiveFolderUrl = when {
-                            effectiveBaseUrl.endsWith("schedules_catalog.json") -> effectiveBaseUrl.substringBeforeLast("/") + "/"
-                            effectiveBaseUrl.endsWith("schedules_index.json") -> effectiveBaseUrl.substringBeforeLast("/") + "/"
-                            effectiveBaseUrl.endsWith("/") -> effectiveBaseUrl
-                            else -> "$effectiveBaseUrl/"
-                        }
                         catalog.universities.flatMap { uni ->
                             uni.faculties.flatMap { faculty ->
                                 val isLinked = activeFacId.isNotBlank() &&
@@ -140,10 +134,7 @@ class ImportViewModel @Inject constructor(
 
                                 faculty.terms.map { term ->
                                     val scopedId = "${uni.id}_${faculty.id}_${term.id}"
-                                    val fullPath = when {
-                                        term.path.startsWith("http://") || term.path.startsWith("https://") -> term.path
-                                        else -> "$effectiveFolderUrl${term.path.removePrefix("/")}"
-                                    }
+                                    val fullPath = repository.resolveScheduleUrl(effectiveBaseUrl, term.path)
                                     val cachedEntry = cacheMetadata.find { it.id == scopedId }
                                         ?: cacheMetadata.find {
                                             it.id == term.id &&

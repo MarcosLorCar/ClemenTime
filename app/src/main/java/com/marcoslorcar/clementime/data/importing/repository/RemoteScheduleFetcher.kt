@@ -17,6 +17,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 
+class ScheduleHashMismatchException(
+    val expectedHash: String,
+    val actualHash: String
+) : IllegalStateException(
+    "Downloaded schedule SHA-256 ($actualHash) did not match catalog hash ($expectedHash)"
+)
+
 internal class RemoteScheduleFetcher(
     private val apiService: GitHubScheduleApiService?,
     private val parser: JsonScheduleParser,
@@ -32,6 +39,103 @@ internal class RemoteScheduleFetcher(
                 .replace("/blob/", "/")
         }
         return trimmed
+    }
+
+    fun resolveScheduleUrl(baseUrl: String, relativePath: String): String {
+        val trimmedPath = relativePath.trim()
+        if (trimmedPath.startsWith("http://") || trimmedPath.startsWith("https://")) {
+            return normalizeGitHubUrl(trimmedPath)
+        }
+        val normalizedBase = normalizeGitHubUrl(baseUrl)
+        val folderUrl = when {
+            normalizedBase.endsWith("schedules_catalog.json") -> normalizedBase.substringBeforeLast("/") + "/"
+            normalizedBase.endsWith("schedules_index.json") -> normalizedBase.substringBeforeLast("/") + "/"
+            normalizedBase.endsWith("/") -> normalizedBase
+            else -> "$normalizedBase/"
+        }
+        return "$folderUrl${trimmedPath.removePrefix("/")}"
+    }
+
+    private fun appendQueryParam(url: String, key: String, value: String): String {
+        val separator = if (url.contains("?")) "&" else "?"
+        return "$url$separator$key=$value"
+    }
+
+    private fun fallbackUrlFor(fullUrl: String): String? {
+        val fallbackUrl = normalizeGitHubUrl(SettingsRepository.FALLBACK_GITHUB_REPO_BASE_URL)
+        val defaultUrl = normalizeGitHubUrl(SettingsRepository.DEFAULT_GITHUB_REPO_BASE_URL)
+        return if (defaultUrl != fallbackUrl && fullUrl.contains(defaultUrl)) {
+            fullUrl.replace(defaultUrl, fallbackUrl)
+        } else {
+            null
+        }
+    }
+
+    /**
+     * Downloads raw schedule bytes and verifies their SHA-256 against [expectedHash] when present.
+     *
+     * Because catalog and term JSON files are fetched over separate HTTPS requests (not an atomic
+     * snapshot), a CDN edge may briefly serve a schedule revision older than the catalog. On hash
+     * mismatch we retry once with a fresh cache-busting query parameter and, if configured, the
+     * fallback host. Persistent mismatch fails with [ScheduleHashMismatchException] rather than
+     * accepting mismatched bytes.
+     */
+    internal suspend fun downloadVerifiedRawSchedule(
+        fullUrl: String,
+        expectedHash: String?,
+        apiServiceOverride: GitHubScheduleApiService? = null,
+        retryTokenProvider: () -> String = { System.currentTimeMillis().toString() }
+    ): Result<ByteArray> {
+        val service = apiServiceOverride ?: apiService
+            ?: return Result.failure(Exception("Network service unavailable"))
+        val expected = expectedHash?.trim()?.takeIf { it.isNotEmpty() }
+        val primaryUrl = if (expected != null) appendQueryParam(fullUrl, "v", expected) else fullUrl
+
+        var lastMismatch: ScheduleHashMismatchException? = null
+        var lastError: Throwable? = null
+
+        suspend fun tryFetch(requestUrl: String): ByteArray? {
+            val response = try {
+                service.getRawScheduleSchema(requestUrl)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                lastError = e
+                return null
+            }
+            if (!response.isSuccessful) {
+                lastError = Exception("Failed to fetch remote schema: ${response.code()} ${response.message()}")
+                return null
+            }
+            val rawBytes = response.body()?.bytes()
+            if (rawBytes == null || rawBytes.isEmpty()) {
+                lastError = Exception("Response body is empty")
+                return null
+            }
+            if (expected != null) {
+                val actualHash = rawBytes.sha256()
+                if (!actualHash.equals(expected, ignoreCase = true)) {
+                    lastMismatch = ScheduleHashMismatchException(expected, actualHash)
+                    return null
+                }
+            }
+            return rawBytes
+        }
+
+        tryFetch(primaryUrl)?.let { return Result.success(it) }
+
+        if (lastMismatch != null) {
+            val cacheBustedRetryUrl = appendQueryParam(primaryUrl, "cb", retryTokenProvider())
+            tryFetch(cacheBustedRetryUrl)?.let { return Result.success(it) }
+        }
+
+        val fallbackBase = fallbackUrlFor(fullUrl)
+        if (fallbackBase != null) {
+            val fallbackRequestUrl = if (expected != null) appendQueryParam(fallbackBase, "v", expected) else fallbackBase
+            tryFetch(fallbackRequestUrl)?.let { return Result.success(it) }
+        }
+
+        return Result.failure(lastMismatch ?: lastError ?: Exception("Failed to fetch remote schema"))
     }
 
     suspend fun fetchRemoteSchedules(
@@ -212,24 +316,26 @@ internal class RemoteScheduleFetcher(
         val slots: List<JsonFlatSlot>
     )
 
-    suspend fun downloadFlatSchedule(
+    suspend fun downloadFlatScheduleVerified(
         baseUrl: String,
-        summary: RemoteScheduleSummary
-    ): FlatScheduleDownload? {
-        if (apiService == null) return null
-        val fullUrl = normalizeGitHubUrl(
-            if (baseUrl.endsWith("/")) "${baseUrl}${summary.path}" else "$baseUrl/${summary.path}"
-        )
-        val cacheBustedUrl = if (!summary.hash.isNullOrBlank()) {
-            if (fullUrl.contains("?")) "$fullUrl&v=${summary.hash}" else "$fullUrl?v=${summary.hash}"
-        } else {
-            fullUrl
+        summary: RemoteScheduleSummary,
+        apiServiceOverride: GitHubScheduleApiService? = null
+    ): Result<FlatScheduleDownload> {
+        val fullUrl = resolveScheduleUrl(baseUrl, summary.path)
+        val rawBytes = downloadVerifiedRawSchedule(
+            fullUrl = fullUrl,
+            expectedHash = summary.hash,
+            apiServiceOverride = apiServiceOverride
+        ).getOrElse { error ->
+            return Result.failure(error)
         }
-        val response = apiService.getRawScheduleSchema(cacheBustedUrl)
-        if (!response.isSuccessful) return null
-        val rawJson = response.body()?.string().orEmpty()
+        val rawJson = rawBytes.toString(Charsets.UTF_8)
         val slots = runCatching { json.decodeFromString<List<JsonFlatSlot>>(rawJson) }.getOrDefault(emptyList())
-        return if (slots.isEmpty()) null else FlatScheduleDownload(summary, fullUrl, rawJson, slots)
+        return if (slots.isEmpty()) {
+            Result.failure(IllegalStateException("Downloaded schedule contained no slots"))
+        } else {
+            Result.success(FlatScheduleDownload(summary, fullUrl, rawJson, slots))
+        }
     }
 
     suspend fun fetchRemoteScheduleSchema(
@@ -240,45 +346,50 @@ internal class RemoteScheduleFetcher(
         val existingEntry = metadataList.find { it.id == file.id }
 
         try {
-            if (apiService == null) throw Exception("Network service unavailable")
             val fullUrl = normalizeGitHubUrl(file.remotePath ?: throw Exception("Remote path is null"))
-            var response = apiService.getRawScheduleSchema(fullUrl)
-            if (!response.isSuccessful) {
-                val fallbackUrl = normalizeGitHubUrl(SettingsRepository.FALLBACK_GITHUB_REPO_BASE_URL)
-                val defaultUrl = normalizeGitHubUrl(SettingsRepository.DEFAULT_GITHUB_REPO_BASE_URL)
-                if (defaultUrl != fallbackUrl && fullUrl.contains(defaultUrl)) {
-                    val retryUrl = fullUrl.replace(defaultUrl, fallbackUrl)
-                    val retryResponse = apiService.getRawScheduleSchema(retryUrl)
-                    if (retryResponse.isSuccessful) {
-                        response = retryResponse
-                    }
-                }
-            }
-            if (response.isSuccessful) {
-                val jsonBody = response.body()?.string() ?: throw Exception("Response body is empty")
-                val schema = parser.parseJson(jsonBody).getOrThrow()
+            val rawBytes = downloadVerifiedRawSchedule(
+                fullUrl = fullUrl,
+                expectedHash = file.remoteHash
+            ).getOrThrow()
+            val jsonBody = rawBytes.toString(Charsets.UTF_8)
+            val schema = parser.parseJson(jsonBody).getOrThrow()
 
-                cache.cacheRemoteSlots(
-                    context = context,
-                    fileId = file.id,
-                    title = schema.title ?: file.title,
-                    description = file.description,
-                    remotePath = file.remotePath,
-                    rawJson = jsonBody,
-                    updatedTime = file.updatedTime,
-                    universityId = file.universityId,
-                    universityName = file.universityName,
-                    facultyId = file.facultyId,
-                    facultyName = file.facultyName,
-                    fcmTopicPrefix = file.fcmTopicPrefix,
-                    termId = file.termId
-                )
-                Result.success(schema)
-            } else {
-                throw Exception("Failed to fetch remote schema: ${response.code()} ${response.message()}")
-            }
+            cache.cacheRemoteSlots(
+                context = context,
+                fileId = file.id,
+                title = schema.title ?: file.title,
+                description = file.description,
+                remotePath = file.remotePath,
+                rawJson = jsonBody,
+                updatedTime = file.updatedTime,
+                universityId = file.universityId,
+                universityName = file.universityName,
+                facultyId = file.facultyId,
+                facultyName = file.facultyName,
+                fcmTopicPrefix = file.fcmTopicPrefix,
+                termId = file.termId
+            )
+            Result.success(schema)
         } catch (e: CancellationException) {
             throw e
+        } catch (e: ScheduleHashMismatchException) {
+            // Do not silently substitute a stale cached revision when the remote file's hash
+            // disagrees with the catalog; only reuse cache if it already holds the expected hash.
+            if (existingEntry != null && existingEntry.hash.equals(e.expectedHash, ignoreCase = true)) {
+                try {
+                    val jsonBody = cache.readCachedSchedule(context, file.id)
+                        ?: return@withContext Result.failure(e)
+                    val schema = parser.parseJson(jsonBody).getOrThrow()
+                    metadataList.removeAll { it.id == file.id }
+                    metadataList.add(existingEntry.copy(lastUsed = System.currentTimeMillis()))
+                    cache.writeCacheMetadata(context, metadataList)
+                    Result.success(schema)
+                } catch (_: Exception) {
+                    Result.failure(e)
+                }
+            } else {
+                Result.failure(e)
+            }
         } catch (e: Exception) {
             if (existingEntry != null) {
                 try {
