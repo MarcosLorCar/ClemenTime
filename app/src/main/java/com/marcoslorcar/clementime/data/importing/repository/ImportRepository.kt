@@ -20,6 +20,10 @@ import com.marcoslorcar.clementime.data.importing.model.SelectedSubject
 import com.marcoslorcar.clementime.data.importing.model.TermCatalogEntry
 import com.marcoslorcar.clementime.data.importing.model.UniversityCatalogEntry
 import com.marcoslorcar.clementime.data.importing.parser.JsonScheduleParser
+import com.marcoslorcar.clementime.data.importing.parser.isLab
+import com.marcoslorcar.clementime.data.importing.parser.normalizeGroup
+import com.marcoslorcar.clementime.data.importing.parser.parseDayOfWeek
+import com.marcoslorcar.clementime.data.importing.parser.parseRemoteTime
 import com.marcoslorcar.clementime.utils.SlotDiff
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -28,7 +32,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.security.MessageDigest
-import java.time.LocalTime
 import javax.inject.Inject
 
 @Serializable
@@ -285,25 +288,23 @@ class ImportRepository @Inject constructor(
 
             val subject = existingSws.subject
             val previouslyIgnored = existingSws.slots.filter { it.isIgnored }
+            val subjectGroup = normalizeGroup(subject.courseGroup)
 
             val matchedJsonSlots = semesterRemoteSlots.filter { rSlot ->
                 val asig = rSlot.asignatura.trim()
                 val codeMatch = rSlot.codigo?.trim()?.equals(subject.code.trim(), ignoreCase = true) ?: false
                 val asigMatch = asig.equals(subject.code.trim(), ignoreCase = true) || asig.equals(subject.name.trim(), ignoreCase = true)
-                
+
                 val groupMatch = subject.courseGroup.isNullOrBlank() || rSlot.grupo.isBlank() ||
-                        normalizeGroup(subject.courseGroup) == normalizeGroup(rSlot.grupo)
+                        subjectGroup == normalizeGroup(rSlot.grupo)
                 (codeMatch || asigMatch) && groupMatch
             }
 
             val newClassSlots = matchedJsonSlots.map { rSlot ->
-                val isLab = rSlot.esLaboratorio ||
-                        rSlot.tipo.contains("laboratorio", ignoreCase = true) ||
-                        rSlot.tipo.contains("lab", ignoreCase = true)
-                val entryType = if (isLab) EntryType.LAB else EntryType.THEORY
-                val dayOfWeek = parser.parseDayOfWeek(rSlot.dia)
-                val startTime = parseLocalTime(rSlot.horaInicio)
-                val endTime = parseLocalTime(rSlot.horaFin)
+                val entryType = if (rSlot.isLab()) EntryType.LAB else EntryType.THEORY
+                val dayOfWeek = parseDayOfWeek(rSlot.dia)
+                val startTime = parseRemoteTime(rSlot.horaInicio)
+                val endTime = parseRemoteTime(rSlot.horaFin)
                 val wasIgnored = previouslyIgnored.any { old ->
                     old.dayOfWeek == dayOfWeek &&
                             old.startTime == startTime &&
@@ -355,23 +356,6 @@ class ImportRepository @Inject constructor(
         }
 
         appliedCount
-    }
-
-    private fun normalizeGroup(group: String?): String {
-        if (group.isNullOrBlank()) return ""
-        return group.replace("º", "").replace("ª", "").replace(" ", "").uppercase()
-    }
-
-    private fun parseLocalTime(timeStr: String): LocalTime {
-        val trimmed = timeStr.trim()
-        if (trimmed.isBlank()) return LocalTime.MIDNIGHT
-        val parts = trimmed.split(":")
-        if (parts.size == 2) {
-            val h = parts[0].toIntOrNull() ?: 0
-            val m = parts[1].toIntOrNull() ?: 0
-            return LocalTime.of(h, m)
-        }
-        return runCatching { LocalTime.parse(trimmed) }.getOrDefault(LocalTime.MIDNIGHT)
     }
 
     suspend fun getExistingActiveSubjects(semester: Int): List<com.marcoslorcar.clementime.data.SubjectWithSlots> = withContext(Dispatchers.IO) {

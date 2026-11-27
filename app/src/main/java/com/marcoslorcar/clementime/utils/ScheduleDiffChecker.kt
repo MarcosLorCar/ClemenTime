@@ -6,6 +6,11 @@ import com.marcoslorcar.clementime.data.Subject
 import com.marcoslorcar.clementime.data.SubjectWithSlots
 import com.marcoslorcar.clementime.data.TermCodeParser
 import com.marcoslorcar.clementime.data.importing.model.JsonFlatSlot
+import com.marcoslorcar.clementime.data.importing.parser.dayOfWeekToSpanish
+import com.marcoslorcar.clementime.data.importing.parser.isLab
+import com.marcoslorcar.clementime.data.importing.parser.normalizeGroup
+import com.marcoslorcar.clementime.data.importing.parser.parseDayOfWeek
+import com.marcoslorcar.clementime.data.importing.parser.parseRemoteTime
 import java.security.MessageDigest
 import java.time.DayOfWeek
 import java.time.LocalTime
@@ -283,16 +288,13 @@ object ScheduleDiffChecker {
         }
 
         return matchedJsonSlots.map { rSlot ->
-            val isLab = rSlot.esLaboratorio ||
-                    rSlot.tipo.contains("laboratorio", ignoreCase = true) ||
-                    rSlot.tipo.contains("lab", ignoreCase = true)
             ParsedRemoteSlot(
                 dayOfWeek = parseDayOfWeek(rSlot.dia),
-                startTime = parseLocalTime(rSlot.horaInicio),
-                endTime = parseLocalTime(rSlot.horaFin),
+                startTime = parseRemoteTime(rSlot.horaInicio),
+                endTime = parseRemoteTime(rSlot.horaFin),
                 classroom = rSlot.aula.trim(),
                 professor = rSlot.profesor.trim(),
-                isLab = isLab,
+                isLab = rSlot.isLab(),
                 labGroupName = rSlot.grupoPracticas.trim()
             )
         }.filter { rSlot ->
@@ -329,59 +331,6 @@ object ScheduleDiffChecker {
         if (text.isNullOrBlank()) return ""
         val nfkd = java.text.Normalizer.normalize(text.trim(), java.text.Normalizer.Form.NFD)
         return nfkd.replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "").uppercase()
-    }
-
-    private fun normalizeGroup(group: String?): String {
-        if (group.isNullOrBlank()) return ""
-        return group.uppercase()
-            .replace("GRUPO", "")
-            .replace("GRADO", "")
-            .replace("BILINGÜE", "")
-            .replace("BILINGUE", "")
-            .replace("º", "")
-            .replace("ª", "")
-            .replace("-", "")
-            .replace(".", "")
-            .replace(" ", "")
-            .trim()
-    }
-
-    private fun parseDayOfWeek(dayStr: String): DayOfWeek {
-        val clean = dayStr.trim().uppercase()
-        return when (clean) {
-            "LUNES", "MONDAY" -> DayOfWeek.MONDAY
-            "MARTES", "TUESDAY" -> DayOfWeek.TUESDAY
-            "MIÉRCOLES", "MIERCOLES", "WEDNESDAY" -> DayOfWeek.WEDNESDAY
-            "JUEVES", "THURSDAY" -> DayOfWeek.THURSDAY
-            "VIERNES", "FRIDAY" -> DayOfWeek.FRIDAY
-            "SÁBADO", "SABADO", "SATURDAY" -> DayOfWeek.SATURDAY
-            "DOMINGO", "SUNDAY" -> DayOfWeek.SUNDAY
-            else -> runCatching { DayOfWeek.valueOf(clean) }.getOrDefault(DayOfWeek.MONDAY)
-        }
-    }
-
-    private fun dayOfWeekToSpanish(day: DayOfWeek): String {
-        return when (day) {
-            DayOfWeek.MONDAY -> "Lunes"
-            DayOfWeek.TUESDAY -> "Martes"
-            DayOfWeek.WEDNESDAY -> "Miércoles"
-            DayOfWeek.THURSDAY -> "Jueves"
-            DayOfWeek.FRIDAY -> "Viernes"
-            DayOfWeek.SATURDAY -> "Sábado"
-            DayOfWeek.SUNDAY -> "Domingo"
-        }
-    }
-
-    private fun parseLocalTime(timeStr: String): LocalTime {
-        val trimmed = timeStr.trim()
-        if (trimmed.isBlank()) return LocalTime.MIDNIGHT
-        val parts = trimmed.split(":")
-        if (parts.size == 2) {
-            val h = parts[0].toIntOrNull() ?: 0
-            val m = parts[1].toIntOrNull() ?: 0
-            return LocalTime.of(h, m)
-        }
-        return runCatching { LocalTime.parse(trimmed) }.getOrDefault(LocalTime.MIDNIGHT)
     }
 
     private fun formatSlotDetail(
