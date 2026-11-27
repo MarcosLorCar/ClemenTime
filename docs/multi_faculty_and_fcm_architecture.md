@@ -193,22 +193,21 @@ If ClemenTime supports 10 faculties, having hardcoded topics would cause:
 - **Cross-talk**: Students in Medicine would receive push wakeups when Computer Science schedules update.
 - **Unnecessary battery drain**: Devices would download diffs for schedules they don't follow.
 
-### 4.2. Scoped Dynamic Topic Subscriptions
-With the hierarchical catalog, FCM topics are dynamically scoped:
+### 4.2. Scoped Dynamic Topic Subscriptions (Implemented)
+With the hierarchical catalog, FCM topics are scoped **per faculty** (not per term), while individual term hashes are carried inside the data payload (`hash_1C`, `hash_2C`, ...):
 
-$$\text{Topic Format: } \texttt{sched\_\{university\}\_\{faculty\}\_\{term\}}$$
+$$\text{Topic Format: } \texttt{sched\_\{university\}\_\{faculty\}} \quad (\text{or } \texttt{sched\_\{fcm\_topic\_prefix\}})$$
 
 *Example Topics:*
-- `sched_uclm_esi_1C`
-- `sched_uclm_esi_2C`
-- `sched_uclm_farmacia_1C`
+- `sched_uclm_esi`
+- `sched_uclm_farmacia`
 
 ### 4.3. Dispatch Architecture (CI & Hub)
 1. **Official Scraped Faculties (GitHub Actions)**:
-   - When `.github/workflows/sync-esi-schedules.yml` (or future multi-faculty workflows) detects changes for ESI, it dispatches to `sched_uclm_esi_1C`.
-   - Only students enrolled in ESI's 1st semester receive the push.
+   - When `.github/workflows/sync-esi-schedules.yml` (or future multi-faculty workflows) commits schedule changes, `schedules/script/notify_fcm.py` dispatches a high-priority data-only message to `sched_uclm_esi` containing `hash_{termId}` for each term in `schedules_catalog.json`.
+   - On the device, `ClemenTimeFirebaseMessagingService` checks incoming `hash_{term}` values against `last_known_schedule_hash_$semester` for active semesters and enqueues an expedited one-time `ScheduleUpdateWorker` only when a change is detected.
 2. **Community / Custom Schedules**:
-   - If a student imports a schedule from a custom URL or local JSON file (not part of the catalog), **FCM topic push is omitted**. The app relies on either manual check or lightweight fallback.
+   - If a student imports a schedule from a custom local JSON file (not part of the catalog), **FCM topic push is omitted**.
 
 ```mermaid
 sequenceDiagram
@@ -218,15 +217,15 @@ sequenceDiagram
     participant FCM as Firebase Cloud Messaging
     participant CI as GitHub Actions Pipeline
 
-    Note over Student: Onboarding: Selects UCLM -> ESI -> 1C (Online Mode)
-    Student->>FCM: subscribeToTopic("sched_uclm_esi_1C")
+    Note over Student: Imports UCLM -> ESI schedule (Online Mode)
+    Student->>FCM: subscribeToTopic("sched_uclm_esi")
     
-    Note over CI: CI detects update in ESI 1C
-    CI->>Cat: Push updated JSON & hash
-    CI->>FCM: Dispatch topic message to "sched_uclm_esi_1C"
+    Note over CI: CI detects update in ESI schedules
+    CI->>Cat: Push updated JSON & schedules_catalog.json
+    CI->>FCM: Dispatch data push to "sched_uclm_esi" (hash_1C, hash_2C)
     FCM->>Student: Deliver silent data push
-    Student->>Cat: Download only updated ESI 1C diff
-    Student->>Student: Verify if student's courses are affected
+    Student->>Cat: Download changed term JSON & compute diff
+    Student->>Student: Notify only if student's courses are affected
 ```
 
 ---
@@ -261,79 +260,32 @@ Once pre-v1.5 adoption approaches zero (e.g., in a major release like v2.0), the
 
 ---
 
-## 5. Unified Onboarding & Settings Flow
+## 6. Unified Onboarding & Settings Flow (Implemented)
 
-### 5.1. New Onboarding Flow (3 Simple Steps)
+### 6.1. Onboarding & On-Import Faculty Binding
+- **Onboarding** asks the user to choose a synchronization mode (**Online Services** vs **Fully Offline**) without forcing a university/faculty picker upfront.
+- **Faculty binding happens implicitly on import**: when the user imports a remote schedule from the searchable 3-level catalog in `ImportScreen`, ClemenTime persists `(universityId, facultyId, universityName, facultyName, fcmTopicPrefix)`, resets stale hashes when switching faculties, and invokes `FcmTopicManager.syncRegistration()`.
 
-```
-┌────────────────────────────────────────────────────────┐
-│                   Welcome to ClemenTime                │
-│                                                        │
-│  Step 1: Choose Your University & Center              │
-│  ┌──────────────────────────────────────────────────┐  │
-│  │ Universidad de Castilla-La Mancha (UCLM)       ▼ │  │
-│  └──────────────────────────────────────────────────┘  │
-│  ┌──────────────────────────────────────────────────┐  │
-│  │ Escuela Superior de Informática (Ciudad Real)   ▼ │  │
-│  └──────────────────────────────────────────────────┘  │
-│  [ Or enter a custom Schedule URL / Import JSON file ] │
-│                                                        │
-│  Step 2: Choose Synchronization Mode                  │
-│  ● Online Services (Recommended)                       │
-│    - Automatic timetable download                      │
-│    - Instant FCM push alerts when your classes change  │
-│    - Minimal battery usage                             │
-│                                                        │
-│  ○ Fully Offline (Privacy-First)                       │
-│    - Zero external network connections                 │
-│    - Manual timetable import via JSON file             │
-│    - No background services or Google telemetry        │
-│                                                        │
-│                     [ Continue ]                       │
-└────────────────────────────────────────────────────────┘
-```
-
-### 5.2. Settings Experience ("More" Screen)
-- **Active Faculty & Term**: Displays `UCLM - ESI (1º Cuatrimestre)`.
-  - Tapping allows switching faculties or semesters (automatically unsubscribing from old FCM topic and subscribing to the new one).
-- **Sync Mode Toggle**:
-  - `Online Sync (Push Notifications)` [ON / OFF]
-  - "Check for updates now" action.
-  - "Notify only for changes in my enrolled subjects".
+### 6.2. Settings Experience ("More" Screen)
+- **Linked Faculty Status**: Displays the bound `University · Faculty` (or unlinked prompt).
+- **Sync Mode Toggle**: Switches between `Online Services` (FCM push, with periodic WorkManager fallback on non-GMS devices) and `Fully Offline`.
+- **Check for updates now**: Runs an inline diff check and opens `ScheduleDiffBottomSheet`.
 
 ---
 
-## 6. Comprehensive Unified Roadmap
+## 7. Roadmap Status
 
-### Phase 1: Data Model Generalization (Zero Backend Required)
-- **Refactor `ClassSlot` and `Subject`**:
-  - Aliasing/documenting `entryType`: Treat `LAB` as a generalized `SUBGROUP`.
-  - Ensure UI labels dynamically adapt: if `subgroups_label` in JSON is `"Seminarios"`, UI displays "Seminario"; if null/empty, hides subgroup chips entirely.
-- **Verify Lab-Free Compatibility**:
-  - Add comprehensive unit tests in `ConflictSolverTest` validating schedules with 0 labs, 1 lab, and mixed subjects.
-
-### Phase 2: Hierarchical Catalog Specification
-- Define `schedules_catalog.json` schema v2 supporting Universities $\to$ Faculties $\to$ Terms.
-- Update `ImportRepository` to parse both legacy `schedules_index.json` (for backward compatibility) and hierarchical `schedules_catalog.json`.
-- Add Faculty/Center picker in `OnboardingScreen` and `ImportScreen`.
-
-### Phase 3: Dynamic FCM Push Dispatch & Client Integration
-- Integrate Firebase Messaging into Android app (`ClemenTimeFirebaseMessagingService`).
-- Connect topic subscription to active faculty/term (`sched_{uni}_{faculty}_{term}`).
-- Set up Service Account & Python dispatch script in GitHub Actions (`.github/workflows/sync-esi-schedules.yml`).
-- Add GMS availability check with graceful fallback to manual checking on de-Googled devices.
-
-### Phase 4: Online Services vs. Fully Offline Toggle & Cleanup
-- Implement the binary choice in `OnboardingScreen.kt`.
-- Clean up legacy settings (`auto_update_interval_hours`, `migrateLegacyAutoUpdateDefault`).
-- Implement one-time expedited WorkManager diff checker triggered by incoming FCM push.
-
-### Phase 5: Multi-Faculty Expansion & Schedule Hub (Future)
-- Add GitHub Actions scrapers for additional faculties/universities as demand grows.
-- Explore Community Schedule Hub: web portal or GitHub PR bot allowing student associations to submit and maintain their own faculty schedule JSON files.
+- **Phase 1 — Data Model Generalization (Implemented)**: Lab-free compatibility verified in `ConflictSolver` + tests; n-semester (`1..8` academic periods) support added in `AcademicPeriod.kt`. *(Note: `subgroups_label` is parsed in `ScheduleCatalog.kt` for forward compatibility but intentionally not wired into UI yet while localized Lab strings suffice.)*
+- **Phase 2 — Hierarchical Catalog Specification (Implemented)**: `schedules_catalog.json` v2 generated by `generate_index.py` and browsable in `ImportScreen` (with legacy `schedules_index.json` fallback).
+- **Phase 3 — Dynamic FCM Push Dispatch & Client Integration (Implemented)**: `ClemenTimeFirebaseMessagingService`, `FcmTopicManager`, `notify_fcm.py`, GMS fallback, and manual-edit protection via `last_remote_subject_hashes_$semester`.
+- **Phase 4 — Online vs. Fully Offline UX (Implemented)**: Binary sync mode choice in `OnboardingScreen` and `MoreScreen`.
+- **Phase 5 — Multi-Faculty Expansion & Schedule Hub (Future)**:
+  - Add GitHub Actions scrapers for additional faculties/universities as demand grows.
+  - Explore a Community Schedule Hub allowing student associations to submit and maintain their own faculty schedule JSON files.
+  - Remove v1.5 legacy fallback constants (`LEGACY_FALLBACK_*`) in v2.0 (see Section 5.2).
 
 ---
 
-## 7. Conclusion
+## 8. Conclusion
 
-By recognizing that **ClemenTime already supports lab-free subjects seamlessly**, the fear of generalizing the app is resolved. By designing the **FCM topics to be dynamic and scoped** (`sched_{uni}_{faculty}_{term}`), both the push-notification architecture and the multi-faculty roadmap align into a clean, unified, and future-proof design without requiring expensive dedicated servers.
+By recognizing that **ClemenTime already supports lab-free subjects seamlessly**, and scoping **FCM topics per faculty** (`sched_{uni}_{faculty}`) with per-term hashes in the push payload, push notifications and multi-faculty expansion stay unified without requiring dedicated backend servers.

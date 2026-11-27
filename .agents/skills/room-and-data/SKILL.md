@@ -15,7 +15,7 @@ Two Room entities:
 Key fields:
 - `Subject.selectedLabGroup`: Pins one lab variant. Pinned subjects are excluded from conflict solver search.
 - `Subject.isDummy`: Placeholder subject, skipped by the conflict solver.
-- `Subject.semester`: The entire UI is filtered by the current semester (`SettingsRepository.currentSemesterKey`).
+- `Subject.semester`: Academic period index `1..8` (configured via `PeriodConfig` in `data/AcademicPeriod.kt`; UI filters by `SettingsRepository.currentSemesterKey`).
 - `ClassSlot.entryType`: `THEORY` or `LAB`. Theory is fixed; labs are the degrees of freedom.
 
 ## Room Migrations are Explicit
@@ -33,7 +33,8 @@ Key fields:
 
 ## DataStore Hashes
 
-Two separate per-semester hashes live in DataStore and have distinct meanings:
-1. `last_known_hash`: The version the user accepted or ignored (drives diff detection; advancing it early leaves the diff sheet empty).
-2. `last_notified_hash`: Exists only to prevent duplicate notifications from recurring background worker intervals.
+Three separate per-semester hash entries live in DataStore and have distinct meanings:
+1. `last_known_schedule_hash_$semester`: The remote schedule file hash the user accepted or ignored (drives diff detection; advancing it early leaves the diff sheet empty).
+2. `last_notified_schedule_hash_$semester`: Prevents duplicate notifications for the same remote version while the user has not yet accepted/ignored it.
+3. `last_remote_subject_hashes_$semester`: JSON `Map<String, String>` of per-subject canonical upstream slot hashes (`ScheduleDiffChecker.computeRemoteSubjectHashes`) used to distinguish upstream schedule changes from deliberate manual user edits.
 **Do not collapse or interchange them.**
