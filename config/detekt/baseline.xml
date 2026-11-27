@@ -12,6 +12,8 @@
     <ID>SwallowedException:ImportRepository.kt:ImportRepository$_: Exception</ID>
     <ID>SwallowedException:ImportViewModel.kt:ImportViewModel$_: Exception</ID>
     <ID>SwallowedException:MoreViewModel.kt:MoreViewModel$_: Exception</ID>
+    <ID>SwallowedException:RemoteScheduleCache.kt:RemoteScheduleCache$_: Exception</ID>
+    <ID>SwallowedException:RemoteScheduleFetcher.kt:RemoteScheduleFetcher$_: Exception</ID>
     <ID>SwallowedException:ScheduleUpdateWorker.kt:ScheduleUpdateWorker$_: Exception</ID>
     <ID>SwallowedException:ScheduleUpdateWorker.kt:ScheduleUpdateWorker.Companion$_: Exception</ID>
     <ID>SwallowedException:ScheduleUpdateWorker.kt:ScheduleUpdateWorker.Companion$_: SecurityException</ID>
@@ -27,6 +29,9 @@
     <ID>TooGenericExceptionCaught:ImportViewModel.kt:ImportViewModel$e: Exception</ID>
     <ID>TooGenericExceptionCaught:MoreViewModel.kt:MoreViewModel$_: Exception</ID>
     <ID>TooGenericExceptionCaught:MoreViewModel.kt:MoreViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:RemoteScheduleCache.kt:RemoteScheduleCache$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:RemoteScheduleFetcher.kt:RemoteScheduleFetcher$_: Exception</ID>
+    <ID>TooGenericExceptionCaught:RemoteScheduleFetcher.kt:RemoteScheduleFetcher$e: Exception</ID>
     <ID>TooGenericExceptionCaught:ScheduleUpdateWorker.kt:ScheduleUpdateWorker$_: Exception</ID>
     <ID>TooGenericExceptionCaught:ScheduleUpdateWorker.kt:ScheduleUpdateWorker.Companion$_: Exception</ID>
     <ID>TooGenericExceptionCaught:ScheduleWidget.kt:ScheduleWidget$_: Throwable</ID>
