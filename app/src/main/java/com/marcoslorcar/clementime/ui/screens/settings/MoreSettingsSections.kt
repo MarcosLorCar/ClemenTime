@@ -392,15 +392,15 @@ internal fun MoreSyncSettings(uiState: MoreUiState, actions: MoreActions) {
             }
         }
     }
-    var showRepoUrlDialog by remember { mutableStateOf(false) }
-    if (showRepoUrlDialog) {
+    var repoUrlToEdit by remember { mutableStateOf<String?>(null) }
+    repoUrlToEdit?.let { currentUrl ->
         RepositoryUrlDialog(
-            currentUrl = uiState.githubRepoBaseUrl,
+            currentUrl = currentUrl,
             onConfirm = {
                 actions.onGithubRepoUrlChanged(it)
-                showRepoUrlDialog = false
+                repoUrlToEdit = null
             },
-            onDismiss = { showRepoUrlDialog = false }
+            onDismiss = { repoUrlToEdit = null }
         )
     }
 
@@ -408,7 +408,7 @@ internal fun MoreSyncSettings(uiState: MoreUiState, actions: MoreActions) {
         icon = Icons.Default.Cloud,
         title = stringResource(R.string.online_repository_url_setting_title),
         subtitle = uiState.githubRepoBaseUrl,
-        onClick = { showRepoUrlDialog = true }
+        onClick = { repoUrlToEdit = uiState.githubRepoBaseUrl }
     )
 
     // Linked Faculty Status

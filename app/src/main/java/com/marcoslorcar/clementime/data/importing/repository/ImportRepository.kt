@@ -192,9 +192,7 @@ class ImportRepository @Inject constructor(
 
         val effectiveFacultyId = facultyId ?: SettingsRepository.LEGACY_FALLBACK_FACULTY_ID
         var slotsToUse = remoteSlots
-        var downloadedSummary: RemoteScheduleSummary? = null
-        var downloadedUrl: String? = null
-        var downloadedJson: String? = null
+        var downloadedSchedule: RemoteScheduleFetcher.FlatScheduleDownload? = null
 
         if (slotsToUse.isEmpty()) {
             val (effectiveBaseUrl, summaries) = fetchRemoteSchedules(
@@ -209,9 +207,7 @@ class ImportRepository @Inject constructor(
                 val download = remoteFetcher.downloadFlatSchedule(effectiveBaseUrl, summary)
                 if (download != null) {
                     slotsToUse = download.slots
-                    downloadedSummary = summary
-                    downloadedUrl = download.url
-                    downloadedJson = download.rawJson
+                    downloadedSchedule = download
                 }
             }
 
@@ -290,8 +286,9 @@ class ImportRepository @Inject constructor(
             appliedCount++
         }
 
-        if (appliedCount > 0 && context != null && downloadedJson != null && downloadedSummary != null && downloadedUrl != null) {
-            val resolvedTermId = downloadedSummary.id.ifBlank { TermCodeParser.formatTermCode(semester, periodType) }
+        if (appliedCount > 0 && context != null && downloadedSchedule != null) {
+            val summary = downloadedSchedule.summary
+            val resolvedTermId = summary.id.ifBlank { TermCodeParser.formatTermCode(semester, periodType) }
             val scopedId = if (universityId.isNotBlank() && effectiveFacultyId.isNotBlank()) {
                 "${universityId}_${effectiveFacultyId}_$resolvedTermId"
             } else {
@@ -300,11 +297,11 @@ class ImportRepository @Inject constructor(
             cacheRemoteSlots(
                 context = context,
                 fileId = scopedId,
-                title = downloadedSummary.title,
-                description = downloadedSummary.description,
-                remotePath = downloadedUrl,
-                rawJson = downloadedJson,
-                updatedTime = downloadedSummary.updatedTime,
+                title = summary.title,
+                description = summary.description,
+                remotePath = downloadedSchedule.url,
+                rawJson = downloadedSchedule.rawJson,
+                updatedTime = summary.updatedTime,
                 universityId = universityId.ifBlank { null },
                 facultyId = effectiveFacultyId.ifBlank { null },
                 termId = resolvedTermId

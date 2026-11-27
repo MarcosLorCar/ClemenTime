@@ -205,7 +205,12 @@ internal class RemoteScheduleFetcher(
         }
     }
 
-    data class FlatScheduleDownload(val url: String, val rawJson: String, val slots: List<JsonFlatSlot>)
+    data class FlatScheduleDownload(
+        val summary: RemoteScheduleSummary,
+        val url: String,
+        val rawJson: String,
+        val slots: List<JsonFlatSlot>
+    )
 
     suspend fun downloadFlatSchedule(
         baseUrl: String,
@@ -224,7 +229,7 @@ internal class RemoteScheduleFetcher(
         if (!response.isSuccessful) return null
         val rawJson = response.body()?.string().orEmpty()
         val slots = runCatching { json.decodeFromString<List<JsonFlatSlot>>(rawJson) }.getOrDefault(emptyList())
-        return if (slots.isEmpty()) null else FlatScheduleDownload(fullUrl, rawJson, slots)
+        return if (slots.isEmpty()) null else FlatScheduleDownload(summary, fullUrl, rawJson, slots)
     }
 
     suspend fun fetchRemoteScheduleSchema(
