@@ -7,31 +7,37 @@ a combined v2 catalog (`schedules_catalog.json`), and ESI's legacy index
 source URL declaratively in `adapters/<faculty>/config.json`. The production
 registry currently contains ESI in Ciudad Real (`uclm/esi`).
 
-Run these commands from the repository root with Python 3.11 or newer. Use
-`uv sync` to install optional environment-file support.
+Run these commands from the repository root with Python 3.11 or newer.
+`uv run` prepares the project environment, including `python-dotenv` for
+loading a local `.env`. Use `uv sync --locked` to set up the environment
+separately.
+
+GitHub Actions runs the same scripts with plain Python 3.12 and supplies
+environment variables directly. Plain Python also works locally when you
+don't need the CLI to load a `.env` file.
 
 ```bash
 # Sync all registered faculties in strict mode and write a JSON report + Markdown summary
-python process_schedules.py --all --sync --strict --report report.json --summary-file summary.md
+uv run python process_schedules.py --all --sync --strict --report report.json --summary-file summary.md
 
 # Sync a single faculty and force a re-download
-python process_schedules.py --faculty uclm/esi --sync --strict --force
+uv run python process_schedules.py --faculty uclm/esi --sync --strict --force
 
 # Reprocess a local fixture offline and write results to a separate directory
-python process_schedules.py --faculty uclm/esi --strict --fixture schedules/input/schedules.json --dist-dir scratch-dist
+uv run python process_schedules.py --faculty uclm/esi --strict --fixture schedules/input/schedules.json --dist-dir scratch-dist
 
 # Validate all registered faculties offline using committed caches (same check as CI)
-python process_schedules.py --all --strict --dist-dir scratch-dist
+uv run python process_schedules.py --all --strict --dist-dir scratch-dist
 
 # Rebuild combined catalog and ESI legacy index from existing published term files
-python process_schedules.py --all --index-only --report index-report.json
+uv run python process_schedules.py --all --index-only --report index-report.json
 
 # Preview selective FCM topic payloads without sending
-python schedules/script/notify_fcm.py --report report.json --dry-run
-python schedules/script/notify_fcm.py --faculty uclm/esi --dry-run
+uv run python schedules/script/notify_fcm.py --report report.json --dry-run
+uv run python schedules/script/notify_fcm.py --faculty uclm/esi --dry-run
 
 # Run offline characterization, multi-faculty, and FCM tests
-python -m unittest discover -s schedules/script -p "test_*.py"
+uv run python -m unittest discover -s schedules/script -p "test_*.py"
 ```
 
 Fixtures use the selected adapter's configuration and mappings. The ESI adapter
