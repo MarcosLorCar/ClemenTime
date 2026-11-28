@@ -1,0 +1,6 @@
+# Enforce LF line endings for published schedule JSON and fixtures so SHA-256 hashes
+# computed locally match GitHub Raw blobs identically across Windows, macOS, and Linux.
+schedules/dist/*.json text eol=lf
+schedules/dist/**/*.json text eol=lf
+schedules/script/fixtures/*.json text eol=lf
+schedules/script/fixtures/**/*.json text eol=lf

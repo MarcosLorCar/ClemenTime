@@ -15,8 +15,8 @@ from pathlib import Path
 
 from schedules.script import notify_fcm
 from schedules.script.adapters.esi import EsiAdapter, specification
-from schedules.script.pipeline import run_pipeline
-from schedules.script.publication import publish
+from schedules.script.pipeline import run_batch_pipeline
+from schedules.script.publication import publish_batch
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 ROOT_DIR = SCRIPT_DIR.parents[1]
@@ -32,14 +32,23 @@ class TestEsiPipelineContract(unittest.TestCase):
 
     def parse_fixture(self, day=15, fixture=FIXTURES / "source.json"):
         today = date(2026, 10, day)
+        spec = specification(today)
         adapter = EsiAdapter(self.sandbox, FIXTURES / "mappings.json", "https://example.invalid/schedules.json")
         with redirect_stdout(io.StringIO()):
-            result = run_pipeline(specification(today), adapter, self.dist, today, fixture=fixture, strict=True)
-        self.assertIsInstance(result, set)
+            result = run_batch_pipeline(
+                entries=((spec, adapter),),
+                dist=self.dist,
+                today=today,
+                fixture_by_faculty={spec.key: fixture},
+                strict=True,
+            )
+        self.assertEqual(result.status, "ok", result.outcomes)
+        return result
 
     def generate_indexes(self, day):
         today = date(2026, 10, day)
-        publish(specification(today), self.dist, today, {})
+        result = publish_batch((specification(today),), self.dist, today, {})
+        self.assertEqual(result.status, "ok", result.outcomes)
 
     def read_dist_json(self, name):
         return json.loads((self.dist / name).read_text(encoding="utf-8"))
@@ -49,10 +58,10 @@ class TestEsiPipelineContract(unittest.TestCase):
         self.assertEqual({path.name for path in self.dist.iterdir()}, set(PERIOD_FILES + INDEX_FILES))
         for name in PERIOD_FILES:
             with self.subTest(period_file=name):
-                # The current text-mode writer uses native line endings. Keep the reference
-                # fixtures portable while checking all other serialization bytes.
-                reference = (FIXTURES / name).read_text(encoding="utf-8")
-                self.assertEqual((self.dist / name).read_bytes(), reference.replace("\n", os.linesep).encode("utf-8"))
+                published = (self.dist / name).read_bytes()
+                self.assertNotIn(b"\r\n", published)
+                reference = (FIXTURES / name).read_text(encoding="utf-8").encode("utf-8")
+                self.assertEqual(published, reference)
 
     def test_catalog_legacy_index_and_fcm_share_esi_identity_and_hashes(self):
         self.parse_fixture()
@@ -113,7 +122,7 @@ class TestEsiPipelineContract(unittest.TestCase):
         self.assertEqual({path.name: path.read_bytes() for path in self.dist.iterdir()}, initial)
 
         changed = self.dist / "2C.json"
-        changed.write_bytes(initial[changed.name] + os.linesep.encode("ascii"))
+        changed.write_bytes(initial[changed.name] + b"\n")
         self.generate_indexes(day=17)
         legacy = self.read_dist_json(INDEX_FILES[0])
         terms = self.read_dist_json(INDEX_FILES[1])["universities"][0]["faculties"][0]["terms"]
@@ -182,3 +191,43 @@ class TestEsiPipelineContract(unittest.TestCase):
         self.parse_fixture(day=16, fixture=source)
         self.assertEqual((self.dist / "2C.json").read_bytes(), original)
         self.assertEqual(self.read_dist_json(INDEX_FILES[0])[1]["updatedTime"], "2026-10-15")
+
+    def test_committed_dist_files_have_lf_and_match_catalog_and_legacy_hashes(self):
+        dist_dir = ROOT_DIR / "schedules" / "dist"
+        catalog_path = dist_dir / "schedules_catalog.json"
+        legacy_path = dist_dir / "schedules_index.json"
+
+        for index_path in (catalog_path, legacy_path):
+            raw = index_path.read_bytes()
+            self.assertNotIn(b"\r\n", raw, f"{index_path} must use LF line endings")
+
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+        self.assertEqual(catalog.get("version"), 2)
+        term_count = 0
+        for uni in catalog.get("universities", []):
+            for faculty in uni.get("faculties", []):
+                for term in faculty.get("terms", []):
+                    term_count += 1
+                    period_file = dist_dir / term["path"]
+                    self.assertTrue(period_file.is_file(), f"Missing committed period file: {term['path']}")
+                    raw = period_file.read_bytes()
+                    self.assertNotIn(b"\r\n", raw, f"{term['path']} must use LF line endings")
+                    self.assertEqual(
+                        hashlib.sha256(raw).hexdigest(),
+                        term["hash"],
+                        f"SHA-256 mismatch for committed {term['path']} vs schedules_catalog.json",
+                    )
+        self.assertGreater(term_count, 0)
+
+        legacy = json.loads(legacy_path.read_text(encoding="utf-8"))
+        for entry in legacy:
+            period_file = dist_dir / entry["path"]
+            raw = period_file.read_bytes()
+            self.assertEqual(
+                hashlib.sha256(raw).hexdigest(),
+                entry["hash"],
+                f"SHA-256 mismatch for committed {entry['path']} vs schedules_index.json",
+            )
+
+        for fixture_name in PERIOD_FILES:
+            self.assertNotIn(b"\r\n", (FIXTURES / fixture_name).read_bytes())

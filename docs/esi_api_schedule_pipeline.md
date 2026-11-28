@@ -85,14 +85,15 @@ public files. The adapter reads mappings from
 `schedules/script/adapters/esi/mappings.json` and passes cleaned classroom names
 through. Without `--strict` it prompts for unresolved names.
 
-A source or parse failure preserves the prior periods and indexes (exiting `1`
-when all selected faculties fail, or `2` on partial failure in multi-faculty
-runs so other valid faculties can still publish). A successful download can
-update the raw input and HTTP metadata before normalization. ESI publishes
-periods with sessions and retains the previous file for an omitted period;
-removing a previously published period requires explicit confirmation via
-`removed_periods` or `--remove-period`. Hashes cover the final file bytes, and
-an unchanged hash retains its previous `updatedTime`.
+A source or parse failure preserves the prior input cache, HTTP metadata,
+periods, and indexes (exiting `1` when all selected faculties fail, or `2` on
+partial failure in multi-faculty runs so other valid faculties can still
+publish). Downloaded raw input and HTTP metadata are written to
+`schedules/input/` only after normalization and publication succeed. ESI
+publishes periods with sessions and retains the previous file for an omitted
+period; removing a previously published period requires explicit confirmation
+via `removed_periods` or `--remove-period`. Hashes cover the final LF file
+bytes, and an unchanged hash retains its previous `updatedTime`.
 
 ## 3. Pipeline Commands
 

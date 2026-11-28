@@ -25,7 +25,7 @@ flowchart TD
 
     subgraph P3["Pillar 3: Scoped Event-Driven Push (FCM)"]
         C[Dynamic Topic Subscriptions]
-        C1["Scoped Topics: /topics/{source}_{faculty}_{scheduleId}"]
+        C1["Scoped Topics: sched_{university}_{faculty}"]
         C2["Dispatched by CI or Hub Backend upon Catalog Change"]
     end
 
@@ -106,48 +106,43 @@ Scaling beyond ESI raises the question of how schedule data is collected, valida
 └───────────────────────┴──────────────────────┴─────────────────────────┘
 ```
 
-### Model C (Hybrid Progressive Architecture) — Recommended:
-1. **Standard Normalized Wire Format**:
-   - All faculties — whether scraped by CI or uploaded by students — conform to a single standardized schema:
+### Model C (Hybrid Progressive Architecture) — Implemented Pipeline + Future Hub:
+1. **Standard Normalized Wire Format** (see [modular_schedule_pipeline.md](modular_schedule_pipeline.md)):
+   - All faculties — whether produced by registered CI adapters or imported by students — conform to a single flat `List<JsonFlatSlot>` JSON array per period:
      ```json
-     {
-       "schema_version": 2,
-       "faculty_id": "uclm_esi",
-       "faculty_name": "Escuela Superior de Informática",
-       "university": "Universidad de Castilla-La Mancha",
-       "term_id": "2026_1C",
-       "term_title": "1º Cuatrimestre (2026-2027)",
-       "subgroups_label": "Laboratorios", 
-       "slots": [
-         {
-           "codigo": "FunProg1",
-           "asignatura": "Fundamentos de Programación 1",
-           "grupo": "1A",
-           "dia": 1,
-           "hora_inicio": "08:30",
-           "hora_fin": "10:00",
-           "aula": "Fermín Caballero - A1.1",
-           "profesor": "GARCIA",
-           "tipo": "teoria",
-           "subgrupo": null
-         },
-         {
-           "codigo": "FunProg1",
-           "asignatura": "Fundamentos de Programación 1",
-           "grupo": "1A",
-           "dia": 3,
-           "hora_inicio": "10:00",
-           "hora_fin": "11:30",
-           "aula": "LD1",
-           "profesor": "LOPEZ",
-           "tipo": "subgrupo",
-           "subgrupo": "Lab 1"
-         }
-       ]
-     }
+     [
+       {
+         "grupo": "1A",
+         "cuatrimestre": "1C",
+         "dia": "Lunes",
+         "hora_inicio": "08:30",
+         "hora_fin": "10:00",
+         "codigo": "FunProg1",
+         "asignatura": "Fundamentos de Programación 1",
+         "tipo": "teoría",
+         "aula": "Fermín Caballero - A1.1",
+         "profesor": "GARCIA",
+         "es_laboratorio": false,
+         "grupo_practicas": ""
+       },
+       {
+         "grupo": "1A",
+         "cuatrimestre": "1C",
+         "dia": "Miércoles",
+         "hora_inicio": "10:00",
+         "hora_fin": "11:30",
+         "codigo": "FunProg1",
+         "asignatura": "Fundamentos de Programación 1",
+         "tipo": "laboratorio",
+         "aula": "LD1",
+         "profesor": "LOPEZ",
+         "es_laboratorio": true,
+         "grupo_practicas": "A1"
+       }
+     ]
      ```
 2. **Hierarchical Master Index (`schedules_catalog.json`)**:
-   Instead of the flat `[{"id": "1C"}, {"id": "2C"}]`, the remote catalog becomes hierarchical:
+   Instead of the flat `[{"id": "1C"}, {"id": "2C"}]`, the remote catalog is hierarchical (paths are relative to `schedules/dist/`; ESI retains flat `1C.json`/`2C.json` for legacy compatibility, while new faculties use `<university>/<faculty>/<period>.json`):
    ```json
    {
      "version": 2,
@@ -160,9 +155,10 @@ Scaling beyond ESI raises the question of how schedule data is collected, valida
              "id": "esi",
              "name": "Escuela Superior de Informática (Ciudad Real)",
              "fcm_topic_prefix": "uclm_esi",
+             "subgroups_label": "Laboratorios",
              "terms": [
-               { "id": "1C", "name": "1º Cuatrimestre", "url": "schedules/uclm/esi/1C.json", "hash": "..." },
-               { "id": "2C", "name": "2º Cuatrimestre", "url": "schedules/uclm/esi/2C.json", "hash": "..." }
+               { "id": "1C", "name": "Primer Cuatrimestre", "path": "1C.json", "hash": "...", "updatedTime": "2026-10-19" },
+               { "id": "2C", "name": "Segundo Cuatrimestre", "path": "2C.json", "hash": "...", "updatedTime": "2026-09-17" }
              ]
            },
            {
@@ -170,7 +166,7 @@ Scaling beyond ESI raises the question of how schedule data is collected, valida
              "name": "Facultad de Farmacia (Albacete)",
              "fcm_topic_prefix": "uclm_farmacia",
              "terms": [
-               { "id": "1C", "name": "1º Cuatrimestre", "url": "schedules/uclm/farmacia/1C.json", "hash": "..." }
+               { "id": "1C", "name": "Primer Cuatrimestre", "path": "uclm/farmacia/1C.json", "hash": "...", "updatedTime": "2026-10-19" }
              ]
            }
          ]
@@ -203,8 +199,8 @@ $$\text{Topic Format: } \texttt{sched\_\{university\}\_\{faculty\}} \quad (\text
 - `sched_uclm_farmacia`
 
 ### 4.3. Dispatch Architecture (CI & Hub)
-1. **Official Scraped Faculties (GitHub Actions)**:
-   - When `.github/workflows/sync-esi-schedules.yml` (or future multi-faculty workflows) commits schedule changes, `schedules/script/notify_fcm.py` dispatches a high-priority data-only message to `sched_uclm_esi` containing `hash_{termId}` for each term in `schedules_catalog.json`.
+1. **Official Registered Faculties (GitHub Actions)**:
+   - When `.github/workflows/sync-esi-schedules.yml` (which syncs all registered faculties via `process_schedules.py --all --sync --strict`) or `.github/workflows/update-schedules-index.yml` commits schedule hash changes, `schedules/script/notify_fcm.py --report ...` dispatches high-priority data-only messages selectively to each changed faculty's topic (e.g., `sched_uclm_esi`) containing `hash_{termId}` for each term in `schedules_catalog.json`.
    - On the device, `ClemenTimeFirebaseMessagingService` checks incoming `hash_{term}` values against `last_known_schedule_hash_$semester` for active semesters and enqueues an expedited one-time `ScheduleUpdateWorker` only when a change is detected.
 2. **Community / Custom Schedules**:
    - If a student imports a schedule from a custom local JSON file (not part of the catalog), **FCM topic push is omitted**.

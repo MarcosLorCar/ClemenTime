@@ -3,28 +3,17 @@
 import hashlib
 import http.client
 import json
-import os
 import time
 import urllib.request
-from datetime import date
 from pathlib import Path
 
-from ...config import load_faculty_config
 from ...contract import Candidate, SourceFailure, Unchanged
 
-CONFIG_PATH = Path(__file__).with_name("config.json")
 REQUEST_HEADERS = {
     "User-Agent": "Mozilla/5.0 (compatible; ClemenTime-UpdateChecker/1.0; +https://github.com/MarcosLorCar/ClemenTime)",
     "Accept": "application/json, text/plain, */*",
 }
 HTTP_ERRORS = (OSError, http.client.HTTPException, ValueError)
-
-
-def source_url() -> str:
-    url = os.getenv("SCHEDULE_API_URL") or os.getenv("SCHEDULE_SOURCE_URL")
-    if url and url.endswith(".json"):
-        return url
-    return load_faculty_config(CONFIG_PATH, date.today()).source_url
 
 
 def fetch(url: str, method: str, timeout: int):
@@ -84,19 +73,25 @@ def acquire(
 
     try:
         parsed = json.loads(content.decode("utf-8"))
-        if not isinstance(parsed, (list, dict)) or not parsed:
-            raise ValueError("Expected a nonempty JSON object or array")
+        if not isinstance(parsed, list) or not parsed:
+            raise ValueError("Expected a nonempty JSON array")
     except ValueError as error:
         return SourceFailure(f"Downloaded payload from {url} is invalid JSON: {error}")
 
     digest = hashlib.sha256(content).hexdigest()
-    try:
+    metadata_text = json.dumps({**headers, "sha256": digest}, indent=2) + "\n"
+
+    def commit_cache() -> None:
         input_path.parent.mkdir(parents=True, exist_ok=True)
         input_path.write_bytes(content)
-        metadata_path.write_text(json.dumps({**headers, "sha256": digest}, indent=2) + "\n", encoding="utf-8")
-    except OSError as error:
-        return SourceFailure(f"Could not cache ESI input: {error}")
+        metadata_path.write_text(metadata_text, encoding="utf-8")
 
     if force or not input_exists or digest != saved.get("sha256"):
-        return Candidate(content)
+        return Candidate(content, commit_cache=commit_cache)
+
+    try:
+        metadata_path.parent.mkdir(parents=True, exist_ok=True)
+        metadata_path.write_text(metadata_text, encoding="utf-8")
+    except OSError as error:
+        return SourceFailure(f"Could not cache ESI metadata: {error}")
     return Unchanged()

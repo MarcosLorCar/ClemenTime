@@ -7,7 +7,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from .contract import FacultyKey, FacultySpec, PeriodSpec
+from .contract import FacultyKey, FacultySpec, PeriodSpec, default_period_path
 
 
 @dataclass(frozen=True)
@@ -40,7 +40,7 @@ def load_faculty_config(path: Path, today: date) -> FacultyConfig:
         if not isinstance(item, dict):
             raise ValueError(f"Each period in {path} must be a JSON object.")
         period_id = str(item["id"]).strip()
-        period_path = item.get("path") or f"{key.university_id}/{key.faculty_id}/{period_id}.json"
+        period_path = item.get("path") or default_period_path(key, period_id)
         if "description_template" in item and item["description_template"] is not None:
             description = str(item["description_template"]).format(academic_year=academic_year)
         else:

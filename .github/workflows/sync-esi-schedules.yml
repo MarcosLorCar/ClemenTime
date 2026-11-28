@@ -58,7 +58,6 @@ jobs:
         id: sync
         if: inputs.retry_fcm != true
         env:
-          SCHEDULE_SOURCE_URL: ${{ secrets.SCHEDULE_SOURCE_URL }}
           TARGET_FACULTY: ${{ inputs.faculty }}
           FORCE_SYNC: ${{ inputs.force }}
         run: |

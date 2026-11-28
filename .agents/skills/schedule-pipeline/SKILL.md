@@ -29,8 +29,7 @@ adapter—do not add faculty URLs to global `.env` or GitHub Secrets.
 
 ## Commands
 
-Run from the root with Python 3.11 or newer. Use `uv sync` for optional
-environment-file support.
+Run from the root with Python 3.11 or newer (stdlib-only; no third-party dependencies required).
 
 ```bash
 python process_schedules.py --all --sync --strict --report report.json --summary-file summary.md
@@ -48,17 +47,19 @@ python -m unittest discover -s schedules/script -p "test_*.py"
 - A successful HTTP check with unchanged content reprocesses the cached input so
   code, configuration, and mapping edits take effect.
 - Multi-faculty runs stage each faculty independently. Valid faculties publish
-  even if another faculty fails; failed faculties keep their last valid files,
-  and initial failures never add empty catalog entries.
+  even if another faculty fails; failed faculties keep their last valid files
+  and committed `schedules/input/` caches untouched (raw caches persist only
+  after normalization and publication succeed), and initial failures never add
+  empty catalog entries.
 - Exit codes: `0` (all succeeded), `2` (partial success: valid faculties
   published, at least one failed), `1` (fatal/config error or all failed).
 - ESI keeps `schedules/input/schedules.json`, `schedules/input/esi_meta.json`,
   and root paths `1C.json`/`2C.json` (`legacy_index=True`).
 - New faculties keep their own `schedules/script/adapters/<faculty>/config.json`,
   isolated cache `schedules/input/<faculty>/`, and nested dist paths via
-  `default_period_path` (`<uni>/<fac>/<period>.json`).
+  `contract.default_period_path` (`<uni>/<fac>/<period>.json`).
 - Strict mode reports unresolved mappings or structural errors before changing
-  public files.
+  public files or committed input caches.
 
 ## Wire Format & Publication Rules
 
@@ -74,8 +75,9 @@ python -m unittest discover -s schedules/script -p "test_*.py"
   `TermCodeParser`. Missing source data retains the existing file. Removing a
   previously published period requires explicit `removed_periods` on
   `FacultySpec` or `--remove-period`; an empty period requires `allow_empty=True`.
-- Hashes cover the exact published bytes; unchanged hashes preserve
-  `updatedTime`. `--index-only` preserves unregistered/foreign catalog entries.
+- Hashes cover the exact published LF bytes (enforced by `json_bytes()` and
+  `.gitattributes`); unchanged hashes preserve `updatedTime`. `--index-only`
+  preserves unregistered/foreign catalog entries.
 - FCM dispatches only after a confirmed `git push` and only for faculties in
   `changed_schedule_faculties` (raw/meta changes do not trigger FCM). Failed
   FCM delivery never reverts pushed data; retry via `retry_fcm=true` in workflow
@@ -85,7 +87,8 @@ python -m unittest discover -s schedules/script -p "test_*.py"
 
 `schedules/script/adapters/esi/config.json` stores ESI's faculty metadata,
 periods, and default TV hall URL, and `schedules/script/adapters/esi/mappings.json`
-stores mappings in `matters`, `professors`, and `classrooms`. The adapter applies
+stores subject and professor mappings (`matters` and `professors`; cleaned
+classroom names pass through). The adapter applies
 subject and professor mappings, collapses common `GENERAL` events, preserves
 sessions for each attending group, rounds end times at `:50`, and handles lab
 suffixes and TV layout fields. See the

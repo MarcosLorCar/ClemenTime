@@ -11,8 +11,8 @@ from unittest.mock import MagicMock, patch
 
 from schedules.script.adapters.esi import EsiAdapter, specification
 from schedules.script.adapters.esi import source as esi_source
-from schedules.script.contract import Candidate, ParseFailure, SourceFailure, Unchanged
-from schedules.script.pipeline import run_pipeline
+from schedules.script.contract import Candidate, SourceFailure, Unchanged
+from schedules.script.pipeline import run_batch_pipeline
 
 URL = "https://example.invalid/schedules.json"
 FIXTURE = Path(__file__).resolve().parent / "fixtures" / "esi"
@@ -69,8 +69,12 @@ class TestEsiAcquisition(unittest.TestCase):
         self.meta.write_text(json.dumps(empty_meta), encoding="utf-8")
         updated_body = b'[{"asignatura": "Updated Subject", "codigo": "UPD"}]'
         self.urlopen.side_effect = self.responses({}, updated_body)
-        self.assertEqual(self.acquire(), Candidate(updated_body))
+        result = self.acquire()
+        self.assertEqual(result, Candidate(updated_body))
         self.assert_methods("HEAD", "GET")
+        self.assert_cached(self.body, empty_meta)
+        assert isinstance(result, Candidate) and result.commit_cache is not None
+        result.commit_cache()
         self.assert_cached(updated_body, {**empty_meta, "sha256": hashlib.sha256(updated_body).hexdigest()})
 
     def test_changed_header_with_same_body_refreshes_metadata_without_new_candidate(self):
@@ -88,8 +92,12 @@ class TestEsiAcquisition(unittest.TestCase):
     def test_missing_input_triggers_download_even_with_unchanged_headers(self):
         self.cache.unlink()
         self.urlopen.side_effect = self.responses(self.headers, self.body)
-        self.assertEqual(self.acquire(), Candidate(self.body))
+        result = self.acquire()
+        self.assertEqual(result, Candidate(self.body))
         self.assert_methods("HEAD", "GET")
+        self.assertFalse(self.cache.exists())
+        assert isinstance(result, Candidate) and result.commit_cache is not None
+        result.commit_cache()
         self.assert_cached(self.body, self.initial_meta)
 
     def test_head_http_403_retries_then_returns_source_failure(self):
@@ -129,7 +137,12 @@ class TestEsiAcquisition(unittest.TestCase):
     def test_valid_update_downloads_and_caches_file_and_headers(self):
         body = b'[{"asignatura": "New Subject", "codigo": "NEW"}]'
         self.urlopen.side_effect = self.responses({**self.headers, "ETag": '"new"'}, body)
-        self.assertEqual(self.acquire(), Candidate(body))
+        result = self.acquire()
+        self.assertEqual(result, Candidate(body))
+        # Cache stays untouched until explicitly committed after validation/publication.
+        self.assert_cached(self.body, self.initial_meta)
+        assert isinstance(result, Candidate) and result.commit_cache is not None
+        result.commit_cache()
         self.assert_cached(body, {
             **self.initial_meta, "etag": '"new"', "sha256": hashlib.sha256(body).hexdigest(),
         })
@@ -143,7 +156,8 @@ class TestEsiAcquisition(unittest.TestCase):
         today = date(2026, 10, 15)
         adapter = EsiAdapter(self.temp, mappings_path, URL)
         spec = specification(today)
-        run_pipeline(spec, adapter, dist, today, strict=True)
+        seed = run_batch_pipeline(((spec, adapter),), dist, today, strict=True)
+        self.assertEqual(seed.status, "ok")
         before = (dist / "1C.json").read_bytes()
 
         code = json.loads(before)[0]["codigo"]
@@ -151,25 +165,52 @@ class TestEsiAcquisition(unittest.TestCase):
         mappings["matters"][code] = updated
         mappings_path.write_text(json.dumps(mappings), encoding="utf-8")
         self.urlopen.side_effect = self.responses(self.headers)
-        result = run_pipeline(spec, adapter, dist, today, remote=True, strict=True)
+        result = run_batch_pipeline(((spec, adapter),), dist, today, remote=True, strict=True)
 
         self.assert_methods("HEAD")
-        self.assertIsInstance(result, set, result)
-        self.assertIn("1C.json", result)
+        self.assertEqual(result.status, "ok")
+        self.assertIn("1C.json", result.written_files)
         self.assertIn(updated.encode(), (dist / "1C.json").read_bytes())
 
-    def test_source_and_parse_failures_preserve_all_public_files(self):
+    def test_source_and_parse_failures_preserve_all_public_files_and_cache(self):
         dist = self.temp / "dist"
         today = date(2026, 10, 15)
         adapter = EsiAdapter(self.temp, FIXTURE / "mappings.json", URL)
         spec = specification(today)
-        run_pipeline(spec, adapter, dist, today, fixture=FIXTURE / "source.json", strict=True)
-        original = {path.name: path.read_bytes() for path in dist.iterdir()}
+        valid_source = (FIXTURE / "source.json").read_bytes()
+        self.urlopen.side_effect = self.responses({**self.headers, "ETag": '"seed"'}, valid_source)
+        seed = run_batch_pipeline(((spec, adapter),), dist, today, remote=True, strict=True)
+        self.assertEqual(seed.status, "ok")
+        original_dist = {path.name: path.read_bytes() for path in dist.iterdir()}
+        expected_meta = {
+            **self.initial_meta,
+            "etag": '"seed"',
+            "sha256": hashlib.sha256(valid_source).hexdigest(),
+        }
+        self.assert_cached(valid_source, expected_meta)
 
+        # 1) Network timeout fails at source stage and leaves dist + cache intact.
         self.urlopen.side_effect = urllib.error.URLError("Connection timed out")
-        self.assertIsInstance(run_pipeline(spec, adapter, dist, today, remote=True, strict=True), SourceFailure)
-        self.assertEqual({path.name: path.read_bytes() for path in dist.iterdir()}, original)
+        timeout_res = run_batch_pipeline(((spec, adapter),), dist, today, remote=True, strict=True)
+        self.assertEqual(timeout_res.status, "failed")
+        self.assertEqual(timeout_res.outcomes[0].stage, "source")
+        self.assertEqual({path.name: path.read_bytes() for path in dist.iterdir()}, original_dist)
+        self.assert_cached(valid_source, expected_meta)
 
-        self.urlopen.side_effect = self.responses({"ETag": '"new"'}, b'{"error": "unexpected shape"}')
-        self.assertIsInstance(run_pipeline(spec, adapter, dist, today, remote=True, strict=True), ParseFailure)
-        self.assertEqual({path.name: path.read_bytes() for path in dist.iterdir()}, original)
+        # 2) Unexpected JSON dict fails at source stage and leaves dist + cache intact.
+        self.urlopen.side_effect = self.responses({"ETag": '"bad-dict"'}, b'{"error": "unexpected shape"}')
+        dict_res = run_batch_pipeline(((spec, adapter),), dist, today, remote=True, strict=True)
+        self.assertEqual(dict_res.status, "failed")
+        self.assertEqual(dict_res.outcomes[0].stage, "source")
+        self.assertEqual({path.name: path.read_bytes() for path in dist.iterdir()}, original_dist)
+        self.assert_cached(valid_source, expected_meta)
+
+        # 3) Valid JSON array with unresolved strict mapping fails at parse stage without overwriting cache.
+        bad_entries = json.loads(valid_source.decode("utf-8"))
+        bad_entries[0]["asignatura"] = "ZZZ_UNMAPPED_999"
+        self.urlopen.side_effect = self.responses({"ETag": '"bad-mapping"'}, json.dumps(bad_entries).encode("utf-8"))
+        parse_res = run_batch_pipeline(((spec, adapter),), dist, today, remote=True, strict=True)
+        self.assertEqual(parse_res.status, "failed")
+        self.assertEqual(parse_res.outcomes[0].stage, "parse")
+        self.assertEqual({path.name: path.read_bytes() for path in dist.iterdir()}, original_dist)
+        self.assert_cached(valid_source, expected_meta)

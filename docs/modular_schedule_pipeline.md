@@ -20,7 +20,7 @@ The production registry currently contains one active faculty:
 | --- | --- |
 | [CLI](../process_schedules.py) | Select one or more registered faculties (`--faculty` repeatable, or `--all`), sync remote sources, reprocess local fixtures, or rebuild indexes (`--index-only`). Writes optional JSON reports (`--report`) and Markdown CI summaries (`--summary-file`). Preserves legacy no-argument, positional file, and `--check-esi` entry points for ESI. |
 | [Declarative Config](../schedules/script/config.py) | Load each adapter's self-contained `config.json` (faculty identity, public `source_url`, period metadata, and default nested paths `<university_id>/<faculty_id>/<period_id>.json`) into `FacultyConfig`, keeping public source URLs out of global `.env` / GitHub Secrets. |
-| [Registry](../schedules/script/registry.py) | Explicit faculty registration binding each `FacultyKey` to its `FacultySpec` and `FacultyAdapter`. ESI keeps `1C.json` and `2C.json` with `legacy_index=True`; new faculties default to nested paths via `default_period_path` / `config.json`. |
+| [Registry](../schedules/script/registry.py) | Explicit faculty registration binding each `FacultyKey` to its `FacultySpec` and `FacultyAdapter`. ESI keeps `1C.json` and `2C.json` with `legacy_index=True`; new faculties default to nested paths via `contract.default_period_path` / `config.json`. |
 | [ESI adapter](../schedules/script/adapters/esi) | Owns `config.json`, HEAD/ETag cache, `mappings.json` resolution, `GENERAL` event collapsing, lab and group rules, `:50` time rounding, and deduplication. |
 | [Contract](../schedules/script/contract.py) | Defines `FacultyKey`, `PeriodSpec`, `FacultySpec` (including explicit `removed_periods`), normalized `Session`, adapter outcomes (`Unchanged`, `Candidate`, `SourceFailure`, `ParseFailure`), and structured batch results (`FacultyOutcome`, `BatchResult`). |
 | [Pipeline](../schedules/script/pipeline.py) | Validates the entire registry before publication (key/path/topic collisions, consistent university names, single legacy index owner, symlink and path-escape checks, Android `TermCodeParser` compatibility, and period config coverage). Stages every faculty independently, sorts sessions deterministically, and serializes the flat wire format. |
@@ -33,11 +33,12 @@ The production registry currently contains one active faculty:
   mapping, configuration, and code edits take effect against unchanged remote
   sources.
 - Each faculty in a multi-faculty batch (`--all`) is acquired, normalized, and
-  serialized independently before touching `schedules/dist/`.
+  serialized independently before touching `schedules/dist/` or committing raw
+  caches under `schedules/input/`.
   - If one faculty fails while another succeeds, valid faculties are published
     and updated in `schedules_catalog.json` while failed faculties keep their
-    previous period files, catalog entries, and (for ESI) `schedules_index.json`
-    untouched.
+    previous input caches, period files, catalog entries, and (for ESI)
+    `schedules_index.json` untouched.
   - If a newly registered faculty fails on its initial run (no prior files on
     disk), it is never added empty to `schedules_catalog.json`.
   - `process_schedules.py` exits `0` when all selected faculties succeed, `2` on
