@@ -36,10 +36,9 @@ Gradle (`./gradlew` on Linux/Bash, `.\gradlew` on PowerShell):
 ./gradlew detekt                                                                          # Kotlin static analysis (CI)
 ```
 
-Python schedule pipeline (`uv`, requires Python >= 3.11):
+Python schedule pipeline (stdlib-only, requires Python >= 3.11):
 
 ```bash
-uv sync
 ruff check .                                                  # Python lint (CI)
 python -m unittest discover -s schedules/script -p "test_*.py" # pipeline & FCM tests (CI)
 python process_schedules.py --all --sync --strict             # sync all registered faculties

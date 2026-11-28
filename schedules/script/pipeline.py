@@ -1,7 +1,8 @@
 """Validate faculty results and publish the existing flat schedule format."""
 
 import re
-from collections.abc import Collection, Iterable, Mapping, Sequence
+from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
+from dataclasses import dataclass
 from datetime import date
 from pathlib import Path, PurePosixPath
 from typing import Any
@@ -19,7 +20,7 @@ from .contract import (
     Unchanged,
 )
 from .notify_fcm import build_topic_name
-from .publication import INDEX_FILES, json_bytes, publish, publish_batch
+from .publication import INDEX_FILES, json_bytes, publish_batch
 
 DAY_NAMES = ("Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo")
 PERIOD_COUNTS = {"ANNUAL": 1, "SEMESTERS": 2, "TRIMESTERS": 3, "QUARTERS": 4, "CUSTOM": 2}
@@ -173,6 +174,12 @@ def serialize_schedule(spec: FacultySpec, schedule: FacultySchedule) -> dict[str
     return output
 
 
+@dataclass(frozen=True)
+class _StagedFaculty:
+    schedules: dict[str, bytes]
+    commit_cache: Callable[[], None] | None = None
+
+
 def stage_faculty(
     spec: FacultySpec,
     adapter: FacultyAdapter[Payload],
@@ -181,7 +188,7 @@ def stage_faculty(
     remote: bool = False,
     force: bool = False,
     strict: bool = False,
-) -> dict[str, bytes] | SourceFailure | ParseFailure:
+) -> _StagedFaculty | SourceFailure | ParseFailure:
     source = adapter.acquire(force=force) if remote else adapter.read_local(fixture)
     if isinstance(source, Unchanged):
         print(f"[Source] {spec.key}: Unchanged. Reprocessing the cached input with the current pipeline.")
@@ -193,29 +200,10 @@ def stage_faculty(
     if isinstance(schedule, ParseFailure):
         return schedule
     try:
-        return serialize_schedule(spec, schedule)
+        serialized = serialize_schedule(spec, schedule)
     except ValueError as error:
         return ParseFailure(str(error))
-
-
-def run_pipeline(
-    spec: FacultySpec,
-    adapter: FacultyAdapter[Payload],
-    dist: Path,
-    today: date,
-    *,
-    fixture: Path | None = None,
-    remote: bool = False,
-    force: bool = False,
-    strict: bool = False,
-    remove_periods: Collection[str] = (),
-) -> set[str] | SourceFailure | ParseFailure:
-    dist = dist.resolve()
-    validate_specs((spec,), dist)
-    staged = stage_faculty(spec, adapter, fixture=fixture, remote=remote, force=force, strict=strict)
-    if isinstance(staged, (SourceFailure, ParseFailure)):
-        return staged
-    return publish(spec, dist, today, staged, remove_periods=remove_periods)
+    return _StagedFaculty(schedules=serialized, commit_cache=source.commit_cache)
 
 
 def run_batch_pipeline(
@@ -238,6 +226,7 @@ def run_batch_pipeline(
 
     staged_specs: list[FacultySpec] = []
     schedules_by_faculty: dict[FacultyKey, dict[str, bytes]] = {}
+    cache_commits: dict[FacultyKey, Callable[[], None]] = {}
     pre_failures: dict[FacultyKey, FacultyOutcome] = {}
 
     for spec, adapter in entries:
@@ -261,7 +250,9 @@ def run_batch_pipeline(
             )
             continue
         staged_specs.append(spec)
-        schedules_by_faculty[spec.key] = staged
+        schedules_by_faculty[spec.key] = staged.schedules
+        if staged.commit_cache is not None:
+            cache_commits[spec.key] = staged.commit_cache
 
     if not staged_specs:
         return BatchResult(outcomes=tuple(pre_failures[spec.key] for spec, _ in entries))
@@ -275,6 +266,20 @@ def run_batch_pipeline(
         isolate_failures=True,
     )
     outcomes_by_key = {**pre_failures, **{outcome.key: outcome for outcome in published.outcomes}}
+    for outcome in published.outcomes:
+        if outcome.status != "failed" and outcome.key in cache_commits:
+            try:
+                cache_commits[outcome.key]()
+            except OSError as error:
+                outcomes_by_key[outcome.key] = FacultyOutcome(
+                    key=outcome.key,
+                    status="failed",
+                    changed_periods=outcome.changed_periods,
+                    written_files=outcome.written_files,
+                    removed_files=outcome.removed_files,
+                    stage="cache",
+                    diagnostic=f"Could not persist input cache: {error}",
+                )
     ordered_outcomes = tuple(outcomes_by_key[spec.key] for spec, _ in entries if spec.key in outcomes_by_key)
     return BatchResult(
         outcomes=ordered_outcomes,

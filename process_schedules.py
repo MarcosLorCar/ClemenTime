@@ -58,13 +58,6 @@ def _append_summary(summary_path: Path | None, result: BatchResult, *, mode: str
 
 def main(argv: list[str] | None = None) -> int:
     root = Path(__file__).resolve().parent
-    try:
-        from dotenv import load_dotenv
-    except ImportError:
-        pass
-    else:
-        load_dotenv(root / ".env")
-
     today = date.today()
     registered = registered_faculties(root / "schedules", today)
     faculties_by_name = {str(key): (key, spec, adapter) for key, (spec, adapter) in registered.items()}
@@ -137,7 +130,7 @@ def main(argv: list[str] | None = None) -> int:
                 schedules_by_faculty={},
                 remove_periods=remove_periods,
                 index_only=True,
-                isolate_failures=len(selected) > 1,
+                isolate_failures=True,
             )
         else:
             fixture_map = {selected_keys[0]: fixture} if fixture is not None else None

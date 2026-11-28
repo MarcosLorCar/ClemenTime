@@ -4,17 +4,17 @@ import csv
 import hashlib
 import io
 import json
-import os
 import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import replace
 from datetime import date, time
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import process_schedules
 from schedules.script.adapters.esi import ESI_KEY, EsiAdapter
+from schedules.script.adapters.esi import source as esi_source
 from schedules.script.adapters.esi import specification as esi_specification
 from schedules.script.config import load_faculty_config
 from schedules.script.contract import (
@@ -26,10 +26,11 @@ from schedules.script.contract import (
     PeriodSpec,
     Session,
     SourceFailure,
+    default_period_path,
 )
-from schedules.script.pipeline import format_batch_summary, run_batch_pipeline, run_pipeline, validate_specs
+from schedules.script.pipeline import format_batch_summary, run_batch_pipeline, validate_specs
 from schedules.script.publication import publish_batch
-from schedules.script.registry import default_period_path, registered_faculties
+from schedules.script.registry import registered_faculties
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures" / "esi"
 KEY = FacultyKey("mock-university", "mock-faculty")
@@ -101,7 +102,13 @@ class TestModularPipeline(unittest.TestCase):
         self.fixture.write_text(self.header + "P3,101,Reading,A,7,08:00,09:30\n", encoding="utf-8")
 
     def run_csv(self, spec=SPEC):
-        return run_pipeline(spec, CsvAdapter(), self.dist, TODAY, fixture=self.fixture, strict=True)
+        return run_batch_pipeline(
+            entries=((spec, CsvAdapter()),),
+            dist=self.dist,
+            today=TODAY,
+            fixture_by_faculty={spec.key: self.fixture},
+            strict=True,
+        )
 
     def snapshot(self):
         return {path.relative_to(self.dist).as_posix(): path.read_bytes() for path in self.dist.rglob("*.json")}
@@ -111,13 +118,21 @@ class TestModularPipeline(unittest.TestCase):
         spec = esi_specification(today)
         adapter = EsiAdapter(self.root / "esi-input", FIXTURES / "mappings.json", "https://example.invalid/schedules.json")
         with redirect_stdout(io.StringIO()):
-            result = run_pipeline(spec, adapter, self.dist, today, fixture=FIXTURES / "source.json", strict=True)
-        self.assertIsInstance(result, set)
+            result = run_batch_pipeline(
+                entries=((spec, adapter),),
+                dist=self.dist,
+                today=today,
+                fixture_by_faculty={spec.key: FIXTURES / "source.json"},
+                strict=True,
+            )
+        self.assertEqual(result.status, "ok", result.outcomes)
         return spec
 
     def test_non_esi_csv_publishes_only_its_declared_catalog_entry(self):
         self.assertNotIn(KEY, registered_faculties(self.root, TODAY))
-        self.assertEqual(self.run_csv(), {PERIOD.path, "schedules_catalog.json"})
+        result = self.run_csv()
+        self.assertEqual(result.status, "ok")
+        self.assertEqual(result.written_files, frozenset({PERIOD.path, "schedules_catalog.json"}))
         self.assertFalse((self.dist / "schedules_index.json").exists())
         slot, = json.loads((self.dist / PERIOD.path).read_bytes())
         self.assertEqual(
@@ -137,7 +152,9 @@ class TestModularPipeline(unittest.TestCase):
         for row in ("", "1C,101,Reading,A,7,08:00,09:30\n", "P3,101,Reading,A,8,08:00,09:30\n"):
             with self.subTest(row=row):
                 self.fixture.write_text(self.header + row, encoding="utf-8")
-                self.assertIsInstance(self.run_csv(), ParseFailure)
+                failed = self.run_csv()
+                self.assertEqual(failed.status, "failed")
+                self.assertEqual(failed.outcomes[0].stage, "parse")
                 self.assertEqual(self.snapshot(), original)
 
     def test_unsafe_duplicate_and_mismatched_period_configuration_is_rejected(self):
@@ -319,7 +336,14 @@ class TestModularPipeline(unittest.TestCase):
             self.header + "1C,101,Alpha,A,1,09:00,10:30\n2C,201,Beta,A,2,09:00,10:30\n",
             encoding="utf-8",
         )
-        run_pipeline(two_period_spec, CsvAdapter(), self.dist, TODAY, fixture=self.fixture, strict=True)
+        seeded = run_batch_pipeline(
+            entries=((two_period_spec, CsvAdapter()),),
+            dist=self.dist,
+            today=TODAY,
+            fixture_by_faculty={KEY: self.fixture},
+            strict=True,
+        )
+        self.assertEqual(seeded.status, "ok")
         snapshot_both = self.snapshot()
 
         # 1) Dropping 2C from spec without explicit removal must fail and keep files intact.
@@ -389,7 +413,7 @@ class TestModularPipeline(unittest.TestCase):
 
         # Simulate a manual edit to ONLY the non-ESI faculty's dist JSON.
         non_esi_file = self.dist / PERIOD.path
-        edited_bytes = non_esi_file.read_bytes() + os.linesep.encode("ascii")
+        edited_bytes = non_esi_file.read_bytes() + b"\n"
         non_esi_file.write_bytes(edited_bytes)
 
         result = publish_batch(
@@ -491,3 +515,156 @@ class TestModularPipeline(unittest.TestCase):
         )
         with self.assertRaisesRegex(ValueError, "source_url"):
             load_faculty_config(cfg_path, TODAY)
+
+    def test_partial_batch_parse_failure_does_not_overwrite_failed_faculty_cache(self):
+        esi_spec = self.seed_esi(day=15)
+        esi_input = self.root / "esi-input"
+        esi_input.mkdir(parents=True, exist_ok=True)
+        valid_source = (FIXTURES / "source.json").read_bytes()
+        cache_path = esi_input / "schedules.json"
+        meta_path = esi_input / "esi_meta.json"
+        cache_path.write_bytes(valid_source)
+        initial_meta = {
+            "url": "https://example.invalid/schedules.json",
+            "last_modified": "Mon, 19 Oct 2026 07:06:11 GMT",
+            "etag": '"initial"',
+            "sha256": hashlib.sha256(valid_source).hexdigest(),
+        }
+        meta_path.write_text(json.dumps(initial_meta, indent=2) + "\n", encoding="utf-8")
+
+        bad_entries = json.loads(valid_source.decode("utf-8"))
+        bad_entries[0]["asignatura"] = "UNKNOWN_SUBJECT_999"
+        bad_payload = json.dumps(bad_entries).encode("utf-8")
+
+        head_resp = MagicMock()
+        head_resp.__enter__.return_value.headers = {"ETag": '"broken-update"'}
+        get_resp = MagicMock()
+        get_resp.__enter__.return_value.read.return_value = bad_payload
+
+        esi_adapter = EsiAdapter(esi_input, FIXTURES / "mappings.json", "https://example.invalid/schedules.json")
+        with patch.object(esi_source.urllib.request, "urlopen", side_effect=[head_resp, get_resp]):
+            batch = run_batch_pipeline(
+                entries=((esi_spec, esi_adapter), (SPEC, CsvAdapter(self.fixture))),
+                dist=self.dist,
+                today=date(2026, 10, 16),
+                remote=True,
+                strict=True,
+            )
+
+        self.assertEqual(batch.status, "partial")
+        self.assertEqual(batch.changed_schedule_faculties, (KEY,))
+        self.assertTrue((self.dist / PERIOD.path).is_file())
+        # Failed ESI adapter must leave its committed input cache and metadata untouched.
+        self.assertEqual(cache_path.read_bytes(), valid_source)
+        self.assertEqual(json.loads(meta_path.read_text(encoding="utf-8")), initial_meta)
+
+    def test_cli_single_faculty_index_only_failure_writes_report_and_summary(self):
+        esi_spec = self.seed_esi(day=15)
+        (self.dist / "2C.json").unlink()
+        fake_registry = {
+            ESI_KEY: (esi_spec, EsiAdapter(self.root / "esi-input", FIXTURES / "mappings.json", "https://example.invalid/schedules.json")),
+        }
+        report_path = self.root / "index-report.json"
+        summary_path = self.root / "index-summary.md"
+
+        with (
+            patch.object(process_schedules, "registered_faculties", return_value=fake_registry),
+            redirect_stdout(io.StringIO()),
+            redirect_stderr(io.StringIO()),
+        ):
+            rc = process_schedules.main([
+                "--all",
+                "--index-only",
+                "--dist-dir", str(self.dist),
+                "--report", str(report_path),
+                "--summary-file", str(summary_path),
+            ])
+
+        self.assertEqual(rc, process_schedules.EXIT_FATAL)
+        self.assertTrue(report_path.is_file())
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+        self.assertEqual(report["status"], "failed")
+        self.assertEqual(report["faculties"][0]["stage"], "publication")
+        summary = summary_path.read_text(encoding="utf-8")
+        self.assertIn("Overall status: **failed**", summary)
+        self.assertIn("Previously published period '2C'", summary)
+
+    def test_publication_failure_skips_cache_commit_and_cache_oserror_is_isolated(self):
+        # 1) Publication-stage failure must not invoke commit_cache.
+        p1 = PeriodSpec("1C", 1, "First", None, default_period_path(KEY, "1C"))
+        p2 = PeriodSpec("2C", 2, "Second", None, default_period_path(KEY, "2C"))
+        two_period_spec = replace(SPEC, periods=(p1, p2), period_type="SEMESTERS", period_count=2)
+        self.fixture.write_text(
+            self.header + "1C,101,Alpha,A,1,09:00,10:30\n2C,201,Beta,A,2,09:00,10:30\n",
+            encoding="utf-8",
+        )
+        seeded = run_batch_pipeline(
+            entries=((two_period_spec, CsvAdapter()),),
+            dist=self.dist,
+            today=TODAY,
+            fixture_by_faculty={KEY: self.fixture},
+            strict=True,
+        )
+        self.assertEqual(seeded.status, "ok")
+
+        committed: list[str] = []
+
+        class TrackingCsvAdapter(CsvAdapter):
+            def __init__(self, fixture: Path, label: str, *, fail_commit: bool = False):
+                super().__init__(fixture)
+                self.label = label
+                self.fail_commit = fail_commit
+
+            def acquire(self, *, force: bool):
+                def _commit():
+                    if self.fail_commit:
+                        raise PermissionError("read-only cache")
+                    committed.append(self.label)
+
+                return Candidate(self.fixture.read_text(encoding="utf-8"), commit_cache=_commit)
+
+        # Dropping 2C without explicit removal passes staging (only 1C in fixture)
+        # and fails at publication stage -> commit_cache must not run.
+        one_period_fixture = self.root / "one_period.csv"
+        one_period_fixture.write_text(self.header + "1C,101,Alpha,A,1,09:00,10:30\n", encoding="utf-8")
+        one_period_spec = replace(two_period_spec, periods=(p1,))
+        pub_fail = run_batch_pipeline(
+            entries=((one_period_spec, TrackingCsvAdapter(one_period_fixture, "dropped")),),
+            dist=self.dist,
+            today=date(2026, 10, 16),
+            remote=True,
+            strict=True,
+        )
+        self.assertEqual(pub_fail.status, "failed")
+        self.assertEqual(pub_fail.outcomes[0].stage, "publication")
+        self.assertEqual(committed, [])
+
+        # 2) Cache-commit OSError for one faculty is isolated without blocking another faculty's commit.
+        other_key = FacultyKey("mock-university", "other-faculty")
+        other_period = PeriodSpec("P3", 3, "Study block", None, default_period_path(other_key, "P3"))
+        other_spec = FacultySpec(other_key, "Mock University", "Other Faculty", (other_period,), period_type="CUSTOM", period_count=3)
+        other_fixture = self.root / "other.csv"
+        other_fixture.write_text(self.header + "P3,202,Lab,A,2,10:00,11:30\n", encoding="utf-8")
+
+        class OtherCsvAdapter(TrackingCsvAdapter):
+            def normalize(self, payload: str, *, strict: bool):
+                parsed = super().normalize(payload, strict=strict)
+                if isinstance(parsed, ParseFailure):
+                    return parsed
+                return FacultySchedule(other_key, parsed.sessions_by_period)
+
+        partial = run_batch_pipeline(
+            entries=(
+                (two_period_spec, TrackingCsvAdapter(self.fixture, "first", fail_commit=True)),
+                (other_spec, OtherCsvAdapter(other_fixture, "second")),
+            ),
+            dist=self.dist,
+            today=date(2026, 10, 16),
+            remote=True,
+            strict=True,
+        )
+        self.assertEqual(partial.status, "partial")
+        self.assertEqual(partial.outcomes[0].stage, "cache")
+        self.assertIn("read-only cache", partial.outcomes[0].diagnostic or "")
+        self.assertEqual(partial.outcomes[1].status, "published")
+        self.assertEqual(committed, ["second"])

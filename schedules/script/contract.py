@@ -1,7 +1,7 @@
 """The boundary between faculty adapters and schedule publication."""
 
-from collections.abc import Mapping
-from dataclasses import dataclass
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass, field
 from datetime import time
 from pathlib import Path
 from typing import Generic, Literal, Protocol, TypeVar
@@ -34,6 +34,11 @@ class PeriodSpec:
     description: str | None
     path: str
     allow_empty: bool = False
+
+
+def default_period_path(key: FacultyKey, period_id: str) -> str:
+    """Standard nested distribution path for non-legacy faculties."""
+    return f"{key.university_id}/{key.faculty_id}/{period_id}.json"
 
 
 @dataclass(frozen=True)
@@ -74,6 +79,7 @@ class FacultySchedule:
 @dataclass(frozen=True)
 class Candidate(Generic[Payload]):
     payload: Payload
+    commit_cache: Callable[[], None] | None = field(default=None, compare=False, repr=False)
 
 
 @dataclass(frozen=True)

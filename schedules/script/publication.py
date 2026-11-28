@@ -3,7 +3,6 @@
 import copy
 import hashlib
 import json
-import os
 from collections.abc import Collection, Mapping, Sequence
 from datetime import date
 from pathlib import Path, PurePosixPath
@@ -20,7 +19,7 @@ def json_bytes(data: object, *, trailing_newline: bool = False) -> bytes:
     text = json.dumps(data, indent=2, ensure_ascii=False)
     if trailing_newline:
         text += "\n"
-    return text.replace("\n", os.linesep).encode("utf-8")
+    return text.encode("utf-8")
 
 
 def read_json(path: Path, default):
@@ -373,23 +372,3 @@ def publish_batch(
         removed_files=removed_files,
         changed_schedule_faculties=tuple(changed_schedule_faculties),
     )
-
-
-def publish(
-    spec: FacultySpec,
-    dist: Path,
-    today: date,
-    schedules: dict[str, bytes],
-    *,
-    remove_periods: Collection[str] = (),
-) -> set[str]:
-    """Single-faculty compatibility wrapper over publish_batch."""
-    removals = {spec.key: remove_periods} if remove_periods else None
-    result = publish_batch(
-        specs=(spec,),
-        dist=dist,
-        today=today,
-        schedules_by_faculty={spec.key: schedules},
-        remove_periods=removals,
-    )
-    return set(result.written_files)
