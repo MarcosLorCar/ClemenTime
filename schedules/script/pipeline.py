@@ -265,10 +265,21 @@ def run_batch_pipeline(
         remove_periods=remove_periods,
         isolate_failures=True,
     )
+    outcomes_by_key = {**pre_failures, **{outcome.key: outcome for outcome in published.outcomes}}
     for outcome in published.outcomes:
         if outcome.status != "failed" and outcome.key in cache_commits:
-            cache_commits[outcome.key]()
-    outcomes_by_key = {**pre_failures, **{outcome.key: outcome for outcome in published.outcomes}}
+            try:
+                cache_commits[outcome.key]()
+            except OSError as error:
+                outcomes_by_key[outcome.key] = FacultyOutcome(
+                    key=outcome.key,
+                    status="failed",
+                    changed_periods=outcome.changed_periods,
+                    written_files=outcome.written_files,
+                    removed_files=outcome.removed_files,
+                    stage="cache",
+                    diagnostic=f"Could not persist input cache: {error}",
+                )
     ordered_outcomes = tuple(outcomes_by_key[spec.key] for spec, _ in entries if spec.key in outcomes_by_key)
     return BatchResult(
         outcomes=ordered_outcomes,

@@ -73,7 +73,8 @@ class TestEsiAcquisition(unittest.TestCase):
         self.assertEqual(result, Candidate(updated_body))
         self.assert_methods("HEAD", "GET")
         self.assert_cached(self.body, empty_meta)
-        assert isinstance(result, Candidate) and result.commit_cache is not None
+        self.assertIsInstance(result, Candidate)
+        self.assertIsNotNone(result.commit_cache)
         result.commit_cache()
         self.assert_cached(updated_body, {**empty_meta, "sha256": hashlib.sha256(updated_body).hexdigest()})
 
@@ -96,7 +97,8 @@ class TestEsiAcquisition(unittest.TestCase):
         self.assertEqual(result, Candidate(self.body))
         self.assert_methods("HEAD", "GET")
         self.assertFalse(self.cache.exists())
-        assert isinstance(result, Candidate) and result.commit_cache is not None
+        self.assertIsInstance(result, Candidate)
+        self.assertIsNotNone(result.commit_cache)
         result.commit_cache()
         self.assert_cached(self.body, self.initial_meta)
 
@@ -141,7 +143,8 @@ class TestEsiAcquisition(unittest.TestCase):
         self.assertEqual(result, Candidate(body))
         # Cache stays untouched until explicitly committed after validation/publication.
         self.assert_cached(self.body, self.initial_meta)
-        assert isinstance(result, Candidate) and result.commit_cache is not None
+        self.assertIsInstance(result, Candidate)
+        self.assertIsNotNone(result.commit_cache)
         result.commit_cache()
         self.assert_cached(body, {
             **self.initial_meta, "etag": '"new"', "sha256": hashlib.sha256(body).hexdigest(),

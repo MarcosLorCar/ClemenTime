@@ -588,3 +588,83 @@ class TestModularPipeline(unittest.TestCase):
         summary = summary_path.read_text(encoding="utf-8")
         self.assertIn("Overall status: **failed**", summary)
         self.assertIn("Previously published period '2C'", summary)
+
+    def test_publication_failure_skips_cache_commit_and_cache_oserror_is_isolated(self):
+        # 1) Publication-stage failure must not invoke commit_cache.
+        p1 = PeriodSpec("1C", 1, "First", None, default_period_path(KEY, "1C"))
+        p2 = PeriodSpec("2C", 2, "Second", None, default_period_path(KEY, "2C"))
+        two_period_spec = replace(SPEC, periods=(p1, p2), period_type="SEMESTERS", period_count=2)
+        self.fixture.write_text(
+            self.header + "1C,101,Alpha,A,1,09:00,10:30\n2C,201,Beta,A,2,09:00,10:30\n",
+            encoding="utf-8",
+        )
+        seeded = run_batch_pipeline(
+            entries=((two_period_spec, CsvAdapter()),),
+            dist=self.dist,
+            today=TODAY,
+            fixture_by_faculty={KEY: self.fixture},
+            strict=True,
+        )
+        self.assertEqual(seeded.status, "ok")
+
+        committed: list[str] = []
+
+        class TrackingCsvAdapter(CsvAdapter):
+            def __init__(self, fixture: Path, label: str, *, fail_commit: bool = False):
+                super().__init__(fixture)
+                self.label = label
+                self.fail_commit = fail_commit
+
+            def acquire(self, *, force: bool):
+                def _commit():
+                    if self.fail_commit:
+                        raise PermissionError("read-only cache")
+                    committed.append(self.label)
+
+                return Candidate(self.fixture.read_text(encoding="utf-8"), commit_cache=_commit)
+
+        # Dropping 2C without explicit removal passes staging (only 1C in fixture)
+        # and fails at publication stage -> commit_cache must not run.
+        one_period_fixture = self.root / "one_period.csv"
+        one_period_fixture.write_text(self.header + "1C,101,Alpha,A,1,09:00,10:30\n", encoding="utf-8")
+        one_period_spec = replace(two_period_spec, periods=(p1,))
+        pub_fail = run_batch_pipeline(
+            entries=((one_period_spec, TrackingCsvAdapter(one_period_fixture, "dropped")),),
+            dist=self.dist,
+            today=date(2026, 10, 16),
+            remote=True,
+            strict=True,
+        )
+        self.assertEqual(pub_fail.status, "failed")
+        self.assertEqual(pub_fail.outcomes[0].stage, "publication")
+        self.assertEqual(committed, [])
+
+        # 2) Cache-commit OSError for one faculty is isolated without blocking another faculty's commit.
+        other_key = FacultyKey("mock-university", "other-faculty")
+        other_period = PeriodSpec("P3", 3, "Study block", None, default_period_path(other_key, "P3"))
+        other_spec = FacultySpec(other_key, "Mock University", "Other Faculty", (other_period,), period_type="CUSTOM", period_count=3)
+        other_fixture = self.root / "other.csv"
+        other_fixture.write_text(self.header + "P3,202,Lab,A,2,10:00,11:30\n", encoding="utf-8")
+
+        class OtherCsvAdapter(TrackingCsvAdapter):
+            def normalize(self, payload: str, *, strict: bool):
+                parsed = super().normalize(payload, strict=strict)
+                if isinstance(parsed, ParseFailure):
+                    return parsed
+                return FacultySchedule(other_key, parsed.sessions_by_period)
+
+        partial = run_batch_pipeline(
+            entries=(
+                (two_period_spec, TrackingCsvAdapter(self.fixture, "first", fail_commit=True)),
+                (other_spec, OtherCsvAdapter(other_fixture, "second")),
+            ),
+            dist=self.dist,
+            today=date(2026, 10, 16),
+            remote=True,
+            strict=True,
+        )
+        self.assertEqual(partial.status, "partial")
+        self.assertEqual(partial.outcomes[0].stage, "cache")
+        self.assertIn("read-only cache", partial.outcomes[0].diagnostic or "")
+        self.assertEqual(partial.outcomes[1].status, "published")
+        self.assertEqual(committed, ["second"])
